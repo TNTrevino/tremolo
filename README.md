@@ -8,7 +8,7 @@ This project is deigned for music students 6th through 12th in public school.
 
 This also be a technical exercise for myself as I will be learning a huge amount of things on the way.
 
-## Current Progress:
+## Current Progress (DEPLOYMENT IS BEHIND):
 
 [deployment](https://tremolonotes.com/)
 
