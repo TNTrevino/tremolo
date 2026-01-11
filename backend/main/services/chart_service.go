@@ -4,9 +4,11 @@ package services
 import (
 	"database/sql"
 	"net/http"
+	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/logger"
-	"sight-reading/repositories"
 	"strconv"
+	"time"
 
 	dtos "sight-reading/DTOs"
 
@@ -60,43 +62,39 @@ func GetUserChartData(c *gin.Context) {
 		return
 	}
 
-	noteGameRepo := repositories.NewNoteGameRepository()
+	ctx := c.Request.Context()
+	userID32 := int32(requestedUserID)
 
-	npm, err := noteGameRepo.FetchNPMData(requestedUserID, interval, days)
+	var rows []generated.FetchChartDataAllRow
+
+	if interval == "all" {
+		rows, err = database.Queries.FetchChartDataAll(ctx, userID32)
+	} else {
+		inRangeRows, fetchErr := database.Queries.FetchChartDataInRange(ctx, generated.FetchChartDataInRangeParams{
+			UserID:   userID32,
+			DaysBack: days,
+		})
+		err = fetchErr
+		// Convert to the same type for processing
+		rows = make([]generated.FetchChartDataAllRow, len(inRangeRows))
+		for i, r := range inRangeRows {
+			rows[i] = generated.FetchChartDataAllRow{
+				CreatedDate:      r.CreatedDate,
+				CreatedTime:      r.CreatedTime,
+				NotesPerMinute:   r.NotesPerMinute,
+				CorrectQuestions: r.CorrectQuestions,
+				TotalQuestions:   r.TotalQuestions,
+			}
+		}
+	}
+
 	if err != nil {
-		logger.Error("Failed to fetch NPM data", "error", err.Error(), "user_id", requestedUserID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch NPM data"})
+		logger.Error("Failed to fetch chart data", "error", err.Error(), "user_id", requestedUserID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch chart data"})
 		return
 	}
 
-	accuracy, err := noteGameRepo.FetchAccuracyData(requestedUserID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch accuracy data", "error", err.Error(), "user_id", requestedUserID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch accuracy data"})
-		return
-	}
-
-	sessionCount, err := noteGameRepo.FetchSessionCountData(requestedUserID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch session count data", "error", err.Error(), "user_id", requestedUserID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch session count data"})
-		return
-	}
-
-	totalQuestions, err := noteGameRepo.FetchTotalQuestionsData(requestedUserID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch total questions data", "error", err.Error(), "user_id", requestedUserID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch total questions data"})
-		return
-	}
-
-	response := dtos.MultiMetricChartData{
-		NPM:            npm,
-		Accuracy:       accuracy,
-		SessionCount:   sessionCount,
-		TotalQuestions: totalQuestions,
-	}
-
+	response := convertRowsToChartData(rows)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -104,7 +102,6 @@ func GetUserChartData(c *gin.Context) {
 // Query params: interval (day/week/month/year), days (default 30)
 // Protected: Requires JWT authentication AND role=teacher
 func GetTeacherClassChartData(c *gin.Context) {
-	// Extract authenticated user ID from context
 	userIDInterface, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -118,8 +115,10 @@ func GetTeacherClassChartData(c *gin.Context) {
 		return
 	}
 
-	userRepo := repositories.NewUserRepository()
-	userRole, err := userRepo.GetUserRole(teacherID)
+	ctx := c.Request.Context()
+	teacherID32 := int32(teacherID)
+
+	userRole, err := database.Queries.GetUserRole(ctx, teacherID32)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
@@ -130,10 +129,10 @@ func GetTeacherClassChartData(c *gin.Context) {
 		return
 	}
 
-	if userRole != "teacher" {
+	if !userRole.Valid || userRole.String != "teacher" {
 		logger.Info("Non-teacher user attempted to access class metrics",
 			"user_id", teacherID,
-			"role", userRole)
+			"role", userRole.String)
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only teachers can access class metrics"})
 		return
 	}
@@ -153,42 +152,103 @@ func GetTeacherClassChartData(c *gin.Context) {
 		return
 	}
 
-	noteGameRepo := repositories.NewNoteGameRepository()
+	var rows []generated.FetchChartDataAllRow
 
-	npm, err := noteGameRepo.FetchTeacherNPMData(teacherID, interval, days)
+	if interval == "all" {
+		teacherRows, fetchErr := database.Queries.FetchTeacherChartDataAll(ctx, teacherID32)
+		err = fetchErr
+		rows = make([]generated.FetchChartDataAllRow, len(teacherRows))
+		for i, r := range teacherRows {
+			rows[i] = generated.FetchChartDataAllRow{
+				CreatedDate:      r.CreatedDate,
+				CreatedTime:      r.CreatedTime,
+				NotesPerMinute:   r.NotesPerMinute,
+				CorrectQuestions: r.CorrectQuestions,
+				TotalQuestions:   r.TotalQuestions,
+			}
+		}
+	} else {
+		teacherRows, fetchErr := database.Queries.FetchTeacherChartDataInRange(ctx, generated.FetchTeacherChartDataInRangeParams{
+			TeacherID: teacherID32,
+			DaysBack:  days,
+		})
+		err = fetchErr
+		rows = make([]generated.FetchChartDataAllRow, len(teacherRows))
+		for i, r := range teacherRows {
+			rows[i] = generated.FetchChartDataAllRow{
+				CreatedDate:      r.CreatedDate,
+				CreatedTime:      r.CreatedTime,
+				NotesPerMinute:   r.NotesPerMinute,
+				CorrectQuestions: r.CorrectQuestions,
+				TotalQuestions:   r.TotalQuestions,
+			}
+		}
+	}
+
 	if err != nil {
-		logger.Error("Failed to fetch teacher NPM data", "error", err.Error(), "teacher_id", teacherID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch NPM data"})
+		logger.Error("Failed to fetch teacher chart data", "error", err.Error(), "teacher_id", teacherID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch chart data"})
 		return
 	}
 
-	accuracy, err := noteGameRepo.FetchTeacherAccuracyData(teacherID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch teacher accuracy data", "error", err.Error(), "teacher_id", teacherID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch accuracy data"})
-		return
+	response := convertRowsToChartData(rows)
+	c.JSON(http.StatusOK, response)
+}
+
+// convertRowsToChartData converts database rows to chart data with computed metrics
+func convertRowsToChartData(rows []generated.FetchChartDataAllRow) dtos.MultiMetricChartData {
+	npm := make([]dtos.ChartDataPoint, 0, len(rows))
+	accuracy := make([]dtos.ChartDataPoint, 0, len(rows))
+	sessionCount := make([]dtos.ChartDataPoint, 0, len(rows))
+	totalQuestions := make([]dtos.ChartDataPoint, 0, len(rows))
+
+	for _, row := range rows {
+		ts := combineDateTime(row.CreatedDate, row.CreatedTime)
+
+		npm = append(npm, dtos.ChartDataPoint{
+			Timestamp: ts,
+			Value:     float64(row.NotesPerMinute),
+		})
+
+		var acc float64
+		if row.TotalQuestions > 0 {
+			acc = (float64(row.CorrectQuestions) / float64(row.TotalQuestions)) * 100
+		}
+		accuracy = append(accuracy, dtos.ChartDataPoint{
+			Timestamp: ts,
+			Value:     acc,
+		})
+
+		sessionCount = append(sessionCount, dtos.ChartDataPoint{
+			Timestamp: ts,
+			Value:     1,
+		})
+
+		totalQuestions = append(totalQuestions, dtos.ChartDataPoint{
+			Timestamp: ts,
+			Value:     float64(row.TotalQuestions),
+		})
 	}
 
-	sessionCount, err := noteGameRepo.FetchTeacherSessionCountData(teacherID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch teacher session count data", "error", err.Error(), "teacher_id", teacherID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch session count data"})
-		return
-	}
-
-	totalQuestions, err := noteGameRepo.FetchTeacherTotalQuestionsData(teacherID, interval, days)
-	if err != nil {
-		logger.Error("Failed to fetch teacher total questions data", "error", err.Error(), "teacher_id", teacherID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch total questions data"})
-		return
-	}
-
-	response := dtos.MultiMetricChartData{
+	return dtos.MultiMetricChartData{
 		NPM:            npm,
 		Accuracy:       accuracy,
 		SessionCount:   sessionCount,
 		TotalQuestions: totalQuestions,
 	}
+}
 
-	c.JSON(http.StatusOK, response)
+// combineDateTime combines a date and time into a single timestamp
+func combineDateTime(date, t sql.NullTime) time.Time {
+	if !date.Valid {
+		return time.Time{}
+	}
+
+	d := date.Time
+	if t.Valid {
+		return time.Date(d.Year(), d.Month(), d.Day(),
+			t.Time.Hour(), t.Time.Minute(), t.Time.Second(), t.Time.Nanosecond(),
+			d.Location())
+	}
+	return d
 }
