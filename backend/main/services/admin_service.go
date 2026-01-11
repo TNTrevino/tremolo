@@ -26,8 +26,8 @@ func GetTeachers(c *gin.Context) {
 }
 
 func GetTeacher(c *gin.Context) {
-	idSrt := c.Param("id")
-	id, err := strconv.Atoi(idSrt)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"error":   true,
