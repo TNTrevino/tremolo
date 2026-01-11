@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"regexp"
+	"sight-reading/database"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 	"testing"
@@ -25,7 +27,7 @@ func TestGetGeneralUserInfo_Success(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	result, err := services.GetGeneralUserInfo(userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -41,7 +43,7 @@ func TestGetGeneralUserInfo_UserNotFound(t *testing.T) {
 	// Use a very large ID that won't exist
 	nonExistentUserID := 999999999
 
-	result, err := services.GetGeneralUserInfo(nonExistentUserID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, nonExistentUserID)
 
 	assert.ErrorIs(t, err, sql.ErrNoRows)
 	assert.Nil(t, result)
@@ -55,7 +57,7 @@ func TestGetGeneralUserInfo_NoEntries(t *testing.T) {
 	email := testutil.UniqueEmail(t, "userinfo_noentries")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	result, err := services.GetGeneralUserInfo(userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -80,7 +82,7 @@ func TestGetGeneralUserInfo_WithEntries(t *testing.T) {
 		NotesPerMinute:   2.0,
 	})
 
-	result, err := services.GetGeneralUserInfo(userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -96,7 +98,7 @@ func TestGetGeneralUserInfo_DateFormat(t *testing.T) {
 	email := testutil.UniqueEmail(t, "userinfo_dateformat")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	result, err := services.GetGeneralUserInfo(userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -141,7 +143,7 @@ func TestGetGeneralUserInfo_MultipleEntries(t *testing.T) {
 		NotesPerMinute:   2.0,
 	})
 
-	result, err := services.GetGeneralUserInfo(userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
