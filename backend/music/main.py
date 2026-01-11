@@ -43,4 +43,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api.router)
+app.include_router(api.router, prefix="/music")
