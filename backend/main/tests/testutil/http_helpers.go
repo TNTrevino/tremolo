@@ -6,19 +6,32 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sight-reading/logger"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
+var initLoggerOnce sync.Once
+
 func init() {
 	gin.SetMode(gin.TestMode)
+}
+
+// initTestLogger initializes the logger for tests (idempotent)
+func initTestLogger() {
+	initLoggerOnce.Do(func() {
+		logger.InitLogger()
+	})
 }
 
 // CreateGinContext creates a gin context with an HTTP request for testing.
 // The method defaults to GET if empty.
 func CreateGinContext(method, path string) (*gin.Context, *httptest.ResponseRecorder) {
+	initTestLogger()
+
 	if method == "" {
 		method = http.MethodGet
 	}
