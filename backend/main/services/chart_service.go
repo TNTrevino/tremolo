@@ -78,13 +78,7 @@ func GetUserChartData(c *gin.Context) {
 		// Convert to the same type for processing
 		rows = make([]generated.FetchChartDataAllRow, len(inRangeRows))
 		for i, r := range inRangeRows {
-			rows[i] = generated.FetchChartDataAllRow{
-				CreatedDate:      r.CreatedDate,
-				CreatedTime:      r.CreatedTime,
-				NotesPerMinute:   r.NotesPerMinute,
-				CorrectQuestions: r.CorrectQuestions,
-				TotalQuestions:   r.TotalQuestions,
-			}
+			rows[i] = generated.FetchChartDataAllRow(r)
 		}
 	}
 
@@ -159,13 +153,7 @@ func GetTeacherClassChartData(c *gin.Context) {
 		err = fetchErr
 		rows = make([]generated.FetchChartDataAllRow, len(teacherRows))
 		for i, r := range teacherRows {
-			rows[i] = generated.FetchChartDataAllRow{
-				CreatedDate:      r.CreatedDate,
-				CreatedTime:      r.CreatedTime,
-				NotesPerMinute:   r.NotesPerMinute,
-				CorrectQuestions: r.CorrectQuestions,
-				TotalQuestions:   r.TotalQuestions,
-			}
+			rows[i] = generated.FetchChartDataAllRow(r)
 		}
 	} else {
 		teacherRows, fetchErr := database.Queries.FetchTeacherChartDataInRange(ctx, generated.FetchTeacherChartDataInRangeParams{
@@ -175,13 +163,7 @@ func GetTeacherClassChartData(c *gin.Context) {
 		err = fetchErr
 		rows = make([]generated.FetchChartDataAllRow, len(teacherRows))
 		for i, r := range teacherRows {
-			rows[i] = generated.FetchChartDataAllRow{
-				CreatedDate:      r.CreatedDate,
-				CreatedTime:      r.CreatedTime,
-				NotesPerMinute:   r.NotesPerMinute,
-				CorrectQuestions: r.CorrectQuestions,
-				TotalQuestions:   r.TotalQuestions,
-			}
+			rows[i] = generated.FetchChartDataAllRow(r)
 		}
 	}
 

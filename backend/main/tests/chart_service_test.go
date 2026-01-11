@@ -28,12 +28,6 @@ func initTestLogger() {
 	})
 }
 
-// setupRouter creates a gin router for testing
-func setupRouter() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	return gin.New()
-}
-
 // createMockContext creates a mock gin context with httptest recorder
 func createMockContext(method, path string) (*gin.Context, *httptest.ResponseRecorder) {
 	initTestLogger()
