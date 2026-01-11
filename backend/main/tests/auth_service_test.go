@@ -40,7 +40,7 @@ func TestLogin_ValidCredentials(t *testing.T) {
 		Email:    email,
 		Password: password,
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Login(c)
 
@@ -69,7 +69,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		Email:    email,
 		Password: "WrongPassword123!",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Login(c)
 
@@ -89,7 +89,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 		Email:    "nonexistent_user_12345@test.com",
 		Password: "TestPass123!",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Login(c)
 
@@ -114,7 +114,7 @@ func TestLogin_AccountLocked(t *testing.T) {
 		Email:    email,
 		Password: "TestPass123!",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Login(c)
 
@@ -184,7 +184,7 @@ func TestLogin_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",tc.reqBody)
+			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", tc.reqBody)
 
 			services.Login(c)
 
@@ -240,7 +240,7 @@ func TestLogin_EmailNormalization(t *testing.T) {
 		Email:    uppercaseEmail,
 		Password: password,
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Login(c)
 
@@ -264,7 +264,7 @@ func TestRegister_Success(t *testing.T) {
 		LastName:  "Doe",
 		Role:      "student",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Register(c)
 
@@ -303,7 +303,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 		LastName:  "Doe",
 		Role:      "student",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.Register(c)
 
@@ -447,7 +447,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",tc.reqBody)
+			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", tc.reqBody)
 
 			services.Register(c)
 
@@ -502,7 +502,7 @@ func TestRegister_AllRoles(t *testing.T) {
 				LastName:  "User",
 				Role:      role,
 			}
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 			services.Register(c)
 
@@ -625,7 +625,7 @@ func TestRefreshToken_Valid(t *testing.T) {
 	reqBody := map[string]string{
 		"refresh_token": refreshToken,
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.RefreshToken(c)
 
@@ -646,7 +646,7 @@ func TestRefreshToken_Invalid(t *testing.T) {
 	reqBody := map[string]string{
 		"refresh_token": "invalid.token.here",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.RefreshToken(c)
 
@@ -663,7 +663,7 @@ func TestRefreshToken_MissingToken(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	reqBody := map[string]string{}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.RefreshToken(c)
 
@@ -689,7 +689,7 @@ func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
 	reqBody := map[string]string{
 		"refresh_token": accessToken,
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.RefreshToken(c)
 
@@ -722,7 +722,7 @@ func TestRefreshToken_EmptyToken(t *testing.T) {
 	reqBody := map[string]string{
 		"refresh_token": "",
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/",reqBody)
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
 	services.RefreshToken(c)
 
