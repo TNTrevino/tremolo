@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sight-reading/database"
 	"sight-reading/middleware"
 	"sight-reading/services"
 	"strconv"
@@ -23,16 +24,8 @@ func SetupUserInfoRoutes(router *gin.Engine) {
 // GetGeneralUserInfo fetches general user information including name, join date, and aggregate stats
 // Protected: Requires JWT authentication, users can only access their own data
 func GetGeneralUserInfo(c *gin.Context) {
-	// Set by AuthMiddleware
-	userIDInterface, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	authenticatedUserID, ok := userIDInterface.(int)
+	authenticatedUserID, ok := middleware.GetAuthenticatedUserID(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
@@ -53,7 +46,8 @@ func GetGeneralUserInfo(c *gin.Context) {
 	// Will require checking teacher_student table relationship
 
 	// Fetch user information
-	userInfo, err := services.GetGeneralUserInfo(requestedUserID)
+	ctx := c.Request.Context()
+	userInfo, err := services.GetGeneralUserInfo(ctx, database.Queries, requestedUserID)
 	if err != nil {
 		// Check if user not found
 		if err.Error() == "user not found with ID: "+requestedUserIDStr {
