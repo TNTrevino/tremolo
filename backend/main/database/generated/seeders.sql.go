@@ -12,7 +12,7 @@ import (
 )
 
 const createNoteGameEntryWithDate = `-- name: CreateNoteGameEntryWithDate :one
-insert into tremolo.note_game_entries (
+insert into note_game_entries (
   user_id,
   time_length,
   total_questions,
@@ -59,7 +59,7 @@ func (q *Queries) CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNot
 }
 
 const createSchool = `-- name: CreateSchool :one
-insert into tremolo.schools (
+insert into schools (
   title,
   city,
   county,
@@ -106,7 +106,7 @@ func (q *Queries) CreateSchool(ctx context.Context, arg CreateSchoolParams) (int
 }
 
 const createTeacherStudentAssociation = `-- name: CreateTeacherStudentAssociation :exec
-insert into tremolo.teacher_student (
+insert into teacher_student (
   teacher_id,
   student_id
 )
@@ -127,7 +127,7 @@ func (q *Queries) CreateTeacherStudentAssociation(ctx context.Context, arg Creat
 }
 
 const createUserWithPassword = `-- name: CreateUserWithPassword :one
-insert into tremolo.users (
+insert into users (
   first_name,
   last_name,
   school_id,
@@ -170,7 +170,7 @@ func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWith
 }
 
 const deleteAllTestData = `-- name: DeleteAllTestData :exec
-delete from tremolo.note_game_entries
+delete from note_game_entries
 `
 
 func (q *Queries) DeleteAllTestData(ctx context.Context) error {

@@ -13,7 +13,7 @@ import (
 
 const createNoteGameEntry = `-- name: CreateNoteGameEntry :one
 
-insert into tremolo.note_game_entries (
+insert into note_game_entries (
     user_id,
     time_length,
     total_questions,
@@ -46,6 +46,26 @@ func (q *Queries) CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEnt
 	return id, err
 }
 
+const deleteNoteGameEntriesByUserID = `-- name: DeleteNoteGameEntriesByUserID :exec
+delete from note_game_entries
+where user_id = $1
+`
+
+func (q *Queries) DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error {
+	_, err := q.db.ExecContext(ctx, deleteNoteGameEntriesByUserID, userID)
+	return err
+}
+
+const deleteNoteGameEntryByID = `-- name: DeleteNoteGameEntryByID :exec
+delete from note_game_entries
+where id = $1
+`
+
+func (q *Queries) DeleteNoteGameEntryByID(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteNoteGameEntryByID, id)
+	return err
+}
+
 const fetchChartDataAll = `-- name: FetchChartDataAll :many
 
 select
@@ -54,7 +74,7 @@ select
     notes_per_minute,
     correct_questions,
     total_questions
-from tremolo.note_game_entries
+from note_game_entries
 where user_id = $1
 order by created_date, created_time asc
 `
@@ -104,7 +124,7 @@ select
     notes_per_minute,
     correct_questions,
     total_questions
-from tremolo.note_game_entries
+from note_game_entries
 where user_id = $1
   and created_date >= current_date - interval '1 day' * $2
 order by created_date, created_time asc
@@ -160,8 +180,8 @@ select
     nge.notes_per_minute,
     nge.correct_questions,
     nge.total_questions
-from tremolo.note_game_entries nge
-inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
+from note_game_entries nge
+inner join teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = $1
 order by nge.created_date, nge.created_time asc
 `
@@ -211,8 +231,8 @@ select
     nge.notes_per_minute,
     nge.correct_questions,
     nge.total_questions
-from tremolo.note_game_entries nge
-inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
+from note_game_entries nge
+inner join teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = $1
   and nge.created_date >= current_date - interval '1 day' * $2
 order by nge.created_date, nge.created_time asc
@@ -262,20 +282,20 @@ func (q *Queries) FetchTeacherChartDataInRange(ctx context.Context, arg FetchTea
 
 const getEntriesByUserID = `-- name: GetEntriesByUserID :many
 select id, user_id, time_length, total_questions, correct_questions, notes_per_minute, created_date, created_time
-from tremolo.note_game_entries
+from note_game_entries
 where user_id = $1
 order by created_date desc
 `
 
-func (q *Queries) GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error) {
+func (q *Queries) GetEntriesByUserID(ctx context.Context, userID int32) ([]NoteGameEntry, error) {
 	rows, err := q.db.QueryContext(ctx, getEntriesByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TremoloNoteGameEntry{}
+	items := []NoteGameEntry{}
 	for rows.Next() {
-		var i TremoloNoteGameEntry
+		var i NoteGameEntry
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -308,7 +328,7 @@ select
     correct_questions,
     notes_per_minute,
     created_date
-from tremolo.note_game_entries
+from note_game_entries
 where user_id = $1
 order by created_date desc, id desc
 limit 30
