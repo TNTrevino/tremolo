@@ -13,7 +13,6 @@ import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import { Link } from "react-router-dom";
 import { navbarStyles } from "../../styles";
 import UserOptions from "./UserOptions";
-import Slide from "@mui/material/Slide/Slide";
 import { useState } from "react";
 
 const pages = [
@@ -35,89 +34,87 @@ function NavBar() {
 	};
 
 	return (
-		<Slide in={true} timeout={500}>
-			<AppBar position="static">
-				<Container maxWidth="xl">
-					<Toolbar disableGutters>
+		<AppBar position="static">
+			<Container maxWidth="xl">
+				<Toolbar disableGutters>
+					<IconButton
+						component={Link}
+						to="/"
+						sx={navbarStyles.musicNoteIcon}
+						color="inherit"
+						aria-label="home"
+					>
+						<MusicNoteIcon />
+					</IconButton>
+					<Box sx={navbarStyles.menuIconButton}>
 						<IconButton
-							component={Link}
-							to="/"
-							sx={navbarStyles.musicNoteIcon}
+							size="large"
+							aria-label="account of current user"
+							aria-controls="menu-appbar"
+							aria-haspopup="true"
+							onClick={handleOpenNavMenu}
 							color="inherit"
-							aria-label="home"
 						>
-							<MusicNoteIcon />
+							<MenuIcon />
 						</IconButton>
-						<Box sx={navbarStyles.menuIconButton}>
-							<IconButton
-								size="large"
-								aria-label="account of current user"
-								aria-controls="menu-appbar"
-								aria-haspopup="true"
-								onClick={handleOpenNavMenu}
-								color="inherit"
-							>
-								<MenuIcon />
-							</IconButton>
-							<Menu
-								id="menu-appbar"
-								anchorEl={anchorElNav}
-								anchorOrigin={{
-									vertical: "bottom",
-									horizontal: "left",
-								}}
-								keepMounted
-								transformOrigin={{
-									vertical: "top",
-									horizontal: "left",
-								}}
-								open={Boolean(anchorElNav)}
-								onClose={handleCloseNavMenu}
-								sx={navbarStyles.menu}
-							>
-								{pages.map((page) => (
-									<MenuItem
-										key={page.name}
-										component={Link}
-										to={page.path}
-										onClick={handleCloseNavMenu}
-									>
-										<Typography sx={{ textAlign: "center" }}>
-											{page.name}
-										</Typography>
-									</MenuItem>
-								))}
-							</Menu>
-						</Box>
-						<Typography
-							variant="h5"
-							noWrap
-							component={Link}
-							to="/"
-							sx={navbarStyles.logoTypography}
+						<Menu
+							id="menu-appbar"
+							anchorEl={anchorElNav}
+							anchorOrigin={{
+								vertical: "bottom",
+								horizontal: "left",
+							}}
+							keepMounted
+							transformOrigin={{
+								vertical: "top",
+								horizontal: "left",
+							}}
+							open={Boolean(anchorElNav)}
+							onClose={handleCloseNavMenu}
+							sx={navbarStyles.menu}
 						>
-							Tremolo
-						</Typography>
-						<Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
 							{pages.map((page) => (
-								<Button
+								<MenuItem
 									key={page.name}
 									component={Link}
-									onClick={handleCloseNavMenu}
 									to={page.path}
-									sx={navbarStyles.button}
+									onClick={handleCloseNavMenu}
 								>
-									{page.name}
-								</Button>
+									<Typography sx={{ textAlign: "center" }}>
+										{page.name}
+									</Typography>
+								</MenuItem>
 							))}
-						</Box>
-						<Box sx={{ flexGrow: 0 }}>
-							<UserOptions />
-						</Box>
-					</Toolbar>
-				</Container>
-			</AppBar>
-		</Slide>
+						</Menu>
+					</Box>
+					<Typography
+						variant="h5"
+						noWrap
+						component={Link}
+						to="/"
+						sx={navbarStyles.logoTypography}
+					>
+						Tremolo
+					</Typography>
+					<Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+						{pages.map((page) => (
+							<Button
+								key={page.name}
+								component={Link}
+								onClick={handleCloseNavMenu}
+								to={page.path}
+								sx={navbarStyles.button}
+							>
+								{page.name}
+							</Button>
+						))}
+					</Box>
+					<Box sx={{ flexGrow: 0 }}>
+						<UserOptions />
+					</Box>
+				</Toolbar>
+			</Container>
+		</AppBar>
 	);
 }
 export default NavBar;

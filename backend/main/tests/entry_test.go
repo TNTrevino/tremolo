@@ -1,8 +1,9 @@
 package tests
 
 import (
-	dtos "sight-reading/DTOs"
 	"testing"
+
+	dtos "sight-reading/DTOs"
 )
 
 // NOTE: Happy path

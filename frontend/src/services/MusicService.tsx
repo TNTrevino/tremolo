@@ -156,7 +156,7 @@ export const MusicService = {
 			return noteInformation;
 		} catch (error) {
 			throw new Error(
-				`did not get sheet music, params: scale: ${scale}, octave: ${octave} `,
+				`did not get sheet music, params: scale: ${scale}, octave: ${octave}. Error: ${error}`,
 			);
 		}
 	},

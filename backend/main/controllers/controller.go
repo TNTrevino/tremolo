@@ -1,3 +1,4 @@
+// Package controllers handles the routing of our service functions
 package controllers
 
 import (

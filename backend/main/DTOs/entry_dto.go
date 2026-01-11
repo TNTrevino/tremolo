@@ -3,8 +3,9 @@ package dtos
 import (
 	"database/sql"
 	"errors"
-	"sight-reading/validations"
 	"strings"
+
+	"sight-reading/validations"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -24,9 +25,13 @@ type Entry struct {
 
 func (entry *Entry) ValidateEntry() error {
 	validate := validator.New()
-	validate.RegisterValidation("time", validations.EntryTimeLength)
+	err := validate.RegisterValidation("time", validations.EntryTimeLength)
+	if err != nil {
+		// TODO: json response
+		return err
+	}
 
-	err := validate.Struct(entry)
+	err = validate.Struct(entry)
 	if err != nil {
 		var errorMessage []string
 

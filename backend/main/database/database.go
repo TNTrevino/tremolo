@@ -1,3 +1,4 @@
+// Package database contains the configuratino to the database connection
 package database
 
 import (

@@ -2,9 +2,10 @@ package services
 
 import (
 	"net/http"
-	dtos "sight-reading/DTOs"
-	"sight-reading/database"
+	"sight-reading/repositories"
 	"strconv"
+
+	dtos "sight-reading/DTOs"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,8 +16,9 @@ func CreateUser(c *gin.Context) {
 	err := c.ShouldBindJSON(&reqBody)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":   true,
-			"message": "Invalid json body",
+			"error":    true,
+			"message":  "Invalid json body",
+			"scenario": "TS.1",
 		})
 		return
 	}
@@ -24,83 +26,59 @@ func CreateUser(c *gin.Context) {
 	err = reqBody.ValidateUser()
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":   reqBody.ValidateUser().Error(),
-			"message": "Information invalid",
+			"error":    reqBody.ValidateUser().Error(),
+			"message":  "Information invalid",
+			"scenario": "TS.2",
 		})
 		return
 	}
 
-	query := `
-  INSERT INTO users (
-    first_name,
-    last_name,
-    school_id,
-    role
-  )
-  VALUES (
-    :first_name,
-    :last_name,
-    :school_id,
-    :role
-  )
-  RETURNING
-    first_name,
-    last_name,
-    role,
-    school_id
-  `
+	userRepo := repositories.NewUserRepository()
 
-	// TODO: dont get confused here, just add the role to the request body in the
-	// front end
-	//
-	// rows contains all the 'returning values'
-	rows, err := database.DBClient.NamedQuery(query, reqBody)
+	user := repositories.User{
+		FirstName: reqBody.FirstName,
+		LastName:  reqBody.LastName,
+		Role:      string(reqBody.Role),
+	}
+
+	if reqBody.SchoolID != 0 {
+		user.SchoolID.Valid = true
+		user.SchoolID.Int64 = int64(reqBody.SchoolID)
+	}
+
+	createdUser, err := userRepo.CreateUser(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   err.Error(),
-			"message": "The school is most likely not found",
+			"error":    err.Error(),
+			"message":  "The school is most likely not found",
+			"scenario": "TS.3",
 		})
 		return
 	}
 
-	var teacherValidation dtos.User
-
-	// in this case, we just have one, but when wanting to do a multitude of
-	// entities this works the same
-	// iterates through all the rows returned, and maps to a struct
-	if rows.Next() {
-		err := rows.StructScan(&teacherValidation)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-				"help":  "this is at the database level",
-			})
-			return
-		}
+	response := dtos.User{
+		FirstName: createdUser.FirstName,
+		LastName:  createdUser.LastName,
+		Role:      dtos.Role(createdUser.Role),
 	}
 
-	rows.Close()
+	if createdUser.SchoolID.Valid {
+		response.SchoolID = int16(createdUser.SchoolID.Int64)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"body":   teacherValidation,
+		"body":   response,
 		"status": "teacher created sucessfully",
 	})
 }
 
-// TODO:
 func UpdateTeacher(c *gin.Context) {
 }
 
 func GetStudents(c *gin.Context) {
-	query := `
-  SELECT first_name, last_name, role, school_id
-  FROM users
-  WHERE role = 'STUDENT'  
-  `
+	userRepo := repositories.NewUserRepository()
 
-	var students []dtos.User
-
-	err := database.DBClient.Select(&students, query)
+	users, err := userRepo.GetUsersByRole("STUDENT")
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -108,6 +86,20 @@ func GetStudents(c *gin.Context) {
 		})
 		return
 	}
+
+	var students []dtos.User
+	for _, user := range users {
+		student := dtos.User{
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Role:      dtos.Role(user.Role),
+		}
+		if user.SchoolID.Valid {
+			student.SchoolID = int16(user.SchoolID.Int64)
+		}
+		students = append(students, student)
+	}
+
 	c.JSON(http.StatusOK, students)
 }
 
@@ -122,17 +114,9 @@ func GetStudent(c *gin.Context) {
 		return
 	}
 
-	// the and of this is not right
-	query := `
-  SELECT first_name, last_name, role, school_id
-  FROM users
-  WHERE role = 'STUDENT'
-  AND id = $1
-  `
+	userRepo := repositories.NewUserRepository()
 
-	var students dtos.User
-
-	err = database.DBClient.Get(&students, query, id)
+	user, err := userRepo.GetUserByRoleAndID("STUDENT", id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -141,5 +125,14 @@ func GetStudent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, students)
+	student := dtos.User{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      dtos.Role(user.Role),
+	}
+	if user.SchoolID.Valid {
+		student.SchoolID = int16(user.SchoolID.Int64)
+	}
+
+	c.JSON(http.StatusOK, student)
 }

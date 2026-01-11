@@ -1,0 +1,38 @@
+{
+  "/mary": {
+    "name": "/mary",
+    "endpoint": "/mary",
+    "iterations": 20,
+    "successful": 20,
+    "failed": 0,
+    "avg_ms": 23.587602148472797,
+    "min_ms": 19.750667008338496,
+    "max_ms": 51.554499979829416,
+    "stdev_ms": 8.839336344231203,
+    "throughput": 42.395152915733995
+  },
+  "/random": {
+    "name": "/random",
+    "endpoint": "/random",
+    "iterations": 20,
+    "successful": 20,
+    "failed": 0,
+    "avg_ms": 15.361502103041857,
+    "min_ms": 14.55304102273658,
+    "max_ms": 19.203458010451868,
+    "stdev_ms": 1.2629214249268526,
+    "throughput": 65.0978005466003
+  },
+  "/note-game": {
+    "name": "/note-game",
+    "endpoint": "/note-game",
+    "iterations": 20,
+    "successful": 20,
+    "failed": 0,
+    "avg_ms": 16.405516499071382,
+    "min_ms": 15.588957990985364,
+    "max_ms": 18.39924999512732,
+    "stdev_ms": 0.644848324617055,
+    "throughput": 60.95510617154931
+  }
+}

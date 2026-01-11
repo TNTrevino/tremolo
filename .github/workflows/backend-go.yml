@@ -1,0 +1,74 @@
+name: Go Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - prod
+    paths:
+      - "backend/main/**"
+  pull_request:
+    branches:
+      - main
+      - prod
+    paths:
+      - "backend/main/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-checks:
+    name: lint-and-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/main
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.23.2"
+          cache: true
+          cache-dependency-path: backend/main/go.sum
+
+      - name: Check formatting
+        run: |
+          echo "🧹 Checking Go code formatting..."
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+          echo "✅ All files are properly formatted"
+
+      - name: Run go vet
+        run: |
+          echo "🔍 Running go vet..."
+          go vet ./...
+          echo "✅ go vet passed"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.1
+          working-directory: backend/main
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          go test -v -race -coverprofile=coverage.out ./...
+          echo "✅ Tests passed"
+
+      - name: Check test coverage
+        run: |
+          echo "📊 Test coverage:"
+          go tool cover -func=coverage.out

@@ -30,9 +30,9 @@ const noteGameStyles: Record<string, SxProps> = {
 	},
 
 	musicContainer: {
-		flex: "2",
 		display: "flex",
-		width: { xs: "100%", md: "50%" },
+		width: { xs: "100%", md: "60%" },
+		maxWidth: "600px",
 		minHeight: { xs: "300px", md: "400px" },
 		alignItems: "center",
 		justifyContent: "center",
@@ -40,11 +40,10 @@ const noteGameStyles: Record<string, SxProps> = {
 	},
 
 	musicDisplay: {
-		width: { xs: "90%", md: "50%" },
+		width: { xs: "90%", md: "100%" },
 		height: { xs: "15rem", md: "20rem" },
 		justifyItems: "center",
 		alignItems: "center",
-		pl: { xs: "0", md: "2rem" },
 	},
 
 	optionButtonsCard: {
@@ -86,7 +85,7 @@ const noteGameStyles: Record<string, SxProps> = {
 	},
 
 	mobileMusicContainer: {
-		width: "100%",
+		width: "20rem",
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "center",
@@ -96,7 +95,7 @@ const noteGameStyles: Record<string, SxProps> = {
 	},
 
 	mobileMusicDisplay: {
-		width: "100%",
+		width: "20rem",
 		height: "auto",
 		minHeight: "200px",
 		display: "flex",

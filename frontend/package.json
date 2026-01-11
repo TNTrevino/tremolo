@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",
-		"lint": "eslint .",
+		"lint": "npx eslint .",
 		"preview": "vite preview"
 	},
 	"lint-staged": {
@@ -21,24 +21,21 @@
 		"@emotion/styled": "^11.13.0",
 		"@mui/icons-material": "^6.1.4",
 		"@mui/material": "^6.1.4",
-		"@mui/x-charts": "^8.14.1",
 		"@testing-library/jest-dom": "^5.17.0",
 		"@testing-library/react": "^13.4.0",
 		"@testing-library/user-event": "^13.5.0",
 		"axios": "^1.7.7",
 		"bootstrap": "^5.3.3",
+		"chart.js": "^4.5.1",
+		"chartjs-adapter-date-fns": "^3.0.0",
+		"date-fns": "^4.1.0",
 		"opensheetmusicdisplay": "^1.8.9",
 		"react": "^18.3.1",
+		"react-chartjs-2": "^5.3.1",
 		"react-dom": "^18.3.1",
 		"react-router-dom": "^6.26.1",
 		"use-sound": "^4.0.3",
 		"web-vitals": "^2.1.4"
-	},
-	"eslintConfig": {
-		"extends": [
-			"react-app",
-			"react-app/jest"
-		]
 	},
 	"browserslist": {
 		"production": [
@@ -53,9 +50,15 @@
 		]
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.17.0",
 		"@vitejs/plugin-react": "^4.3.2",
+		"eslint": "^9.17.0",
+		"eslint-plugin-react": "^7.37.2",
+		"eslint-plugin-react-hooks": "^5.1.0",
+		"eslint-plugin-react-refresh": "^0.4.16",
 		"prettier": "^3.6.2",
 		"typescript": "^5.6.3",
+		"typescript-eslint": "^8.18.2",
 		"vite": "^5.4.9"
 	}
 }

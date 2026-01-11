@@ -6,6 +6,9 @@ on:
     paths:
       - "backend/music/**"
   pull_request:
+    branches: [main, prod]
+    paths:
+      - "backend/music/**"
 
 jobs:
   lint-and-build:
@@ -21,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -32,13 +35,13 @@ jobs:
         run: |
           echo "🧪 Running flake8..."
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  # catch syntax errors
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=80 --extend-ignore=E741 --statistics
 
       - name: Check code formatting with Black
         run: |
           echo "🧹 Checking code format..."
           black --check .
 
-      # TODO: we really need to make some basic tests! 
+      # TODO: we really need to make some basic tests!
       # - name: Run Django tests
       #   run: python manage.py test

@@ -8,9 +8,9 @@ This project is deigned for music students 6th through 12th in public school.
 
 This also be a technical exercise for myself as I will be learning a huge amount of things on the way.
 
-## Current Progress:
+## Current Progress (DEPLOYMENT IS BEHIND):
 
-https://github.com/user-attachments/assets/63a7100e-a79c-4aca-be35-3089c9ec1d7d
+[deployment](https://tremolonotes.com/)
 
 ## Run the Project Locally
 
@@ -23,6 +23,19 @@ https://github.com/user-attachments/assets/63a7100e-a79c-4aca-be35-3089c9ec1d7d
 
   export VITE_BACKEND_MAIN="http://localhost:5001" # default local setup
   export VITE_BACKEND_MUSIC="http://localhost:8000" # default local setup
+
+  export LOG_LEVEL=DEBUG # or WARN/ERROR/DEBUG
+  export LOG_FORMAT=json # or text
+
+  export JWT_SECRET="your-very-secure-random-string-at-least-32-characters" # min 32 chars required
+
+  export ACCESS_TOKEN_EXPIRY_MINUTES=15 # access token expiry (15-30 minutes recommended)
+  export REFRESH_TOKEN_EXPIRY_HOURS=168 # refresh token expiry (168 hours = 7 days)
+
+  export MAX_LOGIN_ATTEMPTS=5 # max failed login attempts before account lockout
+  export ACCOUNT_LOCKOUT_DURATION_MINUTES=15 # duration to lock account after max failed attempts
+
+  export ALLOWED_ORIGINS="http://localhost:5173,http://localhost:5173" # comma-separated list
 ```
 
 ### Serve it locally
@@ -41,8 +54,6 @@ npm install && npm run dev
 
 #### Music generation microservice
 
-TODO: put deps in requirements.txt
-
 ``` bash
 
 cd backend/music
@@ -53,9 +64,7 @@ source env/bin/activate
 
 pip install -r requirements.txt
 
-python3 manage.py migrate
-
-python3 manage.py runserver
+fastapi dev main.py 
 
 ```
 
@@ -68,6 +77,17 @@ cd backend/main
 go run main.go
 
 ```
+
+#### Scripts
+
+Install dependencies script, nice if you use worktrees/different directories:
+
+``` bash
+chmod +x ./scripts/install-deps.sh
+./scripts/install-deps.sh
+```
+
+TODO: add tmux script we made
 
 
 ## Technologies used:

@@ -1,14 +1,15 @@
 #!/bin/sh
 
+# Frontend Precommit
 if git diff --cached --name-only | grep -q "^frontend/"; then
   echo "🧹 Running Prettier on frontend files..."
   cd frontend && npx lint-staged
 fi
 
+# Music Service Precommit
 if git diff --cached --name-only | grep -q "^backend/music/"; then
   echo "🐍 Checking Python code formatting..."
 
-  # Get staged Python files before changing directory
   STAGED_PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^backend/music/.*\.py$")
 
   if [ -n "$STAGED_PY_FILES" ]; then
@@ -17,11 +18,10 @@ if git diff --cached --name-only | grep -q "^backend/music/"; then
     if [ -f "env/bin/activate" ]; then
       . env/bin/activate
 
-      # Remove the backend/music/ prefix from file paths
       STAGED_PY_FILES=$(echo "$STAGED_PY_FILES" | sed 's|^backend/music/||')
 
       echo "Running Black on staged Python files..."
-      black $STAGED_PY_FILES
+      black "$STAGED_PY_FILES"
 
       if [ $? -ne 0 ]; then
         echo "❌ Black formatting failed."
@@ -29,14 +29,13 @@ if git diff --cached --name-only | grep -q "^backend/music/"; then
       fi
 
       echo "Running flake8 on staged Python files..."
-      flake8 $STAGED_PY_FILES --select=E9,F63,F7,F82
+      flake8 "$STAGED_PY_FILES" --select=E9,F63,F7,F82
 
       if [ $? -ne 0 ]; then
         echo "❌ Flake8 found critical errors."
         exit 1
       fi
 
-      # Re-stage the formatted files
       cd ../..
       for file in $STAGED_PY_FILES; do
         git add "backend/music/$file"
@@ -47,5 +46,30 @@ if git diff --cached --name-only | grep -q "^backend/music/"; then
       echo "⚠️  Virtual environment not found. Skipping Python checks."
       echo "    Run: cd backend/music && python3 -m venv env && source env/bin/activate && pip install -r requirements.txt"
     fi
+  fi
+fi
+
+# User Service Precommit
+if git diff --cached --name-only | grep -q "^backend/main/"; then
+  echo "🔧 Checking Go code formatting..."
+
+  STAGED_GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^backend/main/.*\.go$")
+
+  if [ -n "$STAGED_GO_FILES" ]; then
+    echo "Running gofmt on staged Go files..."
+    gofmt -w "$STAGED_GO_FILES"
+
+    if [ $? -ne 0 ]; then
+      echo "❌ gofmt formatting failed."
+      exit 1
+    fi
+
+    for file in $STAGED_GO_FILES; do
+      git add "$file"
+    done
+
+    echo "✅ Go code formatting applied!"
+  else
+    echo "✅ No Go files to format."
   fi
 fi

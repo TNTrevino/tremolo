@@ -3,8 +3,9 @@ package dtos
 import (
 	"database/sql"
 	"errors"
-	"sight-reading/validations"
 	"strings"
+
+	"sight-reading/validations"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -23,9 +24,13 @@ type School struct {
 // TODO: add varchar constraints
 func (school *School) ValidateSchool() error {
 	validate := validator.New()
-	validate.RegisterValidation("len255", validations.VarChar255Length)
+	err := validate.RegisterValidation("len255", validations.VarChar255Length)
+	if err != nil {
+		// TODO: json response
+		return err
+	}
 
-	err := validate.Struct(school)
+	err = validate.Struct(school)
 	if err != nil {
 		var errorMessage []string
 		if errs, ok := err.(validator.ValidationErrors); ok {

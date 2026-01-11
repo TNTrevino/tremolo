@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./components/navbar/Navbar";
 import { Box, createTheme, ThemeProvider } from "@mui/material";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // https://colorhunt.co/palette/1e201e3c3d37697565ecdfcc
 // make all componenets outlined by default, then go back and fix any that we
@@ -8,6 +9,11 @@ import { Box, createTheme, ThemeProvider } from "@mui/material";
 // button into its own component so we can easily change the default props
 const theme = createTheme({
 	components: {
+		MuiPaper: {
+			defaultProps: {
+				variant: "outlined",
+			},
+		},
 		MuiAppBar: {
 			defaultProps: {
 				variant: "outlined",
@@ -48,18 +54,20 @@ const theme = createTheme({
 function App() {
 	return (
 		<ThemeProvider theme={theme}>
-			<Box
-				sx={{
-					display: "flex",
-					flexDirection: "column",
-					minHeight: "100vh",
-				}}
-			>
-				<Navbar />
-				<div id="detail">
-					<Outlet />
-				</div>
-			</Box>
+			<AuthProvider>
+				<Box
+					sx={{
+						display: "flex",
+						flexDirection: "column",
+						minHeight: "100vh",
+					}}
+				>
+					<Navbar />
+					<div id="detail">
+						<Outlet />
+					</div>
+				</Box>
+			</AuthProvider>
 		</ThemeProvider>
 	);
 }

@@ -172,4 +172,167 @@ const landingPageStyles: Record<string, SxProps> = {
 	},
 };
 
-export { navbarStyles, generatedMusicStyles, landingPageStyles };
+const userInfoStyles: Record<string, SxProps> = {
+	cardContainer: {
+		p: { xs: 2, sm: 3 },
+		mb: 3,
+		borderRadius: 2,
+		backgroundColor: "background.paper",
+	},
+	mainLayout: {
+		display: "flex",
+		flexDirection: { xs: "column", md: "row" },
+		alignItems: { xs: "flex-start", md: "center" },
+		justifyContent: "space-between",
+		gap: { xs: 3, md: 4 },
+	},
+	profileSection: {
+		display: "flex",
+		gap: 2,
+		alignItems: "center",
+		flex: { xs: "1", md: "0 1 auto" },
+	},
+	avatar: {
+		width: 56,
+		height: 56,
+		backgroundColor: "primary.main",
+		fontSize: "1.25rem",
+		fontWeight: 600,
+	},
+	nameRoleContainer: {
+		display: "flex",
+		alignItems: "center",
+		gap: 1,
+		mb: 0.5,
+	},
+	userName: {
+		fontWeight: 700,
+		fontSize: { xs: "1.25rem", sm: "1.5rem" },
+		lineHeight: 1.2,
+		color: "text.primary",
+	},
+	roleChipDesktop: {
+		height: 20,
+		fontSize: "0.7rem",
+		fontWeight: 600,
+		display: { xs: "none", sm: "inline-flex" },
+	},
+	roleChipMobile: {
+		height: 20,
+		fontSize: "0.7rem",
+		fontWeight: 600,
+		mt: 1,
+		display: { xs: "inline-flex", sm: "none" },
+	},
+	joinedDate: {
+		color: "text.secondary",
+		fontSize: { xs: "0.875rem", sm: "0.9rem" },
+	},
+	statsActionsContainer: {
+		display: "flex",
+		alignItems: "center",
+		gap: { xs: 3, sm: 4 },
+		width: { xs: "100%", md: "auto" },
+		justifyContent: { xs: "space-between", md: "flex-end" },
+	},
+	statsContainer: {
+		display: "flex",
+		gap: { xs: 3, sm: 4 },
+		alignItems: "center",
+	},
+	statMetricContainer: {
+		textAlign: "center",
+	},
+	statLabel: {
+		color: "text.secondary",
+		fontSize: { xs: "0.7rem", sm: "0.75rem" },
+		fontWeight: 500,
+		textTransform: "uppercase",
+		letterSpacing: 0.5,
+		display: "block",
+		mb: 0.5,
+	},
+	statValueLarge: {
+		fontWeight: 700,
+		fontSize: { xs: "1.5rem", sm: "2rem" },
+		color: "text.primary",
+		lineHeight: 1,
+	},
+	statValueSmall: {
+		fontWeight: 700,
+		fontSize: { xs: "1.25rem", sm: "1.5rem" },
+		color: "text.primary",
+		lineHeight: 1,
+	},
+	statDivider: {
+		display: { xs: "none", sm: "block" },
+		height: 40,
+		alignSelf: "center",
+	},
+	logoutButton: {
+		minWidth: { xs: 80, sm: 90 },
+		height: 36,
+	},
+};
+
+const authPageStyles: Record<string, SxProps> = {
+	container: {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "center",
+		justifyContent: "center",
+		minHeight: "80vh",
+		py: { xs: 2, sm: 4 },
+	},
+	card: {
+		width: "100%",
+		maxWidth: 500,
+	},
+	cardContent: {
+		p: { xs: 3, sm: 4 },
+	},
+	title: {
+		textAlign: "center",
+		fontWeight: 600,
+		mb: 1,
+	},
+	subtitle: {
+		textAlign: "center",
+		mb: 3,
+	},
+	submitButton: {
+		height: 48,
+		position: "relative",
+	},
+	footerText: {
+		mt: 2,
+		textAlign: "center",
+	},
+	footerLink: {
+		textDecoration: "none",
+		fontWeight: 600,
+		"&:hover": {
+			textDecoration: "underline",
+		},
+	},
+	passwordStrengthContainer: {
+		mb: 2,
+	},
+	passwordStrengthHeader: {
+		display: "flex",
+		justifyContent: "space-between",
+		mb: 0.5,
+	},
+	passwordStrengthBar: {
+		height: 6,
+		borderRadius: 1,
+	},
+};
+
+export {
+	navbarStyles,
+	generatedMusicStyles,
+	landingPageStyles,
+	userInfoStyles,
+	authPageStyles,
+};

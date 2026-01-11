@@ -125,3 +125,50 @@ Database connection is initialized in `backend/main/database/database.go` using 
 - Axios is used for all HTTP requests
 - Environment variables set via Vite's `import.meta.env`
 - CORS must be configured in Django settings for local development
+
+## Code Quality and Pre-Commit Hooks
+
+This repository uses Husky to enforce code quality standards with pre-commit hooks that automatically run on staged files:
+
+### Frontend Code Formatting
+- **Tool**: Prettier (via lint-staged)
+- **Trigger**: Runs automatically on staged files in `frontend/`
+- **File Types**: `.js`, `.jsx`, `.ts`, `.tsx`, `.css`, `.md`, `.json`
+- **Behavior**: Auto-formats files and re-stages them
+- **Configuration**: See `frontend/.lintstagedrc.json` for details
+
+### Backend (Python/Django) Code Quality
+- **Tools**: Black (formatter) + flake8 (linter)
+- **Trigger**: Runs automatically on staged `.py` files in `backend/music/`
+- **Behavior**:
+  - Black auto-formats files
+  - flake8 performs critical error checking
+  - Pre-commit fails if flake8 detects critical errors
+  - Formatted files are re-staged
+- **Setup Required**: Virtual environment (`env/bin/activate`)
+- **Location**: See `backend/music/` for setup instructions
+
+### Backend (Go) Code Formatting
+- **Tool**: gofmt (standard Go formatter)
+- **Trigger**: Runs automatically on staged `.go` files in `backend/main/`
+- **Behavior**:
+  - Auto-formats all staged Go files
+  - Automatically re-stages formatted files
+  - No configuration needed (uses Go's standard formatting)
+- **Setup Required**: Go installation with `gofmt` available
+- **Testing**: Run `bash test-go-hook.sh` to verify the hook works correctly
+
+### Running Hooks Manually
+If you need to run a specific formatter outside of git commits:
+
+```bash
+# Format all Go files in backend/main
+cd backend/main
+gofmt -w ./...
+
+# Format specific Go files
+gofmt -w file1.go file2.go
+
+# Check formatting without modifying files
+gofmt -l ./...
+```
