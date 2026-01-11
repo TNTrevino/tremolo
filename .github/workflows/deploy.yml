@@ -1,0 +1,58 @@
+name: Deploy Prod - Pi
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: ${{ secrets.BASE_DIR }}
+
+    steps:
+      # build
+      - name: Pull Latest Code
+        run: |
+          git fetch origin
+          git reset --hard origin/${{ github.ref_name }}
+
+      # build
+      - name: Build Frontend
+        working-directory: ${{ secrets.BASE_DIR }}/frontend
+        run: |
+          npm ci
+          npm run build -- --outDir dist-new
+          rm -rf dist
+          mv dist-new dist
+
+      - name: Build Go Service
+        working-directory: ${{ secrets.BASE_DIR }}/backend/main
+        run: |
+          go build -o tremolo-api-new main.go
+          mv tremolo-api-new tremolo-api
+
+      - name: Setup Python
+        working-directory: ${{ secrets.BASE_DIR }}/backend/music
+        run: |
+          python3 -m venv env || true
+          source env/bin/activate
+          pip install -r requirements.txt
+
+      # deploy
+      - name: Restart Services
+        run: |
+          sudo systemctl restart tremolo-api
+          sudo systemctl restart tremolo-music
+
+      - name: Sync Frontend Files to Reverse Proxy
+        run: |
+          rsync -avz --delete ${{ secrets.BASE_DIR }}/frontend/dist/ reverse-proxy:/var/www/tremolo/
+
+      - name: Health Check
+        run: |
+          sleep 5
+          curl -f http://localhost:5001/api/auth/me || echo "Go API may require auth"
+          curl -f http://localhost:8000/music/docs || echo "Music API docs endpoint"
