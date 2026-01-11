@@ -6,7 +6,6 @@ import (
 	"time"
 
 	dtos "sight-reading/DTOs"
-	"sight-reading/database"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
 )
@@ -16,9 +15,15 @@ var (
 	ErrValidation   = errors.New("validation failed")
 )
 
+const (
+	// RecentEntriesLimit is the maximum number of recent entries returned by GetRecentEntriesByUserID
+	// This should match the LIMIT clause in the SQL query
+	RecentEntriesLimit = 30
+)
+
 // CreateNoteGameEntry handles business logic for saving a note game entry
 // Validates entry data and authorization before saving
-func CreateNoteGameEntry(ctx context.Context, authenticatedUserID int, entry *dtos.Entry) (int64, error) {
+func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticatedUserID int, entry *dtos.Entry) (int64, error) {
 	// Validate entry data
 	if err := entry.ValidateEntry(); err != nil {
 		logger.Error("Entry validation failed",
@@ -52,7 +57,7 @@ func CreateNoteGameEntry(ctx context.Context, authenticatedUserID int, entry *dt
 		NotesPerMinute:   int32(entry.NPM),
 	}
 
-	entryID, err := database.Queries.CreateNoteGameEntry(ctx, params)
+	entryID, err := q.CreateNoteGameEntry(ctx, params)
 	if err != nil {
 		logger.Error("Failed to create note game entry",
 			"error", err.Error(),
@@ -68,8 +73,8 @@ func CreateNoteGameEntry(ctx context.Context, authenticatedUserID int, entry *dt
 }
 
 // GetRecentNoteGameEntries retrieves the last 30 note game entries for a user
-func GetRecentNoteGameEntries(ctx context.Context, authenticatedUserID int) ([]dtos.NoteGameEntryResponse, error) {
-	rows, err := database.Queries.GetRecentEntriesByUserID(ctx, int32(authenticatedUserID))
+func GetRecentNoteGameEntries(ctx context.Context, q generated.Querier, authenticatedUserID int) ([]dtos.NoteGameEntryResponse, error) {
+	rows, err := q.GetRecentEntriesByUserID(ctx, int32(authenticatedUserID))
 	if err != nil {
 		logger.Error("Failed to fetch recent note game entries",
 			"error", err.Error(),
@@ -77,24 +82,7 @@ func GetRecentNoteGameEntries(ctx context.Context, authenticatedUserID int) ([]d
 		return nil, err
 	}
 
-	// Convert sqlc rows to NoteGameEntryResponse DTOs
-	entries := make([]dtos.NoteGameEntryResponse, len(rows))
-	for i, row := range rows {
-		createdDate := ""
-		if row.CreatedDate.Valid {
-			createdDate = row.CreatedDate.Time.Format("2006-01-02")
-		}
-
-		entries[i] = dtos.NoteGameEntryResponse{
-			ID:               int(row.ID),
-			UserID:           int(row.UserID),
-			TimeLength:       row.TimeLength.Format("15:04:05"),
-			TotalQuestions:   int(row.TotalQuestions),
-			CorrectQuestions: int(row.CorrectQuestions),
-			NotesPerMinute:   float64(row.NotesPerMinute),
-			CreatedDate:      createdDate,
-		}
-	}
+	entries := convertNoteGameEntryRowsToDTO(rows)
 
 	logger.Info("Recent note game entries fetched successfully",
 		"user_id", authenticatedUserID,

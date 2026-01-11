@@ -20,13 +20,21 @@ import (
 
 var jwtSecret []byte
 
+const (
+	// MinJWTSecretLength is the minimum required length for JWT secret for security
+	MinJWTSecretLength = 32
+
+	// BearerTokenParts is the expected number of parts in a Bearer token ("Bearer" + token)
+	BearerTokenParts = 2
+)
+
 func InitJWTSecret() {
 	secretStr := os.Getenv("JWT_SECRET")
 	if secretStr == "" {
 		log.Panic("JWT Secret not found. Please read the README and add one.")
 	}
 
-	if len(secretStr) < 32 {
+	if len(secretStr) < MinJWTSecretLength {
 		log.Panic("JWT_SECRET must be at least 32 characters long for security purposes: " + fmt.Sprint(len(secretStr)))
 	}
 
@@ -107,6 +115,26 @@ func GetJWTSecret() []byte {
 	return jwtSecret
 }
 
+// GetAuthenticatedUserID extracts and validates the authenticated user ID from the Gin context
+// This is a helper function to reduce boilerplate in handlers that use AuthMiddleware
+// Returns the user ID and a boolean indicating success
+// If extraction fails, it automatically sends an appropriate JSON error response and returns (0, false)
+func GetAuthenticatedUserID(c *gin.Context) (int, bool) {
+	userIDInterface, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return 0, false
+	}
+
+	authenticatedUserID, ok := userIDInterface.(int)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return 0, false
+	}
+
+	return authenticatedUserID, true
+}
+
 // AuthMiddleware validates JWT tokens and adds user ID to context
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -121,7 +149,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Expected format: "Bearer <token>"
 		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if len(parts) != BearerTokenParts || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Unauthorized",
 			})
