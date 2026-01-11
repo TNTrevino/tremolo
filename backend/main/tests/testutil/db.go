@@ -105,24 +105,32 @@ func CreateTestUserWithDefaults(t *testing.T, email, role string) int {
 // DeleteTestUser removes a test user from the database
 func DeleteTestUser(t *testing.T, userID int) {
 	t.Helper()
-	if database.DBConn == nil {
+	if database.Queries == nil {
 		return
 	}
 
+	ctx := context.Background()
+
 	// First delete related note game entries
-	_, err := database.DBConn.Exec("delete from tremolo.note_game_entries where user_id = $1", userID)
+	err := database.Queries.DeleteNoteGameEntriesByUserID(ctx, int32(userID))
 	if err != nil {
 		t.Logf("Warning: Failed to delete note game entries for user %d: %v", userID, err)
 	}
 
-	// Delete teacher-student associations
-	_, err = database.DBConn.Exec("delete from tremolo.teacher_student where teacher_id = $1 or student_id = $1", userID)
+	// Delete teacher-student associations where user is teacher
+	err = database.Queries.DeleteAllTeacherStudentsByTeacher(ctx, int32(userID))
 	if err != nil {
-		t.Logf("Warning: Failed to delete teacher-student associations for user %d: %v", userID, err)
+		t.Logf("Warning: Failed to delete teacher-student associations (as teacher) for user %d: %v", userID, err)
+	}
+
+	// Delete teacher-student associations where user is student
+	err = database.Queries.DeleteAllTeacherStudentsByStudent(ctx, int32(userID))
+	if err != nil {
+		t.Logf("Warning: Failed to delete teacher-student associations (as student) for user %d: %v", userID, err)
 	}
 
 	// Delete the user
-	_, err = database.DBConn.Exec("delete from tremolo.users where id = $1", userID)
+	err = database.Queries.DeleteUserByID(ctx, int32(userID))
 	if err != nil {
 		t.Logf("Warning: Failed to delete test user %d: %v", userID, err)
 	}
@@ -197,11 +205,11 @@ func CreateTestNoteGameEntryWithDefaults(t *testing.T, userID int) int64 {
 // DeleteTestNoteGameEntry removes a test note game entry from the database
 func DeleteTestNoteGameEntry(t *testing.T, entryID int64) {
 	t.Helper()
-	if database.DBConn == nil {
+	if database.Queries == nil {
 		return
 	}
 
-	_, err := database.DBConn.Exec("delete from tremolo.note_game_entries where id = $1", entryID)
+	err := database.Queries.DeleteNoteGameEntryByID(context.Background(), int32(entryID))
 	if err != nil {
 		t.Logf("Warning: Failed to delete test entry %d: %v", entryID, err)
 	}
@@ -221,10 +229,10 @@ func CreateTeacherStudentAssociation(t *testing.T, teacherID, studentID int) {
 	}
 
 	t.Cleanup(func() {
-		_, _ = database.DBConn.Exec(
-			"delete from tremolo.teacher_student where teacher_id = $1 and student_id = $2",
-			teacherID, studentID,
-		)
+		_ = database.Queries.DeleteTeacherStudentRelationship(context.Background(), generated.DeleteTeacherStudentRelationshipParams{
+			TeacherID: int32(teacherID),
+			StudentID: int32(studentID),
+		})
 	})
 }
 
