@@ -1,32 +1,39 @@
-// Package database contains the configuratino to the database connection
+// Package database contains the configuration to the database connection
 package database
 
 import (
+	"database/sql"
 	"os"
+	"sight-reading/database/generated"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-var DBClient *sqlx.DB
+var (
+	// DBConn is the standard sql.DB connection
+	DBConn *sql.DB
+	// Queries provides type-safe database operations via sqlc
+	Queries *generated.Queries
+)
 
 func InitializeDBConnection() {
 	DBConnectionString := os.Getenv("DATABASE_URL")
 
-	db, err := sqlx.Open("postgres", DBConnectionString)
-	if err != nil {
-		panic(err.Error())
-	} else {
-		println(strings.Repeat("------------------------------", 2))
-		println("\nConnected to database successfully\n")
-		println(strings.Repeat("------------------------------", 2))
-	}
-
-	err = db.Ping()
+	conn, err := sql.Open("postgres", DBConnectionString)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	DBClient = db
+	err = conn.Ping()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	DBConn = conn
+	Queries = generated.New(conn)
+
+	println(strings.Repeat("------------------------------", 2))
+	println("\nConnected to database successfully\n")
+	println(strings.Repeat("------------------------------", 2))
 }

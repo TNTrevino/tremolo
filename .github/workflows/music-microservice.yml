@@ -1,10 +1,6 @@
 name: Django Checks
 
 on:
-  push:
-    branches: [main, prod]
-    paths:
-      - "backend/music/**"
   pull_request:
     branches: [main, prod]
     paths:

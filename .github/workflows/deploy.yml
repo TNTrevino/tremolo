@@ -21,6 +21,7 @@ jobs:
 
       - name: Build Frontend
         run: |
+          set -a && source $BASE_DIR/.env && set +a
           cd $BASE_DIR/frontend
           npm ci
           npm run build -- --outDir dist-new

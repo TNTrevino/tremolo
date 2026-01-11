@@ -41,7 +41,8 @@ func CreateNoteGameEntry(c *gin.Context) {
 		return
 	}
 
-	entryID, err := services.CreateNoteGameEntry(authenticatedUserID, &entry)
+	ctx := c.Request.Context()
+	entryID, err := services.CreateNoteGameEntry(ctx, authenticatedUserID, &entry)
 	if err != nil {
 		if errors.Is(err, services.ErrUnauthorized) {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -72,7 +73,8 @@ func GetRecentNoteGameEntries(c *gin.Context) {
 		return
 	}
 
-	entries, err := services.GetRecentNoteGameEntries(authenticatedUserID)
+	ctx := c.Request.Context()
+	entries, err := services.GetRecentNoteGameEntries(ctx, authenticatedUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recent entries"})
 		return
