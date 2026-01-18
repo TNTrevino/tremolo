@@ -3,21 +3,26 @@ import { Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { SheetMusicDisplay } from "@/features/sheet-music/components";
+import { musicService } from "@/services/api";
 
+// Scale options with their corresponding tonic values
 const scales = [
-	"C Major",
-	"F Major",
-	"Bb Major",
-	"Eb Major",
-	"Ab Major",
-	"Db Major",
-	"Gb Major",
-	"G Major",
-	"D Major",
-	"A Major",
-	"E Major",
-	"B Major",
+	{ label: "C Major", tonic: "C" },
+	{ label: "F Major", tonic: "F" },
+	{ label: "Bb Major", tonic: "B-" },
+	{ label: "Eb Major", tonic: "E-" },
+	{ label: "Ab Major", tonic: "A-" },
+	{ label: "Db Major", tonic: "D-" },
+	{ label: "Gb Major", tonic: "G-" },
+	{ label: "G Major", tonic: "G" },
+	{ label: "D Major", tonic: "D" },
+	{ label: "A Major", tonic: "A" },
+	{ label: "E Major", tonic: "E" },
+	{ label: "B Major", tonic: "B" },
 ];
+
+const octaves = [3, 4, 5];
 
 const sixteenthRhythms = [
 	{ label: "1111", value: "1111" },
@@ -34,14 +39,55 @@ const eighthRhythms = [
 ];
 
 export function SheetMusicPage() {
-	const [scale, setScale] = useState("C Major");
+	const [scaleIndex, setScaleIndex] = useState(0); // Index into scales array
 	const [octave, setOctave] = useState(4);
 	const [selectedRhythm, setSelectedRhythm] = useState<string | null>(null);
-	const [rhythmType, setRhythmType] = useState<"16th" | "8th" | null>(null);
+	const [rhythmType, setRhythmType] = useState<8 | 16 | null>(null);
+	const [musicXml, setMusicXml] = useState<string>("");
+	const [isGenerating, setIsGenerating] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-	const handleGenerateMusic = (rhythm: string, type: "16th" | "8th") => {
+	const currentScale = scales[scaleIndex];
+
+	const handleGenerateMary = async () => {
+		if (!currentScale) return;
+		setIsGenerating(true);
+		setError(null);
+		try {
+			const xml = await musicService.generateMary({
+				tonic: currentScale.tonic,
+				octave: octave,
+			});
+			setMusicXml(xml);
+			setSelectedRhythm(null);
+			setRhythmType(null);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to generate music");
+			console.error("Error generating Mary:", err);
+		} finally {
+			setIsGenerating(false);
+		}
+	};
+
+	const handleGenerateRhythm = async (rhythm: string, type: 8 | 16) => {
+		if (!currentScale) return;
+		setIsGenerating(true);
+		setError(null);
 		setSelectedRhythm(rhythm);
 		setRhythmType(type);
+		try {
+			const xml = await musicService.generateRandom({
+				rhythm: rhythm,
+				rhythmType: type,
+				tonic: currentScale.tonic,
+			});
+			setMusicXml(xml);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to generate music");
+			console.error("Error generating random rhythm:", err);
+		} finally {
+			setIsGenerating(false);
+		}
 	};
 
 	return (
@@ -55,57 +101,49 @@ export function SheetMusicPage() {
 				</div>
 
 				{/* Sheet Music Display */}
-				<Card className="p-12 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-					<div className="text-center space-y-6">
-						{selectedRhythm ? (
-							<>
+				{musicXml ? (
+					<SheetMusicDisplay
+						musicXml={musicXml}
+						onError={(err) => setError(err.message)}
+					/>
+				) : (
+					<Card className="p-12 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+						<div className="text-center space-y-6">
+							{error ? (
 								<div className="space-y-4">
-									<div className="text-sm text-muted-foreground">
-										Generated Sheet Music
+									<div className="text-destructive font-semibold">
+										Error: {error}
 									</div>
-									<div className="flex justify-center gap-2 flex-wrap">
-										{/* Simple visual representation of staff lines */}
-										<div className="relative w-full max-w-2xl">
-											<div className="space-y-3">
-												{[...Array(5)].map((_, i) => (
-													<div key={i} className="h-0.5 bg-foreground/20" />
-												))}
-											</div>
-											<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-												<div className="text-6xl font-bold text-primary flex items-center gap-4">
-													<Music2 className="h-16 w-16" />
-													<span className="text-2xl text-muted-foreground">
-														{scale} • Octave {octave} •{" "}
-														{rhythmType === "16th" ? "16th Notes" : "8th Notes"}{" "}
-														({selectedRhythm})
-													</span>
-												</div>
-											</div>
-										</div>
-									</div>
-									<p className="text-sm text-muted-foreground max-w-xl mx-auto">
-										In a real implementation, this would display rendered sheet
-										music using a library like OpenSheetMusicDisplay. The music
-										would be generated based on your selected scale, octave, and
-										rhythm pattern.
+									<p className="text-sm text-muted-foreground">
+										Please try again with different options
 									</p>
 								</div>
-							</>
-						) : (
-							<>
-								<Music2 className="h-24 w-24 text-muted-foreground mx-auto" />
-								<p className="text-lg text-muted-foreground">
-									Select options below to generate sheet music
-								</p>
-							</>
-						)}
-					</div>
-				</Card>
+							) : isGenerating ? (
+								<div className="space-y-4">
+									<div className="animate-spin mx-auto">
+										<Music2 className="h-16 w-16 text-primary" />
+									</div>
+									<p className="text-lg text-muted-foreground">
+										Generating music...
+									</p>
+								</div>
+							) : (
+								<>
+									<Music2 className="h-24 w-24 text-muted-foreground mx-auto" />
+									<p className="text-lg text-muted-foreground">
+										Select options below and click a button to generate sheet
+										music
+									</p>
+								</>
+							)}
+						</div>
+					</Card>
+				)}
 
 				{/* Controls */}
 				<div className="space-y-4">
 					<Card className="p-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							{/* Scale Selector */}
 							<div className="space-y-2">
 								<label htmlFor="scale-select" className="text-sm font-medium">
@@ -113,12 +151,12 @@ export function SheetMusicPage() {
 								</label>
 								<Select
 									id="scale-select"
-									value={scale}
-									onChange={(e) => setScale(e.target.value)}
+									value={scaleIndex.toString()}
+									onChange={(e) => setScaleIndex(Number(e.target.value))}
 								>
-									{scales.map((s) => (
-										<option key={s} value={s}>
-											{s}
+									{scales.map((s, index) => (
+										<option key={index} value={index}>
+											{s.label}
 										</option>
 									))}
 								</Select>
@@ -134,12 +172,24 @@ export function SheetMusicPage() {
 									value={octave.toString()}
 									onChange={(e) => setOctave(Number(e.target.value))}
 								>
-									{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => (
+									{octaves.map((o) => (
 										<option key={o} value={o}>
 											Octave {o}
 										</option>
 									))}
 								</Select>
+							</div>
+
+							{/* Generate Mary Button */}
+							<div className="space-y-2">
+								<label className="text-sm font-medium">Generate Exercise</label>
+								<Button
+									onClick={handleGenerateMary}
+									disabled={isGenerating}
+									className="w-full"
+								>
+									Generate Mary
+								</Button>
 							</div>
 						</div>
 					</Card>
@@ -154,11 +204,12 @@ export function SheetMusicPage() {
 									<Button
 										key={rhythm.value}
 										variant={
-											selectedRhythm === rhythm.value && rhythmType === "16th"
+											selectedRhythm === rhythm.value && rhythmType === 16
 												? "default"
 												: "outline"
 										}
-										onClick={() => handleGenerateMusic(rhythm.value, "16th")}
+										onClick={() => handleGenerateRhythm(rhythm.value, 16)}
+										disabled={isGenerating}
 										className="w-full justify-start font-mono"
 									>
 										{rhythm.label}
@@ -175,11 +226,12 @@ export function SheetMusicPage() {
 									<Button
 										key={rhythm.value}
 										variant={
-											selectedRhythm === rhythm.value && rhythmType === "8th"
+											selectedRhythm === rhythm.value && rhythmType === 8
 												? "default"
 												: "outline"
 										}
-										onClick={() => handleGenerateMusic(rhythm.value, "8th")}
+										onClick={() => handleGenerateRhythm(rhythm.value, 8)}
+										disabled={isGenerating}
 										className="w-full justify-start font-mono"
 									>
 										{rhythm.label}
