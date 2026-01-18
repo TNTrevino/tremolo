@@ -12,12 +12,19 @@
     "format": "prettier --write src/**/*.{ts,tsx,css,json}",
     "format:check": "prettier --check src/**/*.{ts,tsx,css,json}"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,css,md,json}": [
+      "echo '🧹 Running Prettier on staged files...'",
+      "npx prettier --write"
+    ]
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.90.19",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "lint-staged": "^16.2.7",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
