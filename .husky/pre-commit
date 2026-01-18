@@ -6,6 +6,11 @@ if git diff --cached --name-only | grep -q "^frontend/"; then
   cd frontend && npx lint-staged
 fi
 
+if git diff --cached --name-only | grep -q "^new-frontend/"; then
+  echo "🧹 Running Prettier on new-frontend files..."
+  cd new-frontend && npx lint-staged
+fi
+
 # Music Service Precommit
 if git diff --cached --name-only | grep -q "^backend/music/"; then
   echo "🐍 Checking Python code formatting..."
