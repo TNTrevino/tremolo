@@ -77,6 +77,8 @@ export function NoteGamePage() {
 						gameMode={settings.gameMode}
 						onAnswer={handleAnswer}
 						formatTime={formatTime}
+						scale={settings.scale}
+						octave={settings.octave}
 					/>
 				)}
 
