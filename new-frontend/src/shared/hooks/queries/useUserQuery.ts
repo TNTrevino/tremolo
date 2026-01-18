@@ -67,7 +67,7 @@ export function useUserStats(userId?: string) {
   const targetUserId = userId || currentUser?.id?.toString();
 
   return useQuery({
-    queryKey: userKeys.stats(targetUserId || 'unknown'),
+    queryKey: [...userKeys.stats(targetUserId || 'unknown'), token],
     queryFn: async (): Promise<UserStats> => {
       if (!token || !targetUserId) {
         throw new Error('Authentication required');

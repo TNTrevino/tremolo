@@ -25,11 +25,17 @@ interface UseNoteGameReturn {
   resetGame: () => void;
 }
 
+interface UseNoteGameOptions {
+  initialSettings?: Partial<GameSettings>;
+  onGameEnd?: (stats: GameStats) => void;
+}
+
 /**
  * Custom hook for managing note game logic
  * Handles game state, note generation, answer validation, and statistics
  */
-export function useNoteGame(initialSettings?: Partial<GameSettings>): UseNoteGameReturn {
+export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
+  const { initialSettings, onGameEnd } = options || {};
   // Game settings
   const [settings, setSettings] = useState<GameSettings>({
     gameMode: 'time',
@@ -127,8 +133,11 @@ export function useNoteGame(initialSettings?: Partial<GameSettings>): UseNoteGam
 
       setGameStats(stats);
       setGameState('gameover');
+      
+      // Notify parent component of game end
+      onGameEnd?.(stats);
     },
-    [answers, gameStartTime, settings]
+    [answers, gameStartTime, settings, onGameEnd]
   );
 
   /**

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { GameStats } from '@/shared/types';
 import {
@@ -20,6 +20,13 @@ export function NoteGamePage() {
   const { isAuthenticated } = useAuth();
   const [pastGames, setPastGames] = useState<GameStats[]>([]);
 
+  // Handle game end - save stats for authenticated users
+  const handleGameEnd = useCallback((stats: GameStats) => {
+    if (isAuthenticated) {
+      setPastGames((prev) => [...prev.slice(-9), stats]);
+    }
+  }, [isAuthenticated]);
+
   // Game logic hook
   const {
     gameState,
@@ -32,7 +39,7 @@ export function NoteGamePage() {
     handleAnswer,
     endGame,
     resetGame,
-  } = useNoteGame();
+  } = useNoteGame({ onGameEnd: handleGameEnd });
 
   // Timer hook (for time mode)
   const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
@@ -46,13 +53,6 @@ export function NoteGamePage() {
       startTimer(settings.timeLimit);
     }
   };
-
-  // Save game stats when game ends (authenticated users only)
-  useEffect(() => {
-    if (gameState === 'gameover' && gameStats && isAuthenticated) {
-      setPastGames((prev) => [...prev.slice(-9), gameStats]);
-    }
-  }, [gameState, gameStats, isAuthenticated]);
 
   return (
     <div className="min-h-screen py-8 px-4">

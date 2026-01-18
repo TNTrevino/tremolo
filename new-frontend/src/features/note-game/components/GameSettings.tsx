@@ -29,8 +29,8 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Game Mode */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Game Mode</label>
-            <div className="flex gap-2">
+            <label htmlFor="game-mode" className="text-sm font-medium">Game Mode</label>
+            <div className="flex gap-2" role="group" aria-labelledby="game-mode" id="game-mode">
               <Button
                 variant={settings.gameMode === 'time' ? 'default' : 'outline'}
                 onClick={() => onSettingsChange({ gameMode: 'time' })}
@@ -50,11 +50,12 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
 
           {/* Limit Selector */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label htmlFor="limit-selector" className="text-sm font-medium">
               {settings.gameMode === 'time' ? 'Time Limit' : 'Note Limit'}
             </label>
             {settings.gameMode === 'time' ? (
               <Select
+                id="limit-selector"
                 value={settings.timeLimit.toString()}
                 onChange={(e) => onSettingsChange({ timeLimit: Number(e.target.value) })}
               >
@@ -65,6 +66,7 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
               </Select>
             ) : (
               <Select
+                id="limit-selector"
                 value={settings.noteLimit.toString()}
                 onChange={(e) => onSettingsChange({ noteLimit: Number(e.target.value) })}
               >
@@ -78,8 +80,8 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
 
           {/* Scale */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Scale</label>
-            <Select value={settings.scale} onChange={(e) => onSettingsChange({ scale: e.target.value })}>
+            <label htmlFor="scale" className="text-sm font-medium">Scale</label>
+            <Select id="scale" value={settings.scale} onChange={(e) => onSettingsChange({ scale: e.target.value })}>
               {SCALES.map((s) => (
                 <option key={s} value={s}>
                   {s}

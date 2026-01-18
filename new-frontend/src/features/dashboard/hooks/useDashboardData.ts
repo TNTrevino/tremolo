@@ -79,7 +79,7 @@ export function useDashboardData(params?: DashboardDataParams): DashboardData {
     isError: isClassError,
     error: classError,
   } = useQuery({
-    queryKey: ['teacher', 'class-metrics', params?.interval, params?.days],
+    queryKey: ['teacher', 'class-metrics', params],
     queryFn: () => userService.getClassMetrics(params),
     enabled: !!userId && isTeacher,
     staleTime: 5 * 60 * 1000, // 5 minutes
