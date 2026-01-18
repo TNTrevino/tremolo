@@ -134,7 +134,7 @@ export function AccountPage() {
               <div className="text-lg font-medium">{user.email}</div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Email change functionality coming soon. You'll be able to update your email address
+              Email change functionality coming soon. You&apos;ll be able to update your email address
               and verify the new address before the change takes effect.
             </p>
           </CardContent>

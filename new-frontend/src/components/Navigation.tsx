@@ -92,6 +92,10 @@ export function Navigation() {
                     <div
                       className="fixed inset-0 z-40"
                       onClick={() => setUserMenuOpen(false)}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setUserMenuOpen(false)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Close user menu"
                     />
                     <div className="absolute right-0 mt-2 w-56 z-50 rounded-lg border-2 border-border bg-popover p-2 shadow-lg animate-fade-in">
                       <div className="px-3 py-2 border-b-2 border-border mb-2">

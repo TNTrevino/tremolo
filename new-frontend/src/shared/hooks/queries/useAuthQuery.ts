@@ -36,7 +36,7 @@ export function useCurrentUser() {
   const token = useAuthStore((state) => state.token);
 
   return useQuery({
-    queryKey: authKeys.currentUser(),
+    queryKey: [...authKeys.currentUser(), token],
     queryFn: async (): Promise<User> => {
       if (!token) {
         throw new Error('No authentication token found');

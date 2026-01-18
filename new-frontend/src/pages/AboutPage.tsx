@@ -60,7 +60,7 @@ export function AboutPage() {
                 <h3 className="text-2xl font-bold mb-2">UIL-Focused Practice</h3>
                 <p className="text-muted-foreground text-lg">
                   Tremolo targets specific rhythms and patterns that frequently appear in UIL sight
-                  reading competitions. Students can practice the exact skills they'll need to succeed
+                  reading competitions. Students can practice the exact skills they&apos;ll need to succeed
                   in competitive settings.
                 </p>
               </div>

@@ -30,7 +30,7 @@ export function GameResults({ gameStats, pastGames = [], isAuthenticated, onPlay
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-bold">Game Over!</h1>
-        <p className="text-muted-foreground text-lg">Here's how you did</p>
+        <p className="text-muted-foreground text-lg">Here&apos;s how you did</p>
       </div>
 
       {/* Primary Stats */}

@@ -37,7 +37,7 @@ export function TeacherDashboard({ user, studentCount }: TeacherDashboardProps) 
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Student management features will be available in a future update. You'll be able to view
+          Student management features will be available in a future update. You&apos;ll be able to view
           student progress, assign exercises, and track class performance.
         </p>
       </CardContent>

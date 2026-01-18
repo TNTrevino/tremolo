@@ -66,7 +66,7 @@ export function useDashboardData(params?: DashboardDataParams): DashboardData {
     isError: isStatsError,
     error: statsError,
   } = useQuery({
-    queryKey: ['user', 'stats', userId, params?.interval, params?.days],
+    queryKey: ['user', 'stats', userId, params],
     queryFn: () => userService.getStats(userId!, params),
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes - stats change more frequently

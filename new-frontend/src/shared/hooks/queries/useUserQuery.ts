@@ -40,7 +40,7 @@ export function useGeneralUserInfo(userId?: string) {
   const targetUserId = userId || currentUser?.id?.toString();
 
   return useQuery({
-    queryKey: userKeys.generalInfo(targetUserId || 'unknown'),
+    queryKey: [...userKeys.generalInfo(targetUserId || 'unknown'), token],
     queryFn: async (): Promise<GeneralUserInfo> => {
       if (!token || !targetUserId) {
         throw new Error('Authentication required');
