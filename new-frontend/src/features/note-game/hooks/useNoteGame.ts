@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import type { GameState, NoteAnswer, GameStats, GameSettings } from "../types";
 import { NOTES, ACCIDENTALS } from "../types";
+import { useNoteAudio } from "./useNoteAudio";
+import { useKeyboardInput } from "./useKeyboardInput";
 
 // Generate all possible notes
 const ALL_NOTES = ACCIDENTALS.flatMap((acc) =>
@@ -38,6 +40,10 @@ interface UseNoteGameOptions {
  */
 export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	const { initialSettings, onGameEnd } = options || {};
+
+	// Audio playback hook
+	const { playNoteSound } = useNoteAudio();
+
 	// Game settings
 	const [settings, setSettings] = useState<GameSettings>({
 		gameMode: "time",
@@ -136,6 +142,11 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			const newAnswers = [...answers, newAnswer];
 			setAnswers(newAnswers);
 
+			// Play audio feedback on correct answer
+			if (correct) {
+				playNoteSound(currentNote);
+			}
+
 			// Check if game should end (notes mode)
 			if (
 				settings.gameMode === "notes" &&
@@ -154,6 +165,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			settings.noteLimit,
 			generateRandomNote,
 			endGame,
+			playNoteSound,
 		],
 	);
 
@@ -165,6 +177,12 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 		setGameStats(null);
 		setAnswers([]);
 	}, []);
+
+	// Set up keyboard input - only enabled when game is playing
+	useKeyboardInput({
+		onNoteInput: handleAnswer,
+		enabled: gameState === "playing",
+	});
 
 	return {
 		// State
