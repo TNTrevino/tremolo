@@ -7,6 +7,7 @@ import (
 	"time"
 
 	dtos "sight-reading/DTOs"
+	"sight-reading/database"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
@@ -33,7 +34,7 @@ func TestCreateNoteGameEntry_Success(t *testing.T) {
 	}
 
 	// Call the service function
-	entryID, err := services.CreateNoteGameEntry(context.Background(), userID, entry)
+	entryID, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID, entry)
 	require.NoError(t, err)
 	require.Greater(t, entryID, int64(0), "Expected a positive entry ID")
 
@@ -65,7 +66,7 @@ func TestCreateNoteGameEntry_Unauthorized(t *testing.T) {
 	}
 
 	// Call the service function with mismatched user IDs
-	_, err := services.CreateNoteGameEntry(context.Background(), userID1, entry)
+	_, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID1, entry)
 	require.Error(t, err, "Expected an authorization error")
 	assert.Equal(t, services.ErrUnauthorized, err)
 }
@@ -104,7 +105,7 @@ func TestCreateNoteGameEntry_ValidationError_TimeFormat(t *testing.T) {
 				NPM:              3,
 			}
 
-			_, err := services.CreateNoteGameEntry(context.Background(), userID, entry)
+			_, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID, entry)
 			require.Error(t, err, "Expected validation error for time '%s'", tc.timeLength)
 			assert.True(t, strings.Contains(err.Error(), "TimeLength"), "Expected error message to contain 'TimeLength', got: %v", err)
 		})
@@ -127,7 +128,7 @@ func TestCreateNoteGameEntry_ValidationError_CorrectMoreThanTotal(t *testing.T) 
 		NPM:              3,
 	}
 
-	_, err := services.CreateNoteGameEntry(context.Background(), userID, entry)
+	_, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID, entry)
 	require.Error(t, err, "Expected validation error when correct questions exceed total")
 	assert.True(t, strings.Contains(err.Error(), "CorrectQuestions"), "Expected error message to mention 'CorrectQuestions', got: %v", err)
 }
@@ -196,7 +197,7 @@ func TestCreateNoteGameEntry_ValidationError_MissingFields(t *testing.T) {
 				authUserID = int(tc.entry.UserID)
 			}
 
-			_, err := services.CreateNoteGameEntry(context.Background(), authUserID, tc.entry)
+			_, err := services.CreateNoteGameEntry(context.Background(), database.Queries, authUserID, tc.entry)
 			require.Error(t, err, "Expected validation error for %s", tc.name)
 		})
 	}
@@ -223,7 +224,7 @@ func TestGetRecentNoteGameEntries_Success(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.Len(t, entries, numEntries)
 
@@ -242,7 +243,7 @@ func TestGetRecentNoteGameEntries_NoEntries(t *testing.T) {
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Fetch entries for user with no entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotNil(t, entries, "Expected empty slice, got nil")
 	assert.Empty(t, entries)
@@ -269,7 +270,7 @@ func TestGetRecentNoteGameEntries_Limit30(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 
 	// Should only return 30 entries
@@ -298,7 +299,7 @@ func TestGetRecentNoteGameEntries_OrderByDate(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.Len(t, entries, 3)
 
@@ -334,7 +335,7 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	}
 
 	// Fetch entries for user 1
-	entries1, err := services.GetRecentNoteGameEntries(context.Background(), userID1)
+	entries1, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID1)
 	require.NoError(t, err)
 	require.Len(t, entries1, 3)
 
@@ -344,7 +345,7 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	}
 
 	// Fetch entries for user 2
-	entries2, err := services.GetRecentNoteGameEntries(context.Background(), userID2)
+	entries2, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID2)
 	require.NoError(t, err)
 	require.Len(t, entries2, 2)
 
@@ -371,7 +372,7 @@ func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 		NPM:              28,
 	}
 
-	entryID, err := services.CreateNoteGameEntry(context.Background(), userID, entry)
+	entryID, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID, entry)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -379,7 +380,7 @@ func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 	})
 
 	// Retrieve entries and verify data
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
 	require.NoError(t, err)
 	require.NotEmpty(t, entries, "Expected at least one entry")
 

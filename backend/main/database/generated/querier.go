@@ -18,14 +18,27 @@ type Querier interface {
 	CreateTeacherStudentAssociation(ctx context.Context, arg CreateTeacherStudentAssociationParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateUserWithPassword(ctx context.Context, arg CreateUserWithPasswordParams) (int32, error)
+	DeleteAllParentChildrenByChild(ctx context.Context, childID int32) error
+	DeleteAllParentChildrenByParent(ctx context.Context, parentID int32) error
+	DeleteAllTeacherParentsByParent(ctx context.Context, parentID int32) error
+	DeleteAllTeacherParentsByTeacher(ctx context.Context, teacherID int32) error
+	DeleteAllTeacherStudentsByStudent(ctx context.Context, studentID int32) error
+	DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacherID int32) error
 	DeleteAllTestData(ctx context.Context) error
+	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
+	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
+	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
+	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
+	// relationship queries
+	DeleteTeacherStudentRelationship(ctx context.Context, arg DeleteTeacherStudentRelationshipParams) error
+	DeleteUserByID(ctx context.Context, id int32) error
 	// Chart data queries for individual users
 	FetchChartDataAll(ctx context.Context, userID int32) ([]FetchChartDataAllRow, error)
 	FetchChartDataInRange(ctx context.Context, arg FetchChartDataInRangeParams) ([]FetchChartDataInRangeRow, error)
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
-	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
+	GetEntriesByUserID(ctx context.Context, userID int32) ([]NoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)

@@ -12,7 +12,7 @@ import (
 
 const checkAccountLocked = `-- name: CheckAccountLocked :one
 select locked_until
-from tremolo.users
+from users
 where email = $1 and locked_until > now()
 `
 
@@ -24,7 +24,7 @@ func (q *Queries) CheckAccountLocked(ctx context.Context, email sql.NullString) 
 }
 
 const createUser = `-- name: CreateUser :one
-insert into tremolo.users (
+insert into users (
     first_name,
     last_name,
     email,
@@ -84,9 +84,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const deleteUserByID = `-- name: DeleteUserByID :exec
+delete from users
+where id = $1
+`
+
+func (q *Queries) DeleteUserByID(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteUserByID, id)
+	return err
+}
+
 const getFailedAttempts = `-- name: GetFailedAttempts :one
 select failed_login_attempts
-from tremolo.users
+from users
 where email = $1
 `
 
@@ -99,7 +109,7 @@ func (q *Queries) GetFailedAttempts(ctx context.Context, email sql.NullString) (
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 select id, email, first_name, last_name, role, password
-from tremolo.users
+from users
 where email = $1
 `
 
@@ -128,7 +138,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (Get
 
 const getUserByID = `-- name: GetUserByID :one
 select id, email, first_name, last_name, role, school_id, created_date
-from tremolo.users
+from users
 where id = $1
 `
 
@@ -159,7 +169,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, er
 
 const getUserByRoleAndID = `-- name: GetUserByRoleAndID :one
 select first_name, last_name, role, school_id
-from tremolo.users
+from users
 where role = $1 and id = $2
 `
 
@@ -194,8 +204,8 @@ select
     u.created_date::text as created_date,
     coalesce(count(nge.id), 0)::int as total_entries,
     coalesce(sum(nge.time_length)::text, '00:00:00') as total_duration
-from tremolo.users u
-left join tremolo.note_game_entries nge on u.id = nge.user_id
+from users u
+left join note_game_entries nge on u.id = nge.user_id
 where u.id = $1
 group by u.id, u.first_name, u.last_name, u.created_date
 `
@@ -223,7 +233,7 @@ func (q *Queries) GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGene
 
 const getUserRole = `-- name: GetUserRole :one
 select role
-from tremolo.users
+from users
 where id = $1
 `
 
@@ -236,7 +246,7 @@ func (q *Queries) GetUserRole(ctx context.Context, id int32) (sql.NullString, er
 
 const getUsersByRole = `-- name: GetUsersByRole :many
 select first_name, last_name, role, school_id
-from tremolo.users
+from users
 where role = $1
 `
 
@@ -276,7 +286,7 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role sql.NullString) ([]Ge
 }
 
 const incrementFailedAttempts = `-- name: IncrementFailedAttempts :exec
-update tremolo.users
+update users
 set failed_login_attempts = failed_login_attempts + 1
 where email = $1
 `
@@ -287,7 +297,7 @@ func (q *Queries) IncrementFailedAttempts(ctx context.Context, email sql.NullStr
 }
 
 const lockAccount = `-- name: LockAccount :exec
-update tremolo.users
+update users
 set locked_until = $1
 where email = $2
 `
@@ -303,7 +313,7 @@ func (q *Queries) LockAccount(ctx context.Context, arg LockAccountParams) error 
 }
 
 const resetLockout = `-- name: ResetLockout :exec
-update tremolo.users
+update users
 set failed_login_attempts = 0, locked_until = null
 where email = $1
 `

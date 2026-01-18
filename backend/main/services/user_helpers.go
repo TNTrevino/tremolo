@@ -100,3 +100,62 @@ func convertCreateUserRowToDTO(user generated.CreateUserRow) dtos.User {
 func convertGetUserByRoleAndIDRowToDTO(user generated.GetUserByRoleAndIDRow) dtos.User {
 	return convertUserRowToDTO(userByRoleAndIDRowAdapter{row: user})
 }
+
+// convertGetUserByIDRowToUserResponse converts a GetUserByIDRow to a UserResponse DTO
+// This is used for auth responses where we return user information with tokens
+func convertGetUserByIDRowToUserResponse(user generated.GetUserByIDRow) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:        int(user.ID),
+		Email:     user.Email.String,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role.String,
+	}
+}
+
+// convertCreateUserRowToUserResponse converts a CreateUserRow to a UserResponse DTO
+// This is used after user registration to return the newly created user info
+func convertCreateUserRowToUserResponse(user generated.CreateUserRow) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:        int(user.ID),
+		Email:     user.Email.String,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role.String,
+	}
+}
+
+// convertGetUserGeneralInfoRowToDTO converts a GetUserGeneralInfoRow to a GeneralUserInfoDTO
+// Handles null values and type conversions for user profile information
+func convertGetUserGeneralInfoRowToDTO(userInfo generated.GetUserGeneralInfoRow) dtos.GeneralUserInfoDTO {
+	totalDuration := "00:00:00"
+	if userInfo.TotalDuration != nil {
+		if durStr, ok := userInfo.TotalDuration.(string); ok {
+			totalDuration = durStr
+		}
+	}
+
+	dto := dtos.GeneralUserInfo{
+		FirstName:    userInfo.FirstName,
+		LastName:     userInfo.LastName,
+		TotalEntries: int(userInfo.TotalEntries),
+	}
+	dto.CreatedDate.String = userInfo.CreatedDate
+	dto.CreatedDate.Valid = true
+	dto.TotalDuration.String = totalDuration
+	dto.TotalDuration.Valid = true
+
+	return dto.ToDTO()
+}
+
+// convertGetUserByEmailRowToUserResponse converts a GetUserByEmailRow to a UserResponse DTO
+// This is used for login responses where we return user information with tokens
+func convertGetUserByEmailRowToUserResponse(user generated.GetUserByEmailRow) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:        int(user.ID),
+		Email:     user.Email.String,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role.String,
+	}
+}

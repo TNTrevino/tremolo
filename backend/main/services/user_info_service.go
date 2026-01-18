@@ -5,16 +5,14 @@ import (
 	"context"
 	"database/sql"
 	dtos "sight-reading/DTOs"
-	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/logger"
 )
 
 // GetGeneralUserInfo fetches basic user information and aggregate statistics
 // Returns user name, join date, total entries, and total practice time
-func GetGeneralUserInfo(userID int) (*dtos.GeneralUserInfoDTO, error) {
-	ctx := context.Background()
-
-	userInfo, err := database.Queries.GetUserGeneralInfo(ctx, int32(userID))
+func GetGeneralUserInfo(ctx context.Context, q generated.Querier, userID int) (*dtos.GeneralUserInfoDTO, error) {
+	userInfo, err := q.GetUserGeneralInfo(ctx, int32(userID))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, err
@@ -25,24 +23,6 @@ func GetGeneralUserInfo(userID int) (*dtos.GeneralUserInfoDTO, error) {
 		return nil, err
 	}
 
-	// Convert TotalDuration from interface{} to string
-	totalDuration := "00:00:00"
-	if userInfo.TotalDuration != nil {
-		if durStr, ok := userInfo.TotalDuration.(string); ok {
-			totalDuration = durStr
-		}
-	}
-
-	dto := dtos.GeneralUserInfo{
-		FirstName:    userInfo.FirstName,
-		LastName:     userInfo.LastName,
-		TotalEntries: int(userInfo.TotalEntries),
-	}
-	dto.CreatedDate.String = userInfo.CreatedDate
-	dto.CreatedDate.Valid = true
-	dto.TotalDuration.String = totalDuration
-	dto.TotalDuration.Valid = true
-
-	result := dto.ToDTO()
+	result := convertGetUserGeneralInfoRowToDTO(userInfo)
 	return &result, nil
 }

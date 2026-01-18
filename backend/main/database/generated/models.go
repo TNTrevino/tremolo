@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type TremoloNoteGameEntry struct {
+type NoteGameEntry struct {
 	ID               int32        `json:"id"`
 	UserID           int32        `json:"user_id"`
 	TimeLength       time.Time    `json:"time_length"`
@@ -20,12 +20,12 @@ type TremoloNoteGameEntry struct {
 	CreatedTime      sql.NullTime `json:"created_time"`
 }
 
-type TremoloParentChild struct {
+type ParentChild struct {
 	ParentID int32 `json:"parent_id"`
 	ChildID  int32 `json:"child_id"`
 }
 
-type TremoloSchool struct {
+type School struct {
 	ID          int32        `json:"id"`
 	Title       string       `json:"title"`
 	City        string       `json:"city"`
@@ -36,17 +36,17 @@ type TremoloSchool struct {
 	CreatedTime sql.NullTime `json:"created_time"`
 }
 
-type TremoloTeacherParent struct {
+type TeacherParent struct {
 	TeacherID int32 `json:"teacher_id"`
 	ParentID  int32 `json:"parent_id"`
 }
 
-type TremoloTeacherStudent struct {
+type TeacherStudent struct {
 	TeacherID int32 `json:"teacher_id"`
 	StudentID int32 `json:"student_id"`
 }
 
-type TremoloUser struct {
+type User struct {
 	ID                  int32          `json:"id"`
 	FirstName           string         `json:"first_name"`
 	LastName            string         `json:"last_name"`

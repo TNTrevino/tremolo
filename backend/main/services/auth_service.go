@@ -22,6 +22,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	// BcryptCost is the computational cost for password hashing
+	// Higher values provide more security but take longer to compute
+	BcryptCost = 12
+
+	// MaxLoginAttempts is the number of failed login attempts before account lockout
+	MaxLoginAttempts = 5
+
+	// DefaultLockoutDurationMinutes is the default account lockout time in minutes
+	DefaultLockoutDurationMinutes = 15
+)
+
 func Login(c *gin.Context) {
 	var reqBody dtos.LoginRequest
 
@@ -98,8 +110,7 @@ func Login(c *gin.Context) {
 		if err != nil {
 			logger.Error("Failed to get failed attempts", "error", err.Error())
 		} else {
-			maxAttempts := getMaxLoginAttempts()
-			if int(attempts) >= maxAttempts {
+			if int(attempts) >= MaxLoginAttempts {
 				lockDuration := getLockoutDuration()
 				lockedUntilTime := time.Now().Add(lockDuration)
 				lockParams := generated.LockAccountParams{
@@ -145,13 +156,7 @@ func Login(c *gin.Context) {
 	}
 
 	response := dtos.LoginResponse{
-		User: dtos.UserResponse{
-			ID:        int(user.ID),
-			Email:     user.Email.String,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Role:      user.Role.String,
-		},
+		User:         convertGetUserByEmailRowToUserResponse(user),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
@@ -160,21 +165,9 @@ func Login(c *gin.Context) {
 }
 
 func GetCurrentUser(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Unauthorized",
-		})
-		return
-	}
-
-	uid, ok := userID.(int)
-	if !ok {
-		logger.Error("Error parsing userID")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error",
-			"scenario": "AS.5",
-		})
+	uid, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -194,19 +187,12 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	response := dtos.UserResponse{
-		ID:        int(user.ID),
-		Email:     user.Email.String,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role.String,
-	}
-
+	response := convertGetUserByIDRowToUserResponse(user)
 	c.JSON(http.StatusOK, response)
 }
 
 func HashPassword(password string) (string, error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -236,7 +222,7 @@ func Register(c *gin.Context) {
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
 	ctx := c.Request.Context()
 
-	exists, err := checkIfUserExists(ctx, emailNullStr)
+	exists, err := checkIfUserExists(ctx, database.Queries, emailNullStr)
 	if err != nil {
 		logger.Error("Database error. Scenario: AS.7", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -282,20 +268,14 @@ func Register(c *gin.Context) {
 
 	response := dtos.RegisterResponse{
 		Message: "User created successfully",
-		User: dtos.UserResponse{
-			ID:        int(createdUser.ID),
-			Email:     createdUser.Email.String,
-			FirstName: createdUser.FirstName,
-			LastName:  createdUser.LastName,
-			Role:      createdUser.Role.String,
-		},
+		User:    convertCreateUserRowToUserResponse(createdUser),
 	}
 
 	c.JSON(http.StatusCreated, response)
 }
 
-func checkIfUserExists(ctx context.Context, email sql.NullString) (bool, error) {
-	_, err := database.Queries.GetUserByEmail(ctx, email)
+func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullString) (bool, error) {
+	_, err := q.GetUserByEmail(ctx, email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -309,17 +289,13 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(email)
 }
 
-func getMaxLoginAttempts() int {
-	return 5
-}
-
 func getLockoutDuration() time.Duration {
 	if val := os.Getenv("ACCOUNT_LOCKOUT_DURATION_MINUTES"); val != "" {
 		if parsed, err := strconv.Atoi(val); err == nil {
 			return time.Duration(parsed) * time.Minute
 		}
 	}
-	return 15 * time.Minute
+	return DefaultLockoutDurationMinutes * time.Minute
 }
 
 func RefreshToken(c *gin.Context) {
