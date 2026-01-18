@@ -1,7 +1,7 @@
-import type * as React from "react";
-import { FormLabel } from "./FormLabel";
-import { FormError } from "./FormError";
-import { cn } from "@/lib/utils";
+import type * as React from 'react';
+import { FormLabel } from './FormLabel';
+import { FormError } from './FormError';
+import { cn } from '@/lib/utils';
 
 export interface FormFieldProps {
   label?: string;
@@ -21,7 +21,7 @@ const FormField: React.FC<FormFieldProps> = ({
   htmlFor,
 }) => {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn('space-y-1.5', className)}>
       {label && (
         <FormLabel htmlFor={htmlFor} required={required}>
           {label}
@@ -32,6 +32,6 @@ const FormField: React.FC<FormFieldProps> = ({
     </div>
   );
 };
-FormField.displayName = "FormField";
+FormField.displayName = 'FormField';
 
 export { FormField };

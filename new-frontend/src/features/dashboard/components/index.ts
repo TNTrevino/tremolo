@@ -1,6 +1,6 @@
 /**
  * Dashboard Components
- * 
+ *
  * Barrel export for all dashboard-related components
  */
 

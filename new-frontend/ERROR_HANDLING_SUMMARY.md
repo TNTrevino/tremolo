@@ -9,11 +9,13 @@ This document summarizes the error handling infrastructure added to the Tremolo 
 ## Files Created
 
 ### 1. Error Utilities (`src/shared/utils/error.utils.ts`)
+
 **Location:** `/src/shared/utils/error.utils.ts`
 
 **Purpose:** Provides utility functions for consistent error handling across the application.
 
 **Exports:**
+
 - `getErrorMessage(error: unknown): string` - Extracts user-friendly messages from any error type
 - `logError(error: unknown, context?: string): void` - Logs errors with context (dev mode shows details, production shows minimal info)
 - `isApiError(error: unknown): boolean` - Type guard for Axios/API errors
@@ -23,6 +25,7 @@ This document summarizes the error handling infrastructure added to the Tremolo 
 - `hasStatusCode(error: unknown, statusCode: number): boolean` - Checks for specific HTTP status code
 
 **Features:**
+
 - Handles Axios errors with specific HTTP status code messages
 - Network error detection
 - Authentication error detection
@@ -32,11 +35,13 @@ This document summarizes the error handling infrastructure added to the Tremolo 
 ---
 
 ### 2. Error Boundary Component (`src/shared/components/ErrorBoundary.tsx`)
+
 **Location:** `/src/shared/components/ErrorBoundary.tsx`
 
 **Purpose:** React error boundary that catches JavaScript errors in child components and displays fallback UI.
 
 **Features:**
+
 - Catches and logs component errors
 - User-friendly error display with Card UI
 - Action buttons: Try Again, Reload Page, Go Home
@@ -49,11 +54,12 @@ This document summarizes the error handling infrastructure added to the Tremolo 
 - Higher-order component export: `withErrorBoundary(Component)`
 
 **Props:**
+
 ```typescript
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;  // Custom fallback UI
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;  // Error callback
+  fallback?: ReactNode; // Custom fallback UI
+  onError?: (error: Error, errorInfo: ErrorInfo) => void; // Error callback
 }
 ```
 
@@ -62,11 +68,13 @@ interface Props {
 ### 3. Toast Notification System
 
 #### Toast Component (`src/shared/components/ui/toast.tsx`)
+
 **Location:** `/src/shared/components/ui/toast.tsx`
 
 **Purpose:** Visual toast notification components.
 
 **Features:**
+
 - 4 toast types: success, error, warning, info
 - Auto-dismiss with configurable duration
 - Smooth enter/exit animations
@@ -80,40 +88,46 @@ interface Props {
   - Info: Blue with Info
 
 **Exports:**
+
 - `ToastContainer` - Container component for rendering toasts
 - `Toast` type
 - `ToastType` type
 
 #### Toast Hook (`src/shared/hooks/useToast.tsx`)
+
 **Location:** `/src/shared/hooks/useToast.tsx`
 
 **Purpose:** React context and hook for managing toast notifications.
 
 **Features:**
+
 - Context-based toast management
 - Easy-to-use hook interface
 - Automatic toast ID generation
 - Toast lifecycle management
 
 **Hook API:**
+
 ```typescript
 const {
-  showToast,     // (message, type, title?, duration?) => void
-  showSuccess,   // (message, title?) => void
-  showError,     // (message, title?) => void
-  showWarning,   // (message, title?) => void
-  showInfo,      // (message, title?) => void
-  removeToast,   // (id) => void
-  toasts         // Toast[]
+  showToast, // (message, type, title?, duration?) => void
+  showSuccess, // (message, title?) => void
+  showError, // (message, title?) => void
+  showWarning, // (message, title?) => void
+  showInfo, // (message, title?) => void
+  removeToast, // (id) => void
+  toasts, // Toast[]
 } = useToast();
 ```
 
 ---
 
 ### 4. App.tsx Integration
+
 **Location:** `/src/App.tsx`
 
 **Changes Made:**
+
 ```typescript
 // Added imports
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -141,6 +155,7 @@ import { ToastContainer } from '@/shared/components/ui/toast';
 ```
 
 **Why Two Error Boundaries:**
+
 1. **Outer Boundary:** Catches critical app-level errors (e.g., provider errors, router initialization)
 2. **Inner Boundary:** Catches page/route-level errors without crashing the entire app (keeps Navigation functional)
 
@@ -149,9 +164,11 @@ import { ToastContainer } from '@/shared/components/ui/toast';
 ### 5. Documentation Files
 
 #### Error Handling Examples (`src/shared/utils/error-handling-examples.md`)
+
 **Location:** `/src/shared/utils/error-handling-examples.md`
 
 Comprehensive documentation with examples:
+
 - Using error utility functions
 - Toast notification patterns
 - Error boundary usage
@@ -162,15 +179,19 @@ Comprehensive documentation with examples:
 - Testing error handling
 
 #### Updated Shared README (`src/shared/README.md`)
+
 Added documentation for:
+
 - Error handling system overview
 - Quick usage examples
 - Component descriptions
 
 #### Utility Index (`src/shared/utils/index.ts`)
+
 **Location:** `/src/shared/utils/index.ts`
 
 Central export point for all error utilities for easier imports:
+
 ```typescript
 import { getErrorMessage, logError, isApiError } from '@/shared/utils';
 ```
@@ -178,11 +199,13 @@ import { getErrorMessage, logError, isApiError } from '@/shared/utils';
 ---
 
 ### 6. Error Tester Component (Development Tool)
+
 **Location:** `/src/shared/components/ErrorTester.tsx`
 
 **Purpose:** Development utility component for testing error handling functionality.
 
 **Features:**
+
 - Test all toast types (success, error, warning, info)
 - Test multiple toasts
 - Test long-duration toasts
@@ -192,13 +215,14 @@ import { getErrorMessage, logError, isApiError } from '@/shared/utils';
 - Visual UI with organized test categories
 
 **Usage:**
+
 ```tsx
 import { ErrorTester } from '@/shared/components/ErrorTester';
 
 // In any page during development
 <ErrorBoundary>
   <ErrorTester />
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 ---
@@ -222,6 +246,7 @@ import { ErrorTester } from '@/shared/components/ErrorTester';
 Based on the codebase, consider adding error boundaries to:
 
 1. **Feature-Specific Components**
+
    ```tsx
    // In pages with complex features
    <ErrorBoundary fallback={<SimpleErrorMessage />}>
@@ -230,6 +255,7 @@ Based on the codebase, consider adding error boundaries to:
    ```
 
 2. **Dashboard Widgets**
+
    ```tsx
    // In DashboardPage
    <ErrorBoundary>
@@ -253,6 +279,7 @@ Based on the codebase, consider adding error boundaries to:
 ## Example Error Handling Patterns
 
 ### 1. API Call with Toast
+
 ```typescript
 import { useToast } from '@/shared/hooks/useToast';
 import { getErrorMessage, logError } from '@/shared/utils/error.utils';
@@ -273,6 +300,7 @@ function MyComponent() {
 ```
 
 ### 2. React Query with Error Handling
+
 ```typescript
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/shared/hooks/useToast';
@@ -294,6 +322,7 @@ function DataDisplay() {
 ```
 
 ### 3. Conditional Error Handling
+
 ```typescript
 import { isAuthError, isNetworkError } from '@/shared/utils/error.utils';
 
@@ -311,6 +340,7 @@ try {
 ```
 
 ### 4. Component with Error Boundary
+
 ```typescript
 import { withErrorBoundary } from '@/shared/components/ErrorBoundary';
 
@@ -328,13 +358,16 @@ export default withErrorBoundary(RiskyComponent);
 ### Manual Testing
 
 1. **Build Test:**
+
    ```bash
    cd new-frontend
    npm run build
    ```
+
    ✅ **Status:** Build succeeds with no TypeScript errors
 
 2. **Development Server:**
+
    ```bash
    npm run dev
    ```
@@ -358,6 +391,7 @@ export default withErrorBoundary(RiskyComponent);
 ### Integration Testing
 
 Add the ErrorTester to any page temporarily:
+
 ```tsx
 import { ErrorTester } from '@/shared/components/ErrorTester';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -376,26 +410,33 @@ export function TestPage() {
 ## Best Practices Summary
 
 1. ✅ **Always log errors with context:**
+
    ```typescript
    logError(error, 'ComponentName.functionName');
    ```
 
 2. ✅ **Use specific error type checks:**
+
    ```typescript
-   if (isAuthError(error)) { /* handle auth */ }
+   if (isAuthError(error)) {
+     /* handle auth */
+   }
    ```
 
 3. ✅ **Provide user-friendly messages:**
+
    ```typescript
    showError(getErrorMessage(error), 'Action Failed');
    ```
 
 4. ✅ **Isolate components with error boundaries:**
+
    ```typescript
    <ErrorBoundary><CriticalFeature /></ErrorBoundary>
    ```
 
 5. ✅ **Don't swallow errors:**
+
    ```typescript
    catch (error) {
      logError(error, context);
@@ -437,6 +478,7 @@ export function TestPage() {
 ## Files Summary
 
 ### Created Files
+
 1. `/new-frontend/src/shared/utils/error.utils.ts` - Error utility functions
 2. `/new-frontend/src/shared/components/ErrorBoundary.tsx` - Error boundary component
 3. `/new-frontend/src/shared/components/ui/toast.tsx` - Toast UI components
@@ -447,6 +489,7 @@ export function TestPage() {
 8. `/new-frontend/ERROR_HANDLING_SUMMARY.md` - This file
 
 ### Modified Files
+
 1. `/new-frontend/src/App.tsx` - Added ErrorBoundary and ToastProvider
 2. `/new-frontend/src/shared/README.md` - Added error handling documentation
 
@@ -461,7 +504,7 @@ export function TestPage() {
 ✅ **Toast system:** Fully functional  
 ✅ **Error utilities:** Comprehensive coverage  
 ✅ **Documentation:** Complete with examples  
-✅ **Testing tools:** ErrorTester component ready  
+✅ **Testing tools:** ErrorTester component ready
 
 ---
 

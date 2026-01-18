@@ -73,15 +73,17 @@ export function SheetMusicPage() {
                         <div className="text-6xl font-bold text-primary flex items-center gap-4">
                           <Music2 className="h-16 w-16" />
                           <span className="text-2xl text-muted-foreground">
-                            {scale} • Octave {octave} • {rhythmType === '16th' ? '16th Notes' : '8th Notes'} ({selectedRhythm})
+                            {scale} • Octave {octave} •{' '}
+                            {rhythmType === '16th' ? '16th Notes' : '8th Notes'} ({selectedRhythm})
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-                    In a real implementation, this would display rendered sheet music using a library like OpenSheetMusicDisplay.
-                    The music would be generated based on your selected scale, octave, and rhythm pattern.
+                    In a real implementation, this would display rendered sheet music using a
+                    library like OpenSheetMusicDisplay. The music would be generated based on your
+                    selected scale, octave, and rhythm pattern.
                   </p>
                 </div>
               </>
@@ -102,7 +104,9 @@ export function SheetMusicPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Scale Selector */}
               <div className="space-y-2">
-                <label htmlFor="scale-select" className="text-sm font-medium">Choose Scale</label>
+                <label htmlFor="scale-select" className="text-sm font-medium">
+                  Choose Scale
+                </label>
                 <Select id="scale-select" value={scale} onChange={(e) => setScale(e.target.value)}>
                   {scales.map((s) => (
                     <option key={s} value={s}>
@@ -114,8 +118,14 @@ export function SheetMusicPage() {
 
               {/* Octave Selector */}
               <div className="space-y-2">
-                <label htmlFor="octave-select" className="text-sm font-medium">Choose Octave</label>
-                <Select id="octave-select" value={octave.toString()} onChange={(e) => setOctave(Number(e.target.value))}>
+                <label htmlFor="octave-select" className="text-sm font-medium">
+                  Choose Octave
+                </label>
+                <Select
+                  id="octave-select"
+                  value={octave.toString()}
+                  onChange={(e) => setOctave(Number(e.target.value))}
+                >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => (
                     <option key={o} value={o}>
                       Octave {o}
@@ -135,7 +145,11 @@ export function SheetMusicPage() {
                 {sixteenthRhythms.map((rhythm) => (
                   <Button
                     key={rhythm.value}
-                    variant={selectedRhythm === rhythm.value && rhythmType === '16th' ? 'default' : 'outline'}
+                    variant={
+                      selectedRhythm === rhythm.value && rhythmType === '16th'
+                        ? 'default'
+                        : 'outline'
+                    }
                     onClick={() => handleGenerateMusic(rhythm.value, '16th')}
                     className="w-full justify-start font-mono"
                   >
@@ -152,7 +166,11 @@ export function SheetMusicPage() {
                 {eighthRhythms.map((rhythm) => (
                   <Button
                     key={rhythm.value}
-                    variant={selectedRhythm === rhythm.value && rhythmType === '8th' ? 'default' : 'outline'}
+                    variant={
+                      selectedRhythm === rhythm.value && rhythmType === '8th'
+                        ? 'default'
+                        : 'outline'
+                    }
                     onClick={() => handleGenerateMusic(rhythm.value, '8th')}
                     className="w-full justify-start font-mono"
                   >
@@ -171,7 +189,10 @@ export function SheetMusicPage() {
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Select a scale and octave to determine which notes will be used</li>
               <li>• Choose a rhythm pattern (16th or 8th note combinations)</li>
-              <li>• The system generates random notes from your selected scale arranged in the chosen rhythm</li>
+              <li>
+                • The system generates random notes from your selected scale arranged in the chosen
+                rhythm
+              </li>
               <li>• Each generation creates a unique exercise - no memorization possible!</li>
               <li>• Perfect for sight-reading practice and UIL preparation</li>
             </ul>

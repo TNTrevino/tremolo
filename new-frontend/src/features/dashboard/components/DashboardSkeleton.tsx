@@ -1,6 +1,6 @@
 /**
  * Dashboard Skeleton Loader
- * 
+ *
  * Displays skeleton loaders that match the actual dashboard layout
  * while data is being fetched from the API.
  */

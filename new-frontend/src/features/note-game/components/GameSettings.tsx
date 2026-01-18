@@ -2,7 +2,7 @@ import { Music2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import type { GameSettings as GameSettingsType} from '../types';
+import type { GameSettings as GameSettingsType } from '../types';
 import { SCALES } from '../types';
 
 export interface GameSettingsProps {
@@ -29,7 +29,9 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Game Mode */}
           <div className="space-y-2">
-            <label htmlFor="game-mode" className="text-sm font-medium">Game Mode</label>
+            <label htmlFor="game-mode" className="text-sm font-medium">
+              Game Mode
+            </label>
             <div className="flex gap-2" role="group" aria-labelledby="game-mode" id="game-mode">
               <Button
                 variant={settings.gameMode === 'time' ? 'default' : 'outline'}
@@ -80,8 +82,14 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
 
           {/* Scale */}
           <div className="space-y-2">
-            <label htmlFor="scale" className="text-sm font-medium">Scale</label>
-            <Select id="scale" value={settings.scale} onChange={(e) => onSettingsChange({ scale: e.target.value })}>
+            <label htmlFor="scale" className="text-sm font-medium">
+              Scale
+            </label>
+            <Select
+              id="scale"
+              value={settings.scale}
+              onChange={(e) => onSettingsChange({ scale: e.target.value })}
+            >
               {SCALES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -92,7 +100,9 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
 
           {/* Octave */}
           <div className="space-y-2">
-            <label htmlFor="octave" className="text-sm font-medium">Octave</label>
+            <label htmlFor="octave" className="text-sm font-medium">
+              Octave
+            </label>
             <Select
               id="octave"
               value={settings.octave.toString()}

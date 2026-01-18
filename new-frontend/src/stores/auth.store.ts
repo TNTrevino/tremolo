@@ -39,25 +39,25 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
-      
+
       loginUser: async (credentials: LoginRequest) => {
         const response = await authService.login(credentials);
         const user = mapApiUserToStoreUser(response.user);
         set({ user, token: response.access_token });
       },
-      
+
       registerUser: async (userData: RegisterRequest) => {
         await authService.register(userData);
         // Note: Register doesn't auto-login, user must login separately
       },
-      
+
       logoutUser: () => {
         authService.logout();
         set({ user: null, token: null });
       },
-      
+
       logout: () => set({ user: null, token: null }),
-      
+
       get isAuthenticated() {
         return get().token !== null;
       },

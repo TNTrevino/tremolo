@@ -15,14 +15,28 @@ import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 
 // Pages - Lazy loaded for code splitting
-const AboutPage = lazy(() => import('@/pages/AboutPage').then(m => ({ default: m.AboutPage })));
-const SignupPage = lazy(() => import('@/pages/SignupPage').then(m => ({ default: m.SignupPage })));
-const NoteGamePage = lazy(() => import('@/pages/NoteGamePage').then(m => ({ default: m.NoteGamePage })));
-const SheetMusicPage = lazy(() => import('@/pages/SheetMusicPage').then(m => ({ default: m.SheetMusicPage })));
-const ConverterPage = lazy(() => import('@/pages/ConverterPage').then(m => ({ default: m.ConverterPage })));
-const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
-const AccountPage = lazy(() => import('@/pages/AccountPage').then(m => ({ default: m.AccountPage })));
+const AboutPage = lazy(() => import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const SignupPage = lazy(() =>
+  import('@/pages/SignupPage').then((m) => ({ default: m.SignupPage }))
+);
+const NoteGamePage = lazy(() =>
+  import('@/pages/NoteGamePage').then((m) => ({ default: m.NoteGamePage }))
+);
+const SheetMusicPage = lazy(() =>
+  import('@/pages/SheetMusicPage').then((m) => ({ default: m.SheetMusicPage }))
+);
+const ConverterPage = lazy(() =>
+  import('@/pages/ConverterPage').then((m) => ({ default: m.ConverterPage }))
+);
+const DashboardPage = lazy(() =>
+  import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
+);
+const ProfilePage = lazy(() =>
+  import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
+const AccountPage = lazy(() =>
+  import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage }))
+);
 
 /**
  * Loading fallback component for lazy-loaded pages
@@ -49,50 +63,50 @@ function App() {
           <ToastProvider>
             <AuthProvider>
               <BrowserRouter>
-              <div className="min-h-screen bg-background text-foreground">
-                <Navigation />
-                <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/note-game" element={<NoteGamePage />} />
-                    <Route path="/sheet-music" element={<SheetMusicPage />} />
-                    <Route path="/convert" element={<ConverterPage />} />
+                <div className="min-h-screen bg-background text-foreground">
+                  <Navigation />
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/about" element={<AboutPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/signup" element={<SignupPage />} />
+                        <Route path="/note-game" element={<NoteGamePage />} />
+                        <Route path="/sheet-music" element={<SheetMusicPage />} />
+                        <Route path="/convert" element={<ConverterPage />} />
 
-                    {/* Protected Routes */}
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute>
-                          <DashboardPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProtectedRoute>
-                          <ProfilePage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/account"
-                      element={
-                        <ProtectedRoute>
-                          <AccountPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                  </Routes>
-                  </Suspense>
-                </ErrorBoundary>
-                <ToastContainerWrapper />
-              </div>
+                        {/* Protected Routes */}
+                        <Route
+                          path="/dashboard"
+                          element={
+                            <ProtectedRoute>
+                              <DashboardPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/profile"
+                          element={
+                            <ProtectedRoute>
+                              <ProfilePage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/account"
+                          element={
+                            <ProtectedRoute>
+                              <AccountPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                      </Routes>
+                    </Suspense>
+                  </ErrorBoundary>
+                  <ToastContainerWrapper />
+                </div>
               </BrowserRouter>
             </AuthProvider>
           </ToastProvider>

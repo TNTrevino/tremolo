@@ -9,17 +9,13 @@ This directory contains reusable form components that integrate with React Hook 
 A wrapper component that combines label, input/select, and error display.
 
 ```tsx
-<FormField
-  label="Email"
-  error={errors.email?.message}
-  required
-  htmlFor="email"
->
+<FormField label="Email" error={errors.email?.message} required htmlFor="email">
   <FormInput id="email" {...register('email')} />
 </FormField>
 ```
 
 **Props:**
+
 - `label` - Label text
 - `error` - Error message to display
 - `required` - Shows red asterisk if true
@@ -42,6 +38,7 @@ Input component integrated with react-hook-form.
 ```
 
 **Props:**
+
 - All standard HTML input props
 - `registration` - React Hook Form registration object
 - `error` - Error message to display
@@ -58,6 +55,7 @@ Select component integrated with react-hook-form.
 ```
 
 **Props:**
+
 - All standard HTML select props
 - `registration` - React Hook Form registration object
 - `error` - Error message to display
@@ -73,6 +71,7 @@ Label component with optional required indicator.
 ```
 
 **Props:**
+
 - All standard HTML label props
 - `required` - Shows red asterisk if true
 
@@ -85,6 +84,7 @@ Error message display component.
 ```
 
 **Props:**
+
 - `children` - Error message to display
 - All standard HTML paragraph props
 
@@ -128,7 +128,7 @@ function LoginForm() {
       <FormField label="Email" error={errors.email?.message} required>
         <FormInput type="email" {...register('email')} />
       </FormField>
-      
+
       <button type="submit" disabled={isSubmitting}>
         Login
       </button>

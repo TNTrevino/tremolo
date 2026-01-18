@@ -1,6 +1,6 @@
 /**
  * EXAMPLE: How to use React Hook Form with Zod validation
- * 
+ *
  * This file demonstrates the usage patterns for the form infrastructure.
  * Delete this file once you've reviewed the examples.
  */
@@ -36,26 +36,11 @@ export function LoginFormExample() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        label="Email"
-        error={errors.email?.message}
-        required
-        htmlFor="email"
-      >
-        <FormInput
-          id="email"
-          type="email"
-          placeholder="Enter your email"
-          {...register('email')}
-        />
+      <FormField label="Email" error={errors.email?.message} required htmlFor="email">
+        <FormInput id="email" type="email" placeholder="Enter your email" {...register('email')} />
       </FormField>
 
-      <FormField
-        label="Password"
-        error={errors.password?.message}
-        required
-        htmlFor="password"
-      >
+      <FormField label="Password" error={errors.password?.message} required htmlFor="password">
         <FormInput
           id="password"
           type="password"
@@ -110,33 +95,15 @@ export function SignupFormExample() {
           required
           htmlFor="firstName"
         >
-          <FormInput
-            id="firstName"
-            placeholder="John"
-            {...register('firstName')}
-          />
+          <FormInput id="firstName" placeholder="John" {...register('firstName')} />
         </FormField>
 
-        <FormField
-          label="Last Name"
-          error={errors.lastName?.message}
-          required
-          htmlFor="lastName"
-        >
-          <FormInput
-            id="lastName"
-            placeholder="Doe"
-            {...register('lastName')}
-          />
+        <FormField label="Last Name" error={errors.lastName?.message} required htmlFor="lastName">
+          <FormInput id="lastName" placeholder="Doe" {...register('lastName')} />
         </FormField>
       </div>
 
-      <FormField
-        label="Email"
-        error={errors.email?.message}
-        required
-        htmlFor="email"
-      >
+      <FormField label="Email" error={errors.email?.message} required htmlFor="email">
         <FormInput
           id="email"
           type="email"
@@ -145,12 +112,7 @@ export function SignupFormExample() {
         />
       </FormField>
 
-      <FormField
-        label="Password"
-        error={errors.password?.message}
-        required
-        htmlFor="password"
-      >
+      <FormField label="Password" error={errors.password?.message} required htmlFor="password">
         <FormInput
           id="password"
           type="password"
@@ -175,7 +137,11 @@ export function SignupFormExample() {
             <li className={/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
               One number
             </li>
-            <li className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+            <li
+              className={
+                /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : 'text-muted-foreground'
+              }
+            >
               One special character
             </li>
           </ul>
@@ -196,12 +162,7 @@ export function SignupFormExample() {
         />
       </FormField>
 
-      <FormField
-        label="I am a..."
-        error={errors.role?.message}
-        required
-        htmlFor="role"
-      >
+      <FormField label="I am a..." error={errors.role?.message} required htmlFor="role">
         <FormSelect id="role" {...register('role')}>
           <option value="student">Student</option>
           <option value="teacher">Teacher</option>
@@ -222,25 +183,25 @@ export function SignupFormExample() {
 
 /**
  * Key Features:
- * 
+ *
  * 1. Automatic Validation: Zod schemas validate on submit and on blur
  * 2. Type Safety: Full TypeScript support with inferred types
  * 3. Error Handling: Errors automatically displayed in FormField
  * 4. Registration: Use {...register('fieldName')} to connect fields
  * 5. Form State: Access isSubmitting, isDirty, isValid, etc.
  * 6. Watch Fields: Use watch('fieldName') to react to field changes
- * 
+ *
  * Common Patterns:
- * 
+ *
  * - Set default values in useForm options
  * - Use formState.errors to access validation errors
  * - Use handleSubmit to wrap your submit handler
  * - Use watch() to create dependent UI (like password strength)
  * - Use reset() to clear form after successful submission
  * - Use setValue() to programmatically set field values
- * 
+ *
  * Best Practices:
- * 
+ *
  * - Always provide htmlFor on FormField matching input id
  * - Use required prop on FormField to show asterisk
  * - Keep validation logic in Zod schemas, not components

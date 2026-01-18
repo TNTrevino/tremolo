@@ -1,6 +1,6 @@
 /**
  * Dashboard Stats Component
- * 
+ *
  * Displays a grid of 4 stat cards showing:
  * - Average NPM (Notes Per Minute)
  * - Average Accuracy

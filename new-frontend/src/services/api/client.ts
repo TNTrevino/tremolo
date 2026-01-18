@@ -1,10 +1,10 @@
 /**
  * API Client Configuration
- * 
+ *
  * This module configures axios instances for communication with backend services:
  * - Music Generation Service (Django, port 8000)
  * - User Tracking Service (Go, port 5001)
- * 
+ *
  * Includes request/response interceptors for authentication and error handling.
  */
 
@@ -104,12 +104,12 @@ export const mainApiClient: AxiosInstance = axios.create({
 mainApiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
-    
+
     // Attach authorization header if token exists
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -138,7 +138,7 @@ const processQueue = (error: Error | null = null): void => {
       promise.resolve();
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -146,34 +146,36 @@ mainApiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    
+
     // Handle 401 Unauthorized - Attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // Queue this request until token refresh completes
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(() => {
-          return mainApiClient(originalRequest);
-        }).catch((err) => {
-          return Promise.reject(err);
-        });
+        })
+          .then(() => {
+            return mainApiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
-      
+
       originalRequest._retry = true;
       isRefreshing = true;
-      
+
       const refreshToken = getRefreshToken();
-      
+
       if (!refreshToken) {
         // No refresh token available, clear tokens and redirect to login
         clearTokens();
         processQueue(new Error('No refresh token available'));
         isRefreshing = false;
-        
+
         // Dispatch custom event for authentication failure
         window.dispatchEvent(new CustomEvent('auth:logout'));
-        
+
         const apiError: ApiError = {
           error: 'Authentication failed',
           message: 'Please log in again',
@@ -181,26 +183,26 @@ mainApiClient.interceptors.response.use(
         };
         return Promise.reject(apiError);
       }
-      
+
       try {
         // Attempt to refresh the access token
         const response = await axios.post(
           `${import.meta.env.VITE_BACKEND_MAIN || 'http://localhost:5001'}/api/auth/refresh`,
           { refresh_token: refreshToken }
         );
-        
+
         const { access_token, refresh_token: new_refresh_token } = response.data;
-        
+
         // Store new tokens
         setTokens(access_token, new_refresh_token);
-        
+
         // Update authorization header for original request
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        
+
         // Process queued requests
         processQueue();
         isRefreshing = false;
-        
+
         // Retry original request
         return mainApiClient(originalRequest);
       } catch (refreshError) {
@@ -208,10 +210,10 @@ mainApiClient.interceptors.response.use(
         processQueue(refreshError as Error);
         isRefreshing = false;
         clearTokens();
-        
+
         // Dispatch custom event for authentication failure
         window.dispatchEvent(new CustomEvent('auth:logout'));
-        
+
         const apiError: ApiError = {
           error: 'Token refresh failed',
           message: 'Please log in again',
@@ -220,18 +222,18 @@ mainApiClient.interceptors.response.use(
         return Promise.reject(apiError);
       }
     }
-    
+
     // Handle other errors
     const apiError: ApiError = {
       error: error.message,
-      message: error.response?.data 
-        ? (typeof error.response.data === 'object' && 'error' in error.response.data
+      message: error.response?.data
+        ? typeof error.response.data === 'object' && 'error' in error.response.data
           ? String(error.response.data.error)
-          : String(error.response.data))
+          : String(error.response.data)
         : error.message,
       status: error.response?.status,
     };
-    
+
     return Promise.reject(apiError);
   }
 );

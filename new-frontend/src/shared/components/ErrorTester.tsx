@@ -8,14 +8,14 @@ import { AlertTriangle } from 'lucide-react';
 
 /**
  * ErrorTester Component
- * 
+ *
  * A development utility component for testing error handling functionality.
  * This component demonstrates:
  * - Error Boundary error catching
  * - Toast notifications
  * - API error handling
  * - Error utility functions
- * 
+ *
  * To use: Add this component to a page during development
  * <ErrorBoundary>
  *   <ErrorTester />
@@ -57,7 +57,7 @@ export function ErrorTester() {
     } catch (error) {
       logError(error, 'ErrorTester.testApiError');
       showError(getErrorMessage(error), 'API Error');
-      
+
       // eslint-disable-next-line no-console
       console.log('Is API Error:', isApiError(error));
       // eslint-disable-next-line no-console
@@ -74,7 +74,7 @@ export function ErrorTester() {
     } catch (error) {
       logError(error, 'ErrorTester.testNetworkError');
       showError(getErrorMessage(error), 'Network Error');
-      
+
       // eslint-disable-next-line no-console
       console.log('Is API Error:', isApiError(error));
       // eslint-disable-next-line no-console
@@ -107,8 +107,8 @@ export function ErrorTester() {
         <CardContent className="space-y-6">
           <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800 p-4">
             <p className="text-sm text-orange-900 dark:text-orange-100">
-              This is a development tool for testing error handling. Check the browser console 
-              to see logged errors and error metadata.
+              This is a development tool for testing error handling. Check the browser console to
+              see logged errors and error metadata.
             </p>
           </div>
 
@@ -170,10 +170,18 @@ export function ErrorTester() {
           <div className="space-y-3 pt-4 border-t">
             <h3 className="font-semibold text-lg">Documentation</h3>
             <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• Error utilities: <code>/src/shared/utils/error.utils.ts</code></li>
-              <li>• ErrorBoundary: <code>/src/shared/components/ErrorBoundary.tsx</code></li>
-              <li>• Toast hook: <code>/src/shared/hooks/useToast.tsx</code></li>
-              <li>• Examples: <code>/src/shared/utils/error-handling-examples.md</code></li>
+              <li>
+                • Error utilities: <code>/src/shared/utils/error.utils.ts</code>
+              </li>
+              <li>
+                • ErrorBoundary: <code>/src/shared/components/ErrorBoundary.tsx</code>
+              </li>
+              <li>
+                • Toast hook: <code>/src/shared/hooks/useToast.tsx</code>
+              </li>
+              <li>
+                • Examples: <code>/src/shared/utils/error-handling-examples.md</code>
+              </li>
             </ul>
           </div>
         </CardContent>

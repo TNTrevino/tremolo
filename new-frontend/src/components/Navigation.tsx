@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Music, Menu, X, Sun, Moon, User, LogOut, LayoutDashboard, UserCircle, Settings } from 'lucide-react';
+import {
+  Music,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  User,
+  LogOut,
+  LayoutDashboard,
+  UserCircle,
+  Settings,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -38,9 +49,7 @@ export function Navigation() {
             <div className="rounded-lg bg-primary p-2 group-hover:scale-110 transition-transform">
               <Music className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold hidden sm:inline-block">
-              Tremolo
-            </span>
+            <span className="text-xl font-bold hidden sm:inline-block">Tremolo</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -50,10 +59,10 @@ export function Navigation() {
                 key={link.to}
                 to={link.to}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  'px-4 py-2 rounded-md text-sm font-medium transition-all',
                   isActive(link.to)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
                 {link.label}
@@ -64,17 +73,8 @@ export function Navigation() {
           {/* Right Section: Theme Toggle + User Menu */}
           <div className="flex items-center space-x-2">
             {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="rounded-full"
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
 
             {/* Desktop User Menu */}
@@ -84,7 +84,8 @@ export function Navigation() {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-primary-foreground font-bold hover:scale-110 transition-transform"
                 >
-                  {user?.firstName[0]}{user?.lastName[0]}
+                  {user?.firstName[0]}
+                  {user?.lastName[0]}
                 </button>
 
                 {userMenuOpen && (
@@ -92,7 +93,9 @@ export function Navigation() {
                     <div
                       className="fixed inset-0 z-40"
                       onClick={() => setUserMenuOpen(false)}
-                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setUserMenuOpen(false)}
+                      onKeyDown={(e) =>
+                        (e.key === 'Enter' || e.key === ' ') && setUserMenuOpen(false)
+                      }
                       role="button"
                       tabIndex={0}
                       aria-label="Close user menu"
@@ -156,11 +159,7 @@ export function Navigation() {
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
@@ -174,10 +173,10 @@ export function Navigation() {
                 to={link.to}
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
-                  "block px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  'block px-4 py-2 rounded-md text-sm font-medium transition-all',
                   isActive(link.to)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent"
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-accent'
                 )}
               >
                 {link.label}

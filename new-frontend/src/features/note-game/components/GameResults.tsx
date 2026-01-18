@@ -25,7 +25,12 @@ export interface GameResultsProps {
  * Game results component
  * Displays performance statistics, charts, and options to play again
  */
-export function GameResults({ gameStats, pastGames = [], isAuthenticated, onPlayAgain }: GameResultsProps) {
+export function GameResults({
+  gameStats,
+  pastGames = [],
+  isAuthenticated,
+  onPlayAgain,
+}: GameResultsProps) {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
@@ -61,7 +66,13 @@ export function GameResults({ gameStats, pastGames = [], isAuthenticated, onPlay
                 }}
               />
               <Legend />
-              <Line type="monotone" dataKey="npm" stroke="hsl(var(--primary))" strokeWidth={2} name="NPM" />
+              <Line
+                type="monotone"
+                dataKey="npm"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                name="NPM"
+              />
               <Line
                 type="monotone"
                 dataKey="accuracy"

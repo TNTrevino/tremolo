@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { GameState, NoteAnswer, GameStats, GameSettings} from '../types';
+import type { GameState, NoteAnswer, GameStats, GameSettings } from '../types';
 import { NOTES, ACCIDENTALS } from '../types';
 
 // Generate all possible notes
@@ -12,11 +12,11 @@ interface UseNoteGameReturn {
   answers: NoteAnswer[];
   gameStats: GameStats | null;
   settings: GameSettings;
-  
+
   // Timing
   questionStartTime: number;
   gameStartTime: number;
-  
+
   // Actions
   updateSettings: (settings: Partial<GameSettings>) => void;
   startGame: () => void;
@@ -106,7 +106,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 
       setGameStats(stats);
       setGameState('gameover');
-      
+
       // Notify parent component of game end
       onGameEnd?.(stats);
     },
@@ -137,7 +137,15 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
         generateRandomNote();
       }
     },
-    [currentNote, questionStartTime, answers, settings.gameMode, settings.noteLimit, generateRandomNote, endGame]
+    [
+      currentNote,
+      questionStartTime,
+      answers,
+      settings.gameMode,
+      settings.noteLimit,
+      generateRandomNote,
+      endGame,
+    ]
   );
 
   /**
@@ -158,7 +166,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
     settings,
     questionStartTime,
     gameStartTime,
-    
+
     // Actions
     updateSettings,
     startGame,

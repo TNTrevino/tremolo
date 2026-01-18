@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 export interface FormErrorProps extends React.HTMLAttributes<HTMLParagraphElement> {
   children?: React.ReactNode;
@@ -12,7 +12,7 @@ const FormError = React.forwardRef<HTMLParagraphElement, FormErrorProps>(
     return (
       <p
         ref={ref}
-        className={cn("mt-1 text-sm text-destructive font-medium", className)}
+        className={cn('mt-1 text-sm text-destructive font-medium', className)}
         {...props}
       >
         {children}
@@ -20,6 +20,6 @@ const FormError = React.forwardRef<HTMLParagraphElement, FormErrorProps>(
     );
   }
 );
-FormError.displayName = "FormError";
+FormError.displayName = 'FormError';
 
 export { FormError };

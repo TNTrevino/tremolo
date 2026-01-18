@@ -134,8 +134,8 @@ export function AccountPage() {
               <div className="text-lg font-medium">{user.email}</div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Email change functionality coming soon. You&apos;ll be able to update your email address
-              and verify the new address before the change takes effect.
+              Email change functionality coming soon. You&apos;ll be able to update your email
+              address and verify the new address before the change takes effect.
             </p>
           </CardContent>
         </Card>
@@ -183,7 +183,8 @@ export function AccountPage() {
             <div>
               <h4 className="font-medium mb-2">Download Your Data</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                Get a copy of all your practice data, statistics, and account information in JSON format.
+                Get a copy of all your practice data, statistics, and account information in JSON
+                format.
               </p>
               <Button variant="outline" onClick={handleDownloadData}>
                 <Download className="mr-2 h-4 w-4" />
@@ -210,12 +211,10 @@ export function AccountPage() {
             <div>
               <h4 className="font-medium mb-2">Delete Account</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                Once you delete your account, there is no going back. All your data will be permanently removed.
+                Once you delete your account, there is no going back. All your data will be
+                permanently removed.
               </p>
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteModal(true)}
-              >
+              <Button variant="destructive" onClick={() => setShowDeleteModal(true)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete My Account
               </Button>
@@ -233,8 +232,8 @@ export function AccountPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm">
-                  All your practice data, statistics, and account information will be permanently deleted.
-                  Type your email address to confirm:
+                  All your practice data, statistics, and account information will be permanently
+                  deleted. Type your email address to confirm:
                 </p>
                 <Input
                   type="email"

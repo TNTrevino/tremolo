@@ -1,6 +1,6 @@
 /**
  * Teacher Dashboard Component
- * 
+ *
  * Displays teacher-specific information and features:
  * - Teacher name
  * - Number of students (placeholder for future implementation)
@@ -37,8 +37,8 @@ export function TeacherDashboard({ user, studentCount }: TeacherDashboardProps) 
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Student management features will be available in a future update. You&apos;ll be able to view
-          student progress, assign exercises, and track class performance.
+          Student management features will be available in a future update. You&apos;ll be able to
+          view student progress, assign exercises, and track class performance.
         </p>
       </CardContent>
     </Card>

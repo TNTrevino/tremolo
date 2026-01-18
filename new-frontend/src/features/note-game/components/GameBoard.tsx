@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import type { NoteAnswer} from '../types';
+import type { NoteAnswer } from '../types';
 import { NOTES } from '../types';
 
 export interface GameBoardProps {

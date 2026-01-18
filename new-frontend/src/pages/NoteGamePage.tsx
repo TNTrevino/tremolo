@@ -21,11 +21,14 @@ export function NoteGamePage() {
   const [pastGames, setPastGames] = useState<GameStats[]>([]);
 
   // Handle game end - save stats for authenticated users
-  const handleGameEnd = useCallback((stats: GameStats) => {
-    if (isAuthenticated) {
-      setPastGames((prev) => [...prev.slice(-9), stats]);
-    }
-  }, [isAuthenticated]);
+  const handleGameEnd = useCallback(
+    (stats: GameStats) => {
+      if (isAuthenticated) {
+        setPastGames((prev) => [...prev.slice(-9), stats]);
+      }
+    },
+    [isAuthenticated]
+  );
 
   // Game logic hook
   const {

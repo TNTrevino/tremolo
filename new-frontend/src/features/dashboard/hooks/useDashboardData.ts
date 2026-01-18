@@ -1,6 +1,6 @@
 /**
  * Dashboard Data Hook
- * 
+ *
  * Centralized hook for fetching all dashboard data including:
  * - User profile information
  * - Performance statistics and chart data
@@ -37,7 +37,7 @@ interface DashboardData {
 
 /**
  * Hook to fetch and aggregate all dashboard data
- * 
+ *
  * @param params - Query parameters for chart data
  * @returns Dashboard data with loading and error states
  */

@@ -1,6 +1,6 @@
 /**
  * User Profile Card Component
- * 
+ *
  * Displays user information including avatar, name, role, join date,
  * and quick statistics (total sessions and time reading).
  */
@@ -33,7 +33,8 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
           {/* Avatar */}
           <div className="flex-shrink-0">
             <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-3xl font-bold">
-              {user.first_name[0]}{user.last_name[0]}
+              {user.first_name[0]}
+              {user.last_name[0]}
             </div>
           </div>
 
@@ -46,9 +47,7 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                 {roleDisplay}
               </span>
-              <span className="text-muted-foreground text-sm">
-                Joined {joinDate}
-              </span>
+              <span className="text-muted-foreground text-sm">Joined {joinDate}</span>
             </div>
           </div>
 

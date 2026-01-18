@@ -18,7 +18,9 @@ The application uses a **microservices architecture** with two backend services:
 ## Files Overview
 
 ### `client.ts`
+
 Axios client configuration with:
+
 - Two separate clients (`musicApiClient`, `mainApiClient`)
 - Request interceptors for JWT token attachment
 - Response interceptors for token refresh on 401 errors
@@ -26,7 +28,9 @@ Axios client configuration with:
 - Automatic retry with refreshed tokens
 
 ### `types.ts`
+
 TypeScript type definitions matching backend API contracts:
+
 - Auth & User types
 - Note game entry types
 - Chart/analytics types
@@ -34,7 +38,9 @@ TypeScript type definitions matching backend API contracts:
 - Error types
 
 ### `auth.service.ts`
+
 Authentication operations:
+
 - `login()` - Authenticate user
 - `register()` - Create new account
 - `logout()` - Clear session
@@ -43,14 +49,18 @@ Authentication operations:
 - `isAuthenticated()` - Check auth status
 
 ### `music.service.ts`
+
 Music generation operations:
+
 - `generateMary()` - Generate "Mary Had a Little Lamb" in any key
 - `generateRandom()` - Generate random notes with rhythm patterns
 - `generateNoteGame()` - Generate single note for identification game
 - Helper validators for notes and rhythms
 
 ### `user.service.ts`
+
 User profile and progress tracking:
+
 - `getProfile()` - Get user profile and stats
 - `updateProfile()` - Update user information
 - `getStats()` - Get performance metrics for charts
@@ -60,6 +70,7 @@ User profile and progress tracking:
 - Helper utilities for time formatting and NPM calculation
 
 ### `index.ts`
+
 Central export point for all services and types.
 
 ## Usage Examples
@@ -73,7 +84,7 @@ import { authService } from '@/services/api';
 try {
   const response = await authService.login({
     email: 'student@example.com',
-    password: 'SecurePass123!'
+    password: 'SecurePass123!',
   });
   console.log('Logged in as:', response.user.first_name);
   // Tokens are automatically stored
@@ -96,20 +107,20 @@ import { musicService } from '@/services/api';
 // Generate "Mary Had a Little Lamb" in D major, octave 4
 const maryXml = await musicService.generateMary({
   tonic: 'D',
-  octave: 4
+  octave: 4,
 });
 
 // Generate random notes with rhythm pattern
 const randomXml = await musicService.generateRandom({
   rhythm: '1111',
   rhythmType: 16,
-  tonic: 'C'
+  tonic: 'C',
 });
 
 // Generate note for identification game
 const noteGame = await musicService.generateNoteGame({
   scale: 'C',
-  octave: '4'
+  octave: '4',
 });
 console.log('Answer:', noteGame.noteName, noteGame.noteOctave);
 // Render noteGame.generatedXml with OpenSheetMusicDisplay
@@ -128,7 +139,7 @@ console.log(`Average NPM: ${profile.average_npm}`);
 // Get performance stats for charts
 const stats = await userService.getStats(123, {
   interval: 'day',
-  days: 30
+  days: 30,
 });
 // Use stats.npm, stats.accuracy, etc. with Chart.js
 
@@ -138,7 +149,7 @@ await userService.saveGameResult({
   total_questions: 20,
   correct_questions: 18,
   user_id: 123,
-  notes_per_minute: 65
+  notes_per_minute: 65,
 });
 
 // Get recent entries
@@ -184,6 +195,7 @@ VITE_BACKEND_MAIN=http://localhost:5001
 ## Token Storage
 
 Tokens are stored in localStorage:
+
 - `access_token` - JWT access token (short-lived)
 - `refresh_token` - JWT refresh token (long-lived)
 
@@ -208,11 +220,7 @@ window.addEventListener('auth:logout', () => {
 All services are fully typed with TypeScript. Import types as needed:
 
 ```typescript
-import type { 
-  User, 
-  NoteGameEntry, 
-  MultiMetricChartData 
-} from '@/services/api';
+import type { User, NoteGameEntry, MultiMetricChartData } from '@/services/api';
 
 const user: User = await authService.getCurrentUser();
 const entries: NoteGameEntry[] = await userService.getRecentGameEntries();
@@ -227,15 +235,16 @@ import { vi } from 'vitest';
 import * as authService from '@/services/api/auth.service';
 
 vi.spyOn(authService, 'login').mockResolvedValue({
-  user: { id: 1, email: 'test@example.com', /* ... */ },
+  user: { id: 1, email: 'test@example.com' /* ... */ },
   access_token: 'mock-token',
-  refresh_token: 'mock-refresh-token'
+  refresh_token: 'mock-refresh-token',
 });
 ```
 
 ## Future Enhancements
 
 Potential improvements:
+
 - [ ] Add request caching for frequently accessed data
 - [ ] Implement retry logic for failed requests
 - [ ] Add request cancellation for pending requests

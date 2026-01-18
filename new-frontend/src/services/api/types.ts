@@ -1,6 +1,6 @@
 /**
  * API Type Definitions
- * 
+ *
  * This file contains all TypeScript types and interfaces that mirror the backend API contracts.
  * These types are used throughout the application for type-safe API communication.
  */

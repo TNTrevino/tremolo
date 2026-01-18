@@ -1,9 +1,9 @@
 /**
  * Dashboard Page
- * 
+ *
  * Main dashboard page that orchestrates the display of user information,
  * performance metrics, and teacher-specific features.
- * 
+ *
  * This component:
  * - Fetches dashboard data via useDashboardData hook
  * - Manages chart interval and view mode state
@@ -34,7 +34,7 @@ function calculateTimeReading(totalSessions: number): string {
   const totalMinutes = totalSessions * 5;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
@@ -81,7 +81,8 @@ export function DashboardPage() {
   const timeReading = calculateTimeReading(stats.totalSessions);
 
   // Use class metrics if teacher is viewing class data
-  const displayChartData = isTeacher && viewMode === 'class' && classMetrics ? classMetrics : chartData;
+  const displayChartData =
+    isTeacher && viewMode === 'class' && classMetrics ? classMetrics : chartData;
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -114,9 +115,7 @@ export function DashboardPage() {
         />
 
         {/* Teacher Dashboard Section */}
-        {isTeacher && (
-          <TeacherDashboard user={user} />
-        )}
+        {isTeacher && <TeacherDashboard user={user} />}
       </div>
     </div>
   );

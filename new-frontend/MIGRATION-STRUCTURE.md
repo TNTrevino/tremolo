@@ -49,7 +49,9 @@ new-frontend/src/
 ## Files Moved
 
 ### UI Components
+
 All shadcn/ui components moved from `src/components/ui/` to `src/shared/components/ui/`:
+
 - button.tsx
 - card.tsx
 - input.tsx
@@ -57,18 +59,23 @@ All shadcn/ui components moved from `src/components/ui/` to `src/shared/componen
 - select.tsx
 
 ### Layout Components
+
 Moved from `src/components/` to `src/shared/components/layout/`:
+
 - Navigation.tsx
 - ProtectedRoute.tsx
 
 ### Import Updates
+
 Updated in `src/App.tsx`:
+
 - `@/components/Navigation` → `@/shared/components/layout/Navigation`
 - `@/components/ProtectedRoute` → `@/shared/components/layout/ProtectedRoute`
 
 ## Migration Status
 
 ✅ **Completed:**
+
 - Created all feature directories with proper structure
 - Created shared components structure
 - Moved UI and layout components
@@ -77,6 +84,7 @@ Updated in `src/App.tsx`:
 - Added .gitkeep files for empty directories
 
 🔄 **To Be Done (Future Tasks):**
+
 - Migrate page components into feature modules
 - Move contexts into appropriate features
 - Create API service modules
@@ -87,6 +95,7 @@ Updated in `src/App.tsx`:
 ## Original Structure (Preserved)
 
 The following directories remain unchanged for now:
+
 - `src/components/` - Original components (will be migrated incrementally)
 - `src/pages/` - Page components (will be refactored into features)
 - `src/contexts/` - React contexts (will be moved or converted to Zustand)

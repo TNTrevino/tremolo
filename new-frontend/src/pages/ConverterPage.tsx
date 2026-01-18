@@ -29,9 +29,7 @@ export function ConverterPage() {
       <div className="container mx-auto max-w-4xl space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">Sheet Music Converter</h1>
-          <p className="text-muted-foreground text-lg">
-            Upload and preview MusicXML files
-          </p>
+          <p className="text-muted-foreground text-lg">Upload and preview MusicXML files</p>
         </div>
 
         {/* Preview Area */}
@@ -63,8 +61,8 @@ export function ConverterPage() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    In a real implementation, this would render the actual sheet music from your MusicXML file
-                    using a library like OpenSheetMusicDisplay.
+                    In a real implementation, this would render the actual sheet music from your
+                    MusicXML file using a library like OpenSheetMusicDisplay.
                   </p>
                 </div>
               </>
@@ -95,12 +93,7 @@ export function ConverterPage() {
             onChange={handleFileUpload}
             className="hidden"
           />
-          <Button
-            size="lg"
-            onClick={handleButtonClick}
-            loading={isProcessing}
-            className="min-w-64"
-          >
+          <Button size="lg" onClick={handleButtonClick} loading={isProcessing} className="min-w-64">
             <Upload className="mr-2 h-5 w-5" />
             {uploadedFile ? 'Upload Different File' : 'Upload Sheet Music'}
           </Button>

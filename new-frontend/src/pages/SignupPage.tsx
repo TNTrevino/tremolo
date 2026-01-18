@@ -4,7 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Music, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { FormField } from '@/shared/components/forms/FormField';
 import { FormInput } from '@/shared/components/forms/FormInput';
 import { FormSelect } from '@/shared/components/forms/FormSelect';
@@ -71,7 +78,7 @@ export function SignupPage() {
         last_name: data.lastName,
         role: data.role,
       });
-      
+
       const navState: LoginLocationState = {
         successMessage: 'Account created! Please log in.',
       };
@@ -182,7 +189,12 @@ export function SignupPage() {
                     <div className="space-y-1 pt-2">
                       <div className="flex justify-between text-xs">
                         <span>Strength:</span>
-                        <span className={cn('font-medium', passwordStrength.color.replace('bg-', 'text-'))}>
+                        <span
+                          className={cn(
+                            'font-medium',
+                            passwordStrength.color.replace('bg-', 'text-')
+                          )}
+                        >
                           {passwordStrength.label}
                         </span>
                       </div>
@@ -198,7 +210,11 @@ export function SignupPage() {
               )}
             </FormField>
 
-            <FormField label="Confirm Password" error={errors.confirmPassword?.message} htmlFor="confirmPassword">
+            <FormField
+              label="Confirm Password"
+              error={errors.confirmPassword?.message}
+              htmlFor="confirmPassword"
+            >
               <div className="relative">
                 <FormInput
                   id="confirmPassword"
@@ -214,7 +230,11 @@ export function SignupPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </FormField>

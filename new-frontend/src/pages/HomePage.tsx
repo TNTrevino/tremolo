@@ -12,11 +12,11 @@ export function HomePage() {
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-5xl md:text-7xl font-bold leading-tight text-balance">
-              Master Music{' '}
-              <span className="text-primary">Sight Reading</span>
+              Master Music <span className="text-primary">Sight Reading</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-              The customizable platform for music students, teachers, and performers to practice sight reading and note recognition
+              The customizable platform for music students, teachers, and performers to practice
+              sight reading and note recognition
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
               <Link to="/note-game">
@@ -43,7 +43,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Interactive games that help you identify notes quickly and accurately. Track your speed and accuracy in real-time.
+                  Interactive games that help you identify notes quickly and accurately. Track your
+                  speed and accuracy in real-time.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -57,7 +58,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Customizable exercises focusing on specific rhythm patterns. Perfect for UIL preparation and auditions.
+                  Customizable exercises focusing on specific rhythm patterns. Perfect for UIL
+                  preparation and auditions.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -71,7 +73,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Detailed analytics showing your improvement over time. Set goals and celebrate your musical growth.
+                  Detailed analytics showing your improvement over time. Set goals and celebrate
+                  your musical growth.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -88,17 +91,20 @@ export function HomePage() {
               {
                 step: 1,
                 title: 'Choose Your Exercise',
-                description: 'Select from note games, rhythm practice, or custom exercises tailored to your needs.',
+                description:
+                  'Select from note games, rhythm practice, or custom exercises tailored to your needs.',
               },
               {
                 step: 2,
                 title: 'Practice & Learn',
-                description: 'Work through exercises tailored to your skill level and goals with immediate feedback.',
+                description:
+                  'Work through exercises tailored to your skill level and goals with immediate feedback.',
               },
               {
                 step: 3,
                 title: 'Track Improvement',
-                description: 'View your progress and celebrate your musical growth with detailed analytics.',
+                description:
+                  'View your progress and celebrate your musical growth with detailed analytics.',
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-6 items-start">
@@ -129,7 +135,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Create custom exercises, track student progress, and assign practice sessions. Perfect for classroom and individual instruction.
+                  Create custom exercises, track student progress, and assign practice sessions.
+                  Perfect for classroom and individual instruction.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -143,7 +150,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Build sight-reading confidence for auditions, competitions, and UIL practice. Work at your own pace and track your improvement.
+                  Build sight-reading confidence for auditions, competitions, and UIL practice. Work
+                  at your own pace and track your improvement.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -157,7 +165,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Advanced practice for specific chord structures, scale patterns, and complex rhythms. Take your skills to the next level.
+                  Advanced practice for specific chord structures, scale patterns, and complex
+                  rhythms. Take your skills to the next level.
                 </CardDescription>
               </CardContent>
             </Card>

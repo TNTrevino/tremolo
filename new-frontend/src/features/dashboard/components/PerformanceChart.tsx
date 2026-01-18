@@ -1,12 +1,12 @@
 /**
  * Performance Chart Component
- * 
+ *
  * Displays a line chart showing multiple performance metrics over time:
  * - Notes Per Minute (NPM)
  * - Accuracy percentage
  * - Session count
  * - Total questions
- * 
+ *
  * Includes an interval selector for different time ranges.
  */
 
@@ -50,7 +50,12 @@ function transformChartData(data: MultiMetricChartData) {
   const combined = [];
   for (let i = 0; i < maxLength; i++) {
     combined.push({
-      time: data.npm[i]?.x || data.accuracy[i]?.x || data.sessionCount[i]?.x || data.totalQuestions[i]?.x || '',
+      time:
+        data.npm[i]?.x ||
+        data.accuracy[i]?.x ||
+        data.sessionCount[i]?.x ||
+        data.totalQuestions[i]?.x ||
+        '',
       npm: data.npm[i]?.y || 0,
       accuracy: data.accuracy[i]?.y || 0,
       sessions: data.sessionCount[i]?.y || 0,
@@ -66,7 +71,7 @@ function transformChartData(data: MultiMetricChartData) {
  */
 function formatXAxisLabel(timestamp: string, interval: ChartInterval): string {
   const date = new Date(timestamp);
-  
+
   switch (interval) {
     case 'day':
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -117,7 +122,7 @@ export function PerformanceChart({
                 </Button>
               </div>
             )}
-            
+
             {/* Interval selector */}
             <Select
               value={interval}

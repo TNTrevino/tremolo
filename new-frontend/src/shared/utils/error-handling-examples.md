@@ -25,7 +25,7 @@ try {
 } catch (error) {
   const message = getErrorMessage(error);
   console.log(message); // "Something went wrong"
-  
+
   // Log with context
   logError(error, 'UserProfile.fetchData');
 }
@@ -34,12 +34,12 @@ try {
 ### Checking Error Types
 
 ```typescript
-import { 
-  isApiError, 
-  isNetworkError, 
-  isAuthError, 
+import {
+  isApiError,
+  isNetworkError,
+  isAuthError,
   isValidationError,
-  hasStatusCode 
+  hasStatusCode,
 } from '@/shared/utils/error.utils';
 
 try {
@@ -154,12 +154,12 @@ function DashboardPage() {
   return (
     <div>
       <h1>Dashboard</h1>
-      
+
       {/* Wrap risky component */}
       <ErrorBoundary>
         <ComplexChart data={chartData} />
       </ErrorBoundary>
-      
+
       {/* Wrap another risky component */}
       <ErrorBoundary>
         <UserStatistics userId={userId} />

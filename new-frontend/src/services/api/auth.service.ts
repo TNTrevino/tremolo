@@ -1,9 +1,9 @@
 /**
  * Authentication Service
- * 
+ *
  * Handles user authentication operations including login, registration,
  * token management, and user session retrieval.
- * 
+ *
  * All endpoints communicate with the Go backend (port 5001).
  */
 
@@ -20,11 +20,11 @@ import type {
 
 /**
  * Login user with email and password
- * 
+ *
  * @param credentials - User login credentials
  * @returns Promise with user data and authentication tokens
  * @throws ApiError if login fails
- * 
+ *
  * @example
  * ```typescript
  * const response = await authService.login({
@@ -36,20 +36,20 @@ import type {
  */
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
   const response = await mainApiClient.post<LoginResponse>('/api/auth/login', credentials);
-  
+
   // Store tokens in localStorage
   setTokens(response.data.access_token, response.data.refresh_token);
-  
+
   return response.data;
 };
 
 /**
  * Register a new user account
- * 
+ *
  * @param userData - User registration data
  * @returns Promise with registration confirmation and user data
  * @throws ApiError if registration fails (e.g., email already exists)
- * 
+ *
  * @example
  * ```typescript
  * const response = await authService.register({
@@ -70,7 +70,7 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
 /**
  * Logout current user
  * Clears tokens from localStorage and dispatches logout event
- * 
+ *
  * @example
  * ```typescript
  * authService.logout();
@@ -79,20 +79,20 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
  */
 export const logout = (): void => {
   clearTokens();
-  
+
   // Dispatch custom event for app-wide logout handling
   window.dispatchEvent(new CustomEvent('auth:logout'));
 };
 
 /**
  * Refresh access token using refresh token
- * 
+ *
  * Note: This is typically called automatically by the axios interceptor
  * when a 401 response is received. Manual calling is rarely needed.
- * 
+ *
  * @returns Promise with new access and refresh tokens
  * @throws ApiError if refresh fails
- * 
+ *
  * @example
  * ```typescript
  * const tokens = await authService.refreshToken();
@@ -101,28 +101,28 @@ export const logout = (): void => {
  */
 export const refreshToken = async (): Promise<RefreshTokenResponse> => {
   const refresh_token = getRefreshToken();
-  
+
   if (!refresh_token) {
     throw new Error('No refresh token available');
   }
-  
+
   const payload: RefreshTokenRequest = { refresh_token };
   const response = await mainApiClient.post<RefreshTokenResponse>('/api/auth/refresh', payload);
-  
+
   // Update stored tokens
   setTokens(response.data.access_token, response.data.refresh_token);
-  
+
   return response.data;
 };
 
 /**
  * Get current authenticated user information
- * 
+ *
  * Requires valid access token in localStorage
- * 
+ *
  * @returns Promise with current user data
  * @throws ApiError if not authenticated or request fails
- * 
+ *
  * @example
  * ```typescript
  * const user = await authService.getCurrentUser();
@@ -137,12 +137,12 @@ export const getCurrentUser = async (): Promise<User> => {
 
 /**
  * Check if user is currently authenticated
- * 
+ *
  * Note: This only checks for token existence, not validity.
  * Use getCurrentUser() to verify token is still valid.
- * 
+ *
  * @returns true if access token exists in localStorage
- * 
+ *
  * @example
  * ```typescript
  * if (authService.isAuthenticated()) {

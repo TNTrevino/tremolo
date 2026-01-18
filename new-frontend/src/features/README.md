@@ -7,25 +7,33 @@ Each feature is self-contained with its own components, hooks, services, types, 
 ## Feature Modules
 
 ### auth/
+
 Authentication and user management
+
 - Login, Signup, Account management
 - Protected routes and authorization
 - User session handling
 
 ### note-game/
+
 Note identification game
+
 - Interactive note recognition exercises
 - Score tracking and progress monitoring
 - Game state management
 
 ### dashboard/
+
 User dashboard and analytics
+
 - Progress statistics and charts
 - Activity overview
 - Quick access to exercises
 
 ### sheet-music/
+
 Sheet music display and generation
+
 - MusicXML rendering with OpenSheetMusicDisplay
 - Music generation integration
 - File conversion utilities

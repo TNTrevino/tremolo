@@ -15,12 +15,12 @@ export function getErrorMessage(error: unknown): string {
 
   if (isApiError(error)) {
     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-    
+
     // Try to get error message from response data
     if (axiosError.response?.data?.message) {
       return axiosError.response.data.message;
     }
-    
+
     if (axiosError.response?.data?.error) {
       return axiosError.response.data.error;
     }
@@ -92,14 +92,14 @@ export function logError(error: unknown, context?: string): void {
     // eslint-disable-next-line no-console
     console.group(`🔴 Error ${context ? `in ${context}` : ''}`);
     console.error(error);
-    
+
     if (isApiError(error)) {
       // eslint-disable-next-line no-console
       console.log('Request config:', error.config);
       // eslint-disable-next-line no-console
       console.log('Response:', error.response);
     }
-    
+
     // eslint-disable-next-line no-console
     console.groupEnd();
   } else {
@@ -113,7 +113,7 @@ export function logError(error: unknown, context?: string): void {
  */
 export function isNetworkError(error: unknown): boolean {
   if (!isApiError(error)) return false;
-  
+
   return (
     error.code === 'ERR_NETWORK' ||
     error.code === 'ECONNABORTED' ||
@@ -126,7 +126,7 @@ export function isNetworkError(error: unknown): boolean {
  */
 export function isAuthError(error: unknown): boolean {
   if (!isApiError(error)) return false;
-  
+
   return error.response?.status === 401 || error.response?.status === 403;
 }
 
@@ -135,7 +135,7 @@ export function isAuthError(error: unknown): boolean {
  */
 export function isValidationError(error: unknown): boolean {
   if (!isApiError(error)) return false;
-  
+
   return error.response?.status === 400 || error.response?.status === 422;
 }
 

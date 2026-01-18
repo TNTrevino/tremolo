@@ -184,7 +184,7 @@ const handleSubmit = async (formData) => {
     showSuccess('Form submitted successfully!');
   } catch (error) {
     logError(error, 'FormComponent.handleSubmit');
-    
+
     if (isValidationError(error)) {
       // Handle field errors
       showError('Please check the form for errors', 'Validation Error');
@@ -213,7 +213,7 @@ function UserProfile() {
       showSuccess('Profile updated successfully!');
     } catch (error) {
       logError(error, 'UserProfile.handleUpdate');
-      
+
       if (isAuthError(error)) {
         showError('Please log in again', 'Session Expired');
         navigate('/login');
@@ -261,7 +261,7 @@ throw new Error('Test error');
 // Test toast from console (if you expose it)
 window.showTestToast = () => {
   const event = new CustomEvent('showToast', {
-    detail: { message: 'Test', type: 'info' }
+    detail: { message: 'Test', type: 'info' },
   });
   window.dispatchEvent(event);
 };

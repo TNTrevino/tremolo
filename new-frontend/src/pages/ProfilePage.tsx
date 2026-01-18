@@ -22,7 +22,8 @@ export function ProfilePage() {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
               <div className="w-32 h-32 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold">
-                {user.firstName[0]}{user.lastName[0]}
+                {user.firstName[0]}
+                {user.lastName[0]}
               </div>
               <div className="flex-1 text-center md:text-left space-y-3">
                 <h2 className="text-3xl font-bold">

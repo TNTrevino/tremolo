@@ -1,17 +1,17 @@
 /**
  * API Services Index
- * 
+ *
  * Central export point for all API services and utilities.
  * Import from this file to access any API service functionality.
- * 
+ *
  * @example
  * ```typescript
  * // Import individual services
  * import { authService, musicService, userService } from '@/services/api';
- * 
+ *
  * // Import specific functions
  * import { login, generateMary, getProfile } from '@/services/api';
- * 
+ *
  * // Import types
  * import type { User, NoteGameEntry } from '@/services/api';
  * ```
@@ -84,27 +84,27 @@ export type {
   RegisterResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
-  
+
   // Note Game Types
   CreateNoteGameEntryRequest,
   NoteGameEntry,
   CreateNoteGameEntryResponse,
-  
+
   // User Info Types
   GeneralUserInfo,
-  
+
   // Chart/Analytics Types
   ChartDataPoint,
   MultiMetricChartData,
   ChartInterval,
   ChartQueryParams,
-  
+
   // Music Generation Types
   MaryRequest,
   RandomNotesRequest,
   NoteGameRequest,
   NoteGameResponse,
-  
+
   // Error Types
   ApiError,
   ApiResponse,

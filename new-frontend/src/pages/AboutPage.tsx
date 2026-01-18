@@ -8,26 +8,28 @@ export function AboutPage() {
         {/* Mission Statement */}
         <section className="space-y-6 animate-fade-in">
           <h1 className="text-5xl font-bold">About Tremolo</h1>
-          
+
           <Card className="border-primary/50 shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Our Mission</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-lg text-muted-foreground">
               <p>
-                Tremolo was born from real classroom experience as a percussion director who witnessed
-                a fundamental problem: students were memorizing sheet music instead of actually learning
-                to read it.
+                Tremolo was born from real classroom experience as a percussion director who
+                witnessed a fundamental problem: students were memorizing sheet music instead of
+                actually learning to read it.
               </p>
               <p>
-                We believe in building genuine skills over memorization tricks. That&apos;s why every exercise
-                in Tremolo is dynamically generated—no two practice sessions are ever the same. Students
-                can&apos;t memorize their way through; they have to actually learn to read music.
+                We believe in building genuine skills over memorization tricks. That&apos;s why
+                every exercise in Tremolo is dynamically generated—no two practice sessions are ever
+                the same. Students can&apos;t memorize their way through; they have to actually
+                learn to read music.
               </p>
               <p>
-                From beginner fundamentals to advanced concepts, Tremolo adapts to every skill level.
-                Whether you&apos;re a 6th grader just starting your musical journey or a seasoned musician
-                preparing for an important audition, we have the tools to help you improve.
+                From beginner fundamentals to advanced concepts, Tremolo adapts to every skill
+                level. Whether you&apos;re a 6th grader just starting your musical journey or a
+                seasoned musician preparing for an important audition, we have the tools to help you
+                improve.
               </p>
             </CardContent>
           </Card>
@@ -36,7 +38,7 @@ export function AboutPage() {
         {/* For Music Educators */}
         <section className="space-y-6">
           <h2 className="text-4xl font-bold">For Music Educators</h2>
-          
+
           <div className="space-y-6">
             <div className="flex gap-4 items-start">
               <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -60,8 +62,8 @@ export function AboutPage() {
                 <h3 className="text-2xl font-bold mb-2">UIL-Focused Practice</h3>
                 <p className="text-muted-foreground text-lg">
                   Tremolo targets specific rhythms and patterns that frequently appear in UIL sight
-                  reading competitions. Students can practice the exact skills they&apos;ll need to succeed
-                  in competitive settings.
+                  reading competitions. Students can practice the exact skills they&apos;ll need to
+                  succeed in competitive settings.
                 </p>
               </div>
             </div>
@@ -74,7 +76,8 @@ export function AboutPage() {
                 <h3 className="text-2xl font-bold mb-2">Customizable Learning Paths</h3>
                 <p className="text-muted-foreground text-lg">
                   Every student learns differently. Create tailored exercises that target specific
-                  weaknesses, reinforce strengths, and adapt to individual learning speeds and styles.
+                  weaknesses, reinforce strengths, and adapt to individual learning speeds and
+                  styles.
                 </p>
               </div>
             </div>
@@ -84,7 +87,7 @@ export function AboutPage() {
         {/* For Developing Musicians */}
         <section className="space-y-6">
           <h2 className="text-4xl font-bold">For Developing Musicians</h2>
-          
+
           <div className="space-y-6">
             <div className="flex gap-4 items-start">
               <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -125,9 +128,9 @@ export function AboutPage() {
             <CardContent className="text-lg text-muted-foreground">
               <p>
                 We&apos;re building a comprehensive solution that covers everything from beginner
-                fundamentals to advanced concepts. Whether you&apos;re a 6th grader learning your first
-                notes or a seasoned musician preparing for a professional audition, Tremolo will
-                have the tools and exercises you need to succeed.
+                fundamentals to advanced concepts. Whether you&apos;re a 6th grader learning your
+                first notes or a seasoned musician preparing for a professional audition, Tremolo
+                will have the tools and exercises you need to succeed.
               </p>
               <p className="mt-4">
                 Our goal is simple: make sight-reading practice effective, engaging, and accessible

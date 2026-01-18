@@ -22,7 +22,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
 
   React.useEffect(() => {
     const duration = toast.duration ?? 5000;
-    
+
     if (duration > 0) {
       const exitTimer = setTimeout(() => {
         setIsExiting(true);
@@ -88,11 +88,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
     >
       <div className="flex-shrink-0">{getIcon()}</div>
       <div className="flex-1 space-y-1">
-        {toast.title && (
-          <p className="text-sm font-semibold text-foreground">
-            {toast.title}
-          </p>
-        )}
+        {toast.title && <p className="text-sm font-semibold text-foreground">{toast.title}</p>}
         <p className="text-sm text-muted-foreground">{toast.message}</p>
       </div>
       <button

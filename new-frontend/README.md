@@ -30,17 +30,20 @@ A modern, responsive music education platform designed for students in grades 6-
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd tremolo-frontend
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -119,6 +122,7 @@ tremolo-frontend/
 The app uses a mock authentication system with localStorage for demonstration purposes. In a production environment, this would be replaced with a real backend API.
 
 Default demo credentials:
+
 - Email: demo@tremolo.com
 - Password: (any password)
 

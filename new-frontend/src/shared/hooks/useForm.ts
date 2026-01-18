@@ -10,12 +10,12 @@ export interface UseFormOptions<T extends FieldValues> extends Omit<UseFormProps
 
 /**
  * Custom wrapper around react-hook-form that integrates Zod validation.
- * 
+ *
  * @example
  * ```tsx
  * import { useForm } from '@/shared/hooks/useForm';
  * import { loginSchema, LoginFormData } from '@/features/auth/validation/schemas';
- * 
+ *
  * function LoginForm() {
  *   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
  *     schema: loginSchema,
@@ -24,11 +24,11 @@ export interface UseFormOptions<T extends FieldValues> extends Omit<UseFormProps
  *       password: '',
  *     },
  *   });
- * 
+ *
  *   const onSubmit = (data: LoginFormData) => {
  *     console.log(data);
  *   };
- * 
+ *
  *   return (
  *     <form onSubmit={handleSubmit(onSubmit)}>
  *       <FormField label="Email" error={errors.email?.message}>
