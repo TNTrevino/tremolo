@@ -28,6 +28,7 @@ export function LoginFormExample() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    // eslint-disable-next-line no-console
     console.log('Login data:', data);
     // Call your login API here
     // await authService.login(data);
@@ -92,6 +93,7 @@ export function SignupFormExample() {
   });
 
   const onSubmit = async (data: SignupFormData) => {
+    // eslint-disable-next-line no-console
     console.log('Signup data:', data);
     // Call your signup API here
     // await authService.signup(data);
