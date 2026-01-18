@@ -182,7 +182,9 @@ export function SheetMusicPage() {
 
 							{/* Generate Mary Button */}
 							<div className="space-y-2">
-								<label className="text-sm font-medium">Generate Exercise</label>
+								<span className="text-sm font-medium block">
+									Generate Exercise
+								</span>
 								<Button
 									onClick={handleGenerateMary}
 									disabled={isGenerating}
