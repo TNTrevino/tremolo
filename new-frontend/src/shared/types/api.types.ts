@@ -2,7 +2,7 @@
  * API response types and data transfer objects (DTOs)
  */
 
-import { User } from './user.types';
+import type { User } from './user.types';
 
 /**
  * Standard API response wrapper

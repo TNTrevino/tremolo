@@ -3,7 +3,7 @@
  * Provides consistent error handling across the application
  */
 
-import { AxiosError } from 'axios';
+import type { AxiosError } from 'axios';
 
 /**
  * Extracts a user-friendly error message from various error types

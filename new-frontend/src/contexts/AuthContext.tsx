@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { User, AuthContextType, SignupData } from '@/shared/types';
+import type { ReactNode } from 'react';
+import { createContext, useContext, useState } from 'react';
+import type { User, AuthContextType, SignupData } from '@/shared/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

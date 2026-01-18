@@ -1,6 +1,7 @@
-import { useForm as useHookForm, UseFormProps, UseFormReturn, FieldValues } from 'react-hook-form';
+import type { UseFormProps, UseFormReturn, FieldValues } from 'react-hook-form';
+import { useForm as useHookForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ZodType } from 'zod';
+import type { ZodType } from 'zod';
 
 export interface UseFormOptions<T extends FieldValues> extends Omit<UseFormProps<T>, 'resolver'> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

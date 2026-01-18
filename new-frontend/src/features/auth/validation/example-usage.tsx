@@ -8,7 +8,8 @@
 import { useForm } from '@/shared/hooks/useForm';
 import { FormField, FormInput, FormSelect } from '@/shared/components/forms';
 import { Button } from '@/shared/components/ui/button';
-import { loginSchema, signupSchema, LoginFormData, SignupFormData } from './schemas';
+import type { LoginFormData, SignupFormData } from './schemas';
+import { loginSchema, signupSchema } from './schemas';
 
 // ============================================================================
 // EXAMPLE 1: Login Form

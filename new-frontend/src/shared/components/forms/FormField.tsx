@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 import { FormLabel } from "./FormLabel";
 import { FormError } from "./FormError";
 import { cn } from "@/lib/utils";

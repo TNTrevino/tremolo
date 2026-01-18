@@ -9,8 +9,8 @@ import { FormField } from '@/shared/components/forms/FormField';
 import { FormInput } from '@/shared/components/forms/FormInput';
 import { loginSchema, type LoginFormData } from '@/features/auth/validation/schemas';
 import { useLogin } from '@/shared/hooks/queries/useAuthQuery';
-import { LoginLocationState } from '@/shared/types';
-import { ApiError } from '@/services/api/types';
+import type { LoginLocationState } from '@/shared/types';
+import type { ApiError } from '@/services/api/types';
 
 export interface LoginPageProps {}
 

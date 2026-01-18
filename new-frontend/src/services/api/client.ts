@@ -8,7 +8,8 @@
  * Includes request/response interceptors for authentication and error handling.
  */
 
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
 import type { ApiError } from './types';
 
 // ============================================================================

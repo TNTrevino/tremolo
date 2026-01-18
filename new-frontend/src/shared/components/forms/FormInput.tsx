@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Input, InputProps } from "@/shared/components/ui/input";
-import { UseFormRegisterReturn } from "react-hook-form";
+import type { InputProps } from "@/shared/components/ui/input";
+import { Input } from "@/shared/components/ui/input";
+import type { UseFormRegisterReturn } from "react-hook-form";
 
 export interface FormInputProps extends Omit<InputProps, 'error'> {
   registration?: Partial<UseFormRegisterReturn>;

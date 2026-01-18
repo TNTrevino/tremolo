@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Select, SelectProps } from "@/shared/components/ui/select";
-import { UseFormRegisterReturn } from "react-hook-form";
+import type { SelectProps } from "@/shared/components/ui/select";
+import { Select } from "@/shared/components/ui/select";
+import type { UseFormRegisterReturn } from "react-hook-form";
 
 export interface FormSelectProps extends Omit<SelectProps, 'error'> {
   registration?: Partial<UseFormRegisterReturn>;

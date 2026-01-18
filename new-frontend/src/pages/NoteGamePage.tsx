@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { GameStats } from '@/shared/types';
+import type { GameStats } from '@/shared/types';
 import {
   useNoteGame,
   useGameTimer,

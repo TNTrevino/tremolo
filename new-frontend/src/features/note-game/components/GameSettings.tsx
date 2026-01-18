@@ -2,7 +2,8 @@ import { Music2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { GameSettings as GameSettingsType, SCALES } from '../types';
+import type { GameSettings as GameSettingsType} from '../types';
+import { SCALES } from '../types';
 
 export interface GameSettingsProps {
   settings: GameSettingsType;

@@ -11,8 +11,8 @@ import { FormSelect } from '@/shared/components/forms/FormSelect';
 import { signupSchema, type SignupFormData } from '@/features/auth/validation/schemas';
 import { useRegister } from '@/shared/hooks/queries/useAuthQuery';
 import { cn } from '@/lib/utils';
-import { PasswordRequirement, LoginLocationState } from '@/shared/types';
-import { ApiError } from '@/services/api/types';
+import type { PasswordRequirement, LoginLocationState } from '@/shared/types';
+import type { ApiError } from '@/services/api/types';
 
 export interface SignupPageProps {}
 

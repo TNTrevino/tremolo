@@ -12,7 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { GameStats } from '../types';
+import type { GameStats } from '../types';
 
 export interface GameResultsProps {
   gameStats: GameStats;

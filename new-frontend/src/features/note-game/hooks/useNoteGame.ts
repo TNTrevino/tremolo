@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { GameState, NoteAnswer, GameStats, GameSettings, NOTES, ACCIDENTALS } from '../types';
+import type { GameState, NoteAnswer, GameStats, GameSettings} from '../types';
+import { NOTES, ACCIDENTALS } from '../types';
 
 // Generate all possible notes
 const ALL_NOTES = ACCIDENTALS.flatMap((acc) => NOTES.map((note) => `${note}${acc}`));

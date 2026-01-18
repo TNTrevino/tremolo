@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Toast, ToastType } from '@/shared/components/ui/toast';
+import type { Toast, ToastType } from '@/shared/components/ui/toast';
 
 interface ToastContextValue {
   toasts: Toast[];
