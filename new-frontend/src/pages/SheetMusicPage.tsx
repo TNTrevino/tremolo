@@ -102,8 +102,8 @@ export function SheetMusicPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Scale Selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Choose Scale</label>
-                <Select value={scale} onChange={(e) => setScale(e.target.value)}>
+                <label htmlFor="scale-select" className="text-sm font-medium">Choose Scale</label>
+                <Select id="scale-select" value={scale} onChange={(e) => setScale(e.target.value)}>
                   {scales.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -114,8 +114,8 @@ export function SheetMusicPage() {
 
               {/* Octave Selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Choose Octave</label>
-                <Select value={octave.toString()} onChange={(e) => setOctave(Number(e.target.value))}>
+                <label htmlFor="octave-select" className="text-sm font-medium">Choose Octave</label>
+                <Select id="octave-select" value={octave.toString()} onChange={(e) => setOctave(Number(e.target.value))}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => (
                     <option key={o} value={o}>
                       Octave {o}

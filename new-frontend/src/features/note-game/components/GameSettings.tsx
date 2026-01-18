@@ -92,8 +92,9 @@ export function GameSettings({ settings, onSettingsChange, onStartGame }: GameSe
 
           {/* Octave */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Octave</label>
+            <label htmlFor="octave" className="text-sm font-medium">Octave</label>
             <Select
+              id="octave"
               value={settings.octave.toString()}
               onChange={(e) => onSettingsChange({ octave: Number(e.target.value) })}
             >
