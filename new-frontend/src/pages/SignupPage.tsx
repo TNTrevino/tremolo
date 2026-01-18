@@ -1,47 +1,51 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Music, Check, X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/shared/components/forms/FormField';
+import { FormInput } from '@/shared/components/forms/FormInput';
+import { FormSelect } from '@/shared/components/forms/FormSelect';
+import { signupSchema, type SignupFormData } from '@/features/auth/validation/schemas';
+import { useRegister } from '@/shared/hooks/queries/useAuthQuery';
 import { cn } from '@/lib/utils';
 import { PasswordRequirement, LoginLocationState } from '@/shared/types';
+import { ApiError } from '@/services/api/types';
 
 export interface SignupPageProps {}
 
 export function SignupPage() {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'student' as 'student' | 'teacher' | 'parent',
-  });
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [passwordFocused, setPasswordFocused] = useState(false);
-
-  const { signup } = useAuth();
   const navigate = useNavigate();
+  const registerMutation = useRegister();
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    setError,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      role: 'student',
+    },
+  });
+
+  const password = watch('password', '');
 
   // Password validation
   const passwordRequirements: PasswordRequirement[] = [
-    { label: 'At least 8 characters', met: formData.password.length >= 8 },
-    { label: 'Contains uppercase letter', met: /[A-Z]/.test(formData.password) },
-    { label: 'Contains lowercase letter', met: /[a-z]/.test(formData.password) },
-    { label: 'Contains number', met: /\d/.test(formData.password) },
-    { label: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password) },
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Contains number', met: /\d/.test(password) },
+    { label: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
   ];
-
-  const allRequirementsMet = passwordRequirements.every((req) => req.met);
 
   // Password strength
   const getPasswordStrength = () => {
@@ -55,96 +59,26 @@ export function SignupPage() {
 
   const passwordStrength = getPasswordStrength();
 
-  const validateField = (field: string, value: string) => {
-    switch (field) {
-      case 'firstName':
-      case 'lastName':
-        return value.length >= 2 && /^[a-zA-Z]+$/.test(value);
-      case 'email':
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      case 'password':
-        return allRequirementsMet;
-      case 'confirmPassword':
-        return value === formData.password;
-      default:
-        return true;
-    }
-  };
-
-  const getFieldError = (field: string) => {
-    if (!touched[field]) return '';
-
-    switch (field) {
-      case 'firstName':
-      case 'lastName':
-        if (!formData[field]) return `${field === 'firstName' ? 'First' : 'Last'} name is required`;
-        if (formData[field].length < 2) return 'Must be at least 2 characters';
-        if (!/^[a-zA-Z]+$/.test(formData[field])) return 'Only letters allowed';
-        return '';
-      case 'email':
-        if (!formData.email) return 'Email is required';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return 'Invalid email format';
-        return '';
-      case 'password':
-        if (!formData.password) return 'Password is required';
-        if (!allRequirementsMet) return 'Password does not meet all requirements';
-        return '';
-      case 'confirmPassword':
-        if (!formData.confirmPassword) return 'Please confirm your password';
-        if (formData.confirmPassword !== formData.password) return 'Passwords do not match';
-        return '';
-      default:
-        return '';
-    }
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setError('');
-  };
-
-  const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    // Mark all fields as touched
-    setTouched({
-      firstName: true,
-      lastName: true,
-      email: true,
-      password: true,
-      confirmPassword: true,
-    });
-
-    // Validate all fields
-    const isValid = Object.keys(formData).every((field) =>
-      validateField(field, formData[field as keyof typeof formData])
-    );
-
-    if (!isValid) {
-      return;
-    }
-
-    setLoading(true);
-
+  const onSubmit = async (data: SignupFormData) => {
     try {
-      const success = await signup(formData);
-      if (success) {
-        const navState: LoginLocationState = { 
-          successMessage: 'Account created! Please log in.' 
-        };
-        navigate('/login', { state: navState });
-      } else {
-        setError('Email already exists');
-      }
+      // Map form data to API format
+      await registerMutation.mutateAsync({
+        email: data.email,
+        password: data.password,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        role: data.role,
+      });
+      
+      const navState: LoginLocationState = {
+        successMessage: 'Account created! Please log in.',
+      };
+      navigate('/login', { state: navState });
     } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      const apiError = err as ApiError;
+      setError('root', {
+        message: apiError.message || 'Registration failed. Please try again.',
+      });
     }
   };
 
@@ -163,73 +97,59 @@ export function SignupPage() {
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-            {error && (
+            {errors.root && (
               <div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
-                {error}
+                {errors.root.message}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
+              <FormField label="First Name" error={errors.firstName?.message} htmlFor="firstName">
+                <FormInput
                   id="firstName"
                   placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  onBlur={() => handleBlur('firstName')}
-                  error={getFieldError('firstName')}
                   autoComplete="given-name"
+                  {...register('firstName')}
+                  error={errors.firstName?.message}
                 />
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
+              <FormField label="Last Name" error={errors.lastName?.message} htmlFor="lastName">
+                <FormInput
                   id="lastName"
                   placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => handleChange('lastName', e.target.value)}
-                  onBlur={() => handleBlur('lastName')}
-                  error={getFieldError('lastName')}
                   autoComplete="family-name"
+                  {...register('lastName')}
+                  error={errors.lastName?.message}
                 />
-              </div>
+              </FormField>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
+            <FormField label="Email Address" error={errors.email?.message} htmlFor="email">
+              <FormInput
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                onBlur={() => handleBlur('email')}
-                error={getFieldError('email')}
                 autoComplete="email"
+                {...register('email')}
+                error={errors.email?.message}
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <FormField label="Password" error={errors.password?.message} htmlFor="password">
               <div className="relative">
-                <Input
+                <FormInput
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => handleChange('password', e.target.value)}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => {
-                    handleBlur('password');
-                    setPasswordFocused(false);
-                  }}
-                  error={getFieldError('password')}
                   autoComplete="new-password"
                   className="pr-10"
+                  {...register('password')}
+                  error={errors.password?.message}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                 />
                 <button
                   type="button"
@@ -240,7 +160,7 @@ export function SignupPage() {
                 </button>
               </div>
 
-              {(passwordFocused || formData.password) && (
+              {(passwordFocused || password) && (
                 <div className="space-y-2 p-3 rounded-md bg-muted/50 border border-border">
                   <p className="text-xs font-medium">Password Requirements:</p>
                   <div className="space-y-1">
@@ -256,7 +176,7 @@ export function SignupPage() {
                     ))}
                   </div>
 
-                  {formData.password && (
+                  {password && (
                     <div className="space-y-1 pt-2">
                       <div className="flex justify-between text-xs">
                         <span>Strength:</span>
@@ -274,21 +194,18 @@ export function SignupPage() {
                   )}
                 </div>
               )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <FormField label="Confirm Password" error={errors.confirmPassword?.message} htmlFor="confirmPassword">
               <div className="relative">
-                <Input
+                <FormInput
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                  onBlur={() => handleBlur('confirmPassword')}
-                  error={getFieldError('confirmPassword')}
                   autoComplete="new-password"
                   className="pr-10"
+                  {...register('confirmPassword')}
+                  error={errors.confirmPassword?.message}
                 />
                 <button
                   type="button"
@@ -298,24 +215,19 @@ export function SignupPage() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">I am a...</Label>
-              <Select
-                id="role"
-                value={formData.role}
-                onChange={(e) => handleChange('role', e.target.value)}
-              >
+            <FormField label="I am a..." error={errors.role?.message} htmlFor="role">
+              <FormSelect id="role" {...register('role')} error={errors.role?.message}>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
                 <option value="parent">Parent</option>
-              </Select>
-            </div>
+              </FormSelect>
+            </FormField>
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" size="lg" loading={loading}>
+            <Button type="submit" className="w-full" size="lg" loading={registerMutation.isPending}>
               Create Account
             </Button>
 

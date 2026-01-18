@@ -37,7 +37,7 @@ export const userKeys = {
 export function useGeneralUserInfo(userId?: string) {
   const token = useAuthStore((state) => state.token);
   const currentUser = useAuthStore((state) => state.user);
-  const targetUserId = userId || currentUser?.id;
+  const targetUserId = userId || currentUser?.id?.toString();
 
   return useQuery({
     queryKey: userKeys.generalInfo(targetUserId || 'unknown'),
@@ -64,7 +64,7 @@ export function useGeneralUserInfo(userId?: string) {
 export function useUserStats(userId?: string) {
   const token = useAuthStore((state) => state.token);
   const currentUser = useAuthStore((state) => state.user);
-  const targetUserId = userId || currentUser?.id;
+  const targetUserId = userId || currentUser?.id?.toString();
 
   return useQuery({
     queryKey: userKeys.stats(targetUserId || 'unknown'),

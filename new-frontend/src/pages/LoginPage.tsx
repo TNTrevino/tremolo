@@ -1,79 +1,47 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Music } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/shared/components/forms/FormField';
+import { FormInput } from '@/shared/components/forms/FormInput';
+import { loginSchema, type LoginFormData } from '@/features/auth/validation/schemas';
+import { useLogin } from '@/shared/hooks/queries/useAuthQuery';
 import { LoginLocationState } from '@/shared/types';
+import { ApiError } from '@/services/api/types';
 
 export interface LoginPageProps {}
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
-  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const loginMutation = useLogin();
 
   const locationState = location.state as LoginLocationState | null;
   const successMessage = locationState?.successMessage;
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      setEmailError('Email is required');
-      return false;
-    }
-    if (!emailRegex.test(email)) {
-      setEmailError('Invalid email format');
-      return false;
-    }
-    setEmailError('');
-    return true;
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const validatePassword = (password: string) => {
-    if (!password) {
-      setPasswordError('Password is required');
-      return false;
-    }
-    setPasswordError('');
-    return true;
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
-
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
-
-    setLoading(true);
-
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      const success = await login(email, password);
-      if (success) {
-        const from = locationState?.from?.pathname ?? '/dashboard';
-        navigate(from, { replace: true });
-      } else {
-        setError('Invalid email or password');
-      }
+      await loginMutation.mutateAsync(data);
+      const from = locationState?.from?.pathname ?? '/dashboard';
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      const apiError = err as ApiError;
+      setError('root', {
+        message: apiError.message || 'Invalid email or password',
+      });
     }
   };
 
@@ -92,7 +60,7 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             {successMessage && (
               <div className="p-3 rounded-md bg-primary/10 border-2 border-primary text-sm font-medium">
@@ -100,45 +68,33 @@ export function LoginPage() {
               </div>
             )}
 
-            {error && (
+            {errors.root && (
               <div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
-                {error}
+                {errors.root.message}
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
+            <FormField label="Email Address" error={errors.email?.message} htmlFor="email">
+              <FormInput
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError('');
-                }}
-                onBlur={() => validateEmail(email)}
-                error={emailError}
                 autoComplete="email"
+                {...register('email')}
+                error={errors.email?.message}
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <FormField label="Password" error={errors.password?.message} htmlFor="password">
               <div className="relative">
-                <Input
+                <FormInput
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError('');
-                  }}
-                  onBlur={() => validatePassword(password)}
-                  error={passwordError}
                   autoComplete="current-password"
                   className="pr-10"
+                  {...register('password')}
+                  error={errors.password?.message}
                 />
                 <button
                   type="button"
@@ -152,11 +108,11 @@ export function LoginPage() {
                   )}
                 </button>
               </div>
-            </div>
+            </FormField>
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" size="lg" loading={loading}>
+            <Button type="submit" className="w-full" size="lg" loading={loginMutation.isPending}>
               Sign In
             </Button>
 

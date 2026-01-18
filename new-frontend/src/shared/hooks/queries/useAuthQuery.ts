@@ -1,37 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth.store';
-
-// Types (will be replaced with actual API service types later)
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface RegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  role: 'student' | 'teacher' | 'parent';
-}
+import { authService } from '@/services/api/auth.service';
+import type { LoginRequest, RegisterRequest, User as ApiUser } from '@/services/api/types';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   firstName: string;
   lastName: string;
   role: 'student' | 'teacher' | 'parent';
 }
 
-interface LoginResponse {
-  user: User;
-  token: string;
-}
-
-interface RegisterResponse {
-  user: User;
-  token: string;
-}
+// Helper to convert API user to local user format
+const mapApiUserToUser = (apiUser: ApiUser): User => ({
+  id: apiUser.id,
+  email: apiUser.email,
+  firstName: apiUser.first_name,
+  lastName: apiUser.last_name,
+  role: apiUser.role,
+});
 
 // Query Keys
 export const authKeys = {
@@ -55,12 +42,8 @@ export function useCurrentUser() {
         throw new Error('No authentication token found');
       }
 
-      // TODO: Replace with actual API call
-      // const response = await authApi.getCurrentUser();
-      // return response.data;
-
-      // Placeholder for now
-      throw new Error('API service not yet implemented');
+      const apiUser = await authService.getCurrentUser();
+      return mapApiUserToUser(apiUser);
     },
     enabled: !!token,
   });
@@ -71,21 +54,18 @@ export function useCurrentUser() {
  */
 export function useLogin() {
   const queryClient = useQueryClient();
-  const { setUser, setToken } = useAuthStore();
+  const loginUser = useAuthStore((state) => state.loginUser);
 
   return useMutation({
-    mutationFn: async (_credentials: LoginRequest): Promise<LoginResponse> => {
-      // TODO: Replace with actual API call
-      // const response = await authApi.login(_credentials);
-      // return response.data;
-
-      // Placeholder for now
-      throw new Error('API service not yet implemented');
+    mutationFn: async (credentials: LoginRequest) => {
+      await loginUser(credentials);
+      const user = useAuthStore.getState().user;
+      return user;
     },
-    onSuccess: (data) => {
-      setUser(data.user);
-      setToken(data.token);
-      queryClient.setQueryData(authKeys.currentUser(), data.user);
+    onSuccess: (user) => {
+      if (user) {
+        queryClient.setQueryData(authKeys.currentUser(), user);
+      }
     },
   });
 }
@@ -94,22 +74,11 @@ export function useLogin() {
  * Hook to handle user registration
  */
 export function useRegister() {
-  const queryClient = useQueryClient();
-  const { setUser, setToken } = useAuthStore();
+  const registerUser = useAuthStore((state) => state.registerUser);
 
   return useMutation({
-    mutationFn: async (_userData: RegisterRequest): Promise<RegisterResponse> => {
-      // TODO: Replace with actual API call
-      // const response = await authApi.register(_userData);
-      // return response.data;
-
-      // Placeholder for now
-      throw new Error('API service not yet implemented');
-    },
-    onSuccess: (data) => {
-      setUser(data.user);
-      setToken(data.token);
-      queryClient.setQueryData(authKeys.currentUser(), data.user);
+    mutationFn: async (userData: RegisterRequest) => {
+      await registerUser(userData);
     },
   });
 }
@@ -119,15 +88,13 @@ export function useRegister() {
  */
 export function useLogout() {
   const queryClient = useQueryClient();
-  const { logout } = useAuthStore();
+  const logoutUser = useAuthStore((state) => state.logoutUser);
 
   return useMutation({
     mutationFn: async () => {
-      // TODO: Add API call to invalidate refresh token on server if needed
-      // await authApi.logout();
+      logoutUser();
     },
     onSuccess: () => {
-      logout();
       queryClient.clear();
     },
   });
