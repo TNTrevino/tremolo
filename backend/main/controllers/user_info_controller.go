@@ -24,8 +24,9 @@ func SetupUserInfoRoutes(router *gin.Engine) {
 // GetGeneralUserInfo fetches general user information including name, join date, and aggregate stats
 // Protected: Requires JWT authentication, users can only access their own data
 func GetGeneralUserInfo(c *gin.Context) {
-	authenticatedUserID, ok := middleware.GetAuthenticatedUserID(c)
-	if !ok {
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

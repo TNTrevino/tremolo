@@ -4,6 +4,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -117,22 +118,20 @@ func GetJWTSecret() []byte {
 
 // GetAuthenticatedUserID extracts and validates the authenticated user ID from the Gin context
 // This is a helper function to reduce boilerplate in handlers that use AuthMiddleware
-// Returns the user ID and a boolean indicating success
-// If extraction fails, it automatically sends an appropriate JSON error response and returns (0, false)
-func GetAuthenticatedUserID(c *gin.Context) (int, bool) {
+// Returns the user ID or an error if extraction fails
+// Callers are responsible for handling the error and setting appropriate HTTP responses
+func GetAuthenticatedUserID(c *gin.Context) (int, error) {
 	userIDInterface, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return 0, false
+		return 0, errors.New("Unauthorized")
 	}
 
 	authenticatedUserID, ok := userIDInterface.(int)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-		return 0, false
+		return 0, errors.New("Unauthorized")
 	}
 
-	return authenticatedUserID, true
+	return authenticatedUserID, nil
 }
 
 // AuthMiddleware validates JWT tokens and adds user ID to context

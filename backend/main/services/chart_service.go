@@ -22,8 +22,9 @@ const (
 // Protected: Requires JWT authentication, users can only access their own data
 func GetUserChartData(c *gin.Context) {
 	// Step 1: Authenticate and authorize
-	authenticatedUserID, ok := middleware.GetAuthenticatedUserID(c)
-	if !ok {
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -65,8 +66,9 @@ func GetUserChartData(c *gin.Context) {
 // Protected: Requires JWT authentication AND role=teacher
 func GetTeacherClassChartData(c *gin.Context) {
 	// Step 1: Authenticate and verify teacher role
-	teacherID, ok := middleware.GetAuthenticatedUserID(c)
-	if !ok {
+	teacherID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

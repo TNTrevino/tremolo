@@ -24,8 +24,9 @@ func SetupNoteGameRoutes(router *gin.Engine) {
 // CreateNoteGameEntry saves a new note game entry for a user
 // Protected: Requires JWT authentication
 func CreateNoteGameEntry(c *gin.Context) {
-	authenticatedUserID, ok := middleware.GetAuthenticatedUserID(c)
-	if !ok {
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -55,8 +56,9 @@ func CreateNoteGameEntry(c *gin.Context) {
 // GetRecentNoteGameEntries fetches the last 30 note game entries for the authenticated user
 // Protected: Requires JWT authentication
 func GetRecentNoteGameEntries(c *gin.Context) {
-	authenticatedUserID, ok := middleware.GetAuthenticatedUserID(c)
-	if !ok {
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

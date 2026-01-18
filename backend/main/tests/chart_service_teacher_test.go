@@ -111,7 +111,7 @@ func TestGetTeacherClassChartData_InvalidAuthUserID(t *testing.T) {
 	var response map[string]string
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	assert.Equal(t, "Invalid user ID", response["error"])
+	assert.Equal(t, "Unauthorized", response["error"])
 }
 
 // TestGetTeacherClassChartData_NoStudents tests that empty data is returned when teacher has no students
