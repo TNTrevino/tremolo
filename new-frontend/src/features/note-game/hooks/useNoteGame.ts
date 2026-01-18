@@ -82,33 +82,6 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
   }, [generateRandomNote]);
 
   /**
-   * Handle a note answer
-   */
-  const handleAnswer = useCallback(
-    (answer: string) => {
-      const timeToAnswer = Date.now() - questionStartTime;
-      const correct = answer === currentNote;
-
-      const newAnswer: NoteAnswer = {
-        note: currentNote,
-        correct,
-        timeToAnswer,
-      };
-
-      const newAnswers = [...answers, newAnswer];
-      setAnswers(newAnswers);
-
-      // Check if game should end (notes mode)
-      if (settings.gameMode === 'notes' && newAnswers.length >= settings.noteLimit) {
-        endGame(newAnswers);
-      } else {
-        generateRandomNote();
-      }
-    },
-    [currentNote, questionStartTime, answers, settings.gameMode, settings.noteLimit, generateRandomNote]
-  );
-
-  /**
    * End the game and calculate statistics
    */
   const endGame = useCallback(
@@ -138,6 +111,33 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
       onGameEnd?.(stats);
     },
     [answers, gameStartTime, settings, onGameEnd]
+  );
+
+  /**
+   * Handle a note answer
+   */
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      const timeToAnswer = Date.now() - questionStartTime;
+      const correct = answer === currentNote;
+
+      const newAnswer: NoteAnswer = {
+        note: currentNote,
+        correct,
+        timeToAnswer,
+      };
+
+      const newAnswers = [...answers, newAnswer];
+      setAnswers(newAnswers);
+
+      // Check if game should end (notes mode)
+      if (settings.gameMode === 'notes' && newAnswers.length >= settings.noteLimit) {
+        endGame(newAnswers);
+      } else {
+        generateRandomNote();
+      }
+    },
+    [currentNote, questionStartTime, answers, settings.gameMode, settings.noteLimit, generateRandomNote, endGame]
   );
 
   /**
