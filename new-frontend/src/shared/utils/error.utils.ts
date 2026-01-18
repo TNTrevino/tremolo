@@ -91,7 +91,6 @@ export function logError(error: unknown, context?: string): void {
   if (isDevelopment) {
     // eslint-disable-next-line no-console
     console.group(`🔴 Error ${context ? `in ${context}` : ''}`);
-    // eslint-disable-next-line no-console
     console.error(error);
     
     if (isApiError(error)) {
@@ -105,7 +104,6 @@ export function logError(error: unknown, context?: string): void {
     console.groupEnd();
   } else {
     // In production, you might want to send to an error tracking service
-    // eslint-disable-next-line no-console
     console.error('Error occurred:', getErrorMessage(error));
   }
 }
