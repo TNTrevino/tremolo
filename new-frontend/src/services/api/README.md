@@ -78,18 +78,18 @@ Central export point for all services and types.
 ### Authentication
 
 ```typescript
-import { authService } from '@/services/api';
+import { authService } from "@/services/api";
 
 // Login
 try {
-  const response = await authService.login({
-    email: 'student@example.com',
-    password: 'SecurePass123!',
-  });
-  console.log('Logged in as:', response.user.first_name);
-  // Tokens are automatically stored
+	const response = await authService.login({
+		email: "student@example.com",
+		password: "SecurePass123!",
+	});
+	console.log("Logged in as:", response.user.first_name);
+	// Tokens are automatically stored
 } catch (error) {
-  console.error('Login failed:', error);
+	console.error("Login failed:", error);
 }
 
 // Get current user
@@ -102,34 +102,34 @@ authService.logout();
 ### Music Generation
 
 ```typescript
-import { musicService } from '@/services/api';
+import { musicService } from "@/services/api";
 
 // Generate "Mary Had a Little Lamb" in D major, octave 4
 const maryXml = await musicService.generateMary({
-  tonic: 'D',
-  octave: 4,
+	tonic: "D",
+	octave: 4,
 });
 
 // Generate random notes with rhythm pattern
 const randomXml = await musicService.generateRandom({
-  rhythm: '1111',
-  rhythmType: 16,
-  tonic: 'C',
+	rhythm: "1111",
+	rhythmType: 16,
+	tonic: "C",
 });
 
 // Generate note for identification game
 const noteGame = await musicService.generateNoteGame({
-  scale: 'C',
-  octave: '4',
+	scale: "C",
+	octave: "4",
 });
-console.log('Answer:', noteGame.noteName, noteGame.noteOctave);
+console.log("Answer:", noteGame.noteName, noteGame.noteOctave);
 // Render noteGame.generatedXml with OpenSheetMusicDisplay
 ```
 
 ### User Profile & Stats
 
 ```typescript
-import { userService } from '@/services/api';
+import { userService } from "@/services/api";
 
 // Get user profile
 const profile = await userService.getProfile(123);
@@ -138,18 +138,18 @@ console.log(`Average NPM: ${profile.average_npm}`);
 
 // Get performance stats for charts
 const stats = await userService.getStats(123, {
-  interval: 'day',
-  days: 30,
+	interval: "day",
+	days: 30,
 });
 // Use stats.npm, stats.accuracy, etc. with Chart.js
 
 // Save game result
 await userService.saveGameResult({
-  time_length: '00:05:30',
-  total_questions: 20,
-  correct_questions: 18,
-  user_id: 123,
-  notes_per_minute: 65,
+	time_length: "00:05:30",
+	total_questions: 20,
+	correct_questions: 18,
+	user_id: 123,
+	notes_per_minute: 65,
 });
 
 // Get recent entries
@@ -159,15 +159,15 @@ const recentGames = await userService.getRecentGameEntries();
 ### Error Handling
 
 ```typescript
-import { authService } from '@/services/api';
-import type { ApiError } from '@/services/api';
+import { authService } from "@/services/api";
+import type { ApiError } from "@/services/api";
 
 try {
-  await authService.login({ email, password });
+	await authService.login({ email, password });
 } catch (error) {
-  const apiError = error as ApiError;
-  console.error('Error:', apiError.message);
-  console.error('Status:', apiError.status);
+	const apiError = error as ApiError;
+	console.error("Error:", apiError.message);
+	console.error("Status:", apiError.status);
 }
 ```
 
@@ -210,8 +210,8 @@ The API client dispatches custom events for app-wide handling:
 Listen for these events to update UI state:
 
 ```typescript
-window.addEventListener('auth:logout', () => {
-  // Redirect to login page, clear user state, etc.
+window.addEventListener("auth:logout", () => {
+	// Redirect to login page, clear user state, etc.
 });
 ```
 
@@ -220,7 +220,7 @@ window.addEventListener('auth:logout', () => {
 All services are fully typed with TypeScript. Import types as needed:
 
 ```typescript
-import type { User, NoteGameEntry, MultiMetricChartData } from '@/services/api';
+import type { User, NoteGameEntry, MultiMetricChartData } from "@/services/api";
 
 const user: User = await authService.getCurrentUser();
 const entries: NoteGameEntry[] = await userService.getRecentGameEntries();
@@ -231,13 +231,13 @@ const entries: NoteGameEntry[] = await userService.getRecentGameEntries();
 When testing components that use these services, mock the service functions:
 
 ```typescript
-import { vi } from 'vitest';
-import * as authService from '@/services/api/auth.service';
+import { vi } from "vitest";
+import * as authService from "@/services/api/auth.service";
 
-vi.spyOn(authService, 'login').mockResolvedValue({
-  user: { id: 1, email: 'test@example.com' /* ... */ },
-  access_token: 'mock-token',
-  refresh_token: 'mock-refresh-token',
+vi.spyOn(authService, "login").mockResolvedValue({
+	user: { id: 1, email: "test@example.com" /* ... */ },
+	access_token: "mock-token",
+	refresh_token: "mock-refresh-token",
 });
 ```
 

@@ -1,14 +1,20 @@
 // Auth queries
-export { useCurrentUser, useLogin, useRegister, useLogout, authKeys } from './useAuthQuery';
+export {
+	useCurrentUser,
+	useLogin,
+	useRegister,
+	useLogout,
+	authKeys,
+} from "./useAuthQuery";
 
 // User queries
-export { useGeneralUserInfo, useUserStats, userKeys } from './useUserQuery';
+export { useGeneralUserInfo, useUserStats, userKeys } from "./useUserQuery";
 
 // Music queries
 export {
-  useGenerateMary,
-  useGenerateRhythm,
-  useGenerateNoteGame,
-  useRenderSheetMusic,
-  musicKeys,
-} from './useMusicQuery';
+	useGenerateMary,
+	useGenerateRhythm,
+	useGenerateNoteGame,
+	useRenderSheetMusic,
+	musicKeys,
+} from "./useMusicQuery";

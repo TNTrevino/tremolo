@@ -5,15 +5,15 @@
  * All endpoints communicate with the Go backend (port 5001) and require authentication.
  */
 
-import { mainApiClient } from './client';
+import { mainApiClient } from "./client";
 import type {
-  GeneralUserInfo,
-  CreateNoteGameEntryRequest,
-  CreateNoteGameEntryResponse,
-  NoteGameEntry,
-  MultiMetricChartData,
-  ChartQueryParams,
-} from './types';
+	GeneralUserInfo,
+	CreateNoteGameEntryRequest,
+	CreateNoteGameEntryResponse,
+	NoteGameEntry,
+	MultiMetricChartData,
+	ChartQueryParams,
+} from "./types";
 
 /**
  * Get general user information including profile and aggregate stats
@@ -33,8 +33,10 @@ import type {
  * ```
  */
 export const getProfile = async (userId: number): Promise<GeneralUserInfo> => {
-  const response = await mainApiClient.get<GeneralUserInfo>(`/api/users/${userId}/general-info`);
-  return response.data;
+	const response = await mainApiClient.get<GeneralUserInfo>(
+		`/api/users/${userId}/general-info`,
+	);
+	return response.data;
 };
 
 /**
@@ -49,11 +51,14 @@ export const getProfile = async (userId: number): Promise<GeneralUserInfo> => {
  * @throws ApiError if unauthorized or update fails
  */
 export const updateProfile = async (
-  userId: number,
-  updates: Partial<GeneralUserInfo>
+	userId: number,
+	updates: Partial<GeneralUserInfo>,
 ): Promise<GeneralUserInfo> => {
-  const response = await mainApiClient.patch<GeneralUserInfo>(`/api/users/${userId}`, updates);
-  return response.data;
+	const response = await mainApiClient.patch<GeneralUserInfo>(
+		`/api/users/${userId}`,
+		updates,
+	);
+	return response.data;
 };
 
 /**
@@ -83,24 +88,24 @@ export const updateProfile = async (
  * ```
  */
 export const getStats = async (
-  userId: number,
-  params?: ChartQueryParams
+	userId: number,
+	params?: ChartQueryParams,
 ): Promise<MultiMetricChartData> => {
-  const queryParams = new URLSearchParams();
+	const queryParams = new URLSearchParams();
 
-  if (params?.interval) {
-    queryParams.append('interval', params.interval);
-  }
+	if (params?.interval) {
+		queryParams.append("interval", params.interval);
+	}
 
-  if (params?.days) {
-    queryParams.append('days', params.days.toString());
-  }
+	if (params?.days) {
+		queryParams.append("days", params.days.toString());
+	}
 
-  const queryString = queryParams.toString();
-  const url = `/api/charts/user/${userId}/metrics${queryString ? `?${queryString}` : ''}`;
+	const queryString = queryParams.toString();
+	const url = `/api/charts/user/${userId}/metrics${queryString ? `?${queryString}` : ""}`;
 
-  const response = await mainApiClient.get<MultiMetricChartData>(url);
-  return response.data;
+	const response = await mainApiClient.get<MultiMetricChartData>(url);
+	return response.data;
 };
 
 /**
@@ -133,13 +138,13 @@ export const getStats = async (
  * ```
  */
 export const saveGameResult = async (
-  entry: CreateNoteGameEntryRequest
+	entry: CreateNoteGameEntryRequest,
 ): Promise<CreateNoteGameEntryResponse> => {
-  const response = await mainApiClient.post<CreateNoteGameEntryResponse>(
-    '/api/note-game/entry',
-    entry
-  );
-  return response.data;
+	const response = await mainApiClient.post<CreateNoteGameEntryResponse>(
+		"/api/note-game/entry",
+		entry,
+	);
+	return response.data;
 };
 
 /**
@@ -163,8 +168,10 @@ export const saveGameResult = async (
  * ```
  */
 export const getRecentGameEntries = async (): Promise<NoteGameEntry[]> => {
-  const response = await mainApiClient.get<NoteGameEntry[]>('/api/note-game/recent');
-  return response.data;
+	const response = await mainApiClient.get<NoteGameEntry[]>(
+		"/api/note-game/recent",
+	);
+	return response.data;
 };
 
 /**
@@ -191,22 +198,24 @@ export const getRecentGameEntries = async (): Promise<NoteGameEntry[]> => {
  * console.log('Class average accuracy:', classMetrics.accuracy);
  * ```
  */
-export const getClassMetrics = async (params?: ChartQueryParams): Promise<MultiMetricChartData> => {
-  const queryParams = new URLSearchParams();
+export const getClassMetrics = async (
+	params?: ChartQueryParams,
+): Promise<MultiMetricChartData> => {
+	const queryParams = new URLSearchParams();
 
-  if (params?.interval) {
-    queryParams.append('interval', params.interval);
-  }
+	if (params?.interval) {
+		queryParams.append("interval", params.interval);
+	}
 
-  if (params?.days) {
-    queryParams.append('days', params.days.toString());
-  }
+	if (params?.days) {
+		queryParams.append("days", params.days.toString());
+	}
 
-  const queryString = queryParams.toString();
-  const url = `/api/charts/teacher/class-metrics${queryString ? `?${queryString}` : ''}`;
+	const queryString = queryParams.toString();
+	const url = `/api/charts/teacher/class-metrics${queryString ? `?${queryString}` : ""}`;
 
-  const response = await mainApiClient.get<MultiMetricChartData>(url);
-  return response.data;
+	const response = await mainApiClient.get<MultiMetricChartData>(url);
+	return response.data;
 };
 
 /**
@@ -225,11 +234,13 @@ export const getClassMetrics = async (params?: ChartQueryParams): Promise<MultiM
  * ```
  */
 export const formatTimeLength = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secs = seconds % 60;
 
-  return [hours, minutes, secs].map((val) => String(val).padStart(2, '0')).join(':');
+	return [hours, minutes, secs]
+		.map((val) => String(val).padStart(2, "0"))
+		.join(":");
 };
 
 /**
@@ -246,13 +257,16 @@ export const formatTimeLength = (seconds: number): string => {
  * const npm = userService.calculateNPM(20, 300); // 20 correct in 5 minutes = 4 NPM
  * ```
  */
-export const calculateNPM = (correctQuestions: number, timeInSeconds: number): number => {
-  if (timeInSeconds === 0) return 0;
+export const calculateNPM = (
+	correctQuestions: number,
+	timeInSeconds: number,
+): number => {
+	if (timeInSeconds === 0) return 0;
 
-  const minutes = timeInSeconds / 60;
-  const npm = correctQuestions / minutes;
+	const minutes = timeInSeconds / 60;
+	const npm = correctQuestions / minutes;
 
-  return Math.round(npm);
+	return Math.round(npm);
 };
 
 /**
@@ -278,11 +292,14 @@ export const calculateNPM = (correctQuestions: number, timeInSeconds: number): n
  * ```
  */
 export const changePassword = async (
-  userId: number,
-  data: { currentPassword: string; newPassword: string }
+	userId: number,
+	data: { currentPassword: string; newPassword: string },
 ): Promise<{ message: string }> => {
-  const response = await mainApiClient.post(`/api/users/${userId}/change-password`, data);
-  return response.data;
+	const response = await mainApiClient.post(
+		`/api/users/${userId}/change-password`,
+		data,
+	);
+	return response.data;
 };
 
 /**
@@ -301,9 +318,11 @@ export const changePassword = async (
  * console.log(result.message); // "Account deleted successfully"
  * ```
  */
-export const deleteAccount = async (userId: number): Promise<{ message: string }> => {
-  const response = await mainApiClient.delete(`/api/users/${userId}`);
-  return response.data;
+export const deleteAccount = async (
+	userId: number,
+): Promise<{ message: string }> => {
+	const response = await mainApiClient.delete(`/api/users/${userId}`);
+	return response.data;
 };
 
 /**
@@ -327,25 +346,25 @@ export const deleteAccount = async (userId: number): Promise<{ message: string }
  * ```
  */
 export const downloadUserData = async (userId: number): Promise<Blob> => {
-  const response = await mainApiClient.get(`/api/users/${userId}/data-export`, {
-    responseType: 'blob',
-  });
-  return response.data;
+	const response = await mainApiClient.get(`/api/users/${userId}/data-export`, {
+		responseType: "blob",
+	});
+	return response.data;
 };
 
 // Export as default object for convenience
 export const userService = {
-  getProfile,
-  updateProfile,
-  getStats,
-  saveGameResult,
-  getRecentGameEntries,
-  getClassMetrics,
-  formatTimeLength,
-  calculateNPM,
-  changePassword,
-  deleteAccount,
-  downloadUserData,
+	getProfile,
+	updateProfile,
+	getStats,
+	saveGameResult,
+	getRecentGameEntries,
+	getClassMetrics,
+	formatTimeLength,
+	calculateNPM,
+	changePassword,
+	deleteAccount,
+	downloadUserData,
 };
 
 export default userService;

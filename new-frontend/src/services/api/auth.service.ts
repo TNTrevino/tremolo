@@ -7,16 +7,21 @@
  * All endpoints communicate with the Go backend (port 5001).
  */
 
-import { mainApiClient, setTokens, clearTokens, getRefreshToken } from './client';
+import {
+	mainApiClient,
+	setTokens,
+	clearTokens,
+	getRefreshToken,
+} from "./client";
 import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  RefreshTokenRequest,
-  RefreshTokenResponse,
-  User,
-} from './types';
+	LoginRequest,
+	LoginResponse,
+	RegisterRequest,
+	RegisterResponse,
+	RefreshTokenRequest,
+	RefreshTokenResponse,
+	User,
+} from "./types";
 
 /**
  * Login user with email and password
@@ -34,13 +39,18 @@ import type {
  * console.log(response.user.first_name);
  * ```
  */
-export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
-  const response = await mainApiClient.post<LoginResponse>('/api/auth/login', credentials);
+export const login = async (
+	credentials: LoginRequest,
+): Promise<LoginResponse> => {
+	const response = await mainApiClient.post<LoginResponse>(
+		"/api/auth/login",
+		credentials,
+	);
 
-  // Store tokens in localStorage
-  setTokens(response.data.access_token, response.data.refresh_token);
+	// Store tokens in localStorage
+	setTokens(response.data.access_token, response.data.refresh_token);
 
-  return response.data;
+	return response.data;
 };
 
 /**
@@ -62,9 +72,14 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
  * console.log(response.message);
  * ```
  */
-export const register = async (userData: RegisterRequest): Promise<RegisterResponse> => {
-  const response = await mainApiClient.post<RegisterResponse>('/api/auth/register', userData);
-  return response.data;
+export const register = async (
+	userData: RegisterRequest,
+): Promise<RegisterResponse> => {
+	const response = await mainApiClient.post<RegisterResponse>(
+		"/api/auth/register",
+		userData,
+	);
+	return response.data;
 };
 
 /**
@@ -78,10 +93,10 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
  * ```
  */
 export const logout = (): void => {
-  clearTokens();
+	clearTokens();
 
-  // Dispatch custom event for app-wide logout handling
-  window.dispatchEvent(new CustomEvent('auth:logout'));
+	// Dispatch custom event for app-wide logout handling
+	window.dispatchEvent(new CustomEvent("auth:logout"));
 };
 
 /**
@@ -100,19 +115,22 @@ export const logout = (): void => {
  * ```
  */
 export const refreshToken = async (): Promise<RefreshTokenResponse> => {
-  const refresh_token = getRefreshToken();
+	const refresh_token = getRefreshToken();
 
-  if (!refresh_token) {
-    throw new Error('No refresh token available');
-  }
+	if (!refresh_token) {
+		throw new Error("No refresh token available");
+	}
 
-  const payload: RefreshTokenRequest = { refresh_token };
-  const response = await mainApiClient.post<RefreshTokenResponse>('/api/auth/refresh', payload);
+	const payload: RefreshTokenRequest = { refresh_token };
+	const response = await mainApiClient.post<RefreshTokenResponse>(
+		"/api/auth/refresh",
+		payload,
+	);
 
-  // Update stored tokens
-  setTokens(response.data.access_token, response.data.refresh_token);
+	// Update stored tokens
+	setTokens(response.data.access_token, response.data.refresh_token);
 
-  return response.data;
+	return response.data;
 };
 
 /**
@@ -131,8 +149,8 @@ export const refreshToken = async (): Promise<RefreshTokenResponse> => {
  * ```
  */
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await mainApiClient.get<User>('/api/auth/me');
-  return response.data;
+	const response = await mainApiClient.get<User>("/api/auth/me");
+	return response.data;
 };
 
 /**
@@ -153,17 +171,17 @@ export const getCurrentUser = async (): Promise<User> => {
  * ```
  */
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('access_token');
+	return !!localStorage.getItem("access_token");
 };
 
 // Export as default object for convenience
 export const authService = {
-  login,
-  register,
-  logout,
-  refreshToken,
-  getCurrentUser,
-  isAuthenticated,
+	login,
+	register,
+	logout,
+	refreshToken,
+	getCurrentUser,
+	isAuthenticated,
 };
 
 export default authService;

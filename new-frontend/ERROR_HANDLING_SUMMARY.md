@@ -57,9 +57,9 @@ This document summarizes the error handling infrastructure added to the Tremolo 
 
 ```typescript
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode; // Custom fallback UI
-  onError?: (error: Error, errorInfo: ErrorInfo) => void; // Error callback
+	children: ReactNode;
+	fallback?: ReactNode; // Custom fallback UI
+	onError?: (error: Error, errorInfo: ErrorInfo) => void; // Error callback
 }
 ```
 
@@ -110,13 +110,13 @@ interface Props {
 
 ```typescript
 const {
-  showToast, // (message, type, title?, duration?) => void
-  showSuccess, // (message, title?) => void
-  showError, // (message, title?) => void
-  showWarning, // (message, title?) => void
-  showInfo, // (message, title?) => void
-  removeToast, // (id) => void
-  toasts, // Toast[]
+	showToast, // (message, type, title?, duration?) => void
+	showSuccess, // (message, title?) => void
+	showError, // (message, title?) => void
+	showWarning, // (message, title?) => void
+	showInfo, // (message, title?) => void
+	removeToast, // (id) => void
+	toasts, // Toast[]
 } = useToast();
 ```
 
@@ -193,7 +193,7 @@ Added documentation for:
 Central export point for all error utilities for easier imports:
 
 ```typescript
-import { getErrorMessage, logError, isApiError } from '@/shared/utils';
+import { getErrorMessage, logError, isApiError } from "@/shared/utils";
 ```
 
 ---
@@ -217,11 +217,11 @@ import { getErrorMessage, logError, isApiError } from '@/shared/utils';
 **Usage:**
 
 ```tsx
-import { ErrorTester } from '@/shared/components/ErrorTester';
+import { ErrorTester } from "@/shared/components/ErrorTester";
 
 // In any page during development
 <ErrorBoundary>
-  <ErrorTester />
+	<ErrorTester />
 </ErrorBoundary>;
 ```
 
@@ -250,7 +250,7 @@ Based on the codebase, consider adding error boundaries to:
    ```tsx
    // In pages with complex features
    <ErrorBoundary fallback={<SimpleErrorMessage />}>
-     <ComplexMusicVisualization />
+   	<ComplexMusicVisualization />
    </ErrorBoundary>
    ```
 
@@ -270,7 +270,7 @@ Based on the codebase, consider adding error boundaries to:
    ```tsx
    // Anywhere OpenSheetMusicDisplay is used
    <ErrorBoundary fallback={<p>Unable to load sheet music</p>}>
-     <SheetMusicRenderer />
+   	<SheetMusicRenderer />
    </ErrorBoundary>
    ```
 
@@ -281,21 +281,21 @@ Based on the codebase, consider adding error boundaries to:
 ### 1. API Call with Toast
 
 ```typescript
-import { useToast } from '@/shared/hooks/useToast';
-import { getErrorMessage, logError } from '@/shared/utils/error.utils';
+import { useToast } from "@/shared/hooks/useToast";
+import { getErrorMessage, logError } from "@/shared/utils/error.utils";
 
 function MyComponent() {
-  const { showSuccess, showError } = useToast();
+	const { showSuccess, showError } = useToast();
 
-  const handleSubmit = async (data) => {
-    try {
-      await api.submitData(data);
-      showSuccess('Data saved successfully!');
-    } catch (error) {
-      logError(error, 'MyComponent.handleSubmit');
-      showError(getErrorMessage(error), 'Save Failed');
-    }
-  };
+	const handleSubmit = async (data) => {
+		try {
+			await api.submitData(data);
+			showSuccess("Data saved successfully!");
+		} catch (error) {
+			logError(error, "MyComponent.handleSubmit");
+			showError(getErrorMessage(error), "Save Failed");
+		}
+	};
 }
 ```
 
@@ -324,28 +324,28 @@ function DataDisplay() {
 ### 3. Conditional Error Handling
 
 ```typescript
-import { isAuthError, isNetworkError } from '@/shared/utils/error.utils';
+import { isAuthError, isNetworkError } from "@/shared/utils/error.utils";
 
 try {
-  await api.call();
+	await api.call();
 } catch (error) {
-  if (isAuthError(error)) {
-    navigate('/login');
-  } else if (isNetworkError(error)) {
-    showRetryDialog();
-  } else {
-    showError(getErrorMessage(error));
-  }
+	if (isAuthError(error)) {
+		navigate("/login");
+	} else if (isNetworkError(error)) {
+		showRetryDialog();
+	} else {
+		showError(getErrorMessage(error));
+	}
 }
 ```
 
 ### 4. Component with Error Boundary
 
 ```typescript
-import { withErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { withErrorBoundary } from "@/shared/components/ErrorBoundary";
 
 function RiskyComponent() {
-  // Component logic
+	// Component logic
 }
 
 export default withErrorBoundary(RiskyComponent);
@@ -393,15 +393,15 @@ export default withErrorBoundary(RiskyComponent);
 Add the ErrorTester to any page temporarily:
 
 ```tsx
-import { ErrorTester } from '@/shared/components/ErrorTester';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { ErrorTester } from "@/shared/components/ErrorTester";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 
 export function TestPage() {
-  return (
-    <ErrorBoundary>
-      <ErrorTester />
-    </ErrorBoundary>
-  );
+	return (
+		<ErrorBoundary>
+			<ErrorTester />
+		</ErrorBoundary>
+	);
 }
 ```
 
@@ -412,21 +412,21 @@ export function TestPage() {
 1. ✅ **Always log errors with context:**
 
    ```typescript
-   logError(error, 'ComponentName.functionName');
+   logError(error, "ComponentName.functionName");
    ```
 
 2. ✅ **Use specific error type checks:**
 
    ```typescript
    if (isAuthError(error)) {
-     /* handle auth */
+   	/* handle auth */
    }
    ```
 
 3. ✅ **Provide user-friendly messages:**
 
    ```typescript
-   showError(getErrorMessage(error), 'Action Failed');
+   showError(getErrorMessage(error), "Action Failed");
    ```
 
 4. ✅ **Isolate components with error boundaries:**

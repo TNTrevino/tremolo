@@ -138,9 +138,9 @@ Edit the CSS variables in `src/index.css` to customize the color scheme:
 
 ```css
 :root {
-  --primary: 262 83% 58%;
-  --accent: 45 93% 47%;
-  /* ... more variables */
+	--primary: 262 83% 58%;
+	--accent: 45 93% 47%;
+	/* ... more variables */
 }
 ```
 

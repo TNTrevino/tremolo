@@ -34,11 +34,11 @@ Shared TypeScript types, interfaces, and type utilities
 Import shared resources using absolute paths:
 
 ```typescript
-import { Button } from '@/shared/components/ui/button';
-import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useToast } from '@/shared/hooks/useToast';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
-import { getErrorMessage, logError } from '@/shared/utils/error.utils';
+import { Button } from "@/shared/components/ui/button";
+import { useDebounce } from "@/shared/hooks/useDebounce";
+import { useToast } from "@/shared/hooks/useToast";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
+import { getErrorMessage, logError } from "@/shared/utils/error.utils";
 ```
 
 ## Error Handling System
@@ -70,19 +70,19 @@ Features:
 Display user-facing notifications for errors, success messages, warnings, and info:
 
 ```typescript
-import { useToast } from '@/shared/hooks/useToast';
+import { useToast } from "@/shared/hooks/useToast";
 
 function MyComponent() {
-  const { showSuccess, showError, showWarning, showInfo } = useToast();
+	const { showSuccess, showError, showWarning, showInfo } = useToast();
 
-  const handleAction = async () => {
-    try {
-      await someApiCall();
-      showSuccess('Action completed successfully!');
-    } catch (error) {
-      showError(getErrorMessage(error), 'Action Failed');
-    }
-  };
+	const handleAction = async () => {
+		try {
+			await someApiCall();
+			showSuccess("Action completed successfully!");
+		} catch (error) {
+			showError(getErrorMessage(error), "Action Failed");
+		}
+	};
 }
 ```
 
@@ -92,25 +92,25 @@ Helper functions for consistent error handling:
 
 ```typescript
 import {
-  getErrorMessage, // Extract user-friendly message from any error
-  logError, // Log errors with context
-  isApiError, // Check if error is from API
-  isNetworkError, // Check if error is network-related
-  isAuthError, // Check if error is 401/403
-  isValidationError, // Check if error is 400/422
-  hasStatusCode, // Check for specific HTTP status
-} from '@/shared/utils/error.utils';
+	getErrorMessage, // Extract user-friendly message from any error
+	logError, // Log errors with context
+	isApiError, // Check if error is from API
+	isNetworkError, // Check if error is network-related
+	isAuthError, // Check if error is 401/403
+	isValidationError, // Check if error is 400/422
+	hasStatusCode, // Check for specific HTTP status
+} from "@/shared/utils/error.utils";
 
 try {
-  await apiCall();
+	await apiCall();
 } catch (error) {
-  logError(error, 'MyComponent.apiCall');
+	logError(error, "MyComponent.apiCall");
 
-  if (isAuthError(error)) {
-    navigate('/login');
-  } else {
-    showError(getErrorMessage(error));
-  }
+	if (isAuthError(error)) {
+		navigate("/login");
+	} else {
+		showError(getErrorMessage(error));
+	}
 }
 ```
 

@@ -17,17 +17,17 @@ This document provides examples of how to use the error handling utilities in th
 ### Basic Error Message Extraction
 
 ```typescript
-import { getErrorMessage, logError } from '@/shared/utils/error.utils';
+import { getErrorMessage, logError } from "@/shared/utils/error.utils";
 
 try {
-  // Some operation that might fail
-  throw new Error('Something went wrong');
+	// Some operation that might fail
+	throw new Error("Something went wrong");
 } catch (error) {
-  const message = getErrorMessage(error);
-  console.log(message); // "Something went wrong"
+	const message = getErrorMessage(error);
+	console.log(message); // "Something went wrong"
 
-  // Log with context
-  logError(error, 'UserProfile.fetchData');
+	// Log with context
+	logError(error, "UserProfile.fetchData");
 }
 ```
 
@@ -35,26 +35,26 @@ try {
 
 ```typescript
 import {
-  isApiError,
-  isNetworkError,
-  isAuthError,
-  isValidationError,
-  hasStatusCode,
-} from '@/shared/utils/error.utils';
+	isApiError,
+	isNetworkError,
+	isAuthError,
+	isValidationError,
+	hasStatusCode,
+} from "@/shared/utils/error.utils";
 
 try {
-  await api.updateUser(userData);
+	await api.updateUser(userData);
 } catch (error) {
-  if (isAuthError(error)) {
-    // Redirect to login
-    navigate('/login');
-  } else if (isNetworkError(error)) {
-    showToast('Please check your internet connection', 'error');
-  } else if (isValidationError(error)) {
-    showToast('Please check your input', 'warning');
-  } else if (hasStatusCode(error, 429)) {
-    showToast('Too many requests. Please wait.', 'warning');
-  }
+	if (isAuthError(error)) {
+		// Redirect to login
+		navigate("/login");
+	} else if (isNetworkError(error)) {
+		showToast("Please check your internet connection", "error");
+	} else if (isValidationError(error)) {
+		showToast("Please check your input", "warning");
+	} else if (hasStatusCode(error, 429)) {
+		showToast("Too many requests. Please wait.", "warning");
+	}
 }
 ```
 
@@ -276,28 +276,28 @@ function UserProfile() {
 
 ```typescript
 // In your API service file
-import axios from 'axios';
-import { getErrorMessage, logError } from '@/shared/utils/error.utils';
+import axios from "axios";
+import { getErrorMessage, logError } from "@/shared/utils/error.utils";
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+	baseURL: import.meta.env.VITE_API_URL,
 });
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Log all API errors
-    logError(error, 'API Request');
+	(response) => response,
+	(error) => {
+		// Log all API errors
+		logError(error, "API Request");
 
-    // Handle specific error types globally
-    if (error.response?.status === 401) {
-      // Redirect to login or refresh token
-      window.location.href = '/login';
-    }
+		// Handle specific error types globally
+		if (error.response?.status === 401) {
+			// Redirect to login or refresh token
+			window.location.href = "/login";
+		}
 
-    return Promise.reject(error);
-  }
+		return Promise.reject(error);
+	},
 );
 ```
 
@@ -344,17 +344,17 @@ function LoginForm() {
 ```typescript
 // ✅ Good - includes context
 try {
-  await updateUser(data);
+	await updateUser(data);
 } catch (error) {
-  logError(error, 'UserSettings.updateProfile');
-  showError(getErrorMessage(error));
+	logError(error, "UserSettings.updateProfile");
+	showError(getErrorMessage(error));
 }
 
 // ❌ Bad - no context
 try {
-  await updateUser(data);
+	await updateUser(data);
 } catch (error) {
-  console.error(error);
+	console.error(error);
 }
 ```
 
@@ -363,22 +363,22 @@ try {
 ```typescript
 // ✅ Good - specific error handling
 try {
-  await api.call();
+	await api.call();
 } catch (error) {
-  if (isAuthError(error)) {
-    navigate('/login');
-  } else if (isNetworkError(error)) {
-    showRetryDialog();
-  } else {
-    showError(getErrorMessage(error));
-  }
+	if (isAuthError(error)) {
+		navigate("/login");
+	} else if (isNetworkError(error)) {
+		showRetryDialog();
+	} else {
+		showError(getErrorMessage(error));
+	}
 }
 
 // ❌ Bad - generic handling
 try {
-  await api.call();
+	await api.call();
 } catch (error) {
-  showError('Something went wrong');
+	showError("Something went wrong");
 }
 ```
 
@@ -386,10 +386,10 @@ try {
 
 ```typescript
 // ✅ Good - user-friendly message
-showError('Unable to save your profile. Please try again.', 'Save Failed');
+showError("Unable to save your profile. Please try again.", "Save Failed");
 
 // ❌ Bad - technical message
-showError(error.stack, 'Error');
+showError(error.stack, "Error");
 ```
 
 ### 4. Use Error Boundaries for Component Isolation
@@ -417,19 +417,19 @@ showError(error.stack, 'Error');
 ```typescript
 // ✅ Good - errors are logged and handled
 try {
-  await riskyOperation();
+	await riskyOperation();
 } catch (error) {
-  logError(error, 'Component.riskyOperation');
-  showError(getErrorMessage(error));
-  // Optionally rethrow if needed
-  throw error;
+	logError(error, "Component.riskyOperation");
+	showError(getErrorMessage(error));
+	// Optionally rethrow if needed
+	throw error;
 }
 
 // ❌ Bad - error is swallowed
 try {
-  await riskyOperation();
+	await riskyOperation();
 } catch (error) {
-  // Silent failure
+	// Silent failure
 }
 ```
 

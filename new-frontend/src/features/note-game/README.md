@@ -54,28 +54,30 @@ This feature handles the note identification game functionality where students p
 
 ```tsx
 import {
-  useNoteGame,
-  useGameTimer,
-  GameSettings,
-  GameBoard,
-  GameResults,
-} from '@/features/note-game';
+	useNoteGame,
+	useGameTimer,
+	GameSettings,
+	GameBoard,
+	GameResults,
+} from "@/features/note-game";
 
 function MyGamePage() {
-  const {
-    gameState,
-    currentNote,
-    answers,
-    settings,
-    updateSettings,
-    startGame,
-    handleAnswer,
-    endGame,
-    resetGame,
-  } = useNoteGame();
+	const {
+		gameState,
+		currentNote,
+		answers,
+		settings,
+		updateSettings,
+		startGame,
+		handleAnswer,
+		endGame,
+		resetGame,
+	} = useNoteGame();
 
-  const { timeRemaining, startTimer, formatTime } = useGameTimer(() => endGame());
+	const { timeRemaining, startTimer, formatTime } = useGameTimer(() =>
+		endGame(),
+	);
 
-  // Render appropriate component based on gameState
+	// Render appropriate component based on gameState
 }
 ```

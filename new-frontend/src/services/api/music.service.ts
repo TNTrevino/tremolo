@@ -7,8 +7,13 @@
  * All endpoints return MusicXML format that can be rendered with OpenSheetMusicDisplay.
  */
 
-import { musicApiClient } from './client';
-import type { MaryRequest, RandomNotesRequest, NoteGameRequest, NoteGameResponse } from './types';
+import { musicApiClient } from "./client";
+import type {
+	MaryRequest,
+	RandomNotesRequest,
+	NoteGameRequest,
+	NoteGameResponse,
+} from "./types";
 
 /**
  * Generate "Mary Had a Little Lamb" in a specified key and octave
@@ -33,8 +38,8 @@ import type { MaryRequest, RandomNotesRequest, NoteGameRequest, NoteGameResponse
  * ```
  */
 export const generateMary = async (params: MaryRequest): Promise<string> => {
-  const response = await musicApiClient.post<string>('/mary', params);
-  return response.data;
+	const response = await musicApiClient.post<string>("/mary", params);
+	return response.data;
 };
 
 /**
@@ -71,9 +76,11 @@ export const generateMary = async (params: MaryRequest): Promise<string> => {
  * });
  * ```
  */
-export const generateRandom = async (params: RandomNotesRequest): Promise<string> => {
-  const response = await musicApiClient.post<string>('/random', params);
-  return response.data;
+export const generateRandom = async (
+	params: RandomNotesRequest,
+): Promise<string> => {
+	const response = await musicApiClient.post<string>("/random", params);
+	return response.data;
 };
 
 /**
@@ -102,9 +109,14 @@ export const generateRandom = async (params: RandomNotesRequest): Promise<string
  * // Use noteName and noteOctave to validate user's answer
  * ```
  */
-export const generateNoteGame = async (params: NoteGameRequest): Promise<NoteGameResponse> => {
-  const response = await musicApiClient.post<NoteGameResponse>('/note-game', params);
-  return response.data;
+export const generateNoteGame = async (
+	params: NoteGameRequest,
+): Promise<NoteGameResponse> => {
+	const response = await musicApiClient.post<NoteGameResponse>(
+		"/note-game",
+		params,
+	);
+	return response.data;
 };
 
 /**
@@ -125,9 +137,9 @@ export const generateNoteGame = async (params: NoteGameRequest): Promise<NoteGam
  * ```
  */
 export const isValidNote = (noteName: string): boolean => {
-  // Valid note: A-G optionally followed by # or b (flat)
-  const noteRegex = /^[A-G](#|b)?$/;
-  return noteRegex.test(noteName);
+	// Valid note: A-G optionally followed by # or b (flat)
+	const noteRegex = /^[A-G](#|b)?$/;
+	return noteRegex.test(noteName);
 };
 
 /**
@@ -149,30 +161,30 @@ export const isValidNote = (noteName: string): boolean => {
  * ```
  */
 export const isValidRhythm = (rhythm: string, rhythmType: number): boolean => {
-  // Rhythm should only contain 0, 1, or 2
-  if (!/^[012]+$/.test(rhythm)) {
-    return false;
-  }
+	// Rhythm should only contain 0, 1, or 2
+	if (!/^[012]+$/.test(rhythm)) {
+		return false;
+	}
 
-  // For eighth notes (type 8), typical patterns are 1-2 digits
-  // For sixteenth notes (type 16), typical patterns are 2-4 digits
-  if (rhythmType === 8 && rhythm.length > 2) {
-    return false;
-  }
-  if (rhythmType === 16 && rhythm.length > 4) {
-    return false;
-  }
+	// For eighth notes (type 8), typical patterns are 1-2 digits
+	// For sixteenth notes (type 16), typical patterns are 2-4 digits
+	if (rhythmType === 8 && rhythm.length > 2) {
+		return false;
+	}
+	if (rhythmType === 16 && rhythm.length > 4) {
+		return false;
+	}
 
-  return true;
+	return true;
 };
 
 // Export as default object for convenience
 export const musicService = {
-  generateMary,
-  generateRandom,
-  generateNoteGame,
-  isValidNote,
-  isValidRhythm,
+	generateMary,
+	generateRandom,
+	generateNoteGame,
+	isValidNote,
+	isValidRhythm,
 };
 
 export default musicService;

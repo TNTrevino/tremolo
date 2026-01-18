@@ -1,11 +1,14 @@
-import type { UseFormProps, UseFormReturn, FieldValues } from 'react-hook-form';
-import { useForm as useHookForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { ZodType } from 'zod';
+import type { UseFormProps, UseFormReturn, FieldValues } from "react-hook-form";
+import { useForm as useHookForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { ZodType } from "zod";
 
-export interface UseFormOptions<T extends FieldValues> extends Omit<UseFormProps<T>, 'resolver'> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: ZodType<T, any, any>;
+export interface UseFormOptions<T extends FieldValues> extends Omit<
+	UseFormProps<T>,
+	"resolver"
+> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	schema: ZodType<T, any, any>;
 }
 
 /**
@@ -44,12 +47,12 @@ export interface UseFormOptions<T extends FieldValues> extends Omit<UseFormProps
  * ```
  */
 export function useForm<T extends FieldValues>({
-  schema,
-  ...options
+	schema,
+	...options
 }: UseFormOptions<T>): UseFormReturn<T> {
-  return useHookForm<T>({
-    ...options,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(schema) as any,
-  });
+	return useHookForm<T>({
+		...options,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		resolver: zodResolver(schema) as any,
+	});
 }

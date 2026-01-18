@@ -4,4 +4,4 @@
  * Barrel export for all dashboard-related hooks
  */
 
-export { useDashboardData } from './useDashboardData';
+export { useDashboardData } from "./useDashboardData";

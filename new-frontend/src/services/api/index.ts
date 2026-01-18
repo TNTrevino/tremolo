@@ -22,15 +22,15 @@
 // ============================================================================
 
 export {
-  musicApiClient,
-  mainApiClient,
-  getAccessToken,
-  getRefreshToken,
-  setTokens,
-  clearTokens,
-  TOKEN_STORAGE_KEY,
-  REFRESH_TOKEN_STORAGE_KEY,
-} from './client';
+	musicApiClient,
+	mainApiClient,
+	getAccessToken,
+	getRefreshToken,
+	setTokens,
+	clearTokens,
+	TOKEN_STORAGE_KEY,
+	REFRESH_TOKEN_STORAGE_KEY,
+} from "./client";
 
 // ============================================================================
 // Services
@@ -38,74 +38,74 @@ export {
 
 // Auth Service
 export {
-  authService,
-  login,
-  register,
-  logout,
-  refreshToken,
-  getCurrentUser,
-  isAuthenticated,
-} from './auth.service';
+	authService,
+	login,
+	register,
+	logout,
+	refreshToken,
+	getCurrentUser,
+	isAuthenticated,
+} from "./auth.service";
 
 // Music Service
 export {
-  musicService,
-  generateMary,
-  generateRandom,
-  generateNoteGame,
-  isValidNote,
-  isValidRhythm,
-} from './music.service';
+	musicService,
+	generateMary,
+	generateRandom,
+	generateNoteGame,
+	isValidNote,
+	isValidRhythm,
+} from "./music.service";
 
 // User Service
 export {
-  userService,
-  getProfile,
-  updateProfile,
-  getStats,
-  saveGameResult,
-  getRecentGameEntries,
-  getClassMetrics,
-  formatTimeLength,
-  calculateNPM,
-} from './user.service';
+	userService,
+	getProfile,
+	updateProfile,
+	getStats,
+	saveGameResult,
+	getRecentGameEntries,
+	getClassMetrics,
+	formatTimeLength,
+	calculateNPM,
+} from "./user.service";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type {
-  // Auth & User Types
-  UserRole,
-  User,
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  RefreshTokenRequest,
-  RefreshTokenResponse,
+	// Auth & User Types
+	UserRole,
+	User,
+	LoginRequest,
+	LoginResponse,
+	RegisterRequest,
+	RegisterResponse,
+	RefreshTokenRequest,
+	RefreshTokenResponse,
 
-  // Note Game Types
-  CreateNoteGameEntryRequest,
-  NoteGameEntry,
-  CreateNoteGameEntryResponse,
+	// Note Game Types
+	CreateNoteGameEntryRequest,
+	NoteGameEntry,
+	CreateNoteGameEntryResponse,
 
-  // User Info Types
-  GeneralUserInfo,
+	// User Info Types
+	GeneralUserInfo,
 
-  // Chart/Analytics Types
-  ChartDataPoint,
-  MultiMetricChartData,
-  ChartInterval,
-  ChartQueryParams,
+	// Chart/Analytics Types
+	ChartDataPoint,
+	MultiMetricChartData,
+	ChartInterval,
+	ChartQueryParams,
 
-  // Music Generation Types
-  MaryRequest,
-  RandomNotesRequest,
-  NoteGameRequest,
-  NoteGameResponse,
+	// Music Generation Types
+	MaryRequest,
+	RandomNotesRequest,
+	NoteGameRequest,
+	NoteGameResponse,
 
-  // Error Types
-  ApiError,
-  ApiResponse,
-} from './types';
+	// Error Types
+	ApiError,
+	ApiResponse,
+} from "./types";
