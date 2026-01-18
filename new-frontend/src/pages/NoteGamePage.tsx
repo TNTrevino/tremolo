@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/shared/hooks/useToast";
+import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
 import {
 	useNoteGame,
@@ -17,17 +19,43 @@ export interface NoteGamePageProps {}
  * settings, playing, and results screens
  */
 export function NoteGamePage() {
-	const { isAuthenticated } = useAuth();
+	const { isAuthenticated, user } = useAuth();
+	const { showSuccess, showError } = useToast();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
 
 	// Handle game end - save stats for authenticated users
 	const handleGameEnd = useCallback(
-		(stats: GameStats) => {
-			if (isAuthenticated) {
-				setPastGames((prev) => [...prev.slice(-9), stats]);
+		async (stats: GameStats) => {
+			// Always update local past games for the chart
+			setPastGames((prev) => [...prev.slice(-9), stats]);
+
+			// Save to backend if user is authenticated
+			if (isAuthenticated && user) {
+				try {
+					// Calculate time length in seconds from the game stats
+					const timeInSeconds =
+						stats.gameMode === "time"
+							? stats.limit
+							: Math.round((stats.total / stats.npm) * 60);
+
+					await userService.saveGameResult({
+						time_length: userService.formatTimeLength(timeInSeconds),
+						total_questions: stats.total,
+						correct_questions: stats.correct,
+						user_id: parseInt(user.id),
+						notes_per_minute: stats.npm,
+					});
+
+					showSuccess("Game results saved successfully!");
+				} catch (error) {
+					console.error("Failed to save game result:", error);
+					showError(
+						"Failed to save game results. Your score was not recorded.",
+					);
+				}
 			}
 		},
-		[isAuthenticated],
+		[isAuthenticated, user, showSuccess, showError],
 	);
 
 	// Game logic hook
