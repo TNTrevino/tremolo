@@ -1,9 +1,9 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/stores/auth.store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Target, Award, School, Music, TrendingUp } from 'lucide-react';
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
 
   if (!user) return null;
 
@@ -33,9 +33,6 @@ export function ProfilePage() {
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                     <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </span>
-                    <span className="text-muted-foreground text-sm">
-                      Member since {new Date(user.joinDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </span>
                   </div>
                 </div>

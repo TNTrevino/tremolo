@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/stores/auth.store';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Shield, Mail, Key, Download, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 export function AccountPage() {
-  const { user, logout } = useAuth();
+  const { user, logoutUser } = useAuthStore();
   const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -34,7 +34,7 @@ export function AccountPage() {
   const handleDeleteAccount = () => {
     if (deleteConfirmation === user.email) {
       alert('Account deletion would occur here');
-      logout();
+      logoutUser();
       navigate('/');
     }
   };
