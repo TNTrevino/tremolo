@@ -20,13 +20,13 @@ export function AboutPage() {
                 to read it.
               </p>
               <p>
-                We believe in building genuine skills over memorization tricks. That's why every exercise
+                We believe in building genuine skills over memorization tricks. That&apos;s why every exercise
                 in Tremolo is dynamically generated—no two practice sessions are ever the same. Students
-                can't memorize their way through; they have to actually learn to read music.
+                can&apos;t memorize their way through; they have to actually learn to read music.
               </p>
               <p>
                 From beginner fundamentals to advanced concepts, Tremolo adapts to every skill level.
-                Whether you're a 6th grader just starting your musical journey or a seasoned musician
+                Whether you&apos;re a 6th grader just starting your musical journey or a seasoned musician
                 preparing for an important audition, we have the tools to help you improve.
               </p>
             </CardContent>
@@ -124,8 +124,8 @@ export function AboutPage() {
             </CardHeader>
             <CardContent className="text-lg text-muted-foreground">
               <p>
-                We're building a comprehensive solution that covers everything from beginner
-                fundamentals to advanced concepts. Whether you're a 6th grader learning your first
+                We&apos;re building a comprehensive solution that covers everything from beginner
+                fundamentals to advanced concepts. Whether you&apos;re a 6th grader learning your first
                 notes or a seasoned musician preparing for a professional audition, Tremolo will
                 have the tools and exercises you need to succeed.
               </p>

@@ -49,6 +49,7 @@ export function useForm<T extends FieldValues>({
 }: UseFormOptions<T>): UseFormReturn<T> {
   return useHookForm<T>({
     ...options,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema) as any,
   });
 }

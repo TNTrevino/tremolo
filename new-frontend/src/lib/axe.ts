@@ -9,6 +9,7 @@ export const initAccessibilityAudit = async () => {
     const axe = await import('@axe-core/react');
     
     axe.default(React.default, ReactDOM.default, 1000);
+    // eslint-disable-next-line no-console
     console.log('Accessibility auditing enabled');
   }
 };

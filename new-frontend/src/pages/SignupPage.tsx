@@ -36,6 +36,8 @@ export function SignupPage() {
     },
   });
 
+  // React Hook Form's watch() is intentionally not memoized
+  // eslint-disable-next-line react-compiler/react-compiler
   const password = watch('password', '');
 
   // Password validation

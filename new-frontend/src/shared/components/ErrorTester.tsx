@@ -58,7 +58,9 @@ export function ErrorTester() {
       logError(error, 'ErrorTester.testApiError');
       showError(getErrorMessage(error), 'API Error');
       
+      // eslint-disable-next-line no-console
       console.log('Is API Error:', isApiError(error));
+      // eslint-disable-next-line no-console
       console.log('Is Network Error:', isNetworkError(error));
     }
   };
@@ -73,7 +75,9 @@ export function ErrorTester() {
       logError(error, 'ErrorTester.testNetworkError');
       showError(getErrorMessage(error), 'Network Error');
       
+      // eslint-disable-next-line no-console
       console.log('Is API Error:', isApiError(error));
+      // eslint-disable-next-line no-console
       console.log('Is Network Error:', isNetworkError(error));
     }
   };
