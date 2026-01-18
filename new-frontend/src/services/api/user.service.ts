@@ -259,6 +259,84 @@ export const calculateNPM = (correctQuestions: number, timeInSeconds: number): n
   return Math.round(npm);
 };
 
+/**
+ * Change user password
+ * 
+ * Updates the password for the authenticated user. Requires the current password
+ * for verification before setting the new password.
+ * 
+ * @param userId - The user ID to change password for
+ * @param data - Password change data
+ * @param data.currentPassword - The user's current password for verification
+ * @param data.newPassword - The new password to set
+ * @returns Promise with success message
+ * @throws ApiError if current password is incorrect or request fails
+ * 
+ * @example
+ * ```typescript
+ * const result = await userService.changePassword(123, {
+ *   currentPassword: 'oldPassword123',
+ *   newPassword: 'newSecurePassword456'
+ * });
+ * console.log(result.message); // "Password updated successfully"
+ * ```
+ */
+export const changePassword = async (
+  userId: number,
+  data: { currentPassword: string; newPassword: string }
+): Promise<{ message: string }> => {
+  const response = await mainApiClient.post(`/api/users/${userId}/change-password`, data);
+  return response.data;
+};
+
+/**
+ * Delete user account
+ * 
+ * Permanently deletes the user's account and all associated data.
+ * This action cannot be undone.
+ * 
+ * @param userId - The user ID to delete
+ * @returns Promise with confirmation message
+ * @throws ApiError if unauthorized or deletion fails
+ * 
+ * @example
+ * ```typescript
+ * const result = await userService.deleteAccount(123);
+ * console.log(result.message); // "Account deleted successfully"
+ * ```
+ */
+export const deleteAccount = async (userId: number): Promise<{ message: string }> => {
+  const response = await mainApiClient.delete(`/api/users/${userId}`);
+  return response.data;
+};
+
+/**
+ * Download all user data (GDPR)
+ * 
+ * Downloads a complete export of all user data for GDPR compliance.
+ * Returns data as a Blob that can be saved as a file.
+ * 
+ * @param userId - The user ID to export data for
+ * @returns Promise with Blob containing user data export
+ * @throws ApiError if unauthorized or export fails
+ * 
+ * @example
+ * ```typescript
+ * const blob = await userService.downloadUserData(123);
+ * const url = URL.createObjectURL(blob);
+ * const link = document.createElement('a');
+ * link.href = url;
+ * link.download = 'user-data-export.json';
+ * link.click();
+ * ```
+ */
+export const downloadUserData = async (userId: number): Promise<Blob> => {
+  const response = await mainApiClient.get(`/api/users/${userId}/data-export`, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
 // Export as default object for convenience
 export const userService = {
   getProfile,
@@ -269,6 +347,9 @@ export const userService = {
   getClassMetrics,
   formatTimeLength,
   calculateNPM,
+  changePassword,
+  deleteAccount,
+  downloadUserData,
 };
 
 export default userService;
