@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOSMD } from "@/features/sheet-music/hooks";
+import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
+import { SheetMusicFallback } from "@/shared/components/fallbacks";
 
 export interface SheetMusicDisplayProps {
 	/**
@@ -23,22 +25,15 @@ export interface SheetMusicDisplayProps {
 }
 
 /**
- * Sheet Music Display Component
+ * Sheet Music Display Component (Internal)
  *
  * A reusable component that wraps OpenSheetMusicDisplay (OSMD) rendering
  * with loading and error states. Uses the useOSMD hook for managing the
  * OSMD lifecycle and provides a consistent UI with shadcn/ui components.
  *
- * @example
- * ```tsx
- * <SheetMusicDisplay
- *   musicXml={musicXmlString}
- *   onRenderComplete={() => console.log("Rendered!")}
- *   onError={(err) => console.error(err)}
- * />
- * ```
+ * This component is wrapped with an error boundary for additional safety.
  */
-export function SheetMusicDisplay({
+function SheetMusicDisplayInternal({
 	musicXml,
 	className,
 	onRenderComplete,
@@ -126,5 +121,34 @@ export function SheetMusicDisplay({
 				/>
 			</CardContent>
 		</Card>
+	);
+}
+
+/**
+ * Sheet Music Display Component
+ *
+ * A reusable component that wraps OpenSheetMusicDisplay (OSMD) rendering
+ * with loading and error states, protected by an error boundary.
+ *
+ * @example
+ * ```tsx
+ * <SheetMusicDisplay
+ *   musicXml={musicXmlString}
+ *   onRenderComplete={() => console.log("Rendered!")}
+ *   onError={(err) => console.error(err)}
+ * />
+ * ```
+ */
+export function SheetMusicDisplay(props: SheetMusicDisplayProps) {
+	return (
+		<ComponentErrorBoundary
+			fallback={<SheetMusicFallback />}
+			onError={(error) => {
+				console.error("SheetMusicDisplay error boundary caught:", error);
+				props.onError?.(error);
+			}}
+		>
+			<SheetMusicDisplayInternal {...props} />
+		</ComponentErrorBoundary>
 	);
 }
