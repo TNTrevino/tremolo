@@ -12,7 +12,7 @@ import {
 	setTokens,
 	clearTokens,
 	getRefreshToken,
-} from "./client";
+} from "./clients";
 import type {
 	LoginRequest,
 	LoginResponse,

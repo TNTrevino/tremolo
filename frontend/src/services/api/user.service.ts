@@ -5,7 +5,7 @@
  * All endpoints communicate with the Go backend (port 5001) and require authentication.
  */
 
-import { mainApiClient } from "./client";
+import { mainApiClient } from "./clients";
 import type {
 	GeneralUserInfo,
 	CreateNoteGameEntryRequest,

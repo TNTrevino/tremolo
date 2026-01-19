@@ -7,7 +7,7 @@
  * All endpoints return MusicXML format that can be rendered with OpenSheetMusicDisplay.
  */
 
-import { musicApiClient } from "./client";
+import { musicApiClient } from "./clients";
 import type {
 	MaryRequest,
 	RandomNotesRequest,
