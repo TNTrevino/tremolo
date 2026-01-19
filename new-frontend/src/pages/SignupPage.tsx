@@ -23,6 +23,7 @@ import { useRegister } from "@/shared/hooks/queries/useAuthQuery";
 import { cn } from "@/lib/utils";
 import type { PasswordRequirement, LoginLocationState } from "@/shared/types";
 import type { ApiError } from "@/services/api/types";
+import { logError, getErrorMessage } from "@/shared/utils/error.utils";
 
 export interface SignupPageProps {}
 
@@ -93,9 +94,10 @@ export function SignupPage() {
 			};
 			navigate("/login", { state: navState });
 		} catch (err) {
+			logError(err, "SignupPage.onSubmit");
 			const apiError = err as ApiError;
 			setError("root", {
-				message: apiError.message || "Registration failed. Please try again.",
+				message: apiError.message || getErrorMessage(err),
 			});
 		}
 	};
