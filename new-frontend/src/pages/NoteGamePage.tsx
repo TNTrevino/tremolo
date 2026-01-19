@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
@@ -20,7 +20,7 @@ export interface NoteGamePageProps {}
  * settings, playing, and results screens
  */
 export function NoteGamePage() {
-	const { isAuthenticated, user } = useAuth();
+	const { isAuthenticated, user } = useAuthStore();
 	const { showSuccess, showError } = useToast();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
 
@@ -43,7 +43,7 @@ export function NoteGamePage() {
 						time_length: userService.formatTimeLength(timeInSeconds),
 						total_questions: stats.total,
 						correct_questions: stats.correct,
-						user_id: parseInt(user.id),
+						user_id: user.id,
 						notes_per_minute: stats.npm,
 					});
 
