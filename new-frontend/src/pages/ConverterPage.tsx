@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SheetMusicDisplay } from "@/features/sheet-music/components";
+import { logError, getErrorMessage } from "@/shared/utils/error.utils";
 
 export function ConverterPage() {
 	const [musicXml, setMusicXml] = useState<string>("");
@@ -70,14 +71,14 @@ export function ConverterPage() {
 				setUploadedFileName(file.name);
 				setIsProcessing(false);
 			} catch (err) {
-				setError(
-					`Error reading file: ${err instanceof Error ? err.message : "Unknown error"}`,
-				);
+				logError(err, "ConverterPage.handleFileUpload");
+				setError(`Error reading file: ${getErrorMessage(err)}`);
 				setIsProcessing(false);
 			}
 		};
 
-		reader.onerror = () => {
+		reader.onerror = (event) => {
+			logError(event, "ConverterPage.handleFileUpload.reader.onerror");
 			setError("Failed to read the file. Please try again.");
 			setIsProcessing(false);
 		};
@@ -90,7 +91,8 @@ export function ConverterPage() {
 	};
 
 	const handleRenderError = (renderError: Error) => {
-		setError(`Failed to render sheet music: ${renderError.message}`);
+		logError(renderError, "ConverterPage.handleRenderError");
+		setError(`Failed to render sheet music: ${getErrorMessage(renderError)}`);
 	};
 
 	return (
