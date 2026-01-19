@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { SheetMusicDisplay } from "@/features/sheet-music/components";
 import { musicService } from "@/services/api";
+import { logError, getErrorMessage } from "@/shared/utils/error.utils";
 
 // Scale options with their corresponding tonic values
 const scales = [
@@ -52,6 +53,7 @@ export function SheetMusicPage() {
 	const handleGenerateMary = async () => {
 		if (!currentScale) return;
 		setIsGenerating(true);
+		// TODO: we will want to add a loading state for this async action
 		setError(null);
 		try {
 			const xml = await musicService.generateMary({
@@ -62,8 +64,8 @@ export function SheetMusicPage() {
 			setSelectedRhythm(null);
 			setRhythmType(null);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to generate music");
-			console.error("Error generating Mary:", err);
+			logError(err, "SheetMusicPage.handleGenerateMary");
+			setError(getErrorMessage(err));
 		} finally {
 			setIsGenerating(false);
 		}
@@ -83,8 +85,8 @@ export function SheetMusicPage() {
 			});
 			setMusicXml(xml);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to generate music");
-			console.error("Error generating random rhythm:", err);
+			logError(err, "SheetMusicPage.handleGenerateRhythm");
+			setError(getErrorMessage(err));
 		} finally {
 			setIsGenerating(false);
 		}

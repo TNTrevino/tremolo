@@ -10,6 +10,7 @@ import {
 	GameBoard,
 	GameResults,
 } from "@/features/note-game";
+import { logError } from "@/shared/utils/error.utils";
 
 export interface NoteGamePageProps {}
 
@@ -48,7 +49,7 @@ export function NoteGamePage() {
 
 					showSuccess("Game results saved successfully!");
 				} catch (error) {
-					console.error("Failed to save game result:", error);
+					logError(error, "NoteGamePage.handleGameEnd");
 					showError(
 						"Failed to save game results. Your score was not recorded.",
 					);
