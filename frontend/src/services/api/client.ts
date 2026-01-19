@@ -64,7 +64,8 @@ export const clearTokens = (): void => {
  * - Returns MusicXML content
  */
 export const musicApiClient: AxiosInstance = axios.create({
-	baseURL: import.meta.env.VITE_BACKEND_MUSIC || "http://localhost:8000",
+	baseURL:
+		(import.meta.env.VITE_BACKEND_MUSIC || "http://localhost:8000") + "/music",
 	timeout: 10000,
 	headers: {
 		"Content-Type": "application/json",
