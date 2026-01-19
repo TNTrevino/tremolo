@@ -200,6 +200,13 @@ describe("auth.store", () => {
 
 			vi.mocked(authService.register).mockResolvedValue({
 				message: "User registered successfully",
+				user: {
+					id: 2,
+					email: "new@example.com",
+					first_name: "Jane",
+					last_name: "Doe",
+					role: "student",
+				},
 			});
 
 			await useAuthStore.getState().registerUser({
@@ -224,6 +231,13 @@ describe("auth.store", () => {
 
 			vi.mocked(authService.register).mockResolvedValue({
 				message: "User registered successfully",
+				user: {
+					id: 2,
+					email: "new@example.com",
+					first_name: "Jane",
+					last_name: "Doe",
+					role: "student",
+				},
 			});
 
 			await useAuthStore.getState().registerUser({
