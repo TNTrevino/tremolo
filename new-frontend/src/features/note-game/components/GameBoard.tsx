@@ -5,6 +5,9 @@ import { SheetMusicDisplay } from "@/features/sheet-music/components";
 import { musicService } from "@/services/api";
 import type { NoteAnswer } from "../types";
 import { NOTES } from "../types";
+import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
+import { GameBoardFallback } from "@/shared/components/fallbacks";
+import { logError } from "@/shared/utils/error.utils";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -19,10 +22,10 @@ export interface GameBoardProps {
 }
 
 /**
- * Game board component for active gameplay
+ * Game board component for active gameplay (Internal)
  * Displays score, current note (as sheet music), and answer buttons
  */
-export function GameBoard({
+function GameBoardInternal({
 	currentNote,
 	answers,
 	timeRemaining,
@@ -62,7 +65,7 @@ export function GameBoard({
 				});
 				setGeneratedXml(response.generatedXml);
 			} catch (error) {
-				console.error("Failed to generate music:", error);
+				logError(error, "GameBoard.generateMusic");
 				setMusicError("Failed to load sheet music");
 			} finally {
 				setIsLoadingMusic(false);
@@ -160,5 +163,40 @@ export function GameBoard({
 				</div>
 			</Card>
 		</div>
+	);
+}
+
+/**
+ * Game board component for active gameplay
+ * Displays score, current note (as sheet music), and answer buttons
+ * Wrapped with error boundary for enhanced error handling
+ *
+ * @example
+ * ```tsx
+ * <GameBoard
+ *   currentNote="C"
+ *   answers={[]}
+ *   gameMode="time"
+ *   onAnswer={(answer) => handleAnswer(answer)}
+ *   scale="C Major"
+ *   octave={4}
+ * />
+ * ```
+ */
+export function GameBoard(props: GameBoardProps) {
+	return (
+		<ComponentErrorBoundary
+			fallback={
+				<GameBoardFallback
+					onRestart={() => window.location.reload()}
+					errorMessage="Game board encountered an error"
+				/>
+			}
+			onError={(error) => {
+				logError(error, "GameBoard.errorBoundary");
+			}}
+		>
+			<GameBoardInternal {...props} />
+		</ComponentErrorBoundary>
 	);
 }
