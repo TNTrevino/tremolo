@@ -12,7 +12,7 @@ import {
 	UserCircle,
 	Settings,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/auth.store";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 export function Navigation() {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
-	const { user, logout, isAuthenticated } = useAuth();
+	const { user, logoutUser, isAuthenticated } = useAuthStore();
 	const { theme, toggleTheme } = useTheme();
 	const location = useLocation();
 
@@ -35,7 +35,7 @@ export function Navigation() {
 	const isActive = (path: string) => location.pathname === path;
 
 	const handleLogout = () => {
-		logout();
+		logoutUser();
 		setUserMenuOpen(false);
 		setMobileMenuOpen(false);
 	};
