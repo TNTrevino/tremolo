@@ -250,8 +250,4 @@ mainApiClient.interceptors.response.use(
 	},
 );
 
-// ============================================================================
-// Export
-// ============================================================================
-
 export { TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY };
