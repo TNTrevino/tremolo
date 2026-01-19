@@ -1,5 +1,6 @@
 import useSound from "use-sound";
 import { useCallback, useMemo } from "react";
+import { logError } from "@/shared/utils/error.utils";
 
 /**
  * Maps musical note names to their corresponding audio file names
@@ -140,10 +141,7 @@ export function useNoteAudio(options?: { volume?: number }) {
 			try {
 				playFunction();
 			} catch (error) {
-				console.error(
-					`[useNoteAudio] Error playing sound for "${noteName}":`,
-					error,
-				);
+				logError(error, "useNoteAudio.playSound");
 			}
 		},
 		[soundMap],

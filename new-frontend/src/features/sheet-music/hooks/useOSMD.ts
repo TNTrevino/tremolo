@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { logError } from "@/shared/utils/error.utils";
 
 export interface UseOSMDOptions {
 	/**
@@ -163,7 +164,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 			try {
 				osmdInstanceRef.current.clear();
 			} catch (err) {
-				console.error("Error clearing OSMD instance:", err);
+				logError(err, "useOSMD.clear");
 			}
 		}
 		setError(null);
@@ -178,7 +179,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 				try {
 					osmdInstanceRef.current.clear();
 				} catch (err) {
-					console.error("Error cleaning up OSMD instance:", err);
+					logError(err, "useOSMD.cleanup");
 				}
 				osmdInstanceRef.current = null;
 			}
