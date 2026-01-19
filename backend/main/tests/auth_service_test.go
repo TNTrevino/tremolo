@@ -17,10 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ============================================================================
-// Login Tests
-// ============================================================================
-
 func TestLogin_ValidCredentials(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -246,10 +242,6 @@ func TestLogin_EmailNormalization(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 }
-
-// ============================================================================
-// Register Tests
-// ============================================================================
 
 func TestRegister_Success(t *testing.T) {
 	t.Parallel()
@@ -521,10 +513,6 @@ func TestRegister_AllRoles(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// GetCurrentUser Tests
-// ============================================================================
-
 func TestGetCurrentUser_ValidToken(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -606,10 +594,6 @@ func TestGetCurrentUser_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, "Unauthorized", response["error"])
 }
-
-// ============================================================================
-// RefreshToken Tests
-// ============================================================================
 
 func TestRefreshToken_Valid(t *testing.T) {
 	t.Parallel()
