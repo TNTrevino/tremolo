@@ -10,7 +10,10 @@
 		"lint": "eslint src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
 		"lint:fix": "eslint src --ext .ts,.tsx --fix",
 		"format": "prettier --write src/**/*.{ts,tsx,css,json}",
-		"format:check": "prettier --check src/**/*.{ts,tsx,css,json}"
+		"format:check": "prettier --check src/**/*.{ts,tsx,css,json}",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:coverage": "vitest run --coverage"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,css,md,json}": [
@@ -40,22 +43,28 @@
 	"devDependencies": {
 		"@axe-core/react": "^4.11.0",
 		"@tanstack/eslint-plugin-query": "^5.91.3",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.1",
+		"@testing-library/user-event": "^14.6.1",
 		"@types/react": "^18.2.43",
 		"@types/react-dom": "^18.2.17",
 		"@typescript-eslint/eslint-plugin": "^6.14.0",
 		"@typescript-eslint/parser": "^6.14.0",
 		"@vitejs/plugin-react": "^4.2.1",
+		"@vitest/coverage-v8": "^4.0.17",
 		"autoprefixer": "^10.4.16",
 		"eslint": "^8.57.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-jsx-a11y": "^6.10.2",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
+		"jsdom": "^27.4.0",
 		"postcss": "^8.4.32",
 		"prettier": "^3.8.0",
 		"tailwindcss": "^3.4.0",
 		"tailwindcss-animate": "^1.0.7",
 		"typescript": "^5.2.2",
-		"vite": "^5.0.8"
+		"vite": "^5.0.8",
+		"vitest": "^4.0.17"
 	}
 }
