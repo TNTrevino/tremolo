@@ -1,6 +1,6 @@
 create schema if not exists tremolo;
 
--- Set search_path to tremolo schema so queries don't need schema prefix
+-- TODO: we should make the search path unnessecary
 set search_path to tremolo, public;
 
 create table schools (
