@@ -62,7 +62,7 @@ if git diff --cached --name-only | grep -q "^backend/main/"; then
 
   if [ -n "$STAGED_GO_FILES" ]; then
     echo "Running gofmt on staged Go files..."
-    gofmt -w "$STAGED_GO_FILES"
+    echo "$STAGED_GO_FILES" | xargs gofmt -w
 
     if [ $? -ne 0 ]; then
       echo "❌ gofmt formatting failed."
