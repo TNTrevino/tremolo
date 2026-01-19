@@ -18,13 +18,13 @@ interface User {
 interface AuthState {
 	user: User | null;
 	token: string | null;
+	isAuthenticated: boolean;
 	setUser: (user: User) => void;
 	setToken: (token: string) => void;
 	logout: () => void;
 	loginUser: (credentials: LoginRequest) => Promise<void>;
 	registerUser: (userData: RegisterRequest) => Promise<void>;
 	logoutUser: () => void;
-	isAuthenticated: boolean;
 }
 
 // Helper to convert API user to store user format
@@ -38,16 +38,17 @@ const mapApiUserToStoreUser = (apiUser: ApiUser): User => ({
 
 export const useAuthStore = create<AuthState>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			user: null,
 			token: null,
+			isAuthenticated: false,
 			setUser: (user) => set({ user }),
-			setToken: (token) => set({ token }),
+			setToken: (token) => set({ token, isAuthenticated: !!token }),
 
 			loginUser: async (credentials: LoginRequest) => {
 				const response = await authService.login(credentials);
 				const user = mapApiUserToStoreUser(response.user);
-				set({ user, token: response.access_token });
+				set({ user, token: response.access_token, isAuthenticated: true });
 			},
 
 			registerUser: async (userData: RegisterRequest) => {
@@ -57,14 +58,10 @@ export const useAuthStore = create<AuthState>()(
 
 			logoutUser: () => {
 				authService.logout();
-				set({ user: null, token: null });
+				set({ user: null, token: null, isAuthenticated: false });
 			},
 
-			logout: () => set({ user: null, token: null }),
-
-			get isAuthenticated() {
-				return get().token !== null;
-			},
+			logout: () => set({ user: null, token: null, isAuthenticated: false }),
 		}),
 		{ name: "tremolo-auth" },
 	),
