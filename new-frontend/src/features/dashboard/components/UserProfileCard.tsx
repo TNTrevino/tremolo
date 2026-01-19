@@ -7,6 +7,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import type { GeneralUserInfo } from "@/services/api/types";
+import { logError } from "@/shared/utils/error.utils";
 
 interface QuickStats {
 	totalSessions: number;
@@ -24,7 +25,15 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
 		year: "numeric",
 	});
 
-	const roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+	let roleDisplay = "User";
+	if (user.role) {
+		roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+	} else {
+		logError(
+			new Error(`Missing user.role for user ID: ${user.id}`),
+			"UserProfileCard",
+		);
+	}
 
 	return (
 		<Card className="shadow-lg">
