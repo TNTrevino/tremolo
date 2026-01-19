@@ -201,21 +201,23 @@ const getUserGeneralInfo = `-- name: GetUserGeneralInfo :one
 select
     u.first_name,
     u.last_name,
+    u.role,
     u.created_date::text as created_date,
     coalesce(count(nge.id), 0)::int as total_entries,
     coalesce(sum(nge.time_length)::text, '00:00:00') as total_duration
 from users u
 left join note_game_entries nge on u.id = nge.user_id
 where u.id = $1
-group by u.id, u.first_name, u.last_name, u.created_date
+group by u.id, u.first_name, u.last_name, u.role, u.created_date
 `
 
 type GetUserGeneralInfoRow struct {
-	FirstName     string      `json:"first_name"`
-	LastName      string      `json:"last_name"`
-	CreatedDate   string      `json:"created_date"`
-	TotalEntries  int32       `json:"total_entries"`
-	TotalDuration interface{} `json:"total_duration"`
+	FirstName     string         `json:"first_name"`
+	LastName      string         `json:"last_name"`
+	Role          sql.NullString `json:"role"`
+	CreatedDate   string         `json:"created_date"`
+	TotalEntries  int32          `json:"total_entries"`
+	TotalDuration interface{}    `json:"total_duration"`
 }
 
 func (q *Queries) GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error) {
@@ -224,6 +226,7 @@ func (q *Queries) GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGene
 	err := row.Scan(
 		&i.FirstName,
 		&i.LastName,
+		&i.Role,
 		&i.CreatedDate,
 		&i.TotalEntries,
 		&i.TotalDuration,

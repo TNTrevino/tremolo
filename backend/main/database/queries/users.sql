@@ -71,13 +71,14 @@ returning id, first_name, last_name, email, role, school_id, created_date;
 select
     u.first_name,
     u.last_name,
+    u.role,
     u.created_date::text as created_date,
     coalesce(count(nge.id), 0)::int as total_entries,
     coalesce(sum(nge.time_length)::text, '00:00:00') as total_duration
 from users u
 left join note_game_entries nge on u.id = nge.user_id
 where u.id = $1
-group by u.id, u.first_name, u.last_name, u.created_date;
+group by u.id, u.first_name, u.last_name, u.role, u.created_date;
 
 -- name: DeleteUserByID :exec
 delete from users
