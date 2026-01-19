@@ -1,5 +1,22 @@
 # Tremolo
 
+<!--toc:start-->
+- [Tremolo](#tremolo)
+  - [Goal](#goal)
+  - [Current Progress (DEPLOYMENT IS BEHIND):](#current-progress-deployment-is-behind)
+  - [Run the Project Locally](#run-the-project-locally)
+    - [Database](#database)
+    - [Environment Setup](#environment-setup)
+    - [Serve it locally](#serve-it-locally)
+      - [Frontend](#frontend)
+      - [Music generation microservice](#music-generation-microservice)
+      - [User tracking microservice](#user-tracking-microservice)
+      - [Scripts](#scripts)
+  - [Technologies Used](#technologies-used)
+    - [Frontend](#frontend-1)
+    - [Backend](#backend)
+<!--toc:end-->
+
 ## Goal
 
 I want to make a one stop shop where educators can send students to practice their specific music, sight reading, and much more.
@@ -13,6 +30,14 @@ This also be a technical exercise for myself as I will be learning a huge amount
 [deployment](https://tremolonotes.com/)
 
 ## Run the Project Locally
+
+### Database
+
+Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./backend/main/database/schema.sql` file. 
+
+Make the tables, then association.
+
+TODO: automate this plz
 
 ### Environment Setup
 
@@ -90,7 +115,7 @@ chmod +x ./scripts/install-deps.sh
 TODO: add tmux script we made
 
 
-## Technologies used:
+## Technologies Used
 
 ### Frontend
 
