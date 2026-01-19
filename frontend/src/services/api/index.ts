@@ -17,10 +17,6 @@
  * ```
  */
 
-// ============================================================================
-// API Clients
-// ============================================================================
-
 export {
 	musicApiClient,
 	mainApiClient,
@@ -30,13 +26,8 @@ export {
 	clearTokens,
 	TOKEN_STORAGE_KEY,
 	REFRESH_TOKEN_STORAGE_KEY,
-} from "./client";
+} from "./clients";
 
-// ============================================================================
-// Services
-// ============================================================================
-
-// Auth Service
 export {
 	authService,
 	login,
@@ -47,7 +38,6 @@ export {
 	isAuthenticated,
 } from "./auth.service";
 
-// Music Service
 export {
 	musicService,
 	generateMary,
@@ -57,7 +47,6 @@ export {
 	isValidRhythm,
 } from "./music.service";
 
-// User Service
 export {
 	userService,
 	getProfile,
@@ -70,12 +59,7 @@ export {
 	calculateNPM,
 } from "./user.service";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export type {
-	// Auth & User Types
 	UserRole,
 	User,
 	LoginRequest,
@@ -84,28 +68,18 @@ export type {
 	RegisterResponse,
 	RefreshTokenRequest,
 	RefreshTokenResponse,
-
-	// Note Game Types
 	CreateNoteGameEntryRequest,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
-
-	// User Info Types
 	GeneralUserInfo,
-
-	// Chart/Analytics Types
 	ChartDataPoint,
 	MultiMetricChartData,
 	ChartInterval,
 	ChartQueryParams,
-
-	// Music Generation Types
 	MaryRequest,
 	RandomNotesRequest,
 	NoteGameRequest,
 	NoteGameResponse,
-
-	// Error Types
 	ApiError,
 	ApiResponse,
 } from "./types";
