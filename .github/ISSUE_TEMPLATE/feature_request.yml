@@ -1,39 +1,29 @@
 name: Feature Request
-description: Suggest a new feature or improvement
-title: "[FEATURE]"
+description: Suggest a new feature
+title: "feature: "
 labels: [enhancement]
-assignees:
-  - TheNoeTrevino
 body:
-  - type: markdown
-    attributes:
-      value: |
-        **Describe the feature**
-        A clear and concise description of what you want to happen.
-
   - type: textarea
-    id: motivation
-    attributes:
-      label: Motivation / Use Case
-      description: Why is this feature needed? What problem does it solve?
-      placeholder: "Explain the motivation..."
     validations:
       required: true
-
-  - type: textarea
-    id: solution
     attributes:
-      label: Proposed Solution
-      description: Describe how you envision this feature working
-      placeholder: "Describe your solution..."
+      label: Is your feature request related to a problem? Please describe.
+      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+  - type: textarea
     validations:
       required: true
-
-  - type: textarea
-    id: alternatives
     attributes:
-      label: Alternatives Considered
-      description: Other options you considered and why they were rejected
-      placeholder: "Describe alternatives..."
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen.
+  - type: textarea
     validations:
       required: false
+    attributes:
+      label: Describe alternatives/other solutions you've considered
+      description: A clear and concise description of any alternative solutions or features you've considered.
+  - type: textarea
+    validations:
+      required: false
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the feature request here.

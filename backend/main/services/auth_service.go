@@ -2,13 +2,15 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
+	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/logger"
 	"sight-reading/middleware"
-	"sight-reading/repositories"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +20,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	// BcryptCost is the computational cost for password hashing
+	// Higher values provide more security but take longer to compute
+	BcryptCost = 12
+
+	// MaxLoginAttempts is the number of failed login attempts before account lockout
+	MaxLoginAttempts = 5
+
+	// DefaultLockoutDurationMinutes is the default account lockout time in minutes
+	DefaultLockoutDurationMinutes = 15
 )
 
 func Login(c *gin.Context) {
@@ -40,10 +54,11 @@ func Login(c *gin.Context) {
 	}
 
 	normalizedEmail := normalizeEmail(reqBody.Email)
-	userRepo := repositories.NewUserRepository()
+	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
+	ctx := c.Request.Context()
 
-	isLocked, lockedUntil, err := userRepo.CheckAccountLocked(normalizedEmail)
-	if err != nil {
+	lockedUntil, err := database.Queries.CheckAccountLocked(ctx, emailNullStr)
+	if err != nil && err != sql.ErrNoRows {
 		logger.Error("Error checking account lock status", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":    "Internal server error.",
@@ -52,7 +67,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if isLocked && lockedUntil != nil {
+	if lockedUntil.Valid {
 		logger.Info("Login attempt on locked account", "email", normalizedEmail)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":    "Account is locked due to too many failed login attempts",
@@ -61,7 +76,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	user, err := userRepo.GetUserByEmail(normalizedEmail)
+	user, err := database.Queries.GetUserByEmail(ctx, emailNullStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Info("User not found with provided", "email", normalizedEmail)
@@ -77,29 +92,32 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if !user.PasswordHash.Valid || user.PasswordHash.String == "" {
+	if user.Password == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Invalid credentials",
 		})
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash.String), []byte(reqBody.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqBody.Password))
 	if err != nil {
 		logger.Info("Invalid password, incrementing failed attempts", "error", err.Error())
-		if err := userRepo.IncrementFailedAttempts(normalizedEmail); err != nil {
+		if err := database.Queries.IncrementFailedAttempts(ctx, emailNullStr); err != nil {
 			logger.Error("Failed to increment failed attempts", "error", err.Error())
 		}
 
-		attempts, err := userRepo.GetFailedAttempts(normalizedEmail)
+		attempts, err := database.Queries.GetFailedAttempts(ctx, emailNullStr)
 		if err != nil {
 			logger.Error("Failed to get failed attempts", "error", err.Error())
 		} else {
-			maxAttempts := getMaxLoginAttempts()
-			if attempts >= maxAttempts {
+			if int(attempts) >= MaxLoginAttempts {
 				lockDuration := getLockoutDuration()
-				lockedUntil := time.Now().Add(lockDuration)
-				if err := userRepo.LockAccount(normalizedEmail, lockedUntil); err != nil {
+				lockedUntilTime := time.Now().Add(lockDuration)
+				lockParams := generated.LockAccountParams{
+					LockedUntil: sql.NullTime{Time: lockedUntilTime, Valid: true},
+					Email:       emailNullStr,
+				}
+				if err := database.Queries.LockAccount(ctx, lockParams); err != nil {
 					logger.Error("Failed to lock account", "error", err.Error())
 				} else {
 					logger.Info("Account locked due to failed login attempts", "email", normalizedEmail, "attempts", attempts)
@@ -117,11 +135,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := userRepo.ResetLockout(normalizedEmail); err != nil {
+	if err := database.Queries.ResetLockout(ctx, emailNullStr); err != nil {
 		logger.Error("Failed to reset lockout", "error", err.Error())
 	}
 
-	accessToken, err := middleware.GenerateAccessToken(user.ID)
+	accessToken, err := middleware.GenerateAccessToken(int(user.ID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to generate access token",
@@ -129,7 +147,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := middleware.GenerateRefreshToken(user.ID)
+	refreshToken, err := middleware.GenerateRefreshToken(int(user.ID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to generate refresh token",
@@ -138,13 +156,7 @@ func Login(c *gin.Context) {
 	}
 
 	response := dtos.LoginResponse{
-		User: dtos.UserResponse{
-			ID:        user.ID,
-			Email:     user.Email,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Role:      user.Role,
-		},
+		User:         convertGetUserByEmailRowToUserResponse(user),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
@@ -153,26 +165,14 @@ func Login(c *gin.Context) {
 }
 
 func GetCurrentUser(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Unauthorized",
-		})
+	uid, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	uid, ok := userID.(int)
-	if !ok {
-		logger.Error("Error parsing userID")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error",
-			"scenario": "AS.5",
-		})
-		return
-	}
-
-	userRepo := repositories.NewUserRepository()
-	user, err := userRepo.GetUserByID(uid)
+	ctx := c.Request.Context()
+	user, err := database.Queries.GetUserByID(ctx, int32(uid))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -187,19 +187,12 @@ func GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	response := dtos.UserResponse{
-		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
-	}
-
+	response := convertGetUserByIDRowToUserResponse(user)
 	c.JSON(http.StatusOK, response)
 }
 
 func HashPassword(password string) (string, error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -226,9 +219,10 @@ func Register(c *gin.Context) {
 	}
 
 	normalizedEmail := normalizeEmail(reqBody.Email)
-	userRepo := repositories.NewUserRepository()
+	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
+	ctx := c.Request.Context()
 
-	exists, err := checkIfUserExists(userRepo, normalizedEmail)
+	exists, err := checkIfUserExists(ctx, database.Queries, emailNullStr)
 	if err != nil {
 		logger.Error("Database error. Scenario: AS.7", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -254,16 +248,16 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	user := repositories.User{
-		Email:     normalizedEmail,
+	createParams := generated.CreateUserParams{
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
-		Role:      reqBody.Role,
+		Email:     emailNullStr,
+		Password:  passwordHash,
+		Role:      sql.NullString{String: reqBody.Role, Valid: true},
+		SchoolID:  sql.NullInt32{Valid: false},
 	}
-	user.PasswordHash.Valid = true
-	user.PasswordHash.String = passwordHash
 
-	createdUser, err := userRepo.CreateUser(user)
+	createdUser, err := database.Queries.CreateUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create user", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -274,35 +268,25 @@ func Register(c *gin.Context) {
 
 	response := dtos.RegisterResponse{
 		Message: "User created successfully",
-		User: dtos.UserResponse{
-			ID:        createdUser.ID,
-			Email:     createdUser.Email,
-			FirstName: createdUser.FirstName,
-			LastName:  createdUser.LastName,
-			Role:      createdUser.Role,
-		},
+		User:    convertCreateUserRowToUserResponse(createdUser),
 	}
 
 	c.JSON(http.StatusCreated, response)
 }
 
-func checkIfUserExists(userRepo *repositories.UserRepository, email string) (bool, error) {
-	_, err := userRepo.GetUserByEmail(email)
-
-	if err == nil {
-		return true, nil
-	} else if err != sql.ErrNoRows {
+func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullString) (bool, error) {
+	_, err := q.GetUserByEmail(ctx, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
 		return false, fmt.Errorf("database error: %w", err)
 	}
-	return false, nil
+	return true, nil
 }
 
 func normalizeEmail(email string) string {
 	return strings.ToLower(email)
-}
-
-func getMaxLoginAttempts() int {
-	return 5
 }
 
 func getLockoutDuration() time.Duration {
@@ -311,7 +295,7 @@ func getLockoutDuration() time.Duration {
 			return time.Duration(parsed) * time.Minute
 		}
 	}
-	return 15 * time.Minute
+	return DefaultLockoutDurationMinutes * time.Minute
 }
 
 func RefreshToken(c *gin.Context) {

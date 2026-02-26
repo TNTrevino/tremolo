@@ -21,6 +21,17 @@ type Entry struct {
 	NPM              int8           `db:"notes_per_minute"  json:"notes_per_minute"  validate:"required,number"`
 }
 
+// NoteGameEntryResponse represents a note game entry returned from API responses
+type NoteGameEntryResponse struct {
+	ID               int     `json:"id"`
+	UserID           int     `json:"user_id"`
+	TimeLength       string  `json:"time_length"`
+	TotalQuestions   int     `json:"total_questions"`
+	CorrectQuestions int     `json:"correct_questions"`
+	NotesPerMinute   float64 `json:"notes_per_minute"`
+	CreatedDate      string  `json:"created_date"`
+}
+
 // add an or to the hours to ensure the miliary time and nothing else
 
 func (entry *Entry) ValidateEntry() error {

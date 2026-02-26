@@ -1,8 +1,10 @@
 package services
 
 import (
+	"database/sql"
 	"net/http"
-	"sight-reading/repositories"
+	"sight-reading/database"
+	"sight-reading/database/generated"
 	"strconv"
 
 	dtos "sight-reading/DTOs"
@@ -33,20 +35,21 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	userRepo := repositories.NewUserRepository()
+	ctx := c.Request.Context()
 
-	user := repositories.User{
+	params := generated.CreateUserParams{
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
-		Role:      string(reqBody.Role),
+		Email:     sql.NullString{String: reqBody.Email, Valid: reqBody.Email != ""},
+		Password:  reqBody.PasswordHash,
+		Role:      sql.NullString{String: string(reqBody.Role), Valid: true},
 	}
 
 	if reqBody.SchoolID != 0 {
-		user.SchoolID.Valid = true
-		user.SchoolID.Int64 = int64(reqBody.SchoolID)
+		params.SchoolID = sql.NullInt32{Int32: int32(reqBody.SchoolID), Valid: true}
 	}
 
-	createdUser, err := userRepo.CreateUser(user)
+	createdUser, err := database.Queries.CreateUser(ctx, params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":    err.Error(),
@@ -56,29 +59,16 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	response := dtos.User{
-		FirstName: createdUser.FirstName,
-		LastName:  createdUser.LastName,
-		Role:      dtos.Role(createdUser.Role),
-	}
-
-	if createdUser.SchoolID.Valid {
-		response.SchoolID = int16(createdUser.SchoolID.Int64)
-	}
-
 	c.JSON(http.StatusCreated, gin.H{
-		"body":   response,
+		"body":   convertCreateUserRowToDTO(createdUser),
 		"status": "teacher created sucessfully",
 	})
 }
 
-func UpdateTeacher(c *gin.Context) {
-}
-
 func GetStudents(c *gin.Context) {
-	userRepo := repositories.NewUserRepository()
+	ctx := c.Request.Context()
 
-	users, err := userRepo.GetUsersByRole("STUDENT")
+	users, err := database.Queries.GetUsersByRole(ctx, sql.NullString{String: string(dtos.Student), Valid: true})
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -87,25 +77,12 @@ func GetStudents(c *gin.Context) {
 		return
 	}
 
-	var students []dtos.User
-	for _, user := range users {
-		student := dtos.User{
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Role:      dtos.Role(user.Role),
-		}
-		if user.SchoolID.Valid {
-			student.SchoolID = int16(user.SchoolID.Int64)
-		}
-		students = append(students, student)
-	}
-
-	c.JSON(http.StatusOK, students)
+	c.JSON(http.StatusOK, convertGetUsersByRoleRowsToDTO(users))
 }
 
 func GetStudent(c *gin.Context) {
-	idSrt := c.Param("id")
-	id, err := strconv.Atoi(idSrt)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"error":   true,
@@ -114,9 +91,14 @@ func GetStudent(c *gin.Context) {
 		return
 	}
 
-	userRepo := repositories.NewUserRepository()
+	ctx := c.Request.Context()
 
-	user, err := userRepo.GetUserByRoleAndID("STUDENT", id)
+	params := generated.GetUserByRoleAndIDParams{
+		Role: sql.NullString{String: string(dtos.Student), Valid: true},
+		ID:   int32(id),
+	}
+
+	user, err := database.Queries.GetUserByRoleAndID(ctx, params)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -125,14 +107,5 @@ func GetStudent(c *gin.Context) {
 		return
 	}
 
-	student := dtos.User{
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      dtos.Role(user.Role),
-	}
-	if user.SchoolID.Valid {
-		student.SchoolID = int16(user.SchoolID.Int64)
-	}
-
-	c.JSON(http.StatusOK, student)
+	c.JSON(http.StatusOK, convertGetUserByRoleAndIDRowToDTO(user))
 }

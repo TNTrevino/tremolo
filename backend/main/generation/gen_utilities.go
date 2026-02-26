@@ -68,11 +68,6 @@ const (
 // 	ParentID  int `db:"parent_id"`
 // }
 
-type fakeTeacherToStudent struct {
-	TeacherID int `db:"teacher_id"`
-	StudentID int `db:"student_id"`
-}
-
 var fake *faker.Faker
 
 // SkillLevel represents the proficiency level of a student

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	dtos "sight-reading/DTOs"
+	"sight-reading/database"
 	"sight-reading/middleware"
 	"sight-reading/services"
 
@@ -23,15 +24,9 @@ func SetupNoteGameRoutes(router *gin.Engine) {
 // CreateNoteGameEntry saves a new note game entry for a user
 // Protected: Requires JWT authentication
 func CreateNoteGameEntry(c *gin.Context) {
-	userIDInterface, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	authenticatedUserID, ok := userIDInterface.(int)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -41,7 +36,8 @@ func CreateNoteGameEntry(c *gin.Context) {
 		return
 	}
 
-	entryID, err := services.CreateNoteGameEntry(authenticatedUserID, &entry)
+	ctx := c.Request.Context()
+	entryID, err := services.CreateNoteGameEntry(ctx, database.Queries, authenticatedUserID, &entry)
 	if err != nil {
 		if errors.Is(err, services.ErrUnauthorized) {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -60,19 +56,14 @@ func CreateNoteGameEntry(c *gin.Context) {
 // GetRecentNoteGameEntries fetches the last 30 note game entries for the authenticated user
 // Protected: Requires JWT authentication
 func GetRecentNoteGameEntries(c *gin.Context) {
-	userIDInterface, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	authenticatedUserID, ok := userIDInterface.(int)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	entries, err := services.GetRecentNoteGameEntries(authenticatedUserID)
+	ctx := c.Request.Context()
+	entries, err := services.GetRecentNoteGameEntries(ctx, database.Queries, authenticatedUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recent entries"})
 		return
