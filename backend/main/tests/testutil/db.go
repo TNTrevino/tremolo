@@ -65,12 +65,17 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 		t.Fatalf("Failed to hash password: %v", err)
 	}
 
+	roleID, err := database.Queries.GetRoleIDByName(context.Background(), params.Role)
+	if err != nil {
+		t.Fatalf("Failed to resolve role %q: %v", params.Role, err)
+	}
+
 	createParams := generated.CreateUserParams{
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
 		Email:     sql.NullString{String: params.Email, Valid: true},
 		Password:  hashedPassword,
-		Role:      sql.NullString{String: params.Role, Valid: true},
+		RoleID:    roleID,
 	}
 
 	if params.SchoolID != nil {

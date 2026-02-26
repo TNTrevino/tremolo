@@ -29,7 +29,7 @@ insert into tremolo.users (
     last_name,
     email,
     password,
-    role,
+    role_id,
     school_id
 )
 values (
@@ -40,7 +40,7 @@ values (
     $5,
     $6
 )
-returning id, first_name, last_name, email, role, school_id, created_date
+returning id, first_name, last_name, email, role_id, school_id, created_date
 `
 
 type CreateUserParams struct {
@@ -48,7 +48,7 @@ type CreateUserParams struct {
 	LastName  string         `json:"last_name"`
 	Email     sql.NullString `json:"email"`
 	Password  string         `json:"password"`
-	Role      sql.NullString `json:"role"`
+	RoleID    int32          `json:"role_id"`
 	SchoolID  sql.NullInt32  `json:"school_id"`
 }
 
@@ -57,7 +57,7 @@ type CreateUserRow struct {
 	FirstName   string         `json:"first_name"`
 	LastName    string         `json:"last_name"`
 	Email       sql.NullString `json:"email"`
-	Role        sql.NullString `json:"role"`
+	RoleID      int32          `json:"role_id"`
 	SchoolID    sql.NullInt32  `json:"school_id"`
 	CreatedDate sql.NullTime   `json:"created_date"`
 }
@@ -68,7 +68,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.LastName,
 		arg.Email,
 		arg.Password,
-		arg.Role,
+		arg.RoleID,
 		arg.SchoolID,
 	)
 	var i CreateUserRow
@@ -77,7 +77,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.FirstName,
 		&i.LastName,
 		&i.Email,
-		&i.Role,
+		&i.RoleID,
 		&i.SchoolID,
 		&i.CreatedDate,
 	)
@@ -107,10 +107,22 @@ func (q *Queries) GetFailedAttempts(ctx context.Context, email sql.NullString) (
 	return failed_login_attempts, err
 }
 
+const getRoleIDByName = `-- name: GetRoleIDByName :one
+select id from tremolo.roles where name = $1
+`
+
+func (q *Queries) GetRoleIDByName(ctx context.Context, name string) (int32, error) {
+	row := q.db.QueryRowContext(ctx, getRoleIDByName, name)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
-select id, email, first_name, last_name, role, password
-from tremolo.users
-where email = $1
+select u.id, u.email, u.first_name, u.last_name, r.name as role, u.password
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where u.email = $1
 `
 
 type GetUserByEmailRow struct {
@@ -118,7 +130,7 @@ type GetUserByEmailRow struct {
 	Email     sql.NullString `json:"email"`
 	FirstName string         `json:"first_name"`
 	LastName  string         `json:"last_name"`
-	Role      sql.NullString `json:"role"`
+	Role      string         `json:"role"`
 	Password  string         `json:"password"`
 }
 
@@ -137,9 +149,10 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (Get
 }
 
 const getUserByID = `-- name: GetUserByID :one
-select id, email, first_name, last_name, role, school_id, created_date
-from tremolo.users
-where id = $1
+select u.id, u.email, u.first_name, u.last_name, r.name as role, u.school_id, u.created_date
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where u.id = $1
 `
 
 type GetUserByIDRow struct {
@@ -147,7 +160,7 @@ type GetUserByIDRow struct {
 	Email       sql.NullString `json:"email"`
 	FirstName   string         `json:"first_name"`
 	LastName    string         `json:"last_name"`
-	Role        sql.NullString `json:"role"`
+	Role        string         `json:"role"`
 	SchoolID    sql.NullInt32  `json:"school_id"`
 	CreatedDate sql.NullTime   `json:"created_date"`
 }
@@ -168,25 +181,26 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, er
 }
 
 const getUserByRoleAndID = `-- name: GetUserByRoleAndID :one
-select first_name, last_name, role, school_id
-from tremolo.users
-where role = $1 and id = $2
+select u.first_name, u.last_name, r.name as role, u.school_id
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where r.name = $1 and u.id = $2
 `
 
 type GetUserByRoleAndIDParams struct {
-	Role sql.NullString `json:"role"`
-	ID   int32          `json:"id"`
+	Name string `json:"name"`
+	ID   int32  `json:"id"`
 }
 
 type GetUserByRoleAndIDRow struct {
-	FirstName string         `json:"first_name"`
-	LastName  string         `json:"last_name"`
-	Role      sql.NullString `json:"role"`
-	SchoolID  sql.NullInt32  `json:"school_id"`
+	FirstName string        `json:"first_name"`
+	LastName  string        `json:"last_name"`
+	Role      string        `json:"role"`
+	SchoolID  sql.NullInt32 `json:"school_id"`
 }
 
 func (q *Queries) GetUserByRoleAndID(ctx context.Context, arg GetUserByRoleAndIDParams) (GetUserByRoleAndIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByRoleAndID, arg.Role, arg.ID)
+	row := q.db.QueryRowContext(ctx, getUserByRoleAndID, arg.Name, arg.ID)
 	var i GetUserByRoleAndIDRow
 	err := row.Scan(
 		&i.FirstName,
@@ -201,23 +215,24 @@ const getUserGeneralInfo = `-- name: GetUserGeneralInfo :one
 select
     u.first_name,
     u.last_name,
-    u.role,
+    r.name as role,
     u.created_date::text as created_date,
     coalesce(count(nge.id), 0)::int as total_entries,
     coalesce(sum(nge.time_length)::text, '00:00:00') as total_duration
 from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
 left join tremolo.note_game_entries nge on u.id = nge.user_id
 where u.id = $1
-group by u.id, u.first_name, u.last_name, u.role, u.created_date
+group by u.id, u.first_name, u.last_name, r.name, u.created_date
 `
 
 type GetUserGeneralInfoRow struct {
-	FirstName     string         `json:"first_name"`
-	LastName      string         `json:"last_name"`
-	Role          sql.NullString `json:"role"`
-	CreatedDate   string         `json:"created_date"`
-	TotalEntries  int32          `json:"total_entries"`
-	TotalDuration interface{}    `json:"total_duration"`
+	FirstName     string      `json:"first_name"`
+	LastName      string      `json:"last_name"`
+	Role          string      `json:"role"`
+	CreatedDate   string      `json:"created_date"`
+	TotalEntries  int32       `json:"total_entries"`
+	TotalDuration interface{} `json:"total_duration"`
 }
 
 func (q *Queries) GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error) {
@@ -235,33 +250,35 @@ func (q *Queries) GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGene
 }
 
 const getUserRole = `-- name: GetUserRole :one
-select role
-from tremolo.users
-where id = $1
+select r.name as role
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where u.id = $1
 `
 
-func (q *Queries) GetUserRole(ctx context.Context, id int32) (sql.NullString, error) {
+func (q *Queries) GetUserRole(ctx context.Context, id int32) (string, error) {
 	row := q.db.QueryRowContext(ctx, getUserRole, id)
-	var role sql.NullString
+	var role string
 	err := row.Scan(&role)
 	return role, err
 }
 
 const getUsersByRole = `-- name: GetUsersByRole :many
-select first_name, last_name, role, school_id
-from tremolo.users
-where role = $1
+select u.first_name, u.last_name, r.name as role, u.school_id
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where r.name = $1
 `
 
 type GetUsersByRoleRow struct {
-	FirstName string         `json:"first_name"`
-	LastName  string         `json:"last_name"`
-	Role      sql.NullString `json:"role"`
-	SchoolID  sql.NullInt32  `json:"school_id"`
+	FirstName string        `json:"first_name"`
+	LastName  string        `json:"last_name"`
+	Role      string        `json:"role"`
+	SchoolID  sql.NullInt32 `json:"school_id"`
 }
 
-func (q *Queries) GetUsersByRole(ctx context.Context, role sql.NullString) ([]GetUsersByRoleRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUsersByRole, role)
+func (q *Queries) GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersByRole, name)
 	if err != nil {
 		return nil, err
 	}

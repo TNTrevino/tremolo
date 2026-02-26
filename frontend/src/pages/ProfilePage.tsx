@@ -33,7 +33,7 @@ export function ProfilePage() {
 									<p className="text-muted-foreground">{user.email}</p>
 									<div className="flex flex-wrap gap-2 justify-center md:justify-start">
 										<span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-											{user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+											{user.role.charAt(0) + user.role.slice(1).toLowerCase()}
 										</span>
 									</div>
 								</div>

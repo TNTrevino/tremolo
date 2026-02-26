@@ -24,7 +24,7 @@ insert into tremolo.users (
   first_name,
   last_name,
   school_id,
-  role,
+  role_id,
   email,
   password
 )

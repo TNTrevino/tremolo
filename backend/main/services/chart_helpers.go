@@ -166,10 +166,10 @@ func verifyTeacherRole(c *gin.Context, teacherID int) bool {
 		return false
 	}
 
-	if !userRole.Valid || userRole.String != "teacher" {
+	if userRole != "TEACHER" {
 		logger.Info("Non-teacher user attempted to access class metrics",
 			"user_id", teacherID,
-			"role", userRole.String)
+			"role", userRole)
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only teachers can access class metrics"})
 		return false
 	}

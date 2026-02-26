@@ -29,7 +29,7 @@ func TestLogin_ValidCredentials(t *testing.T) {
 		Password:  password,
 		FirstName: "Test",
 		LastName:  "User",
-		Role:      "student",
+		Role:      "STUDENT",
 	})
 
 	reqBody := dtos.LoginRequest{
@@ -50,7 +50,7 @@ func TestLogin_ValidCredentials(t *testing.T) {
 	assert.NotEmpty(t, response.RefreshToken, "Expected refresh token to be non-empty")
 	assert.Equal(t, "Test", response.User.FirstName)
 	assert.Equal(t, "User", response.User.LastName)
-	assert.Equal(t, "student", response.User.Role)
+	assert.Equal(t, "STUDENT", response.User.Role)
 }
 
 func TestLogin_InvalidPassword(t *testing.T) {
@@ -59,7 +59,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "login_invalid_pw")
 
-	testutil.CreateTestUserWithDefaults(t, email, "student")
+	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	reqBody := dtos.LoginRequest{
 		Email:    email,
@@ -103,7 +103,7 @@ func TestLogin_AccountLocked(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "login_locked")
 
-	testutil.CreateTestUserWithDefaults(t, email, "student")
+	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.LockTestUserAccount(t, email, 15*time.Minute)
 
 	reqBody := dtos.LoginRequest{
@@ -227,7 +227,7 @@ func TestLogin_EmailNormalization(t *testing.T) {
 		Password:  password,
 		FirstName: "Test",
 		LastName:  "User",
-		Role:      "student",
+		Role:      "STUDENT",
 	})
 
 	// Login with uppercase email
@@ -254,7 +254,7 @@ func TestRegister_Success(t *testing.T) {
 		Password:  "TestPass123!",
 		FirstName: "John",
 		LastName:  "Doe",
-		Role:      "student",
+		Role:      "STUDENT",
 	}
 	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
@@ -269,7 +269,7 @@ func TestRegister_Success(t *testing.T) {
 	assert.Equal(t, email, response.User.Email)
 	assert.Equal(t, "John", response.User.FirstName)
 	assert.Equal(t, "Doe", response.User.LastName)
-	assert.Equal(t, "student", response.User.Role)
+	assert.Equal(t, "STUDENT", response.User.Role)
 	assert.NotZero(t, response.User.ID, "Expected user ID to be non-zero")
 
 	// Cleanup: delete the created user
@@ -285,7 +285,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 	email := testutil.UniqueEmail(t, "register_dup")
 
 	// Create first user
-	testutil.CreateTestUserWithDefaults(t, email, "student")
+	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Try to register with same email
 	reqBody := dtos.RegisterRequest{
@@ -293,7 +293,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 		Password:  "TestPass123!",
 		FirstName: "Jane",
 		LastName:  "Doe",
-		Role:      "student",
+		Role:      "STUDENT",
 	}
 	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
@@ -322,7 +322,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "TestPass123!",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Email is required",
 		},
@@ -333,7 +333,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "TestPass123!",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Email must be a valid email address",
 		},
@@ -343,7 +343,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Email:     "test@example.com",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Password is required",
 		},
@@ -354,7 +354,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "Short1!",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Password must be at least 8 characters",
 		},
@@ -365,7 +365,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "simplepassword",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Password must contain at least 1 uppercase letter",
 		},
@@ -375,7 +375,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "TestPass123!",
 				LastName: "Doe",
-				Role:     "student",
+				Role:     "STUDENT",
 			},
 			expectedError: "First name is required",
 		},
@@ -386,7 +386,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "TestPass123!",
 				FirstName: "J",
 				LastName:  "Doe",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "First name must be at least 2 characters",
 		},
@@ -396,7 +396,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Email:     "test@example.com",
 				Password:  "TestPass123!",
 				FirstName: "John",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Last name is required",
 		},
@@ -407,7 +407,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "TestPass123!",
 				FirstName: "John",
 				LastName:  "D",
-				Role:      "student",
+				Role:      "STUDENT",
 			},
 			expectedError: "Last name must be at least 2 characters",
 		},
@@ -428,9 +428,9 @@ func TestRegister_ValidationErrors(t *testing.T) {
 				Password:  "TestPass123!",
 				FirstName: "John",
 				LastName:  "Doe",
-				Role:      "admin",
+				Role:      "ADMIN",
 			},
-			expectedError: "Role must be one of: student, teacher, parent",
+			expectedError: "Role must be one of: STUDENT, TEACHER, PARENT",
 		},
 	}
 
@@ -478,7 +478,7 @@ func TestRegister_AllRoles(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	roles := []string{"student", "teacher", "parent"}
+	roles := []string{"STUDENT", "TEACHER", "PARENT"}
 
 	for _, role := range roles {
 		role := role // capture range variable
@@ -523,7 +523,7 @@ func TestGetCurrentUser_ValidToken(t *testing.T) {
 		Password:  "TestPass123!",
 		FirstName: "Current",
 		LastName:  "User",
-		Role:      "teacher",
+		Role:      "TEACHER",
 	})
 
 	c, w := testutil.CreateGinContextWithUserID(http.MethodGet, "/", userID)
@@ -539,7 +539,7 @@ func TestGetCurrentUser_ValidToken(t *testing.T) {
 	assert.Equal(t, email, response.Email)
 	assert.Equal(t, "Current", response.FirstName)
 	assert.Equal(t, "User", response.LastName)
-	assert.Equal(t, "teacher", response.Role)
+	assert.Equal(t, "TEACHER", response.Role)
 }
 
 func TestGetCurrentUser_NoUserIDInContext(t *testing.T) {
@@ -600,7 +600,7 @@ func TestRefreshToken_Valid(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "refresh_valid")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Generate a valid refresh token
 	refreshToken, err := middleware.GenerateRefreshToken(userID)
@@ -664,7 +664,7 @@ func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "refresh_access_as_refresh")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Generate an access token (not a refresh token)
 	accessToken, err := middleware.GenerateAccessToken(userID)

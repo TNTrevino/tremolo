@@ -10,7 +10,7 @@ import (
 type GeneralUserInfo struct {
 	FirstName     string         `db:"first_name" json:"first_name"`
 	LastName      string         `db:"last_name" json:"last_name"`
-	Role          sql.NullString `db:"role" json:"-"`
+	Role          string         `db:"role" json:"role"`
 	CreatedDate   sql.NullString `db:"created_date" json:"-"`
 	TotalEntries  int            `db:"total_entries" json:"total_entries"`
 	TotalDuration sql.NullString `db:"total_duration" json:"-"`
@@ -28,21 +28,15 @@ type GeneralUserInfoDTO struct {
 
 // ToDTO converts the database model to the response DTO with formatted fields
 func (u *GeneralUserInfo) ToDTO() GeneralUserInfoDTO {
-	role := ""
-	if u.Role.Valid {
-		role = u.Role.String
-	}
-
 	dto := GeneralUserInfoDTO{
 		FirstName:     u.FirstName,
 		LastName:      u.LastName,
-		Role:          role,
+		Role:          u.Role,
 		TotalEntries:  u.TotalEntries,
 		CreatedDate:   "Joined N/A",
 		TotalDuration: "00:00:00",
 	}
 
-	// Format created date as "Joined 12 Mar 2024"
 	if u.CreatedDate.Valid {
 		parsedDate, err := time.Parse("2006-01-02", u.CreatedDate.String)
 		if err == nil {
@@ -50,7 +44,6 @@ func (u *GeneralUserInfo) ToDTO() GeneralUserInfoDTO {
 		}
 	}
 
-	// Format total duration as "HH:MM:SS"
 	if u.TotalDuration.Valid {
 		dto.TotalDuration = u.TotalDuration.String
 	}

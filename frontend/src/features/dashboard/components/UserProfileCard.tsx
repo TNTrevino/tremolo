@@ -27,7 +27,7 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
 
 	let roleDisplay = "User";
 	if (user.role) {
-		roleDisplay = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+		roleDisplay = user.role.charAt(0) + user.role.slice(1).toLowerCase();
 	} else {
 		logError(
 			new Error(`Missing user.role for user ID: ${user.id}`),

@@ -23,7 +23,7 @@ func TestGetUserChartData_Success(t *testing.T) {
 
 	// Create a test user
 	email := testutil.UniqueEmail(t, "chart_success")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Create a note game entry for the user
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
@@ -56,10 +56,10 @@ func TestGetUserChartData_Unauthorized(t *testing.T) {
 
 	// Create two users
 	email1 := testutil.UniqueEmail(t, "chart_unauth1")
-	userID1 := testutil.CreateTestUserWithDefaults(t, email1, "student")
+	userID1 := testutil.CreateTestUserWithDefaults(t, email1, "STUDENT")
 
 	email2 := testutil.UniqueEmail(t, "chart_unauth2")
-	userID2 := testutil.CreateTestUserWithDefaults(t, email2, "student")
+	userID2 := testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
 
 	// Set up mock context where user1 tries to access user2's data
 	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID2))
@@ -162,7 +162,7 @@ func TestGetUserChartData_AllIntervals(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_intervals")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
 	intervals := []string{"day", "week", "month", "year", "all"}
@@ -190,7 +190,7 @@ func TestGetUserChartData_InvalidInterval(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_invalid_interval")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=invalid")
 	c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=invalid", nil)
@@ -212,7 +212,7 @@ func TestGetUserChartData_InvalidDays(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_invalid_days")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	testCases := []struct {
 		name string
@@ -248,7 +248,7 @@ func TestGetUserChartData_NoEntries(t *testing.T) {
 
 	// Create a user with no entries
 	email := testutil.UniqueEmail(t, "chart_no_entries")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID))
 	c.Set("userID", userID)
@@ -274,7 +274,7 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_with_entries")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Create multiple entries with different values
 	testutil.CreateTestNoteGameEntry(t, testutil.CreateTestNoteGameEntryParams{
@@ -345,7 +345,7 @@ func TestGetUserChartData_DefaultQueryParams(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_default_params")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
 	// Don't provide any query parameters - should use defaults (interval=day, days=30)
@@ -373,7 +373,7 @@ func TestGetUserChartData_CustomDays(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "chart_custom_days")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "student")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
 	testCases := []struct {

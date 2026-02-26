@@ -112,8 +112,19 @@ func insertFakeSchools() string {
 
 // insertFakeTeacherWithStudents creates one teacher with a specified number of students.
 // Returns the teacher DTO, the teacher's database ID, and a slice of student IDs.
+func lookupRoleID(ctx context.Context, roleName string) int32 {
+	roleID, err := database.Queries.GetRoleIDByName(ctx, roleName)
+	if err != nil {
+		log.Panicf("failed to look up role ID for %q: %v", roleName, err)
+	}
+	return roleID
+}
+
 func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []int32) {
 	ctx := context.Background()
+
+	teacherRoleID := lookupRoleID(ctx, "TEACHER")
+	studentRoleID := lookupRoleID(ctx, "STUDENT")
 
 	schoolID := int16(rand.IntN(1000) + 1)
 	teacher := generateFakeUser("TEACHER", schoolID)
@@ -122,7 +133,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 		FirstName: teacher.FirstName,
 		LastName:  teacher.LastName,
 		SchoolID:  sql.NullInt32{Int32: int32(teacher.SchoolID), Valid: true},
-		Role:      sql.NullString{String: string(teacher.Role), Valid: true},
+		RoleID:    teacherRoleID,
 		Email:     sql.NullString{String: teacher.Email, Valid: true},
 		Password:  teacher.PasswordHash,
 	}
@@ -141,7 +152,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 			FirstName: student.FirstName,
 			LastName:  student.LastName,
 			SchoolID:  sql.NullInt32{Int32: int32(student.SchoolID), Valid: true},
-			Role:      sql.NullString{String: string(student.Role), Valid: true},
+			RoleID:    studentRoleID,
 			Email:     sql.NullString{String: student.Email, Valid: true},
 			Password:  student.PasswordHash,
 		}
@@ -195,11 +206,13 @@ func insertPersonalUser(schoolID int16) int32 {
 		log.Panicf("Failed to hash password for personal user: %v", err)
 	}
 
+	teacherRoleID := lookupRoleID(ctx, "TEACHER")
+
 	params := generated.CreateUserWithPasswordParams{
 		FirstName: firstName,
 		LastName:  lastName,
 		SchoolID:  sql.NullInt32{Int32: int32(schoolID), Valid: true},
-		Role:      sql.NullString{String: "TEACHER", Valid: true},
+		RoleID:    teacherRoleID,
 		Email:     sql.NullString{String: email, Valid: true},
 		Password:  passwordHash,
 	}

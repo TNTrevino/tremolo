@@ -43,7 +43,7 @@ export function SignupPage() {
 	} = useForm<SignupFormData>({
 		resolver: zodResolver(signupSchema),
 		defaultValues: {
-			role: "student",
+			role: "STUDENT",
 		},
 	});
 
@@ -290,9 +290,9 @@ export function SignupPage() {
 								{...register("role")}
 								error={errors.role?.message}
 							>
-								<option value="student">Student</option>
-								<option value="teacher">Teacher</option>
-								<option value="parent">Parent</option>
+								<option value="STUDENT">Student</option>
+								<option value="TEACHER">Teacher</option>
+								<option value="PARENT">Parent</option>
 							</FormSelect>
 						</FormField>
 					</CardContent>
