@@ -1,3 +1,7 @@
+-- name: CreateFriendship :exec
+insert into tremolo.friends (user_id, friend_id)
+values (@user_id, @friend_id);
+
 -- name: GetFriendsByUserID :many
 -- Returns users who have a mutual follow relationship with the given user
 -- (both directions exist in the friends table = they are friends)

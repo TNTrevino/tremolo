@@ -170,7 +170,7 @@ func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWith
 }
 
 const deleteAllTestData = `-- name: DeleteAllTestData :exec
-delete from tremolo.note_game_entries
+delete from tremolo.friends
 `
 
 func (q *Queries) DeleteAllTestData(ctx context.Context) error {

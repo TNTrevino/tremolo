@@ -11,6 +11,7 @@ import (
 
 type Querier interface {
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)

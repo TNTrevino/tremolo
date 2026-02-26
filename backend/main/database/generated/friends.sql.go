@@ -10,23 +10,40 @@ import (
 	"database/sql"
 )
 
+const createFriendship = `-- name: CreateFriendship :exec
+insert into tremolo.friends (user_id, friend_id)
+values ($1, $2)
+`
+
+type CreateFriendshipParams struct {
+	UserID   int32 `json:"user_id"`
+	FriendID int32 `json:"friend_id"`
+}
+
+func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error {
+	_, err := q.db.ExecContext(ctx, createFriendship, arg.UserID, arg.FriendID)
+	return err
+}
+
 const getFriendsByUserID = `-- name: GetFriendsByUserID :many
-SELECT
+select
     u.id,
     u.first_name,
     u.last_name,
     u.role,
     u.instrument,
-    COALESCE(s.title, '') AS school
-FROM tremolo.friends f1
-INNER JOIN tremolo.friends f2
-    ON f1.user_id = f2.friend_id
-    AND f1.friend_id = f2.user_id
-INNER JOIN tremolo.users u
-    ON u.id = f1.friend_id
-LEFT JOIN tremolo.schools s
-    ON u.school_id = s.id
-WHERE f1.user_id = $1
+    coalesce(s.title, '') as school
+from tremolo.friends f1
+inner join tremolo.friends f2
+    on
+        f1.user_id = f2.friend_id
+        and f1.friend_id = f2.user_id
+inner join tremolo.users u
+    on u.id = f1.friend_id
+left join tremolo.schools s
+    on u.school_id = s.id
+where f1.user_id =
+$1
 `
 
 type GetFriendsByUserIDRow struct {
