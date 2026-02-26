@@ -417,7 +417,7 @@ func generateFakeUser(role dtos.Role, schoolID int16) dtos.User {
 			}
 		}
 
-		fakeEmail := fakeFirstName + "." + fakeLastName + "@email.com"
+		fakeEmail := fmt.Sprintf("%s.%s.%d@email.com", fakeFirstName, fakeLastName, rand.IntN(100000))
 
 		user := dtos.User{
 			FirstName:    fakeFirstName,
