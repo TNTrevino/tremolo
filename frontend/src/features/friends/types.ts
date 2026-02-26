@@ -1,14 +1,16 @@
+import type { UserRole } from "@/services/api/types";
+
 export interface Friend {
 	id: number;
 	firstName: string;
 	lastName: string;
-	role: "student" | "teacher";
+	role: UserRole;
 	instrument: string;
 	avatarUrl: string;
 	school: string;
 }
 
-export interface FriendsState {
+export interface FriendsStore {
 	friends: Friend[];
 	isPanelOpen: boolean;
 	searchQuery: string;
