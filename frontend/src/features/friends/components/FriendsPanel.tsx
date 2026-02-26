@@ -18,10 +18,10 @@ export function FriendsPanel() {
 	const error = useFriendsStore((state) => state.error);
 
 	useEffect(() => {
-		if (isPanelOpen && allFriends.length === 0 && !isLoading) {
+		if (isPanelOpen && allFriends.length === 0 && !isLoading && !error) {
 			fetchFriends();
 		}
-	}, [isPanelOpen, allFriends.length, isLoading, fetchFriends]);
+	}, [isPanelOpen, allFriends.length, isLoading, error, fetchFriends]);
 
 	const friends = filteredFriends();
 
@@ -92,8 +92,12 @@ export function FriendsPanel() {
 							<FriendCard key={friend.id} friend={friend} />
 						))
 					) : (
-						<div className="flex items-center justify-center h-32">
-							<p className="text-sm text-muted-foreground">No friends found</p>
+						<div className="flex flex-col items-center justify-center h-32 gap-1">
+							<p className="text-sm font-medium text-muted-foreground">
+								{searchQuery.trim()
+									? "No friends found"
+									: "Looks lonely in here. Add some friends!"}
+							</p>
 						</div>
 					)}
 				</div>

@@ -7,9 +7,6 @@ interface FriendCardProps {
 }
 
 export function FriendCard({ friend, className }: FriendCardProps) {
-	const displayRole =
-		friend.role.charAt(0).toUpperCase() + friend.role.slice(1);
-
 	return (
 		<div
 			className={cn(
@@ -23,14 +20,9 @@ export function FriendCard({ friend, className }: FriendCardProps) {
 				className="h-10 w-10 rounded-full"
 			/>
 			<div className="flex-1 min-w-0">
-				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium truncate">
-						{friend.firstName} {friend.lastName}
-					</span>
-					<span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium shrink-0">
-						{displayRole}
-					</span>
-				</div>
+				<span className="text-sm font-medium truncate">
+					{friend.firstName} {friend.lastName}
+				</span>
 				<p className="text-xs text-muted-foreground truncate">
 					{friend.instrument}
 				</p>
