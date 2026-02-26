@@ -59,6 +59,8 @@ export {
 	calculateNPM,
 } from "./user.service";
 
+export { friendsService, getFriends } from "./friends.service";
+
 export type {
 	UserRole,
 	User,
@@ -82,4 +84,5 @@ export type {
 	NoteGameResponse,
 	ApiError,
 	ApiResponse,
+	FriendResponse,
 } from "./types";
