@@ -1,19 +1,29 @@
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { buildTimeEnvironmentCheck } from "./src/utils/environmentValidation";
+import path from "path";
 
-// validate environment variables during build. cant extract due to the
-// 'process'
-function validateEnvironment() {
-	return {
-		name: "validate-environment",
-		config: () => {
-			buildTimeEnvironmentCheck(process.env);
-		},
-	};
-}
-
-// https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [react(), validateEnvironment()],
+	plugins: [react()],
+	resolve: {
+		alias: {
+			"@": path.resolve(__dirname, "./src"),
+			"@/features": path.resolve(__dirname, "./src/features"),
+			"@/shared": path.resolve(__dirname, "./src/shared"),
+			"@/services": path.resolve(__dirname, "./src/services"),
+			"@/stores": path.resolve(__dirname, "./src/stores"),
+			"@/config": path.resolve(__dirname, "./src/config"),
+		},
+	},
+	test: {
+		globals: true,
+		environment: "jsdom",
+		setupFiles: ["./src/test/setup.ts"],
+		include: ["src/**/*.{test,spec}.{ts,tsx}"],
+		coverage: {
+			provider: "v8",
+			reporter: ["text", "json", "html"],
+			exclude: ["node_modules/", "src/test/"],
+		},
+	},
 });

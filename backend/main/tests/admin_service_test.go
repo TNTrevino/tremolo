@@ -15,10 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ============================================================================
-// GetTeachers Tests
-// ============================================================================
-
 // TestGetTeachers_Success tests that GetTeachers returns a list of teachers
 func TestGetTeachers_Success(t *testing.T) {
 	t.Parallel()
@@ -96,10 +92,6 @@ func TestGetTeachers_NoTeachers(t *testing.T) {
 		// Response is valid - teachers slice can be empty or contain data
 	}
 }
-
-// ============================================================================
-// GetTeacher Tests
-// ============================================================================
 
 // TestGetTeacher_Success tests that GetTeacher returns a specific teacher by ID
 func TestGetTeacher_Success(t *testing.T) {
@@ -213,10 +205,6 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// GetSchoolStudents Tests
-// ============================================================================
-
 // TestGetSchoolStudents_Success tests that GetSchoolStudents returns a list of students
 func TestGetSchoolStudents_Success(t *testing.T) {
 	t.Parallel()
@@ -304,10 +292,6 @@ func TestGetSchoolStudents_NoStudents(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// GetSchoolTeachers Tests (same as GetTeachers)
-// ============================================================================
-
 // TestGetSchoolTeachers_Success tests that GetSchoolTeachers returns a list of teachers
 func TestGetSchoolTeachers_Success(t *testing.T) {
 	t.Parallel()
@@ -356,10 +340,6 @@ func TestGetSchoolTeachers_Success(t *testing.T) {
 		assert.NotEmpty(t, teacher.LastName, "Expected teacher to have a last name")
 	}
 }
-
-// ============================================================================
-// Additional Edge Case Tests
-// ============================================================================
 
 // TestGetTeacher_NegativeID tests that GetTeacher handles negative IDs correctly
 func TestGetTeacher_NegativeID(t *testing.T) {

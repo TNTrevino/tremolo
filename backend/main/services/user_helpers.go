@@ -138,6 +138,7 @@ func convertGetUserGeneralInfoRowToDTO(userInfo generated.GetUserGeneralInfoRow)
 	dto := dtos.GeneralUserInfo{
 		FirstName:    userInfo.FirstName,
 		LastName:     userInfo.LastName,
+		Role:         userInfo.Role,
 		TotalEntries: int(userInfo.TotalEntries),
 	}
 	dto.CreatedDate.String = userInfo.CreatedDate

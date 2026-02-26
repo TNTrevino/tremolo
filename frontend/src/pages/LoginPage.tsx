@@ -1,131 +1,160 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../hooks/useAuth";
-import { useNavigate, useLocation } from "react-router-dom";
-import { AuthFormContainer } from "../components/auth/AuthFormContainer";
-import { AuthCard } from "../components/auth/AuthCard";
-import { PasswordField } from "../components/auth/PasswordField";
-import { AuthFormFooter } from "../components/auth/AuthFormFooter";
-import { SubmitButton } from "../components/auth/SubmitButton";
-import { validateEmail } from "../utils/formValidation";
-import { TextField } from "@mui/material";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff, Music } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { FormField } from "@/shared/components/forms/FormField";
+import { FormInput } from "@/shared/components/forms/FormInput";
+import {
+	loginSchema,
+	type LoginFormData,
+} from "@/features/auth/validation/schemas";
+import { useLogin } from "@/shared/hooks/queries/useAuthQuery";
+import type { LoginLocationState } from "@/shared/types";
+import type { ApiError } from "@/services/api/types";
+import { logError, getErrorMessage } from "@/shared/utils/error.utils";
 
-const LoginPage = () => {
-	const [email, setEmail] = useState<string>("");
-	const [password, setPassword] = useState<string>("");
-	const [showPassword, setShowPassword] = useState<boolean>(false);
-	const [error, setError] = useState<string>("");
-	const [emailError, setEmailError] = useState<string>("");
-	const [passwordError, setPasswordError] = useState<string>("");
-	const [isLoading, setIsLoading] = useState<boolean>(false);
-	const [successMessage, setSuccessMessage] = useState<string>("");
+export interface LoginPageProps {}
 
-	const { login, isAuthenticated } = useAuth();
+export function LoginPage() {
+	const [showPassword, setShowPassword] = useState(false);
 	const navigate = useNavigate();
 	const location = useLocation();
+	const loginMutation = useLogin();
 
-	useEffect(() => {
-		if (isAuthenticated) {
-			navigate("/dashboard", { replace: true });
-		}
-	}, [isAuthenticated, navigate]);
+	const locationState = location.state as LoginLocationState | null;
+	const successMessage = locationState?.successMessage;
 
-	useEffect(() => {
-		if (location.state?.message) {
-			setSuccessMessage(location.state.message);
-			window.history.replaceState({}, document.title);
-		}
-	}, [location]);
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+		setError,
+	} = useForm<LoginFormData>({
+		resolver: zodResolver(loginSchema),
+	});
 
-	const validatePassword = (password: string): boolean => {
-		if (!password) {
-			setPasswordError("Password is required");
-			return false;
-		}
-		setPasswordError("");
-		return true;
-	};
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-
-		setIsLoading(true);
-
+	const onSubmit = async (data: LoginFormData) => {
 		try {
-			await login(email, password);
+			await loginMutation.mutateAsync(data);
+			const from = locationState?.from?.pathname ?? "/dashboard";
+			navigate(from, { replace: true });
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Login failed");
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setEmail(e.target.value);
-		if (emailError) {
-			validateEmail(e.target.value, setEmailError);
-		}
-	};
-
-	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setPassword(e.target.value);
-		if (passwordError) {
-			validatePassword(e.target.value);
+			logError(err, "LoginPage.onSubmit");
+			const apiError = err as ApiError;
+			setError("root", {
+				message: apiError.message || getErrorMessage(err),
+			});
 		}
 	};
 
 	return (
-		<AuthFormContainer>
-			<AuthCard
-				title="Welcome to Tremolo"
-				subtitle="Sign in to continue your musical journey"
-				error={error}
-				successMessage={successMessage}
-				onSubmit={handleSubmit}
-			>
-				<TextField
-					fullWidth
-					id="email"
-					label="Email Address"
-					name="email"
-					type="email"
-					autoComplete="email"
-					autoFocus
-					value={email}
-					onChange={handleEmailChange}
-					onBlur={() => validateEmail(email, setEmailError)}
-					error={!!emailError}
-					helperText={emailError}
-					disabled={isLoading}
-					sx={{ mb: 2 }}
-					required
-				/>
+		<div className="min-h-screen flex items-center justify-center py-12 px-4">
+			<Card className="w-full max-w-md shadow-lg">
+				<CardHeader className="space-y-1 text-center">
+					<div className="flex justify-center mb-4">
+						<div className="rounded-lg bg-primary p-3">
+							<Music className="h-8 w-8 text-primary-foreground" />
+						</div>
+					</div>
+					<CardTitle className="text-3xl font-bold">
+						Welcome to Tremolo
+					</CardTitle>
+					<CardDescription className="text-base">
+						Sign in to continue your musical journey
+					</CardDescription>
+				</CardHeader>
 
-				<PasswordField
-					id="password"
-					label="Password"
-					value={password}
-					onChange={handlePasswordChange}
-					onBlur={() => validatePassword(password)}
-					error={passwordError}
-					showPassword={showPassword}
-					onToggleVisibility={() => setShowPassword(!showPassword)}
-					disabled={isLoading}
-					autoComplete="current-password"
-					required
-					sx={{ mb: 3 }}
-				/>
+				<form onSubmit={handleSubmit(onSubmit)}>
+					<CardContent className="space-y-4">
+						{successMessage && (
+							<div className="p-3 rounded-md bg-primary/10 border-2 border-primary text-sm font-medium">
+								{successMessage}
+							</div>
+						)}
 
-				<SubmitButton isLoading={isLoading} buttonText="Sign In" />
-			</AuthCard>
+						{errors.root && (
+							<div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
+								{errors.root.message}
+							</div>
+						)}
 
-			<AuthFormFooter
-				text="Don't have an account?"
-				linkText="Sign up"
-				linkTo="/signup"
-			/>
-		</AuthFormContainer>
+						<FormField
+							label="Email Address"
+							error={errors.email?.message}
+							htmlFor="email"
+						>
+							<FormInput
+								id="email"
+								type="email"
+								placeholder="you@example.com"
+								autoComplete="email"
+								{...register("email")}
+								error={errors.email?.message}
+							/>
+						</FormField>
+
+						<FormField
+							label="Password"
+							error={errors.password?.message}
+							htmlFor="password"
+						>
+							<div className="relative">
+								<FormInput
+									id="password"
+									type={showPassword ? "text" : "password"}
+									placeholder="••••••••"
+									autoComplete="current-password"
+									className="pr-10"
+									{...register("password")}
+									error={errors.password?.message}
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</button>
+							</div>
+						</FormField>
+					</CardContent>
+
+					<CardFooter className="flex flex-col space-y-4">
+						<Button
+							type="submit"
+							className="w-full"
+							size="lg"
+							loading={loginMutation.isPending}
+						>
+							Sign In
+						</Button>
+
+						<p className="text-sm text-center text-muted-foreground">
+							Don&apos;t have an account?{" "}
+							<Link
+								to="/signup"
+								className="text-primary font-medium hover:underline"
+							>
+								Sign up
+							</Link>
+						</p>
+					</CardFooter>
+				</form>
+			</Card>
+		</div>
 	);
-};
-
-export default LoginPage;
+}

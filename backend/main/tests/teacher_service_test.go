@@ -16,10 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ============================================================================
-// CreateUser Tests
-// ============================================================================
-
 // TestCreateUser_Success tests successful user creation with valid data
 func TestCreateUser_Success(t *testing.T) {
 	t.Parallel()
@@ -175,10 +171,6 @@ func TestCreateUser_InvalidJSON(t *testing.T) {
 	assert.Equal(t, "Invalid json body", response["message"])
 }
 
-// ============================================================================
-// GetStudents Tests
-// ============================================================================
-
 // TestGetStudents_Success tests fetching all students successfully
 func TestGetStudents_Success(t *testing.T) {
 	t.Parallel()
@@ -260,10 +252,6 @@ func TestGetStudents_VerifyStudentData(t *testing.T) {
 
 	assert.True(t, found, "Created student not found in response")
 }
-
-// ============================================================================
-// GetStudent Tests
-// ============================================================================
 
 // TestGetStudent_Success tests fetching a specific student by ID successfully
 func TestGetStudent_Success(t *testing.T) {
