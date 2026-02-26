@@ -38,3 +38,5 @@ export type {
 } from "./music.types";
 
 export type { ApiError, ApiResponse } from "./error.types";
+
+export type { FriendResponse } from "./friend.types";

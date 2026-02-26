@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+type TremoloFriend struct {
+	UserID      int32        `json:"user_id"`
+	FriendID    int32        `json:"friend_id"`
+	CreatedDate sql.NullTime `json:"created_date"`
+	CreatedTime sql.NullTime `json:"created_time"`
+}
+
 type TremoloNoteGameEntry struct {
 	ID               int32        `json:"id"`
 	UserID           int32        `json:"user_id"`
@@ -58,4 +65,5 @@ type TremoloUser struct {
 	SchoolID            sql.NullInt32  `json:"school_id"`
 	CreatedDate         sql.NullTime   `json:"created_date"`
 	CreatedTime         sql.NullTime   `json:"created_time"`
+	Instrument          sql.NullString `json:"instrument"`
 }

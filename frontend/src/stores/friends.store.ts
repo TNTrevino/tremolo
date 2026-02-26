@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import type { FriendsStore } from "@/features/friends/types";
-import { mockFriends } from "@/features/friends/friends.mock";
+import { getFriends } from "@/services/api/friends.service";
 
 export const useFriendsStore = create<FriendsStore>()((set, get) => ({
-	friends: mockFriends,
+	friends: [],
 	isPanelOpen: false,
 	searchQuery: "",
+	isLoading: false,
+	error: null,
 
 	togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
 
@@ -22,5 +24,15 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 				f.instrument.toLowerCase().includes(q) ||
 				f.school.toLowerCase().includes(q),
 		);
+	},
+
+	fetchFriends: async () => {
+		set({ isLoading: true, error: null });
+		try {
+			const friends = await getFriends();
+			set({ friends, isLoading: false });
+		} catch {
+			set({ error: "Failed to load friends", isLoading: false });
+		}
 	},
 }));

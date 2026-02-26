@@ -1,4 +1,5 @@
-import { X, Search } from "lucide-react";
+import { useEffect } from "react";
+import { X, Search, Loader2 } from "lucide-react";
 import { useFriendsStore } from "@/stores/friends.store";
 import { FriendCard } from "./FriendCard";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,15 @@ export function FriendsPanel() {
 	const setSearchQuery = useFriendsStore((state) => state.setSearchQuery);
 	const filteredFriends = useFriendsStore((state) => state.filteredFriends);
 	const allFriends = useFriendsStore((state) => state.friends);
+	const fetchFriends = useFriendsStore((state) => state.fetchFriends);
+	const isLoading = useFriendsStore((state) => state.isLoading);
+	const error = useFriendsStore((state) => state.error);
+
+	useEffect(() => {
+		if (isPanelOpen && allFriends.length === 0 && !isLoading && !error) {
+			fetchFriends();
+		}
+	}, [isPanelOpen, allFriends.length, isLoading, error, fetchFriends]);
 
 	const friends = filteredFriends();
 
@@ -69,13 +79,25 @@ export function FriendsPanel() {
 				</div>
 
 				<div className="flex-1 overflow-y-auto p-2">
-					{friends.length > 0 ? (
+					{isLoading ? (
+						<div className="flex items-center justify-center h-32">
+							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+						</div>
+					) : error ? (
+						<div className="flex items-center justify-center h-32">
+							<p className="text-sm text-destructive">{error}</p>
+						</div>
+					) : friends.length > 0 ? (
 						friends.map((friend) => (
 							<FriendCard key={friend.id} friend={friend} />
 						))
 					) : (
-						<div className="flex items-center justify-center h-32">
-							<p className="text-sm text-muted-foreground">No friends found</p>
+						<div className="flex flex-col items-center justify-center h-32 gap-1">
+							<p className="text-sm font-medium text-muted-foreground">
+								{searchQuery.trim()
+									? "No friends found"
+									: "Looks lonely in here. Add some friends!"}
+							</p>
 						</div>
 					)}
 				</div>

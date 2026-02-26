@@ -14,7 +14,10 @@ export interface FriendsStore {
 	friends: Friend[];
 	isPanelOpen: boolean;
 	searchQuery: string;
+	isLoading: boolean;
+	error: string | null;
 	togglePanel: () => void;
 	setSearchQuery: (query: string) => void;
 	filteredFriends: () => Friend[];
+	fetchFriends: () => Promise<void>;
 }

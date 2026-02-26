@@ -70,6 +70,7 @@ values (
 returning id;
 
 -- name: DeleteAllTestData :exec
+delete from tremolo.friends;
 delete from tremolo.note_game_entries;
 delete from tremolo.teacher_student;
 delete from tremolo.teacher_parent;

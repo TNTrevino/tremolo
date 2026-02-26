@@ -11,6 +11,7 @@ import (
 
 type Querier interface {
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
@@ -40,6 +41,9 @@ type Querier interface {
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
 	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
+	// Returns users who have a mutual follow relationship with the given user
+	// (both directions exist in the friends table = they are friends)
+	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
