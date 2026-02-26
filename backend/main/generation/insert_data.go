@@ -131,7 +131,7 @@ func insertFakeSchools() string {
 func insertFakeTeacherWithStudents(studentsPerTeacher int) dtos.User {
 	ctx := context.Background()
 
-	schoolID := int16(rand.IntN(1000))
+	schoolID := int16(rand.IntN(1000) + 1)
 	teacher := generateFakeUser("TEACHER", schoolID)
 
 	teacherParams := generated.CreateUserWithPasswordParams{
@@ -145,7 +145,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) dtos.User {
 
 	teacherID, err := database.Queries.CreateUserWithPassword(ctx, teacherParams)
 	if err != nil {
-		log.Panic("teacher was not added to the db", err.Error())
+		log.Panicf("teacher was not added to the db: %v", err)
 	}
 
 	for i := 0; i < studentsPerTeacher; i++ {
@@ -162,7 +162,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) dtos.User {
 
 		studentID, err := database.Queries.CreateUserWithPassword(ctx, studentParams)
 		if err != nil {
-			log.Panic("student was not added to the db", err.Error())
+			log.Panicf("student was not added to the db (schoolID=%d): %v", student.SchoolID, err)
 		}
 
 		// Generate realistic entries with progression (20-100 entries per student)
@@ -180,7 +180,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) dtos.User {
 
 		err = database.Queries.CreateTeacherStudentAssociation(ctx, associationParams)
 		if err != nil {
-			log.Panic("association from teacher to student was not added to db", err.Error())
+			log.Panicf("association from teacher to student was not added to db: %v", err)
 		}
 		fmt.Println("Teacher-student association created")
 	}

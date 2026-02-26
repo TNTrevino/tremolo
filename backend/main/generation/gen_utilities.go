@@ -396,51 +396,51 @@ func generateFakeSchool() dtos.School {
 }
 
 func generateFakeUser(role dtos.Role, schoolID int16) dtos.User {
-	// Generate first name with retry logic
-	fakeFirstName := fake.FirstName()
-	if fakeFirstName == "" {
-		fakeFirstName = "Student" // Fallback
-	}
+	maxRetries := 10
 
-	// Generate last name with retry logic (removed "x" workaround)
-	fakeLastName := fake.LastName()
-	if fakeLastName == "" {
-		// Retry once
-		fakeLastName = fake.LastName()
-		if fakeLastName == "" {
-			// Fallback to a default last name
-			fakeLastName = "User"
-		}
-	}
-
-	fakeEmail := fakeFirstName + "." + fakeLastName + "@email.com"
-
-	// Hash the default password "password123" for all fake users
 	passwordHash, err := services.HashPassword("password123")
 	if err != nil {
-		log.Printf("Failed to hash password: %v", err)
-		return dtos.User{}
+		log.Panicf("Failed to hash password: %v", err)
 	}
 
-	user := dtos.User{
-		FirstName:    fakeFirstName,
-		LastName:     fakeLastName,
-		Email:        fakeEmail,
-		PasswordHash: passwordHash,
-		Role:         role,
-		SchoolID:     schoolID,
-		CreatedDate:  generateFakeDateCreated(),
-		CreatedTime:  generateFakeTimeCreated(),
+	for attempt := range maxRetries {
+		fakeFirstName := fake.FirstName()
+		if fakeFirstName == "" {
+			fakeFirstName = "Student"
+		}
+
+		fakeLastName := fake.LastName()
+		if fakeLastName == "" {
+			fakeLastName = fake.LastName()
+			if fakeLastName == "" {
+				fakeLastName = "User"
+			}
+		}
+
+		fakeEmail := fakeFirstName + "." + fakeLastName + "@email.com"
+
+		user := dtos.User{
+			FirstName:    fakeFirstName,
+			LastName:     fakeLastName,
+			Email:        fakeEmail,
+			PasswordHash: passwordHash,
+			Role:         role,
+			SchoolID:     schoolID,
+			CreatedDate:  generateFakeDateCreated(),
+			CreatedTime:  generateFakeTimeCreated(),
+		}
+
+		err := user.ValidateUser()
+		if err != nil {
+			log.Printf("User validation failed (attempt %d/%d): %v", attempt+1, maxRetries, err)
+			continue
+		}
+
+		return user
 	}
 
-	err = user.ValidateUser()
-	if err != nil {
-		// TODO: better error handling
-		log.Printf("User validation failed: %v", err)
-		return dtos.User{}
-	}
-
-	return user
+	log.Panicf("Failed to generate a valid fake user after %d attempts (role=%s, schoolID=%d)", maxRetries, role, schoolID)
+	return dtos.User{}
 }
 
 func generateFakeEntryTimeLength() string {
