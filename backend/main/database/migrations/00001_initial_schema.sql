@@ -1,6 +1,6 @@
+-- +goose Up
 create schema if not exists tremolo;
 
--- Set search_path to tremolo schema so queries don't need schema prefix
 create table tremolo.schools (
     id serial primary key,
     title varchar(255) not null,
@@ -37,7 +37,6 @@ create table tremolo.note_game_entries (
     created_time time default current_time
 );
 
--- join tables
 create table tremolo.teacher_parent (
     teacher_id int not null references tremolo.users (id),
     parent_id int not null references tremolo.users (id),
@@ -55,3 +54,12 @@ create table tremolo.parent_child (
     child_id int not null references tremolo.users (id),
     primary key (parent_id, child_id)
 );
+
+-- +goose Down
+drop table if exists tremolo.parent_child;
+drop table if exists tremolo.teacher_student;
+drop table if exists tremolo.teacher_parent;
+drop table if exists tremolo.note_game_entries;
+drop table if exists tremolo.users;
+drop table if exists tremolo.schools;
+drop schema if exists tremolo;
