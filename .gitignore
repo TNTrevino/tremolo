@@ -190,6 +190,7 @@ build/
 
 # Compiled output
 *.d.ts
+!vite-env.d.ts
 *.tsbuildinfo
 
 # IDE-specific files
