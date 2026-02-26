@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
+import { FriendsPanel } from "@/features/friends/components/FriendsPanel";
 
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
@@ -106,6 +107,7 @@ function App() {
 										</Routes>
 									</Suspense>
 								</ErrorBoundary>
+								<FriendsPanel />
 								<ToastContainerWrapper />
 							</div>
 						</BrowserRouter>
