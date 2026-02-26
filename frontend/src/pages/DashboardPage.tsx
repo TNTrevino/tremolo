@@ -81,7 +81,7 @@ export function DashboardPage() {
 		);
 	}
 
-	const isTeacher = authUser?.role === "teacher";
+	const isTeacher = authUser?.role === "TEACHER";
 	const timeReading = calculateTimeReading(stats.totalSessions);
 
 	// Use class metrics if teacher is viewing class data

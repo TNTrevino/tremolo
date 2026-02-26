@@ -32,6 +32,11 @@ type TremoloParentChild struct {
 	ChildID  int32 `json:"child_id"`
 }
 
+type TremoloRole struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
 type TremoloSchool struct {
 	ID          int32        `json:"id"`
 	Title       string       `json:"title"`
@@ -57,7 +62,6 @@ type TremoloUser struct {
 	ID                  int32          `json:"id"`
 	FirstName           string         `json:"first_name"`
 	LastName            string         `json:"last_name"`
-	Role                sql.NullString `json:"role"`
 	Email               sql.NullString `json:"email"`
 	Password            string         `json:"password"`
 	FailedLoginAttempts int32          `json:"failed_login_attempts"`
@@ -66,4 +70,5 @@ type TremoloUser struct {
 	CreatedDate         sql.NullTime   `json:"created_date"`
 	CreatedTime         sql.NullTime   `json:"created_time"`
 	Instrument          sql.NullString `json:"instrument"`
+	RoleID              int32          `json:"role_id"`
 }

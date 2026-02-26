@@ -30,6 +30,13 @@ const (
 	Student Role = "STUDENT"
 )
 
+var ValidRoles = map[Role]bool{
+	Admin:   true,
+	Teacher: true,
+	Parent:  true,
+	Student: true,
+}
+
 func (user *User) ValidateUser() error {
 	validate := validator.New()
 	err := validate.RegisterValidation("role", validations.UserRole)
@@ -75,7 +82,7 @@ func (user *User) ValidateUser() error {
 					case "required":
 						errorMessage = append(errorMessage, "Role: required when making a user")
 					case "role":
-						errorMessage = append(errorMessage, "Role: must be either STUDENT, TEACHER, or ADMIN")
+						errorMessage = append(errorMessage, "Role: must be one of STUDENT, TEACHER, PARENT, or ADMIN")
 					}
 
 				case "Email":

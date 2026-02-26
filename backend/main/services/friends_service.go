@@ -25,11 +25,6 @@ func GetFriends(ctx context.Context, q generated.Querier, userID int) ([]dtos.Fr
 }
 
 func convertFriendRowToDTO(row generated.GetFriendsByUserIDRow) dtos.FriendDTO {
-	role := ""
-	if row.Role.Valid {
-		role = row.Role.String
-	}
-
 	instrument := ""
 	if row.Instrument.Valid {
 		instrument = row.Instrument.String
@@ -39,7 +34,7 @@ func convertFriendRowToDTO(row generated.GetFriendsByUserIDRow) dtos.FriendDTO {
 		ID:         row.ID,
 		FirstName:  row.FirstName,
 		LastName:   row.LastName,
-		Role:       role,
+		Role:       row.Role,
 		Instrument: instrument,
 		AvatarUrl:  dtos.GenerateAvatarURL(row.ID),
 		School:     row.School,

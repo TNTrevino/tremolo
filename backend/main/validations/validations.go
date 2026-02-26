@@ -29,10 +29,9 @@ func VarChar255Length(fl validator.FieldLevel) bool {
 	}
 }
 
-// UserRole youtube custom validation
 func UserRole(fl validator.FieldLevel) bool {
 	switch fl.Field().String() {
-	case "TEACHER", "STUDENT", "ADMIN":
+	case "TEACHER", "STUDENT", "PARENT", "ADMIN":
 		return true
 	}
 

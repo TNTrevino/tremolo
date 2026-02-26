@@ -5,7 +5,7 @@
 /**
  * User role types
  */
-export type UserRole = "student" | "teacher" | "parent";
+export type UserRole = "STUDENT" | "TEACHER" | "PARENT";
 
 /**
  * Complete user object returned from authentication

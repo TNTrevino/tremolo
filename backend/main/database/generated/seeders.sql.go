@@ -131,7 +131,7 @@ insert into tremolo.users (
   first_name,
   last_name,
   school_id,
-  role,
+  role_id,
   email,
   password
 )
@@ -150,7 +150,7 @@ type CreateUserWithPasswordParams struct {
 	FirstName string         `json:"first_name"`
 	LastName  string         `json:"last_name"`
 	SchoolID  sql.NullInt32  `json:"school_id"`
-	Role      sql.NullString `json:"role"`
+	RoleID    int32          `json:"role_id"`
 	Email     sql.NullString `json:"email"`
 	Password  string         `json:"password"`
 }
@@ -160,7 +160,7 @@ func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWith
 		arg.FirstName,
 		arg.LastName,
 		arg.SchoolID,
-		arg.Role,
+		arg.RoleID,
 		arg.Email,
 		arg.Password,
 	)

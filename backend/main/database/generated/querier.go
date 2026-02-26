@@ -45,12 +45,13 @@ type Querier interface {
 	// (both directions exist in the friends table = they are friends)
 	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
+	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByRoleAndID(ctx context.Context, arg GetUserByRoleAndIDParams) (GetUserByRoleAndIDRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
-	GetUserRole(ctx context.Context, id int32) (sql.NullString, error)
-	GetUsersByRole(ctx context.Context, role sql.NullString) ([]GetUsersByRoleRow, error)
+	GetUserRole(ctx context.Context, id int32) (string, error)
+	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
 	LockAccount(ctx context.Context, arg LockAccountParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error

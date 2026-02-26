@@ -44,7 +44,7 @@ describe("auth.store", () => {
 				email: "test@example.com",
 				firstName: "John",
 				lastName: "Doe",
-				role: "student" as const,
+				role: "STUDENT" as const,
 			};
 
 			useAuthStore.getState().setUser(user);
@@ -82,7 +82,7 @@ describe("auth.store", () => {
 					email: "test@example.com",
 					firstName: "John",
 					lastName: "Doe",
-					role: "student" as const,
+					role: "STUDENT" as const,
 				},
 				token: "test-token",
 				isAuthenticated: true,
@@ -128,7 +128,7 @@ describe("auth.store", () => {
 					email: "test@example.com",
 					firstName: "John",
 					lastName: "Doe",
-					role: "student" as const,
+					role: "STUDENT" as const,
 				},
 				token: "test-token",
 				isAuthenticated: true,
@@ -153,7 +153,7 @@ describe("auth.store", () => {
 					email: "test@example.com",
 					first_name: "John",
 					last_name: "Doe",
-					role: "student" as const,
+					role: "STUDENT" as const,
 				},
 				access_token: "access-token",
 				refresh_token: "refresh-token",
@@ -172,7 +172,7 @@ describe("auth.store", () => {
 				email: "test@example.com",
 				firstName: "John",
 				lastName: "Doe",
-				role: "student",
+				role: "STUDENT",
 			});
 			expect(state.token).toBe("access-token");
 			expect(state.isAuthenticated).toBe(true);
@@ -205,7 +205,7 @@ describe("auth.store", () => {
 					email: "new@example.com",
 					first_name: "Jane",
 					last_name: "Doe",
-					role: "student",
+					role: "STUDENT",
 				},
 			});
 
@@ -214,7 +214,7 @@ describe("auth.store", () => {
 				password: "password123",
 				first_name: "Jane",
 				last_name: "Doe",
-				role: "student",
+				role: "STUDENT",
 			});
 
 			expect(authService.register).toHaveBeenCalledWith({
@@ -222,7 +222,7 @@ describe("auth.store", () => {
 				password: "password123",
 				first_name: "Jane",
 				last_name: "Doe",
-				role: "student",
+				role: "STUDENT",
 			});
 		});
 
@@ -236,7 +236,7 @@ describe("auth.store", () => {
 					email: "new@example.com",
 					first_name: "Jane",
 					last_name: "Doe",
-					role: "student",
+					role: "STUDENT",
 				},
 			});
 
@@ -245,7 +245,7 @@ describe("auth.store", () => {
 				password: "password123",
 				first_name: "Jane",
 				last_name: "Doe",
-				role: "student",
+				role: "STUDENT",
 			});
 
 			const state = useAuthStore.getState();

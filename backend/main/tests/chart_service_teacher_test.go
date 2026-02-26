@@ -21,11 +21,11 @@ func TestGetTeacherClassChartData_Success(t *testing.T) {
 
 	// Create a teacher
 	teacherEmail := testutil.UniqueEmail(t, "teacher_chart_success")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	// Create a student
 	studentEmail := testutil.UniqueEmail(t, "student_chart_success")
-	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
 
 	// Associate teacher with student
 	testutil.CreateTeacherStudentAssociation(t, teacherID, studentID)
@@ -59,9 +59,9 @@ func TestGetTeacherClassChartData_NotTeacher(t *testing.T) {
 		name string
 		role string
 	}{
-		{name: "student", role: "student"},
-		{name: "parent", role: "parent"},
-		{name: "admin", role: "admin"},
+		{name: "student", role: "STUDENT"},
+		{name: "parent", role: "PARENT"},
+		{name: "admin", role: "ADMIN"},
 	}
 
 	for _, tc := range testCases {
@@ -120,7 +120,7 @@ func TestGetTeacherClassChartData_NoStudents(t *testing.T) {
 
 	// Create a teacher with no students
 	teacherEmail := testutil.UniqueEmail(t, "teacher_no_students")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	c, w := testutil.CreateGinContext("GET", "/api/charts/class")
 	c.Set("userID", teacherID)
@@ -146,14 +146,14 @@ func TestGetTeacherClassChartData_WithStudents(t *testing.T) {
 
 	// Create a teacher
 	teacherEmail := testutil.UniqueEmail(t, "teacher_with_students")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	// Create multiple students
 	student1Email := testutil.UniqueEmail(t, "student1_with_entries")
-	student1ID := testutil.CreateTestUserWithDefaults(t, student1Email, "student")
+	student1ID := testutil.CreateTestUserWithDefaults(t, student1Email, "STUDENT")
 
 	student2Email := testutil.UniqueEmail(t, "student2_with_entries")
-	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "student")
+	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "STUDENT")
 
 	// Associate teacher with students
 	testutil.CreateTeacherStudentAssociation(t, teacherID, student1ID)
@@ -218,10 +218,10 @@ func TestGetTeacherClassChartData_AllIntervals(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	teacherEmail := testutil.UniqueEmail(t, "teacher_intervals")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	studentEmail := testutil.UniqueEmail(t, "student_intervals")
-	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
 
 	testutil.CreateTeacherStudentAssociation(t, teacherID, studentID)
 	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
@@ -250,7 +250,7 @@ func TestGetTeacherClassChartData_InvalidInterval(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	teacherEmail := testutil.UniqueEmail(t, "teacher_invalid_interval")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	c, w := testutil.CreateGinContext("GET", "/api/charts/class?interval=invalid")
 	c.Request = httptest.NewRequest("GET", "/api/charts/class?interval=invalid", nil)
@@ -271,7 +271,7 @@ func TestGetTeacherClassChartData_InvalidDays(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	teacherEmail := testutil.UniqueEmail(t, "teacher_invalid_days")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	testCases := []struct {
 		name string
@@ -306,14 +306,14 @@ func TestGetTeacherClassChartData_StudentsWithNoEntries(t *testing.T) {
 
 	// Create a teacher
 	teacherEmail := testutil.UniqueEmail(t, "teacher_students_no_entries")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	// Create students with no entries
 	student1Email := testutil.UniqueEmail(t, "student_no_entry1")
-	student1ID := testutil.CreateTestUserWithDefaults(t, student1Email, "student")
+	student1ID := testutil.CreateTestUserWithDefaults(t, student1Email, "STUDENT")
 
 	student2Email := testutil.UniqueEmail(t, "student_no_entry2")
-	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "student")
+	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "STUDENT")
 
 	// Associate teacher with students
 	testutil.CreateTeacherStudentAssociation(t, teacherID, student1ID)
@@ -342,7 +342,7 @@ func TestGetTeacherClassChartData_DefaultQueryParams(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	teacherEmail := testutil.UniqueEmail(t, "teacher_default_params")
-	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
 
 	// Don't provide any query parameters - should use defaults (interval=day, days=30)
 	c, w := testutil.CreateGinContext("GET", "/api/charts/class")

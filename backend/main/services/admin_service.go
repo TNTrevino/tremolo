@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"net/http"
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -13,7 +12,7 @@ import (
 func GetTeachers(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	users, err := database.Queries.GetUsersByRole(ctx, sql.NullString{String: string(dtos.Teacher), Valid: true})
+	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Teacher))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -57,7 +56,7 @@ func GetTeacher(c *gin.Context) {
 func GetSchoolTeachers(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	users, err := database.Queries.GetUsersByRole(ctx, sql.NullString{String: string(dtos.Teacher), Valid: true})
+	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Teacher))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -72,7 +71,7 @@ func GetSchoolTeachers(c *gin.Context) {
 func GetSchoolStudents(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	users, err := database.Queries.GetUsersByRole(ctx, sql.NullString{String: string(dtos.Student), Valid: true})
+	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Student))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),

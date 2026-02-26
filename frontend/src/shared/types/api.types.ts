@@ -38,7 +38,7 @@ export interface SignupRequest {
 	password: string;
 	firstName: string;
 	lastName: string;
-	role: "student" | "teacher" | "parent";
+	role: "STUDENT" | "TEACHER" | "PARENT";
 }
 
 /**

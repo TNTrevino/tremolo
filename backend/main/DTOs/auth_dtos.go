@@ -77,7 +77,7 @@ type RegisterRequest struct {
 	Password  string `json:"password" validate:"required,min=8,password_complexity"`
 	FirstName string `json:"first_name" validate:"required,min=2"`
 	LastName  string `json:"last_name" validate:"required,min=2"`
-	Role      string `json:"role" validate:"required,oneof=student teacher parent"`
+	Role      string `json:"role" validate:"required,oneof=STUDENT TEACHER PARENT"`
 }
 
 // ValidateRegisterRequest validates the registration request
@@ -129,7 +129,7 @@ func (req *RegisterRequest) ValidateRegisterRequest() error {
 					case "required":
 						errorMessage = append(errorMessage, "Role is required")
 					case "oneof":
-						errorMessage = append(errorMessage, "Role must be one of: student, teacher, parent")
+						errorMessage = append(errorMessage, "Role must be one of: STUDENT, TEACHER, PARENT")
 					}
 				}
 			}

@@ -48,7 +48,7 @@ interface DashboardData {
 export function useDashboardData(params?: DashboardDataParams): DashboardData {
 	const authUser = useAuthStore((state) => state.user);
 	const userId = authUser?.id;
-	const isTeacher = authUser?.role === "teacher";
+	const isTeacher = authUser?.role === "TEACHER";
 
 	// Fetch user profile with general info
 	const {

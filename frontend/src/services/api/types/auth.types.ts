@@ -5,7 +5,7 @@
  * Used with the Go backend (port 5001).
  */
 
-export type UserRole = "student" | "teacher" | "parent";
+export type UserRole = "STUDENT" | "TEACHER" | "PARENT";
 
 export interface User {
 	id: number;

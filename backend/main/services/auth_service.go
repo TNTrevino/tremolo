@@ -248,12 +248,21 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	roleID, err := database.Queries.GetRoleIDByName(ctx, reqBody.Role)
+	if err != nil {
+		logger.Error("Failed to resolve role", "error", err.Error(), "role", reqBody.Role)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid role",
+		})
+		return
+	}
+
 	createParams := generated.CreateUserParams{
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
 		Email:     emailNullStr,
 		Password:  passwordHash,
-		Role:      sql.NullString{String: reqBody.Role, Valid: true},
+		RoleID:    roleID,
 		SchoolID:  sql.NullInt32{Valid: false},
 	}
 
@@ -268,7 +277,7 @@ func Register(c *gin.Context) {
 
 	response := dtos.RegisterResponse{
 		Message: "User created successfully",
-		User:    convertCreateUserRowToUserResponse(createdUser),
+		User:    convertCreateUserRowToUserResponse(createdUser, reqBody.Role),
 	}
 
 	c.JSON(http.StatusCreated, response)
