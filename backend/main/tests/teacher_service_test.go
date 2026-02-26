@@ -37,12 +37,12 @@ func TestCreateUser_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "teacher created sucessfully", response["status"])
 
-	body, ok := response["body"].(map[string]interface{})
+	body, ok := response["body"].(map[string]any)
 	require.True(t, ok, "Expected body field in response")
 
 	assert.Equal(t, "John", body["first_name"])
@@ -132,7 +132,6 @@ func TestCreateUser_ValidationError(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -142,7 +141,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
 
-			var response map[string]interface{}
+			var response map[string]any
 			testutil.ParseJSONResponse(t, w, &response)
 
 			assert.Equal(t, "TS.2", response["scenario"])
@@ -164,7 +163,7 @@ func TestCreateUser_InvalidJSON(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "TS.1", response["scenario"])
@@ -296,7 +295,7 @@ func TestGetStudent_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "not found", response["message"])
@@ -319,7 +318,6 @@ func TestGetStudent_InvalidID(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -329,7 +327,7 @@ func TestGetStudent_InvalidID(t *testing.T) {
 
 			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
 
-			var response map[string]interface{}
+			var response map[string]any
 			testutil.ParseJSONResponse(t, w, &response)
 
 			assert.Equal(t, "Invalid request body", response["message"])
@@ -360,7 +358,7 @@ func TestGetStudent_WrongRole(t *testing.T) {
 	// Should return 404 because GetStudent looks for a user with role "STUDENT"
 	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "not found", response["message"])

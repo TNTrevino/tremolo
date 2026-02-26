@@ -71,7 +71,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid credentials", response["error"])
@@ -91,7 +91,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid credentials", response["error"])
@@ -116,7 +116,7 @@ func TestLogin_AccountLocked(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	errMsg, ok := response["error"].(string)
@@ -176,7 +176,6 @@ func TestLogin_ValidationErrors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -186,7 +185,7 @@ func TestLogin_ValidationErrors(t *testing.T) {
 
 			assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-			var response map[string]interface{}
+			var response map[string]any
 			testutil.ParseJSONResponse(t, w, &response)
 
 			errMsg, ok := response["error"].(string)
@@ -209,7 +208,7 @@ func TestLogin_InvalidRequestBody(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid request body", response["error"])
@@ -301,7 +300,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Email already exists", response["error"])
@@ -435,7 +434,6 @@ func TestRegister_ValidationErrors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -445,7 +443,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 
 			assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-			var response map[string]interface{}
+			var response map[string]any
 			testutil.ParseJSONResponse(t, w, &response)
 
 			errMsg, ok := response["error"].(string)
@@ -468,7 +466,7 @@ func TestRegister_InvalidRequestBody(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid request body", response["error"])
@@ -481,7 +479,6 @@ func TestRegister_AllRoles(t *testing.T) {
 	roles := []string{"STUDENT", "TEACHER", "PARENT"}
 
 	for _, role := range roles {
-		role := role // capture range variable
 		t.Run("Role_"+role, func(t *testing.T) {
 			t.Parallel()
 
@@ -554,7 +551,7 @@ func TestGetCurrentUser_NoUserIDInContext(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Unauthorized", response["error"])
@@ -573,7 +570,7 @@ func TestGetCurrentUser_InvalidUserIDType(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Internal server error", response["error"])
@@ -589,7 +586,7 @@ func TestGetCurrentUser_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Unauthorized", response["error"])
@@ -615,7 +612,7 @@ func TestRefreshToken_Valid(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	accessToken, ok := response["access_token"].(string)
@@ -636,7 +633,7 @@ func TestRefreshToken_Invalid(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid refresh token", response["error"])
@@ -653,7 +650,7 @@ func TestRefreshToken_MissingToken(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Refresh token is required", response["error"])
@@ -679,7 +676,7 @@ func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
-	var response map[string]interface{}
+	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
 	assert.Equal(t, "Invalid token type", response["error"])

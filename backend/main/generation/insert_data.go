@@ -23,7 +23,7 @@ func insertRealisticEntries(studentID int32, entryCount int) {
 	entries := generateRealisticNoteGameEntries(int16(studentID), entryCount, profile)
 
 	var valueClauses []string
-	var args []interface{}
+	var args []any
 	argIdx := 1
 
 	for _, entry := range entries {
@@ -36,7 +36,7 @@ func insertRealisticEntries(studentID int32, entryCount int) {
 			continue
 		}
 
-		var createdDate, createdTime interface{}
+		var createdDate, createdTime any
 		if entry.CreatedDate.Valid {
 			if d, err := time.Parse("2006-01-02", entry.CreatedDate.String); err == nil {
 				createdDate = d
@@ -73,13 +73,13 @@ func insertRealisticEntries(studentID int32, entryCount int) {
 // insertFakeSchools batch-inserts 1000 fake schools in a single statement.
 func insertFakeSchools() string {
 	var valueClauses []string
-	var args []interface{}
+	var args []any
 	argIdx := 1
 
 	for range 1000 {
 		s := generateFakeSchool()
 
-		var createdDate, createdTime interface{}
+		var createdDate, createdTime any
 		if s.CreatedDate.Valid {
 			if d, err := time.Parse("2006-01-02", s.CreatedDate.String); err == nil {
 				createdDate = d
@@ -145,7 +145,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 
 	var studentIDs []int32
 
-	for i := 0; i < studentsPerTeacher; i++ {
+	for i := range studentsPerTeacher {
 		student := generateFakeUser("STUDENT", schoolID)
 
 		studentParams := generated.CreateUserWithPasswordParams{
