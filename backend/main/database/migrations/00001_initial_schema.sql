@@ -1,9 +1,7 @@
+-- +goose Up
 create schema if not exists tremolo;
 
--- TODO: we should make the search path unnessecary
-set search_path to tremolo, public;
-
-create table schools (
+create table tremolo.schools (
     id serial primary key,
     title varchar(255) not null,
     city varchar(255) not null,
@@ -14,7 +12,7 @@ create table schools (
     created_time time default current_time
 );
 
-create table users (
+create table tremolo.users (
     id serial primary key,
     first_name varchar(255) not null,
     last_name varchar(255) not null,
@@ -23,14 +21,14 @@ create table users (
     password varchar(255) not null,
     failed_login_attempts int default 0 not null,
     locked_until timestamp null,
-    school_id int references schools (id),
+    school_id int references tremolo.schools (id),
     created_date date default current_date,
     created_time time default current_time
 );
 
-create table note_game_entries (
+create table tremolo.note_game_entries (
     id serial primary key,
-    user_id int not null references users (id),
+    user_id int not null references tremolo.users (id),
     time_length time not null,
     total_questions int not null,
     correct_questions int not null,
@@ -39,21 +37,29 @@ create table note_game_entries (
     created_time time default current_time
 );
 
--- join tables
-create table teacher_parent (
-    teacher_id int not null references users (id),
-    parent_id int not null references users (id),
+create table tremolo.teacher_parent (
+    teacher_id int not null references tremolo.users (id),
+    parent_id int not null references tremolo.users (id),
     primary key (teacher_id, parent_id)
 );
 
-create table teacher_student (
-    teacher_id int not null references users (id),
-    student_id int not null references users (id),
+create table tremolo.teacher_student (
+    teacher_id int not null references tremolo.users (id),
+    student_id int not null references tremolo.users (id),
     primary key (teacher_id, student_id)
 );
 
-create table parent_child (
-    parent_id int not null references users (id),
-    child_id int not null references users (id),
+create table tremolo.parent_child (
+    parent_id int not null references tremolo.users (id),
+    child_id int not null references tremolo.users (id),
     primary key (parent_id, child_id)
 );
+
+-- +goose Down
+drop table if exists tremolo.parent_child;
+drop table if exists tremolo.teacher_student;
+drop table if exists tremolo.teacher_parent;
+drop table if exists tremolo.note_game_entries;
+drop table if exists tremolo.users;
+drop table if exists tremolo.schools;
+drop schema if exists tremolo;

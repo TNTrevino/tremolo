@@ -227,3 +227,4 @@ frontend/src/Secret.tsx
 staticfiles/
 
 backend/main/tmp/
+tremolo.sh

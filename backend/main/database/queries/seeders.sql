@@ -1,5 +1,5 @@
 -- name: CreateSchool :one
-insert into schools (
+insert into tremolo.schools (
   title,
   city,
   county,
@@ -20,7 +20,7 @@ values (
 returning id;
 
 -- name: CreateUserWithPassword :one
-insert into users (
+insert into tremolo.users (
   first_name,
   last_name,
   school_id,
@@ -39,7 +39,7 @@ values (
 returning id;
 
 -- name: CreateTeacherStudentAssociation :exec
-insert into teacher_student (
+insert into tremolo.teacher_student (
   teacher_id,
   student_id
 )
@@ -49,7 +49,7 @@ values (
 );
 
 -- name: CreateNoteGameEntryWithDate :one
-insert into note_game_entries (
+insert into tremolo.note_game_entries (
   user_id,
   time_length,
   total_questions,
@@ -70,9 +70,9 @@ values (
 returning id;
 
 -- name: DeleteAllTestData :exec
-delete from note_game_entries;
-delete from teacher_student;
-delete from teacher_parent;
-delete from parent_child;
-delete from users;
-delete from schools;
+delete from tremolo.note_game_entries;
+delete from tremolo.teacher_student;
+delete from tremolo.teacher_parent;
+delete from tremolo.parent_child;
+delete from tremolo.users;
+delete from tremolo.schools;

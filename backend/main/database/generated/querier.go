@@ -38,7 +38,7 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
-	GetEntriesByUserID(ctx context.Context, userID int32) ([]NoteGameEntry, error)
+	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)

@@ -1,7 +1,7 @@
 -- note_game_entries queries
 
 -- name: CreateNoteGameEntry :one
-insert into note_game_entries (
+insert into tremolo.note_game_entries (
     user_id,
     time_length,
     total_questions,
@@ -13,7 +13,7 @@ returning id;
 
 -- name: GetEntriesByUserID :many
 select *
-from note_game_entries
+from tremolo.note_game_entries
 where user_id = $1
 order by created_date desc;
 
@@ -26,7 +26,7 @@ select
     correct_questions,
     notes_per_minute,
     created_date
-from note_game_entries
+from tremolo.note_game_entries
 where user_id = $1
 order by created_date desc, id desc
 limit 30;
@@ -40,7 +40,7 @@ select
     notes_per_minute,
     correct_questions,
     total_questions
-from note_game_entries
+from tremolo.note_game_entries
 where user_id = @user_id
 order by created_date, created_time asc;
 
@@ -51,7 +51,7 @@ select
     notes_per_minute,
     correct_questions,
     total_questions
-from note_game_entries
+from tremolo.note_game_entries
 where user_id = @user_id
   and created_date >= current_date - interval '1 day' * @days_back
 order by created_date, created_time asc;
@@ -65,8 +65,8 @@ select
     nge.notes_per_minute,
     nge.correct_questions,
     nge.total_questions
-from note_game_entries nge
-inner join teacher_student ts on nge.user_id = ts.student_id
+from tremolo.note_game_entries nge
+inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = @teacher_id
 order by nge.created_date, nge.created_time asc;
 
@@ -77,16 +77,16 @@ select
     nge.notes_per_minute,
     nge.correct_questions,
     nge.total_questions
-from note_game_entries nge
-inner join teacher_student ts on nge.user_id = ts.student_id
+from tremolo.note_game_entries nge
+inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = @teacher_id
   and nge.created_date >= current_date - interval '1 day' * @days_back
 order by nge.created_date, nge.created_time asc;
 
 -- name: DeleteNoteGameEntryByID :exec
-delete from note_game_entries
+delete from tremolo.note_game_entries
 where id = $1;
 
 -- name: DeleteNoteGameEntriesByUserID :exec
-delete from note_game_entries
+delete from tremolo.note_game_entries
 where user_id = $1;

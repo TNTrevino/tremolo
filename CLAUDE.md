@@ -96,13 +96,45 @@ The Go service uses Air for hot reloading in development (configured in `.air.to
 
 ## Database
 
-The PostgreSQL schema is defined in `backend/main/database/schema.sql`. Key tables:
+The PostgreSQL schema lives in the `tremolo` schema and is managed via versioned migrations. Key tables:
 - `users` - Students, teachers, parents with role-based access
 - `schools` - School information
 - `note_game_entries` - Performance tracking for note identification game
-- `teacher_to_student`, `teacher_to_parent`, `parent_to_child` - Relationship mapping
+- `teacher_parent`, `teacher_student`, `parent_child` - Relationship mapping
 
 Database connection is initialized in `backend/main/database/database.go` using the `DATABASE_URL` environment variable.
+
+### Migrations (Goose)
+
+Migrations are managed by [Goose](https://github.com/pressly/goose) and run automatically on startup via `database.RunMigrations()` in `main.go`. The migration files are embedded into the Go binary at compile time.
+
+- **Migration files**: `backend/main/database/migrations/`
+- **Naming convention**: `NNNNN_description.sql` (e.g., `00001_initial_schema.sql`)
+- **Format**: Each file uses `-- +goose Up` and `-- +goose Down` annotations
+- **Source of truth**: sqlc reads the schema directly from the migrations directory (`sqlc.yaml` → `schema: "database/migrations"`)
+
+Creating a new migration:
+```bash
+# Create a new migration file manually
+touch backend/main/database/migrations/00002_add_some_table.sql
+```
+
+Migration file template:
+```sql
+-- +goose Up
+CREATE TABLE tremolo.example (
+    id serial primary key
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS tremolo.example;
+```
+
+After adding a migration, regenerate sqlc:
+```bash
+cd backend/main
+sqlc generate
+```
 
 ## Key Technical Details
 

@@ -20,6 +20,7 @@ func main() {
 	// init global deps
 	logger.InitLogger()
 	database.InitializeDBConnection()
+	database.RunMigrations(database.DBConn)
 	middleware.InitJWTSecret()
 
 	// faker flag
