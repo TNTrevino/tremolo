@@ -62,6 +62,12 @@ export DATABASE_USER="<username>"
 export DATABASE_PW="<password>"
 export VITE_BACKEND_MAIN="http://localhost:5001"
 export VITE_BACKEND_MUSIC="http://localhost:8000"
+
+# Optional: set these to seed a personal user when running --fake-it
+# export TREMOLO_DATABASE_USER="you@example.com"
+# export TREMOLO_DATABASE_PW="yourpassword"
+# export TREMOLO_FIRST_NAME="YourFirst"
+# export TREMOLO_LAST_NAME="YourLast"
 ```
 
 ### Frontend Development
