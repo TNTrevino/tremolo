@@ -151,7 +151,7 @@ func TestGetTeacher_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
 
 	// Parse response
-	var response map[string]interface{}
+	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err, "Failed to parse JSON response")
 
@@ -178,7 +178,6 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -194,7 +193,7 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
 
 			// Parse response
-			var response map[string]interface{}
+			var response map[string]any
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err, "Failed to parse JSON response")
 

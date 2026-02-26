@@ -94,7 +94,6 @@ func TestCreateNoteGameEntry_ValidationError_TimeFormat(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			entry := &dtos.Entry{
@@ -188,7 +187,6 @@ func TestCreateNoteGameEntry_ValidationError_MissingFields(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Use the userID from the entry if non-zero, otherwise use the test user
@@ -213,7 +211,7 @@ func TestGetRecentNoteGameEntries_Success(t *testing.T) {
 
 	// Create some test entries
 	numEntries := 5
-	for i := 0; i < numEntries; i++ {
+	for i := range numEntries {
 		testutil.CreateTestNoteGameEntry(t, testutil.CreateTestNoteGameEntryParams{
 			UserID:           userID,
 			TimeLength:       "00:05:00",
@@ -259,7 +257,7 @@ func TestGetRecentNoteGameEntries_Limit30(t *testing.T) {
 
 	// Create 35 entries (more than the limit of 30)
 	numEntries := 35
-	for i := 0; i < numEntries; i++ {
+	for range numEntries {
 		testutil.CreateTestNoteGameEntry(t, testutil.CreateTestNoteGameEntryParams{
 			UserID:           userID,
 			TimeLength:       "00:05:00",
@@ -325,12 +323,12 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	userID2 := testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
 
 	// Create entries for user 1
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		testutil.CreateTestNoteGameEntryWithDefaults(t, userID1)
 	}
 
 	// Create entries for user 2
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		testutil.CreateTestNoteGameEntryWithDefaults(t, userID2)
 	}
 

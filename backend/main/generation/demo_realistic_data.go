@@ -17,7 +17,7 @@ func DemoRealisticDataGeneration() {
 	fmt.Println("   These profiles determine how a student improves over time")
 	fmt.Println()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		profile := generateStudentProgressProfile()
 		skillName := []string{"Beginner", "Intermediate", "Advanced"}[profile.BaseSkillLevel]
 		improvementName := []string{"Slow", "Medium", "Fast"}[profile.ImprovementRate]
@@ -107,7 +107,7 @@ func DemoRealisticDataGeneration() {
 
 	badDayCount := 0
 	totalTests := 1000
-	for i := 0; i < totalTests; i++ {
+	for range totalTests {
 		if shouldDecreasePerformance(BAD_DAY_PROBABILITY) {
 			badDayCount++
 		}
