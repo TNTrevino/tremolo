@@ -9,6 +9,8 @@ import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
+import { FriendsPanel } from "@/features/friends/components/FriendsPanel";
+import { useAuthStore } from "@/stores/auth.store";
 
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
@@ -57,6 +59,58 @@ function ToastContainerWrapper() {
 	return <ToastContainer toasts={toasts} onClose={removeToast} />;
 }
 
+function AppContent() {
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+	return (
+		<div className="min-h-screen bg-background text-foreground">
+			<Navigation />
+			<ErrorBoundary>
+				<Suspense fallback={<PageLoader />}>
+					<Routes>
+						{/* Public Routes */}
+						<Route path="/" element={<HomePage />} />
+						<Route path="/about" element={<AboutPage />} />
+						<Route path="/login" element={<LoginPage />} />
+						<Route path="/signup" element={<SignupPage />} />
+						<Route path="/note-game" element={<NoteGamePage />} />
+						<Route path="/sheet-music" element={<SheetMusicPage />} />
+						<Route path="/convert" element={<ConverterPage />} />
+
+						{/* Protected Routes */}
+						<Route
+							path="/dashboard"
+							element={
+								<ProtectedRoute>
+									<DashboardPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/profile"
+							element={
+								<ProtectedRoute>
+									<ProfilePage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/account"
+							element={
+								<ProtectedRoute>
+									<AccountPage />
+								</ProtectedRoute>
+							}
+						/>
+					</Routes>
+				</Suspense>
+			</ErrorBoundary>
+			{isAuthenticated && <FriendsPanel />}
+			<ToastContainerWrapper />
+		</div>
+	);
+}
+
 function App() {
 	return (
 		<ErrorBoundary>
@@ -64,50 +118,7 @@ function App() {
 				<ThemeProvider>
 					<ToastProvider>
 						<BrowserRouter>
-							<div className="min-h-screen bg-background text-foreground">
-								<Navigation />
-								<ErrorBoundary>
-									<Suspense fallback={<PageLoader />}>
-										<Routes>
-											{/* Public Routes */}
-											<Route path="/" element={<HomePage />} />
-											<Route path="/about" element={<AboutPage />} />
-											<Route path="/login" element={<LoginPage />} />
-											<Route path="/signup" element={<SignupPage />} />
-											<Route path="/note-game" element={<NoteGamePage />} />
-											<Route path="/sheet-music" element={<SheetMusicPage />} />
-											<Route path="/convert" element={<ConverterPage />} />
-
-											{/* Protected Routes */}
-											<Route
-												path="/dashboard"
-												element={
-													<ProtectedRoute>
-														<DashboardPage />
-													</ProtectedRoute>
-												}
-											/>
-											<Route
-												path="/profile"
-												element={
-													<ProtectedRoute>
-														<ProfilePage />
-													</ProtectedRoute>
-												}
-											/>
-											<Route
-												path="/account"
-												element={
-													<ProtectedRoute>
-														<AccountPage />
-													</ProtectedRoute>
-												}
-											/>
-										</Routes>
-									</Suspense>
-								</ErrorBoundary>
-								<ToastContainerWrapper />
-							</div>
+							<AppContent />
 						</BrowserRouter>
 					</ToastProvider>
 				</ThemeProvider>

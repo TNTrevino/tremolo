@@ -11,8 +11,10 @@ import {
 	LayoutDashboard,
 	UserCircle,
 	Settings,
+	Users,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
+import { useFriendsStore } from "@/stores/friends.store";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,8 @@ export function Navigation() {
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const { user, logoutUser, isAuthenticated } = useAuthStore();
 	const { theme, toggleTheme } = useTheme();
+	const togglePanel = useFriendsStore((state) => state.togglePanel);
+	const isPanelOpen = useFriendsStore((state) => state.isPanelOpen);
 	const location = useLocation();
 
 	const navLinks = [
@@ -87,6 +91,21 @@ export function Navigation() {
 								<Moon className="h-5 w-5" />
 							)}
 						</Button>
+
+						{/* Friends Toggle - Auth Only */}
+						{isAuthenticated && (
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={togglePanel}
+								className={cn(
+									"rounded-full",
+									isPanelOpen && "bg-accent text-accent-foreground",
+								)}
+							>
+								<Users className="h-5 w-5" />
+							</Button>
+						)}
 
 						{/* Desktop User Menu */}
 						{isAuthenticated ? (
@@ -204,6 +223,15 @@ export function Navigation() {
 						{isAuthenticated ? (
 							<>
 								<div className="border-t-2 border-border my-2" />
+								<button
+									onClick={() => {
+										togglePanel();
+										setMobileMenuOpen(false);
+									}}
+									className="w-full text-left px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+								>
+									Friends
+								</button>
 								<Link
 									to="/dashboard"
 									onClick={() => setMobileMenuOpen(false)}
