@@ -43,18 +43,20 @@ export function LoginPage() {
 		resolver: zodResolver(loginSchema),
 	});
 
-	const onSubmit = async (data: LoginFormData) => {
-		try {
-			await loginMutation.mutateAsync(data);
-			const from = locationState?.from?.pathname ?? "/dashboard";
-			navigate(from, { replace: true });
-		} catch (err) {
-			logError(err, "LoginPage.onSubmit");
-			const apiError = err as ApiError;
-			setError("root", {
-				message: apiError.message || getErrorMessage(err),
+	const onSubmit = (data: LoginFormData) => {
+		loginMutation
+			.mutateAsync(data)
+			.then(() => {
+				const from = locationState?.from?.pathname ?? "/dashboard";
+				navigate(from, { replace: true });
+			})
+			.catch((err) => {
+				logError(err, "LoginPage.onSubmit");
+				const apiError = err as ApiError;
+				setError("root", {
+					message: apiError.message || getErrorMessage(err),
+				});
 			});
-		}
 	};
 
 	return (

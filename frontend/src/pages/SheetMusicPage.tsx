@@ -50,46 +50,53 @@ export function SheetMusicPage() {
 
 	const currentScale = scales[scaleIndex];
 
-	const handleGenerateMary = async () => {
+	const handleGenerateMary = () => {
 		if (!currentScale) return;
 		setIsGenerating(true);
-		// TODO: we will want to add a loading state for this async action
 		setError(null);
-		try {
-			const xml = await musicService.generateMary({
+
+		musicService
+			.generateMary({
 				tonic: currentScale.tonic,
 				octave: octave,
+			})
+			.then((xml) => {
+				setMusicXml(xml);
+				setSelectedRhythm(null);
+				setRhythmType(null);
+			})
+			.catch((err) => {
+				logError(err, "SheetMusicPage.handleGenerateMary");
+				setError(getErrorMessage(err));
+			})
+			.finally(() => {
+				setIsGenerating(false);
 			});
-			setMusicXml(xml);
-			setSelectedRhythm(null);
-			setRhythmType(null);
-		} catch (err) {
-			logError(err, "SheetMusicPage.handleGenerateMary");
-			setError(getErrorMessage(err));
-		} finally {
-			setIsGenerating(false);
-		}
 	};
 
-	const handleGenerateRhythm = async (rhythm: string, type: 8 | 16) => {
+	const handleGenerateRhythm = (rhythm: string, type: 8 | 16) => {
 		if (!currentScale) return;
 		setIsGenerating(true);
 		setError(null);
 		setSelectedRhythm(rhythm);
 		setRhythmType(type);
-		try {
-			const xml = await musicService.generateRandom({
+
+		musicService
+			.generateRandom({
 				rhythm: rhythm,
 				rhythmType: type,
 				tonic: currentScale.tonic,
+			})
+			.then((xml) => {
+				setMusicXml(xml);
+			})
+			.catch((err) => {
+				logError(err, "SheetMusicPage.handleGenerateRhythm");
+				setError(getErrorMessage(err));
+			})
+			.finally(() => {
+				setIsGenerating(false);
 			});
-			setMusicXml(xml);
-		} catch (err) {
-			logError(err, "SheetMusicPage.handleGenerateRhythm");
-			setError(getErrorMessage(err));
-		} finally {
-			setIsGenerating(false);
-		}
 	};
 
 	return (

@@ -27,7 +27,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		inputRef.current?.focus();
 	}, []);
 
-	const search = useCallback(async (searchQuery: string) => {
+	const search = useCallback((searchQuery: string) => {
 		const trimmed = searchQuery.trim();
 		if (!trimmed) {
 			setResults([]);
@@ -35,14 +35,17 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			return;
 		}
 
-		try {
-			const data = await friendsService.searchUsers(trimmed);
-			setResults(data);
-		} catch {
-			setResults([]);
-		} finally {
-			setIsSearching(false);
-		}
+		friendsService
+			.searchUsers(trimmed)
+			.then((data) => {
+				setResults(data);
+			})
+			.catch(() => {
+				setResults([]);
+			})
+			.finally(() => {
+				setIsSearching(false);
+			});
 	}, []);
 
 	const handleQueryChange = (value: string) => {
@@ -72,17 +75,20 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		};
 	}, []);
 
-	const handleAdd = async (friendId: number) => {
+	const handleAdd = (friendId: number) => {
 		setAddingId(friendId);
-		try {
-			await friendsService.addFriend(friendId);
-			setAddedIds((prev) => new Set(prev).add(friendId));
-			fetchFriends();
-		} catch {
-			// silently fail -- the backend is idempotent
-		} finally {
-			setAddingId(null);
-		}
+		friendsService
+			.addFriend(friendId)
+			.then(() => {
+				setAddedIds((prev) => new Set(prev).add(friendId));
+				fetchFriends();
+			})
+			.catch(() => {
+				// silently fail -- the backend is idempotent
+			})
+			.finally(() => {
+				setAddingId(null);
+			});
 	};
 
 	return (

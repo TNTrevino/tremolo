@@ -26,34 +26,34 @@ export function NoteGamePage() {
 
 	// Handle game end - save stats for authenticated users
 	const handleGameEnd = useCallback(
-		async (stats: GameStats) => {
+		(stats: GameStats) => {
 			// Always update local past games for the chart
 			setPastGames((prev) => [...prev.slice(-9), stats]);
 
 			// Save to backend if user is authenticated
 			if (isAuthenticated && user) {
-				try {
-					// Calculate time length in seconds from the game stats
-					const timeInSeconds =
-						stats.gameMode === "time"
-							? stats.limit
-							: Math.round((stats.total / stats.npm) * 60);
+				const timeInSeconds =
+					stats.gameMode === "time"
+						? stats.limit
+						: Math.round((stats.total / stats.npm) * 60);
 
-					await userService.saveGameResult({
+				userService
+					.saveGameResult({
 						time_length: userService.formatTimeLength(timeInSeconds),
 						total_questions: stats.total,
 						correct_questions: stats.correct,
 						user_id: user.id,
 						notes_per_minute: stats.npm,
+					})
+					.then(() => {
+						showSuccess("Game results saved successfully!");
+					})
+					.catch((error) => {
+						logError(error, "NoteGamePage.handleGameEnd");
+						showError(
+							"Failed to save game results. Your score was not recorded.",
+						);
 					});
-
-					showSuccess("Game results saved successfully!");
-				} catch (error) {
-					logError(error, "NoteGamePage.handleGameEnd");
-					showError(
-						"Failed to save game results. Your score was not recorded.",
-					);
-				}
 			}
 		},
 		[isAuthenticated, user, showSuccess, showError],

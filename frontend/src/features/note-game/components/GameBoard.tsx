@@ -58,29 +58,33 @@ function GameBoardInternal({
 	// needing the next note. scale/octave are included so a settings change
 	// also refetches.
 	useEffect(() => {
-		const generateMusic = async () => {
-			setIsLoadingMusic(true);
-			setMusicError(null);
+		setIsLoadingMusic(true);
+		setMusicError(null);
 
-			try {
-				const tonic = extractTonic(scale);
-				const response = await musicService.generateNoteGame({
-					scale: tonic,
-					octave: octave.toString(),
-				});
-				setGeneratedXml(response.generatedXml);
+		const tonic = extractTonic(scale);
+		musicService
+			.generateNoteGame({
+				scale: tonic,
+				octave: octave.toString(),
+			})
+			.then(async (response) => {
+				if (cancelled) return;
+				console.log("[GameBoard] API response:", { noteName: response.noteName, xmlLen: response.generatedXml?.length });
+				await loadNote(response.generatedXml);
+				console.log("[GameBoard] loadNote completed");
 				onNoteGenerated(response.noteName);
-			} catch (error) {
+			})
+			.catch((error) => {
+				if (cancelled) return;
+				console.error("[GameBoard] Error:", error);
 				logError(error, "GameBoard.generateMusic");
 				setMusicError("Failed to load sheet music");
-			} finally {
-				setIsLoadingMusic(false);
-			}
-		};
-
-		generateMusic();
+			})
+			.finally(() => {
+				if (!cancelled) setIsLoadingMusic(false);
+			});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [answers.length, scale, octave]);
+	}, [answers.length, scale, octave, isReady]);
 
 	const getTimerDisplay = () => {
 		if (gameMode === "time" && timeRemaining !== undefined) {

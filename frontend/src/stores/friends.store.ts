@@ -27,14 +27,16 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 		);
 	},
 
-	fetchFriends: async () => {
+	fetchFriends: () => {
 		set({ isLoading: true, error: null });
-		try {
-			const friends = await friendsService.getFriends();
-			set({ friends, isLoading: false });
-		} catch {
-			set({ error: "Failed to load friends", isLoading: false });
-		}
+		friendsService
+			.getFriends()
+			.then((friends) => {
+				set({ friends, isLoading: false });
+			})
+			.catch(() => {
+				set({ error: "Failed to load friends", isLoading: false });
+			});
 	},
 
 	resetFriends: () =>
