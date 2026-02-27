@@ -106,17 +106,13 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 						placeholder="Search by name..."
 						value={query}
 						onChange={(e) => handleQueryChange(e.target.value)}
-						className="pl-9"
+						className="pl-9 pr-9"
 					/>
 				</div>
 			</div>
 
 			<div className="flex-1 overflow-y-auto p-2">
-				{isSearching ? (
-					<div className="flex items-center justify-center h-32">
-						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					</div>
-				) : results.length > 0 ? (
+				{results.length > 0 ? (
 					results.map((user) => (
 						<SearchResultCard
 							key={user.id}
@@ -126,6 +122,10 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 							onAdd={handleAdd}
 						/>
 					))
+				) : isSearching ? (
+					<div className="flex items-center justify-center h-32">
+						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+					</div>
 				) : query.trim() ? (
 					<div className="flex flex-col items-center justify-center h-32 gap-1">
 						<p className="text-sm font-medium text-muted-foreground">
