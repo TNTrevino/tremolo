@@ -108,6 +108,7 @@ function GameBoardInternal({
 				<div className="text-center text-sm text-muted-foreground">
 					Identify this note:
 				</div>
+				{/* TODO: we should extract this out into an errors module  */}
 				{musicError ? (
 					<Card className="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
 						<div className="text-center space-y-4">
