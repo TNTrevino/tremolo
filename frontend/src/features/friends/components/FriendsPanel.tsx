@@ -103,7 +103,7 @@ export function FriendsPanel() {
 								</div>
 							) : friends.length > 0 ? (
 								friends.map((friend) => (
-									<FriendCard key={friend.id} friend={friend} />
+									<FriendCard key={friend.id} user={friend} />
 								))
 							) : (
 								<div className="flex flex-col items-center justify-center h-32 gap-1">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { searchUsers, addFriend } from "@/services/api/friends.service";
 import { useFriendsStore } from "@/stores/friends.store";
+import { FriendCard } from "./FriendCard";
 import type { Friend } from "@/features/friends/types";
 
 const DEBOUNCE_MS = 120;
@@ -114,12 +115,16 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			<div className="flex-1 overflow-y-auto p-2">
 				{results.length > 0 ? (
 					results.map((user) => (
-						<SearchResultCard
+						<FriendCard
 							key={user.id}
 							user={user}
-							isAdded={addedIds.has(user.id)}
-							isAdding={addingId === user.id}
-							onAdd={handleAdd}
+							action={
+								<AddFriendButton
+									isAdded={addedIds.has(user.id)}
+									isAdding={addingId === user.id}
+									onAdd={() => handleAdd(user.id)}
+								/>
+							}
 						/>
 					))
 				) : isSearching ? (
@@ -144,56 +149,28 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 	);
 }
 
-interface SearchResultCardProps {
-	user: Friend;
+interface AddFriendButtonProps {
 	isAdded: boolean;
 	isAdding: boolean;
-	onAdd: (id: number) => void;
+	onAdd: () => void;
 }
 
-function SearchResultCard({
-	user,
-	isAdded,
-	isAdding,
-	onAdd,
-}: SearchResultCardProps) {
+function AddFriendButton({ isAdded, isAdding, onAdd }: AddFriendButtonProps) {
 	return (
-		<div className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-accent/50">
-			<img
-				src={user.avatarUrl}
-				alt={`${user.firstName} ${user.lastName}`}
-				className="h-10 w-10 rounded-full"
-			/>
-			<div className="flex-1 min-w-0">
-				<span className="text-sm font-medium truncate block">
-					{user.firstName} {user.lastName}
-				</span>
-				{user.instrument && (
-					<p className="text-xs text-muted-foreground truncate">
-						{user.instrument}
-					</p>
-				)}
-				{user.school && (
-					<p className="text-xs text-muted-foreground truncate">
-						{user.school}
-					</p>
-				)}
-			</div>
-			<Button
-				variant={isAdded ? "ghost" : "outline"}
-				size="icon"
-				className="rounded-full h-8 w-8 shrink-0"
-				onClick={() => onAdd(user.id)}
-				disabled={isAdded || isAdding}
-			>
-				{isAdding ? (
-					<Loader2 className="h-4 w-4 animate-spin" />
-				) : isAdded ? (
-					<Check className="h-4 w-4 text-primary" />
-				) : (
-					<UserPlus className="h-4 w-4" />
-				)}
-			</Button>
-		</div>
+		<Button
+			variant={isAdded ? "ghost" : "outline"}
+			size="icon"
+			className="rounded-full h-8 w-8 shrink-0"
+			onClick={onAdd}
+			disabled={isAdded || isAdding}
+		>
+			{isAdding ? (
+				<Loader2 className="h-4 w-4 animate-spin" />
+			) : isAdded ? (
+				<Check className="h-4 w-4 text-primary" />
+			) : (
+				<UserPlus className="h-4 w-4" />
+			)}
+		</Button>
 	);
 }
