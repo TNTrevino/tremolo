@@ -17,8 +17,22 @@ export const getFriends = async (): Promise<Friend[]> => {
 	return response.data.map(mapFriendResponse);
 };
 
+export const searchUsers = async (query: string): Promise<Friend[]> => {
+	const response = await mainApiClient.get<FriendResponse[]>(
+		"/api/friends/search",
+		{ params: { q: query } },
+	);
+	return response.data.map(mapFriendResponse);
+};
+
+export const addFriend = async (friendId: number): Promise<void> => {
+	await mainApiClient.post("/api/friends", { friend_id: friendId });
+};
+
 export const friendsService = {
 	getFriends,
+	searchUsers,
+	addFriend,
 };
 
 export default friendsService;
