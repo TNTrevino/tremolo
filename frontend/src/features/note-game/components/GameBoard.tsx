@@ -16,6 +16,7 @@ export interface GameBoardProps {
 	noteLimit?: number;
 	gameMode: "time" | "notes";
 	onAnswer: (answer: string) => void;
+	onNoteGenerated: (noteName: string) => void;
 	formatTime?: (seconds: number) => string;
 	scale: string;
 	octave: number;
@@ -32,6 +33,7 @@ function GameBoardInternal({
 	noteLimit,
 	gameMode,
 	onAnswer,
+	onNoteGenerated,
 	formatTime,
 	scale,
 	octave,
@@ -51,7 +53,10 @@ function GameBoardInternal({
 		return scaleStr.split(" ")[0] ?? "C";
 	};
 
-	// Generate new sheet music when currentNote changes
+	// Fetch a new note from the backend after each answer (or on initial mount).
+	// answers.length changes after every answer, which is the real trigger for
+	// needing the next note. scale/octave are included so a settings change
+	// also refetches.
 	useEffect(() => {
 		const generateMusic = async () => {
 			setIsLoadingMusic(true);
@@ -64,6 +69,7 @@ function GameBoardInternal({
 					octave: octave.toString(),
 				});
 				setGeneratedXml(response.generatedXml);
+				onNoteGenerated(response.noteName);
 			} catch (error) {
 				logError(error, "GameBoard.generateMusic");
 				setMusicError("Failed to load sheet music");
@@ -73,7 +79,8 @@ function GameBoardInternal({
 		};
 
 		generateMusic();
-	}, [currentNote, scale, octave]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [answers.length, scale, octave]);
 
 	const getTimerDisplay = () => {
 		if (gameMode === "time" && timeRemaining !== undefined) {
@@ -113,14 +120,20 @@ function GameBoardInternal({
 							</div>
 						</div>
 					</Card>
-				) : isLoadingMusic ? (
-					<Card className="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-						<div className="text-center text-muted-foreground">
-							Loading sheet music...
-						</div>
-					</Card>
 				) : (
-					<SheetMusicDisplay musicXml={generatedXml} />
+					<>
+						{isLoadingMusic && (
+							<Card className="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+								<div className="text-center text-muted-foreground">
+									Loading sheet music...
+								</div>
+							</Card>
+						)}
+						<SheetMusicDisplay
+							musicXml={generatedXml}
+							className={isLoadingMusic ? "hidden" : ""}
+						/>
+					</>
 				)}
 			</div>
 

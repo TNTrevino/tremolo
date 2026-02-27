@@ -71,6 +71,7 @@ export function NoteGamePage() {
 		handleAnswer,
 		endGame,
 		resetGame,
+		syncCurrentNote,
 	} = useNoteGame({ onGameEnd: handleGameEnd });
 
 	// Timer hook (for time mode)
@@ -105,6 +106,7 @@ export function NoteGamePage() {
 						noteLimit={settings.noteLimit}
 						gameMode={settings.gameMode}
 						onAnswer={handleAnswer}
+						onNoteGenerated={syncCurrentNote}
 						formatTime={formatTime}
 						scale={settings.scale}
 						octave={settings.octave}
