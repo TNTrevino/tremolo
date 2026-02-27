@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SheetMusicDisplay } from "@/features/sheet-music/components";
+import { useNoteGameDisplay } from "@/features/note-game-display";
 import { musicService } from "@/services/api";
 import type { NoteAnswer } from "../types";
 import { NOTES } from "../types";
@@ -38,9 +38,13 @@ function GameBoardInternal({
 	scale,
 	octave,
 }: GameBoardProps) {
-	const [generatedXml, setGeneratedXml] = useState<string>("");
 	const [isLoadingMusic, setIsLoadingMusic] = useState(false);
 	const [musicError, setMusicError] = useState<string | null>(null);
+
+	const { containerRef, loadNote, isReady } = useNoteGameDisplay({
+		darkMode: true,
+		zoom: 2.0,
+	});
 
 	const correctAnswers = answers.filter((a) => a.correct).length;
 	const accuracy =
@@ -56,8 +60,13 @@ function GameBoardInternal({
 	// Fetch a new note from the backend after each answer (or on initial mount).
 	// answers.length changes after every answer, which is the real trigger for
 	// needing the next note. scale/octave are included so a settings change
-	// also refetches.
+	// also refetches. We gate on isReady so no API call is made until the OSMD
+	// container is mounted; once true it never flips back, so this fires once
+	// on init and then once per dependency change.
 	useEffect(() => {
+		if (!isReady) return;
+
+		let cancelled = false;
 		setIsLoadingMusic(true);
 		setMusicError(null);
 
@@ -69,20 +78,20 @@ function GameBoardInternal({
 			})
 			.then(async (response) => {
 				if (cancelled) return;
-				console.log("[GameBoard] API response:", { noteName: response.noteName, xmlLen: response.generatedXml?.length });
 				await loadNote(response.generatedXml);
-				console.log("[GameBoard] loadNote completed");
-				onNoteGenerated(response.noteName);
+				if (!cancelled) onNoteGenerated(response.noteName);
 			})
-			.catch((error) => {
+			.catch(() => {
 				if (cancelled) return;
-				console.error("[GameBoard] Error:", error);
-				logError(error, "GameBoard.generateMusic");
 				setMusicError("Failed to load sheet music");
 			})
 			.finally(() => {
-				if (!cancelled) setIsLoadingMusic(false);
+				setIsLoadingMusic(false);
 			});
+
+		return () => {
+			cancelled = true;
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [answers.length, scale, octave, isReady]);
 
@@ -114,7 +123,7 @@ function GameBoardInternal({
 				</div>
 				{/* TODO: we should extract this out into an errors module  */}
 				{musicError ? (
-					<Card className="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+					<Card className="p-12 min-h-[18.75rem] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
 						<div className="text-center space-y-4">
 							<div className="text-destructive font-medium">{musicError}</div>
 							<div className="text-sm text-muted-foreground">
@@ -126,32 +135,32 @@ function GameBoardInternal({
 						</div>
 					</Card>
 				) : (
-					<>
+					<Card className="relative flex items-center justify-center overflow-hidden">
 						{isLoadingMusic && (
-							<Card className="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+							<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
 								<div className="text-center text-muted-foreground">
 									Loading sheet music...
 								</div>
-							</Card>
+							</div>
 						)}
-						<SheetMusicDisplay
-							musicXml={generatedXml}
-							className={isLoadingMusic ? "hidden" : ""}
+						<div
+							ref={containerRef}
+							className="w-full aspect-[2/1] overflow-hidden"
 						/>
-					</>
+					</Card>
 				)}
 			</div>
 
 			{/* Answer Buttons */}
 			<Card className="p-4">
-				<div className="grid grid-cols-7 gap-2">
+				<div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
 					{/* Sharps */}
 					{NOTES.map((note) => (
 						<Button
 							key={`${note}#`}
 							variant="outline"
 							onClick={() => onAnswer(`${note}#`)}
-							className="h-16 text-lg font-bold"
+							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
 						>
 							{note}♯
 						</Button>
@@ -162,7 +171,7 @@ function GameBoardInternal({
 							key={note}
 							variant="default"
 							onClick={() => onAnswer(note)}
-							className="h-16 text-lg font-bold"
+							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
 						>
 							{note}
 						</Button>
@@ -173,7 +182,7 @@ function GameBoardInternal({
 							key={`${note}b`}
 							variant="outline"
 							onClick={() => onAnswer(`${note}b`)}
-							className="h-16 text-lg font-bold"
+							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
 						>
 							{note}♭
 						</Button>
