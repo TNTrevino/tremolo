@@ -20,4 +20,5 @@ export interface FriendsStore {
 	setSearchQuery: (query: string) => void;
 	filteredFriends: () => Friend[];
 	fetchFriends: () => Promise<void>;
+	resetFriends: () => void;
 }

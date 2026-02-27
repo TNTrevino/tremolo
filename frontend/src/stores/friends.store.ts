@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { FriendsStore } from "@/features/friends/types";
 import { getFriends } from "@/services/api/friends.service";
+import { useAuthStore } from "@/stores/auth.store";
 
 export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 	friends: [],
@@ -35,4 +36,22 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 			set({ error: "Failed to load friends", isLoading: false });
 		}
 	},
+
+	resetFriends: () =>
+		set({
+			friends: [],
+			isPanelOpen: false,
+			searchQuery: "",
+			isLoading: false,
+			error: null,
+		}),
 }));
+
+useAuthStore.subscribe((state, prevState) => {
+	if (state.isAuthenticated && !prevState.isAuthenticated) {
+		useFriendsStore.getState().fetchFriends();
+	}
+	if (!state.isAuthenticated && prevState.isAuthenticated) {
+		useFriendsStore.getState().resetFriends();
+	}
+});

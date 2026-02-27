@@ -20,10 +20,10 @@ export function FriendsPanel() {
 	const error = useFriendsStore((state) => state.error);
 
 	useEffect(() => {
-		if (isPanelOpen && allFriends.length === 0 && !isLoading && !error) {
+		if (isPanelOpen && allFriends.length === 0 && !isLoading) {
 			fetchFriends();
 		}
-	}, [isPanelOpen, allFriends.length, isLoading, error, fetchFriends]);
+	}, [isPanelOpen, allFriends.length, isLoading, fetchFriends]);
 
 	const friends = filteredFriends();
 
