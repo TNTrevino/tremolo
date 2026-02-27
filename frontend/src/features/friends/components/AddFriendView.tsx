@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Search, UserPlus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { searchUsers, addFriend } from "@/services/api/friends.service";
+import { friendsService } from "@/services/api";
 import { useFriendsStore } from "@/stores/friends.store";
 import { FriendCard } from "./FriendCard";
 import type { Friend } from "@/features/friends/types";
@@ -36,7 +36,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		}
 
 		try {
-			const data = await searchUsers(trimmed);
+			const data = await friendsService.searchUsers(trimmed);
 			setResults(data);
 		} catch {
 			setResults([]);
@@ -75,7 +75,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 	const handleAdd = async (friendId: number) => {
 		setAddingId(friendId);
 		try {
-			await addFriend(friendId);
+			await friendsService.addFriend(friendId);
 			setAddedIds((prev) => new Set(prev).add(friendId));
 			fetchFriends();
 		} catch {

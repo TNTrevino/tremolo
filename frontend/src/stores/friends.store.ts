@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { FriendsStore } from "@/features/friends/types";
-import { getFriends } from "@/services/api/friends.service";
+import { friendsService } from "@/services/api";
 import { useAuthStore } from "@/stores/auth.store";
 
 export const useFriendsStore = create<FriendsStore>()((set, get) => ({
@@ -30,7 +30,7 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 	fetchFriends: async () => {
 		set({ isLoading: true, error: null });
 		try {
-			const friends = await getFriends();
+			const friends = await friendsService.getFriends();
 			set({ friends, isLoading: false });
 		} catch {
 			set({ error: "Failed to load friends", isLoading: false });

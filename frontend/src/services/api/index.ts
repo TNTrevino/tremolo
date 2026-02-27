@@ -1,21 +1,31 @@
-/**
- * API Services Index
- *
- * Central export point for all API services and utilities.
- * Import from this file to access any API service functionality.
- *
- * @example
- * ```typescript
- * // Import individual services
- * import { authService, musicService, userService } from '@/services/api';
- *
- * // Import specific functions
- * import { login, generateMary, getProfile } from '@/services/api';
- *
- * // Import types
- * import type { User, NoteGameEntry } from '@/services/api';
- * ```
- */
+import {
+	mainApiClient,
+	musicApiClient,
+	getAccessToken,
+	getRefreshToken,
+	setTokens,
+	clearTokens,
+} from "./clients";
+import { AuthService } from "./auth.service";
+import { UserService } from "./user.service";
+import { MusicService } from "./music.service";
+import { FriendsService } from "./friends.service";
+
+export const authService = new AuthService(mainApiClient, {
+	setTokens,
+	clearTokens,
+	getRefreshToken,
+	getAccessToken,
+});
+
+export const userService = new UserService(mainApiClient);
+export const musicService = new MusicService(musicApiClient);
+export const friendsService = new FriendsService(mainApiClient);
+
+export { AuthService } from "./auth.service";
+export { UserService } from "./user.service";
+export { MusicService } from "./music.service";
+export { FriendsService } from "./friends.service";
 
 export {
 	musicApiClient,
@@ -27,39 +37,6 @@ export {
 	TOKEN_STORAGE_KEY,
 	REFRESH_TOKEN_STORAGE_KEY,
 } from "./clients";
-
-export {
-	authService,
-	login,
-	register,
-	logout,
-	refreshToken,
-	getCurrentUser,
-	isAuthenticated,
-} from "./auth.service";
-
-export {
-	musicService,
-	generateMary,
-	generateRandom,
-	generateNoteGame,
-	isValidNote,
-	isValidRhythm,
-} from "./music.service";
-
-export {
-	userService,
-	getProfile,
-	updateProfile,
-	getStats,
-	saveGameResult,
-	getRecentGameEntries,
-	getClassMetrics,
-	formatTimeLength,
-	calculateNPM,
-} from "./user.service";
-
-export { friendsService, getFriends } from "./friends.service";
 
 export type {
 	UserRole,

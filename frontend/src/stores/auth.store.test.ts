@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAuthStore } from "./auth.store";
 
 // Mock the auth service
-vi.mock("@/services/api/auth.service", () => ({
-	authService: {
-		login: vi.fn(),
-		register: vi.fn(),
-		logout: vi.fn(),
-	},
-}));
+vi.mock("@/services/api", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/services/api")>();
+	return {
+		...actual,
+		authService: {
+			login: vi.fn(),
+			register: vi.fn(),
+			logout: vi.fn(),
+		},
+	};
+});
 
 describe("auth.store", () => {
 	beforeEach(() => {
@@ -120,7 +124,7 @@ describe("auth.store", () => {
 
 	describe("logoutUser", () => {
 		it("calls authService.logout and clears state", async () => {
-			const { authService } = await import("@/services/api/auth.service");
+			const { authService } = await import("@/services/api");
 
 			useAuthStore.setState({
 				user: {
@@ -145,7 +149,7 @@ describe("auth.store", () => {
 
 	describe("loginUser", () => {
 		it("sets user and token on successful login", async () => {
-			const { authService } = await import("@/services/api/auth.service");
+			const { authService } = await import("@/services/api");
 
 			const mockResponse = {
 				user: {
@@ -179,7 +183,7 @@ describe("auth.store", () => {
 		});
 
 		it("throws error on failed login", async () => {
-			const { authService } = await import("@/services/api/auth.service");
+			const { authService } = await import("@/services/api");
 
 			vi.mocked(authService.login).mockRejectedValue(
 				new Error("Invalid credentials"),
@@ -196,7 +200,7 @@ describe("auth.store", () => {
 
 	describe("registerUser", () => {
 		it("calls authService.register", async () => {
-			const { authService } = await import("@/services/api/auth.service");
+			const { authService } = await import("@/services/api");
 
 			vi.mocked(authService.register).mockResolvedValue({
 				message: "User registered successfully",
@@ -227,7 +231,7 @@ describe("auth.store", () => {
 		});
 
 		it("does not auto-login after registration", async () => {
-			const { authService } = await import("@/services/api/auth.service");
+			const { authService } = await import("@/services/api");
 
 			vi.mocked(authService.register).mockResolvedValue({
 				message: "User registered successfully",

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { authService } from "@/services/api/auth.service";
+import { authService } from "@/services/api";
 import type {
 	LoginRequest,
 	RegisterRequest,
