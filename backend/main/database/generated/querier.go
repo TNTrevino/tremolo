@@ -12,6 +12,9 @@ import (
 type Querier interface {
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
+	// Inserts both directions to create an instant mutual friendship.
+	// ON CONFLICT DO NOTHING makes this idempotent.
+	CreateMutualFriendship(ctx context.Context, arg CreateMutualFriendshipParams) error
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
@@ -55,6 +58,9 @@ type Querier interface {
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
 	LockAccount(ctx context.Context, arg LockAccountParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
+	// Case-insensitive contains search on full name, excluding the current user
+	// and anyone they are already mutual friends with
+	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

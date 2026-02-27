@@ -25,6 +25,24 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	return err
 }
 
+const createMutualFriendship = `-- name: CreateMutualFriendship :exec
+insert into tremolo.friends (user_id, friend_id)
+values ($1, $2), ($2, $1)
+on conflict do nothing
+`
+
+type CreateMutualFriendshipParams struct {
+	UserID   int32 `json:"user_id"`
+	FriendID int32 `json:"friend_id"`
+}
+
+// Inserts both directions to create an instant mutual friendship.
+// ON CONFLICT DO NOTHING makes this idempotent.
+func (q *Queries) CreateMutualFriendship(ctx context.Context, arg CreateMutualFriendshipParams) error {
+	_, err := q.db.ExecContext(ctx, createMutualFriendship, arg.UserID, arg.FriendID)
+	return err
+}
+
 const getFriendsByUserID = `-- name: GetFriendsByUserID :many
 select
     u.id,
@@ -68,6 +86,80 @@ func (q *Queries) GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFr
 	items := []GetFriendsByUserIDRow{}
 	for rows.Next() {
 		var i GetFriendsByUserIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Role,
+			&i.Instrument,
+			&i.School,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchUsersByName = `-- name: SearchUsersByName :many
+select
+    u.id,
+    u.first_name,
+    u.last_name,
+    r.name as role,
+    u.instrument,
+    coalesce(s.title, '') as school
+from tremolo.users u
+inner join tremolo.roles r
+    on u.role_id = r.id
+left join tremolo.schools s
+    on u.school_id = s.id
+where u.id <> $1
+    and (u.first_name || ' ' || u.last_name) ilike '%' || $2 || '%'
+    and not exists (
+        select 1
+        from tremolo.friends f1
+        inner join tremolo.friends f2
+            on f1.user_id = f2.friend_id
+            and f1.friend_id = f2.user_id
+        where f1.user_id = $1
+            and f1.friend_id = u.id
+    )
+order by u.first_name, u.last_name
+limit 10
+`
+
+type SearchUsersByNameParams struct {
+	UserID int32          `json:"user_id"`
+	Query  sql.NullString `json:"query"`
+}
+
+type SearchUsersByNameRow struct {
+	ID         int32          `json:"id"`
+	FirstName  string         `json:"first_name"`
+	LastName   string         `json:"last_name"`
+	Role       string         `json:"role"`
+	Instrument sql.NullString `json:"instrument"`
+	School     string         `json:"school"`
+}
+
+// Case-insensitive contains search on full name, excluding the current user
+// and anyone they are already mutual friends with
+func (q *Queries) SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchUsersByName, arg.UserID, arg.Query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchUsersByNameRow{}
+	for rows.Next() {
+		var i SearchUsersByNameRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.FirstName,
