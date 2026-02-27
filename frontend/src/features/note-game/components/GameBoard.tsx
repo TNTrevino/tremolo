@@ -7,7 +7,7 @@ import type { NoteAnswer } from "../types";
 import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
-import { logError } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -211,7 +211,7 @@ export function GameBoard(props: GameBoardProps) {
 				/>
 			}
 			onError={(error) => {
-				logError(error, "GameBoard.errorBoundary");
+				logger.error("GameBoard error boundary caught error", error);
 			}}
 		>
 			<GameBoardInternal {...props} />

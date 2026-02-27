@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { FriendsStore } from "@/features/friends/types";
 import { friendsService } from "@/services/api";
 import { useAuthStore } from "@/stores/auth.store";
+import { logger } from "@/lib/logger";
 
 export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 	friends: [],
@@ -34,9 +35,10 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 			.then((friends) => {
 				set({ friends, isLoading: false });
 			})
-			.catch(() => {
-				set({ error: "Failed to load friends", isLoading: false });
-			});
+		.catch((err) => {
+			logger.error("Failed to load friends", err);
+			set({ error: "Failed to load friends", isLoading: false });
+		});
 	},
 
 	resetFriends: () =>

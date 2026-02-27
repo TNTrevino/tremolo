@@ -9,7 +9,8 @@ import {
 } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import { getErrorMessage, logError } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 
 interface Props {
 	children: ReactNode;
@@ -57,7 +58,7 @@ export class ErrorBoundary extends Component<Props, State> {
 	 */
 	componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
 		// Log the error with context
-		logError(error, "ErrorBoundary");
+		logger.error("ErrorBoundary caught error", error);
 
 		// Log component stack trace
 		console.error("Component stack trace:", errorInfo.componentStack);

@@ -5,7 +5,7 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { SheetMusicDisplay } from "@/features/sheet-music/components";
 import { musicService } from "@/services/api";
-import { logError, getErrorMessage } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
 // Scale options with their corresponding tonic values
 const scales = [
@@ -65,9 +65,8 @@ export function SheetMusicPage() {
 				setSelectedRhythm(null);
 				setRhythmType(null);
 			})
-			.catch((err) => {
-				logError(err, "SheetMusicPage.handleGenerateMary");
-				setError(getErrorMessage(err));
+		.catch((err) => {
+			setError(getErrorMessage(err));
 			})
 			.finally(() => {
 				setIsGenerating(false);
@@ -90,9 +89,8 @@ export function SheetMusicPage() {
 			.then((xml) => {
 				setMusicXml(xml);
 			})
-			.catch((err) => {
-				logError(err, "SheetMusicPage.handleGenerateRhythm");
-				setError(getErrorMessage(err));
+		.catch((err) => {
+			setError(getErrorMessage(err));
 			})
 			.finally(() => {
 				setIsGenerating(false);

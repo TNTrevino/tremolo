@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { friendsService } from "@/services/api";
 import { useFriendsStore } from "@/stores/friends.store";
+import { logger } from "@/lib/logger";
 import { FriendCard } from "./FriendCard";
 import type { Friend } from "@/features/friends/types";
 
@@ -40,9 +41,10 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			.then((data) => {
 				setResults(data);
 			})
-			.catch(() => {
-				setResults([]);
-			})
+		.catch((err) => {
+			logger.error("Failed to search users", err);
+			setResults([]);
+		})
 			.finally(() => {
 				setIsSearching(false);
 			});
@@ -83,9 +85,9 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 				setAddedIds((prev) => new Set(prev).add(friendId));
 				fetchFriends();
 			})
-			.catch(() => {
-				// silently fail -- the backend is idempotent
-			})
+		.catch((err) => {
+			logger.error("Failed to add friend", err);
+		})
 			.finally(() => {
 				setAddingId(null);
 			});

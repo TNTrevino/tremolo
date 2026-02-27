@@ -9,10 +9,10 @@ import {
 import { useToast } from "@/shared/hooks/useToast";
 import {
 	getErrorMessage,
-	logError,
 	isApiError,
 	isNetworkError,
 } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 import axios from "axios";
 import { AlertTriangle } from "lucide-react";
 
@@ -68,7 +68,7 @@ export function ErrorTester() {
 			// This will fail with a 404
 			await axios.get("https://jsonplaceholder.typicode.com/posts/999999999");
 		} catch (error) {
-			logError(error, "ErrorTester.testApiError");
+			logger.error("ErrorTester: API error test", error);
 			showError(getErrorMessage(error), "API Error");
 
 			// eslint-disable-next-line no-console
@@ -85,7 +85,7 @@ export function ErrorTester() {
 				timeout: 1000,
 			});
 		} catch (error) {
-			logError(error, "ErrorTester.testNetworkError");
+			logger.error("ErrorTester: network error test", error);
 			showError(getErrorMessage(error), "Network Error");
 
 			// eslint-disable-next-line no-console

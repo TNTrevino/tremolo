@@ -5,7 +5,6 @@
 
 export {
 	getErrorMessage,
-	logError,
 	isApiError,
 	isNetworkError,
 	isAuthError,
