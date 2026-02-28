@@ -65,8 +65,8 @@ export function SheetMusicPage() {
 				setSelectedRhythm(null);
 				setRhythmType(null);
 			})
-		.catch((err) => {
-			setError(getErrorMessage(err));
+			.catch((err) => {
+				setError(getErrorMessage(err));
 			})
 			.finally(() => {
 				setIsGenerating(false);
@@ -89,8 +89,8 @@ export function SheetMusicPage() {
 			.then((xml) => {
 				setMusicXml(xml);
 			})
-		.catch((err) => {
-			setError(getErrorMessage(err));
+			.catch((err) => {
+				setError(getErrorMessage(err));
 			})
 			.finally(() => {
 				setIsGenerating(false);

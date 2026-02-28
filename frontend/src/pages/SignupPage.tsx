@@ -93,8 +93,8 @@ export function SignupPage() {
 				};
 				navigate("/login", { state: navState });
 			})
-		.catch((err) => {
-			const apiError = err as ApiError;
+			.catch((err) => {
+				const apiError = err as ApiError;
 				setError("root", {
 					message: apiError.message || getErrorMessage(err),
 				});

@@ -11,7 +11,6 @@ import {
 	GameResults,
 } from "@/features/note-game";
 
-
 export interface NoteGamePageProps {}
 
 /**
@@ -48,8 +47,8 @@ export function NoteGamePage() {
 					.then(() => {
 						showSuccess("Game results saved successfully!");
 					})
-				.catch(() => {
-					showError(
+					.catch(() => {
+						showError(
 							"Failed to save game results. Your score was not recorded.",
 						);
 					});

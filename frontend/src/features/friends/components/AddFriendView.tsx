@@ -41,10 +41,10 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			.then((data) => {
 				setResults(data);
 			})
-		.catch((err) => {
-			logger.error("Failed to search users", err);
-			setResults([]);
-		})
+			.catch((err) => {
+				logger.error("Failed to search users", err);
+				setResults([]);
+			})
 			.finally(() => {
 				setIsSearching(false);
 			});
@@ -85,9 +85,9 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 				setAddedIds((prev) => new Set(prev).add(friendId));
 				fetchFriends();
 			})
-		.catch((err) => {
-			logger.error("Failed to add friend", err);
-		})
+			.catch((err) => {
+				logger.error("Failed to add friend", err);
+			})
 			.finally(() => {
 				setAddingId(null);
 			});

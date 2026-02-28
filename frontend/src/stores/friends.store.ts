@@ -35,10 +35,10 @@ export const useFriendsStore = create<FriendsStore>()((set, get) => ({
 			.then((friends) => {
 				set({ friends, isLoading: false });
 			})
-		.catch((err) => {
-			logger.error("Failed to load friends", err);
-			set({ error: "Failed to load friends", isLoading: false });
-		});
+			.catch((err) => {
+				logger.error("Failed to load friends", err);
+				set({ error: "Failed to load friends", isLoading: false });
+			});
 	},
 
 	resetFriends: () =>
