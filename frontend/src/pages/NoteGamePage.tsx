@@ -3,13 +3,10 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
-import {
-	useNoteGame,
-	useGameTimer,
-	GameSettings as GameSettingsComponent,
-	GameBoard,
-	GameResults,
-} from "@/features/note-game";
+import { useNoteGame, useGameTimer } from "@/features/note-game";
+import GameBoard from "@/features/note-game/components/GameBoard";
+import GameResults from "@/features/note-game/components/GameResults";
+import GameSettings from "@/features/note-game/components/GameSettings";
 
 export interface NoteGamePageProps {}
 
@@ -89,7 +86,7 @@ export function NoteGamePage() {
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl">
 				{gameState === "settings" && (
-					<GameSettingsComponent
+					<GameSettings
 						settings={settings}
 						onSettingsChange={updateSettings}
 						onStartGame={startGame}

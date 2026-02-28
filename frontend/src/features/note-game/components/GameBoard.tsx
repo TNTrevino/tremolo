@@ -26,7 +26,7 @@ export interface GameBoardProps {
  * Game board component for active gameplay (Internal)
  * Displays score, current note (as sheet music), and answer buttons
  */
-function GameBoardInternal({
+const GameBoardInternal = ({
 	currentNote,
 	answers,
 	timeRemaining,
@@ -37,7 +37,7 @@ function GameBoardInternal({
 	formatTime,
 	scale,
 	octave,
-}: GameBoardProps) {
+}: GameBoardProps) => {
 	const [isLoadingMusic, setIsLoadingMusic] = useState(false);
 	const [musicError, setMusicError] = useState<string | null>(null);
 
@@ -191,7 +191,7 @@ function GameBoardInternal({
 			</Card>
 		</div>
 	);
-}
+};
 
 /**
  * Game board component for active gameplay
@@ -210,7 +210,7 @@ function GameBoardInternal({
  * />
  * ```
  */
-export function GameBoard(props: GameBoardProps) {
+const GameBoard = (props: GameBoardProps) => {
 	return (
 		<ComponentErrorBoundary
 			fallback={
@@ -226,4 +226,6 @@ export function GameBoard(props: GameBoardProps) {
 			<GameBoardInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-}
+};
+
+export default GameBoard;

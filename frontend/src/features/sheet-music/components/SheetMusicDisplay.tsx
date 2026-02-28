@@ -33,12 +33,12 @@ export interface SheetMusicDisplayProps {
  *
  * This component is wrapped with an error boundary for additional safety.
  */
-function SheetMusicDisplayInternal({
+const SheetMusicDisplayInternal = ({
 	musicXml,
 	className,
 	onRenderComplete,
 	onError,
-}: SheetMusicDisplayProps) {
+}: SheetMusicDisplayProps) => {
 	const { loadAndRender, isLoading, error, containerRef } = useOSMD({
 		onRenderComplete,
 		onError,
@@ -122,7 +122,7 @@ function SheetMusicDisplayInternal({
 			</CardContent>
 		</Card>
 	);
-}
+};
 
 /**
  * Sheet Music Display Component
@@ -139,7 +139,7 @@ function SheetMusicDisplayInternal({
  * />
  * ```
  */
-export function SheetMusicDisplay(props: SheetMusicDisplayProps) {
+const SheetMusicDisplay = (props: SheetMusicDisplayProps) => {
 	return (
 		<ComponentErrorBoundary
 			fallback={<SheetMusicFallback />}
@@ -151,4 +151,6 @@ export function SheetMusicDisplay(props: SheetMusicDisplayProps) {
 			<SheetMusicDisplayInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-}
+};
+
+export default SheetMusicDisplay;

@@ -9,12 +9,12 @@ import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
-import { FriendsPanel } from "@/features/friends/components/FriendsPanel";
 import { useAuthStore } from "@/stores/auth.store";
 
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/pages/LoginPage";
+import FriendsPanel from "./features/friends/components/FriendsPanel";
 
 // Pages - Lazy loaded for code splitting
 const AboutPage = lazy(() =>

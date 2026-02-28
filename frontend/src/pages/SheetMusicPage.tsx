@@ -3,9 +3,9 @@ import { Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { SheetMusicDisplay } from "@/features/sheet-music/components";
 import { musicService } from "@/services/api";
 import { getErrorMessage } from "@/shared/utils/error.utils";
+import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
 
 // Scale options with their corresponding tonic values
 const scales = [
