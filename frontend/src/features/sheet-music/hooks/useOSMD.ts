@@ -36,9 +36,10 @@ export interface UseOSMDReturn {
 	 */
 	error: Error | null;
 	/**
-	 * Reference to the OSMD instance (for advanced usage)
+	 * Ref to the OSMD instance (for advanced usage).
+	 * Access `.current` only in event handlers or effects, not during render.
 	 */
-	osmdInstance: OpenSheetMusicDisplay | null;
+	osmdInstanceRef: React.RefObject<OpenSheetMusicDisplay | null>;
 	/**
 	 * Ref to attach to the container element (if not using containerId)
 	 */
@@ -194,7 +195,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 		clear,
 		isLoading,
 		error,
-		osmdInstance: osmdInstanceRef.current,
+		osmdInstanceRef,
 		containerRef,
 	};
 }

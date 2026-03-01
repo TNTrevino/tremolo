@@ -50,9 +50,14 @@ export function useNoteGameDisplay(
 			darkMode,
 			padding,
 		});
-		setIsReady(true);
+
+		let cancelled = false;
+		queueMicrotask(() => {
+			if (!cancelled) setIsReady(true);
+		});
 
 		return () => {
+			cancelled = true;
 			instanceRef.current?.destroy();
 			instanceRef.current = null;
 			setIsReady(false);

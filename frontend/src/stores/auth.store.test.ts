@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type * as ApiModule from "@/services/api";
 import { useAuthStore } from "./auth.store";
 
 // Mock the auth service
 vi.mock("@/services/api", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("@/services/api")>();
+	const actual = await importOriginal<typeof ApiModule>();
 	return {
 		...actual,
 		authService: {
