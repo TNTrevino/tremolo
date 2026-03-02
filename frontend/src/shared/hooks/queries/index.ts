@@ -8,13 +8,25 @@ export {
 } from "./useAuthQuery";
 
 // User queries
-export { useGeneralUserInfo, useUserStats, userKeys } from "./useUserQuery";
+export {
+	useUserProfile,
+	useUserStats,
+	useSaveGameResult,
+	userKeys,
+} from "./useUserQuery";
 
 // Music queries
 export {
 	useGenerateMary,
-	useGenerateRhythm,
+	useGenerateRandom,
 	useGenerateNoteGame,
-	useRenderSheetMusic,
 	musicKeys,
 } from "./useMusicQuery";
+
+// Friends queries
+export {
+	useFriends,
+	useSearchUsers,
+	useAddFriend,
+	friendsKeys,
+} from "./useFriendsQuery";

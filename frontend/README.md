@@ -20,6 +20,7 @@ A modern, responsive music education platform designed for students in grades 6-
 - **React Router** for navigation
 - **Recharts** for data visualization
 - **Lucide React** for icons
+- Tanstack Query for data fetching and caching
 
 ## Getting Started
 
@@ -165,22 +166,10 @@ fontFamily: {
 - Social features and leaderboards
 - Mobile apps (iOS/Android)
 
-## Contributing
+## Handling Data
 
-This is a demonstration project. For production use, additional features would need to be implemented:
+WRITTEN BY A HUMAN
 
-- Backend API integration
-- Real authentication and authorization
-- Database integration
-- Sheet music rendering library integration
-- Payment processing (if applicable)
-- Email verification system
-- Advanced analytics
+Services are for HOW to interact with the backend API. They use Tanstack Query for data fetching and caching, which is WHEN to interact with the services.
 
-## License
-
-This project is for educational/demonstration purposes.
-
-## Contact
-
-For questions or feedback about Tremolo, please contact the development team.
+How vs When

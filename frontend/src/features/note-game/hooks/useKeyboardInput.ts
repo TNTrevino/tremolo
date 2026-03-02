@@ -59,7 +59,7 @@ interface UseKeyboardInputOptions {
  * ```tsx
  * useKeyboardInput({
  *   onNoteInput: (note) => handleAnswer(note),
- *   enabled: gameState === 'playing'
+ *   enabled: gameState === GameState.Playing
  * });
  * ```
  *

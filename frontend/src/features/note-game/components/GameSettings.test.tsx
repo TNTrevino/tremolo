@@ -2,10 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { GameSettings as GameSettingsType } from "../types";
+import { GameMode } from "../types";
 import GameSettings from "./GameSettings";
 
 const defaultSettings: GameSettingsType = {
-	gameMode: "time",
+	gameMode: GameMode.Time,
 	timeLimit: 30,
 	noteLimit: 25,
 	scale: "C Major",
@@ -89,7 +90,7 @@ describe("GameSettings", () => {
 		it("shows time limit selector in time mode", () => {
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "time" }}
+					settings={{ ...defaultSettings, gameMode: GameMode.Time }}
 					onSettingsChange={vi.fn()}
 					onStartGame={vi.fn()}
 				/>,
@@ -101,7 +102,7 @@ describe("GameSettings", () => {
 		it("shows note limit selector in notes mode", () => {
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "notes" }}
+					settings={{ ...defaultSettings, gameMode: GameMode.Notes }}
 					onSettingsChange={vi.fn()}
 					onStartGame={vi.fn()}
 				/>,
@@ -116,7 +117,7 @@ describe("GameSettings", () => {
 
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "notes" }}
+					settings={{ ...defaultSettings, gameMode: GameMode.Notes }}
 					onSettingsChange={handleChange}
 					onStartGame={vi.fn()}
 				/>,
@@ -124,7 +125,7 @@ describe("GameSettings", () => {
 
 			await user.click(screen.getByRole("button", { name: "Time Mode" }));
 
-			expect(handleChange).toHaveBeenCalledWith({ gameMode: "time" });
+			expect(handleChange).toHaveBeenCalledWith({ gameMode: GameMode.Time });
 		});
 
 		it("calls onSettingsChange when Notes Mode is clicked", async () => {
@@ -133,7 +134,7 @@ describe("GameSettings", () => {
 
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "time" }}
+					settings={{ ...defaultSettings, gameMode: GameMode.Time }}
 					onSettingsChange={handleChange}
 					onStartGame={vi.fn()}
 				/>,
@@ -141,7 +142,7 @@ describe("GameSettings", () => {
 
 			await user.click(screen.getByRole("button", { name: "Notes Mode" }));
 
-			expect(handleChange).toHaveBeenCalledWith({ gameMode: "notes" });
+			expect(handleChange).toHaveBeenCalledWith({ gameMode: GameMode.Notes });
 		});
 	});
 
@@ -181,7 +182,11 @@ describe("GameSettings", () => {
 		it("displays current note limit value", () => {
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "notes", noteLimit: 50 }}
+					settings={{
+						...defaultSettings,
+						gameMode: GameMode.Notes,
+						noteLimit: 50,
+					}}
 					onSettingsChange={vi.fn()}
 					onStartGame={vi.fn()}
 				/>,
@@ -197,7 +202,7 @@ describe("GameSettings", () => {
 
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, gameMode: "notes" }}
+					settings={{ ...defaultSettings, gameMode: GameMode.Notes }}
 					onSettingsChange={handleChange}
 					onStartGame={vi.fn()}
 				/>,

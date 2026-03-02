@@ -3,11 +3,10 @@ import { Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { musicService } from "@/services/api";
+import { useGenerateMary, useGenerateRandom } from "@/shared/hooks/queries";
 import { getErrorMessage } from "@/shared/utils/error.utils";
 import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
 
-// Scale options with their corresponding tonic values
 const scales = [
 	{ label: "C Major", tonic: "C" },
 	{ label: "F Major", tonic: "F" },
@@ -40,61 +39,46 @@ const eighthRhythms = [
 ];
 
 export function SheetMusicPage() {
-	const [scaleIndex, setScaleIndex] = useState(0); // Index into scales array
+	const [scaleIndex, setScaleIndex] = useState(0);
 	const [octave, setOctave] = useState(4);
 	const [selectedRhythm, setSelectedRhythm] = useState<string | null>(null);
 	const [rhythmType, setRhythmType] = useState<8 | 16 | null>(null);
 	const [musicXml, setMusicXml] = useState<string>("");
-	const [isGenerating, setIsGenerating] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	const generateMary = useGenerateMary();
+	const generateRandom = useGenerateRandom();
+
+	const isGenerating = generateMary.isPending || generateRandom.isPending;
+	const error = generateMary.error || generateRandom.error;
 
 	const currentScale = scales[scaleIndex];
 
 	const handleGenerateMary = () => {
 		if (!currentScale) return;
-		setIsGenerating(true);
-		setError(null);
-
-		musicService
-			.generateMary({
-				tonic: currentScale.tonic,
-				octave: octave,
-			})
-			.then((xml) => {
-				setMusicXml(xml);
-				setSelectedRhythm(null);
-				setRhythmType(null);
-			})
-			.catch((err) => {
-				setError(getErrorMessage(err));
-			})
-			.finally(() => {
-				setIsGenerating(false);
-			});
+		generateMary.mutate(
+			{ tonic: currentScale.tonic, octave },
+			{
+				onSuccess: (xml) => {
+					setMusicXml(xml);
+					setSelectedRhythm(null);
+					setRhythmType(null);
+				},
+			},
+		);
 	};
 
 	const handleGenerateRhythm = (rhythm: string, type: 8 | 16) => {
 		if (!currentScale) return;
-		setIsGenerating(true);
-		setError(null);
 		setSelectedRhythm(rhythm);
 		setRhythmType(type);
-
-		musicService
-			.generateRandom({
-				rhythm: rhythm,
-				rhythmType: type,
-				tonic: currentScale.tonic,
-			})
-			.then((xml) => {
-				setMusicXml(xml);
-			})
-			.catch((err) => {
-				setError(getErrorMessage(err));
-			})
-			.finally(() => {
-				setIsGenerating(false);
-			});
+		generateRandom.mutate(
+			{ rhythm, rhythmType: type, tonic: currentScale.tonic },
+			{
+				onSuccess: (xml) => {
+					setMusicXml(xml);
+				},
+			},
+		);
 	};
 
 	return (
@@ -111,7 +95,7 @@ export function SheetMusicPage() {
 				{musicXml ? (
 					<SheetMusicDisplay
 						musicXml={musicXml}
-						onError={(err) => setError(err.message)}
+						onError={(err) => console.error(err.message)}
 					/>
 				) : (
 					<Card className="p-12 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
@@ -119,7 +103,7 @@ export function SheetMusicPage() {
 							{error ? (
 								<div className="space-y-4">
 									<div className="text-destructive font-semibold">
-										Error: {error}
+										Error: {getErrorMessage(error)}
 									</div>
 									<p className="text-sm text-muted-foreground">
 										Please try again with different options

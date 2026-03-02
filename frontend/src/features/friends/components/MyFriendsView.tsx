@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { X, Search, Loader2, UserPlus } from "lucide-react";
 import { useFriendsStore } from "@/stores/friends.store";
+import { useFriends } from "@/shared/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import FriendCard from "./FriendCard";
@@ -13,19 +14,20 @@ interface MyFriendsViewProps {
 export function MyFriendsView({ onAddFriend, onClose }: MyFriendsViewProps) {
 	const searchQuery = useFriendsStore((state) => state.searchQuery);
 	const setSearchQuery = useFriendsStore((state) => state.setSearchQuery);
-	const filteredFriends = useFriendsStore((state) => state.filteredFriends);
-	const allFriends = useFriendsStore((state) => state.friends);
-	const fetchFriends = useFriendsStore((state) => state.fetchFriends);
-	const isLoading = useFriendsStore((state) => state.isLoading);
-	const error = useFriendsStore((state) => state.error);
 
-	useEffect(() => {
-		if (allFriends.length === 0 && !isLoading) {
-			fetchFriends();
-		}
-	}, [allFriends.length, isLoading, fetchFriends]);
+	const { data: friends = [], isLoading, isError, error } = useFriends();
 
-	const friends = filteredFriends();
+	const filteredFriends = useMemo(() => {
+		if (!searchQuery.trim()) return friends;
+		const q = searchQuery.toLowerCase();
+		return friends.filter(
+			(f) =>
+				f.firstName.toLowerCase().includes(q) ||
+				f.lastName.toLowerCase().includes(q) ||
+				f.instrument.toLowerCase().includes(q) ||
+				f.school.toLowerCase().includes(q),
+		);
+	}, [friends, searchQuery]);
 
 	return (
 		<>
@@ -33,7 +35,7 @@ export function MyFriendsView({ onAddFriend, onClose }: MyFriendsViewProps) {
 				<div className="flex items-center gap-2">
 					<h2 className="text-lg font-bold">Friends</h2>
 					<span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-						{allFriends.length}
+						{friends.length}
 					</span>
 					<Button
 						variant="ghost"
@@ -71,12 +73,16 @@ export function MyFriendsView({ onAddFriend, onClose }: MyFriendsViewProps) {
 					<div className="flex items-center justify-center h-32">
 						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 					</div>
-				) : error ? (
+				) : isError ? (
 					<div className="flex items-center justify-center h-32">
-						<p className="text-sm text-destructive">{error}</p>
+						<p className="text-sm text-destructive">
+							{error?.message ?? "Failed to load friends"}
+						</p>
 					</div>
-				) : friends.length > 0 ? (
-					friends.map((friend) => <FriendCard key={friend.id} user={friend} />)
+				) : filteredFriends.length > 0 ? (
+					filteredFriends.map((friend) => (
+						<FriendCard key={friend.id} user={friend} />
+					))
 				) : (
 					<div className="flex flex-col items-center justify-center h-32 gap-1">
 						<p className="text-sm font-medium text-muted-foreground">

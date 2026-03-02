@@ -14,11 +14,9 @@ export type {
 } from "./components";
 
 // Types
+export { GameMode, GameState, SCALES, NOTES, ACCIDENTALS } from "./types";
 export type {
-	GameMode,
-	GameState,
 	NoteAnswer,
 	GameStats,
 	GameSettings as GameSettingsType,
 } from "./types";
-export { SCALES, NOTES, ACCIDENTALS } from "./types";

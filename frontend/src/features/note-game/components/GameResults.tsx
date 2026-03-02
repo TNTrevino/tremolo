@@ -13,6 +13,7 @@ import {
 	ResponsiveContainer,
 } from "recharts";
 import type { GameStats } from "../types";
+import { GameMode } from "../types";
 
 export interface GameResultsProps {
 	gameStats: GameStats;
@@ -94,11 +95,13 @@ const GameResults = ({
 			{/* Settings Summary */}
 			<Card className="p-4">
 				<div className="flex flex-wrap gap-4 justify-center text-sm text-muted-foreground">
-					<span>Mode: {gameStats.gameMode === "time" ? "Time" : "Notes"}</span>
+					<span>
+						Mode: {gameStats.gameMode === GameMode.Time ? "Time" : "Notes"}
+					</span>
 					<span>•</span>
 					<span>
 						Limit: {gameStats.limit}{" "}
-						{gameStats.gameMode === "time" ? "seconds" : "notes"}
+						{gameStats.gameMode === GameMode.Time ? "seconds" : "notes"}
 					</span>
 					<span>•</span>
 					<span>Scale: {gameStats.scale}</span>

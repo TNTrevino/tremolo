@@ -1,9 +1,15 @@
 import { useState, useCallback } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
+import { useSaveGameResult } from "@/shared/hooks/queries";
 import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
-import { useNoteGame, useGameTimer } from "@/features/note-game";
+import {
+	useNoteGame,
+	useGameTimer,
+	GameState,
+	GameMode,
+} from "@/features/note-game";
 import GameBoard from "@/features/note-game/components/GameBoard";
 import GameResults from "@/features/note-game/components/GameResults";
 import GameSettings from "@/features/note-game/components/GameSettings";
@@ -19,42 +25,42 @@ export function NoteGamePage() {
 	const { isAuthenticated, user } = useAuthStore();
 	const { showSuccess, showError } = useToast();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
+	const saveResult = useSaveGameResult();
 
-	// Handle game end - save stats for authenticated users
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {
-			// Always update local past games for the chart
 			setPastGames((prev) => [...prev.slice(-9), stats]);
 
-			// Save to backend if user is authenticated
 			if (isAuthenticated && user) {
 				const timeInSeconds =
-					stats.gameMode === "time"
+					stats.gameMode === GameMode.Time
 						? stats.limit
 						: Math.round((stats.total / stats.npm) * 60);
 
-				userService
-					.saveGameResult({
+				saveResult.mutate(
+					{
 						time_length: userService.formatTimeLength(timeInSeconds),
 						total_questions: stats.total,
 						correct_questions: stats.correct,
 						user_id: user.id,
 						notes_per_minute: stats.npm,
-					})
-					.then(() => {
-						showSuccess("Game results saved successfully!");
-					})
-					.catch(() => {
-						showError(
-							"Failed to save game results. Your score was not recorded.",
-						);
-					});
+					},
+					{
+						onSuccess: () => {
+							showSuccess("Game results saved successfully!");
+						},
+						onError: () => {
+							showError(
+								"Failed to save game results. Your score was not recorded.",
+							);
+						},
+					},
+				);
 			}
 		},
-		[isAuthenticated, user, showSuccess, showError],
+		[isAuthenticated, user, showSuccess, showError, saveResult],
 	);
 
-	// Game logic hook
 	const {
 		gameState,
 		currentNote,
@@ -69,15 +75,13 @@ export function NoteGamePage() {
 		syncCurrentNote,
 	} = useNoteGame({ onGameEnd: handleGameEnd });
 
-	// Timer hook (for time mode)
 	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
 		endGame();
 	});
 
-	// Start game and timer
 	const startGame = () => {
 		handleStartGame();
-		if (settings.gameMode === "time") {
+		if (settings.gameMode === GameMode.Time) {
 			startTimer(settings.timeLimit);
 		}
 	};
@@ -85,7 +89,7 @@ export function NoteGamePage() {
 	return (
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl">
-				{gameState === "settings" && (
+				{gameState === GameState.Settings && (
 					<GameSettings
 						settings={settings}
 						onSettingsChange={updateSettings}
@@ -93,7 +97,7 @@ export function NoteGamePage() {
 					/>
 				)}
 
-				{gameState === "playing" && (
+				{gameState === GameState.Playing && (
 					<GameBoard
 						currentNote={currentNote}
 						answers={answers}
@@ -108,7 +112,7 @@ export function NoteGamePage() {
 					/>
 				)}
 
-				{gameState === "gameover" && gameStats && (
+				{gameState === GameState.GameOver && gameStats && (
 					<GameResults
 						gameStats={gameStats}
 						pastGames={pastGames}

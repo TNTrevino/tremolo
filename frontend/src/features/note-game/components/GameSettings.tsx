@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import type { GameSettings as GameSettingsType } from "../types";
-import { SCALES } from "../types";
+import { GameMode, SCALES } from "../types";
 
 export interface GameSettingsProps {
 	settings: GameSettingsType;
@@ -43,15 +43,19 @@ const GameSettings = ({
 							id="game-mode"
 						>
 							<Button
-								variant={settings.gameMode === "time" ? "default" : "outline"}
-								onClick={() => onSettingsChange({ gameMode: "time" })}
+								variant={
+									settings.gameMode === GameMode.Time ? "default" : "outline"
+								}
+								onClick={() => onSettingsChange({ gameMode: GameMode.Time })}
 								className="flex-1"
 							>
 								Time Mode
 							</Button>
 							<Button
-								variant={settings.gameMode === "notes" ? "default" : "outline"}
-								onClick={() => onSettingsChange({ gameMode: "notes" })}
+								variant={
+									settings.gameMode === GameMode.Notes ? "default" : "outline"
+								}
+								onClick={() => onSettingsChange({ gameMode: GameMode.Notes })}
 								className="flex-1"
 							>
 								Notes Mode
@@ -62,9 +66,11 @@ const GameSettings = ({
 					{/* Limit Selector */}
 					<div className="space-y-2">
 						<label htmlFor="limit-selector" className="text-sm font-medium">
-							{settings.gameMode === "time" ? "Time Limit" : "Note Limit"}
+							{settings.gameMode === GameMode.Time
+								? "Time Limit"
+								: "Note Limit"}
 						</label>
-						{settings.gameMode === "time" ? (
+						{settings.gameMode === GameMode.Time ? (
 							<Select
 								id="limit-selector"
 								value={settings.timeLimit.toString()}

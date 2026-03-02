@@ -1,87 +1,74 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
+import { userService } from "@/services/api";
+import type {
+	GeneralUserInfo,
+	MultiMetricChartData,
+	ChartQueryParams,
+	CreateNoteGameEntryRequest,
+	CreateNoteGameEntryResponse,
+} from "@/services/api/types";
 
-// Types (will be replaced with actual API service types later)
-interface GeneralUserInfo {
-	userId: string;
-	email: string;
-	firstName: string;
-	lastName: string;
-	joinDate: string;
-	totalGamesPlayed: number;
-	averageAccuracy: number;
-}
-
-interface UserStats {
-	totalGamesPlayed: number;
-	averageAccuracy: number;
-	bestStreak: number;
-	recentActivity: Array<{
-		date: string;
-		gamesPlayed: number;
-		accuracy: number;
-	}>;
-}
-
-// Query Keys
 export const userKeys = {
 	all: ["user"] as const,
-	generalInfo: (userId: string) =>
-		[...userKeys.all, "general-info", userId] as const,
-	stats: (userId: string) => [...userKeys.all, "stats", userId] as const,
+	profile: (userId: number) => [...userKeys.all, "profile", userId] as const,
+	stats: (userId: number, params?: ChartQueryParams) =>
+		[...userKeys.all, "stats", userId, params] as const,
+	recentGames: () => [...userKeys.all, "recent-games"] as const,
 };
 
 /**
- * Hook to fetch general user information
- * Includes join date and overall statistics
+ * Fetch the general profile info for a user.
  */
-export function useGeneralUserInfo(userId?: string) {
-	const token = useAuthStore((state) => state.token);
-	const currentUser = useAuthStore((state) => state.user);
-	const targetUserId = userId || currentUser?.id?.toString();
+export function useUserProfile(userId?: number) {
+	const authUser = useAuthStore((state) => state.user);
+	const targetId = userId ?? authUser?.id;
 
-	return useQuery({
-		queryKey: [...userKeys.generalInfo(targetUserId || "unknown"), token],
-		queryFn: async (): Promise<GeneralUserInfo> => {
-			if (!token || !targetUserId) {
-				throw new Error("Authentication required");
-			}
-
-			// TODO: Replace with actual API call
-			// const response = await userApi.getGeneralInfo(targetUserId);
-			// return response.data;
-
-			// Placeholder for now
-			throw new Error("API service not yet implemented");
-		},
-		enabled: !!token && !!targetUserId,
+	return useQuery<GeneralUserInfo>({
+		queryKey: userKeys.profile(targetId!),
+		queryFn: () => userService.getProfile(targetId!),
+		enabled: !!targetId,
+		staleTime: 5 * 60 * 1000,
 	});
 }
 
 /**
- * Hook to fetch detailed user statistics
- * Includes performance metrics and recent activity
+ * Fetch performance chart data for a user.
  */
-export function useUserStats(userId?: string) {
-	const token = useAuthStore((state) => state.token);
-	const currentUser = useAuthStore((state) => state.user);
-	const targetUserId = userId || currentUser?.id?.toString();
+export function useUserStats(userId?: number, params?: ChartQueryParams) {
+	const authUser = useAuthStore((state) => state.user);
+	const targetId = userId ?? authUser?.id;
 
-	return useQuery({
-		queryKey: [...userKeys.stats(targetUserId || "unknown"), token],
-		queryFn: async (): Promise<UserStats> => {
-			if (!token || !targetUserId) {
-				throw new Error("Authentication required");
-			}
+	return useQuery<MultiMetricChartData>({
+		queryKey: userKeys.stats(targetId!, params),
+		queryFn: () => userService.getStats(targetId!, params),
+		enabled: !!targetId,
+		staleTime: 2 * 60 * 1000,
+	});
+}
 
-			// TODO: Replace with actual API call
-			// const response = await userApi.getStats(targetUserId);
-			// return response.data;
+/**
+ * Mutation to save a completed note-game result to the backend.
+ * Automatically invalidates recent-games and user stats caches on success.
+ */
+export function useSaveGameResult() {
+	const queryClient = useQueryClient();
 
-			// Placeholder for now
-			throw new Error("API service not yet implemented");
+	return useMutation<
+		CreateNoteGameEntryResponse,
+		Error,
+		CreateNoteGameEntryRequest
+	>({
+		mutationFn: (entry) => userService.saveGameResult(entry),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: userKeys.recentGames() });
+			queryClient.invalidateQueries({
+				queryKey: userKeys.all,
+				predicate: (query) => query.queryKey[1] === "stats",
+			});
+			queryClient.invalidateQueries({
+				queryKey: [...userKeys.all, "profile"],
+			});
 		},
-		enabled: !!token && !!targetUserId,
-		staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change as frequently
 	});
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import type { GameState, NoteAnswer, GameStats, GameSettings } from "../types";
-import { NOTES, ACCIDENTALS } from "../types";
+import type { NoteAnswer, GameStats, GameSettings } from "../types";
+import { GameState, GameMode, NOTES, ACCIDENTALS } from "../types";
 import { useNoteAudio } from "./useNoteAudio";
 import { useKeyboardInput } from "./useKeyboardInput";
 
@@ -47,7 +47,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 
 	// Game settings
 	const [settings, setSettings] = useState<GameSettings>({
-		gameMode: "time",
+		gameMode: GameMode.Time,
 		timeLimit: 30,
 		noteLimit: 25,
 		scale: "C Major",
@@ -56,7 +56,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	});
 
 	// Game state
-	const [gameState, setGameState] = useState<GameState>("settings");
+	const [gameState, setGameState] = useState<GameState>(GameState.Settings);
 	const [currentNote, setCurrentNote] = useState("C");
 	const [answers, setAnswers] = useState<NoteAnswer[]>([]);
 	const [gameStartTime, setGameStartTime] = useState(0);
@@ -84,7 +84,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	 * Start a new game
 	 */
 	const startGame = useCallback(() => {
-		setGameState("playing");
+		setGameState(GameState.Playing);
 		setAnswers([]);
 		setGameStartTime(Date.now());
 		setGameStats(null);
@@ -110,7 +110,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 				total,
 				gameMode: settings.gameMode,
 				limit:
-					settings.gameMode === "time"
+					settings.gameMode === GameMode.Time
 						? settings.timeLimit
 						: settings.noteLimit,
 				scale: settings.scale,
@@ -118,7 +118,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			};
 
 			setGameStats(stats);
-			setGameState("gameover");
+			setGameState(GameState.GameOver);
 
 			// Notify parent component of game end
 			onGameEnd?.(stats);
@@ -152,7 +152,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			// No need to generate a new note here — the GameBoard will
 			// fetch the next note from the backend when answers.length changes.
 			if (
-				settings.gameMode === "notes" &&
+				settings.gameMode === GameMode.Notes &&
 				newAnswers.length >= settings.noteLimit
 			) {
 				endGame(newAnswers);
@@ -182,7 +182,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	 * Reset game to settings screen
 	 */
 	const resetGame = useCallback(() => {
-		setGameState("settings");
+		setGameState(GameState.Settings);
 		setGameStats(null);
 		setAnswers([]);
 	}, []);
@@ -190,7 +190,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	// Set up keyboard input - only enabled when game is playing
 	useKeyboardInput({
 		onNoteInput: handleAnswer,
-		enabled: gameState === "playing",
+		enabled: gameState === GameState.Playing,
 	});
 
 	return {
