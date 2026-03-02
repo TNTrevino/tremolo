@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import { useSaveGameResult } from "@/shared/hooks/queries";
-import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
 import {
 	useNoteGame,
@@ -10,6 +9,7 @@ import {
 	GameState,
 	GameMode,
 } from "@/features/note-game";
+import { formatTimeLength } from "@/features/note-game/utils";
 import { GameBoard } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
 import { GameSettings } from "@/features/note-game/components/GameSettings";
@@ -37,7 +37,7 @@ export function NoteGamePage() {
 
 				saveResult.mutate(
 					{
-						time_length: userService.formatTimeLength(timeInSeconds),
+						time_length: formatTimeLength(timeInSeconds),
 						total_questions: stats.total,
 						correct_questions: stats.correct,
 						user_id: user.id,
