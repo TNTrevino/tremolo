@@ -66,6 +66,9 @@ export function useSaveGameResult() {
 				queryKey: userKeys.all,
 				predicate: (query) => query.queryKey[1] === "stats",
 			});
+			queryClient.invalidateQueries({
+				queryKey: [...userKeys.all, "profile"],
+			});
 		},
 	});
 }
