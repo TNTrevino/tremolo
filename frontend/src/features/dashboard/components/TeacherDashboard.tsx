@@ -13,10 +13,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/shared/components/ui/card";
-import type { GeneralUserInfo } from "@/services/api/types";
+import type { UserProfile } from "@/services/api/types";
 
 interface TeacherDashboardProps {
-	user: GeneralUserInfo;
+	user: UserProfile;
 	studentCount?: number;
 }
 
@@ -34,7 +34,7 @@ export function TeacherDashboard({
 					<div>
 						<p className="text-sm text-muted-foreground mb-1">Name</p>
 						<p className="font-medium">
-							{user.first_name} {user.last_name}
+							{user.firstName} {user.lastName}
 						</p>
 					</div>
 					<div>

@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
 import { userService } from "@/services/api";
+import { mapGeneralUserInfo } from "@/services/api/mappers/user.mapper";
 import type {
-	GeneralUserInfo,
+	UserProfile,
 	MultiMetricChartData,
 	ChartQueryParams,
-	CreateNoteGameEntryRequest,
+	SaveGameResultParams,
 	CreateNoteGameEntryResponse,
 } from "@/services/api/types";
 
@@ -26,9 +27,12 @@ export function useUserProfile(userId?: number) {
 	const authUser = useAuthStore((state) => state.user);
 	const targetId = userId ?? authUser?.id;
 
-	return useQuery<GeneralUserInfo>({
+	return useQuery<UserProfile>({
 		queryKey: userKeys.profile(targetId!),
-		queryFn: () => userService.getProfile(targetId!),
+		queryFn: async () => {
+			const raw = await userService.getProfile(targetId!);
+			return mapGeneralUserInfo(raw);
+		},
 		enabled: !!targetId,
 		staleTime: 5 * 60 * 1000,
 	});
@@ -71,11 +75,7 @@ export function useClassMetrics(params?: ChartQueryParams) {
 export function useSaveGameResult() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		CreateNoteGameEntryResponse,
-		Error,
-		CreateNoteGameEntryRequest
-	>({
+	return useMutation<CreateNoteGameEntryResponse, Error, SaveGameResultParams>({
 		mutationFn: (entry) => userService.saveGameResult(entry),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: userKeys.recentGames() });

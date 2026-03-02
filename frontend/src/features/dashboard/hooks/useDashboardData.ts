@@ -15,7 +15,7 @@ import {
 	useClassMetrics,
 } from "@/shared/hooks/queries/useUserQuery";
 import type {
-	GeneralUserInfo,
+	UserProfile,
 	MultiMetricChartData,
 	ChartInterval,
 } from "@/services/api/types";
@@ -33,7 +33,7 @@ interface DashboardStats {
 }
 
 interface DashboardData {
-	user: GeneralUserInfo | null;
+	user: UserProfile | null;
 	stats: DashboardStats | null;
 	chartData: MultiMetricChartData | null;
 	classMetrics: MultiMetricChartData | null;
@@ -76,10 +76,10 @@ export function useDashboardData(params?: DashboardDataParams): DashboardData {
 		if (!userProfile) return null;
 
 		return {
-			totalSessions: userProfile.total_sessions ?? 0,
-			totalQuestions: userProfile.total_questions ?? 0,
-			avgNPM: userProfile.average_npm ?? 0,
-			avgAccuracy: userProfile.average_accuracy ?? 0,
+			totalSessions: userProfile.totalSessions ?? 0,
+			totalQuestions: userProfile.totalQuestions ?? 0,
+			avgNPM: userProfile.averageNPM ?? 0,
+			avgAccuracy: userProfile.averageAccuracy ?? 0,
 		};
 	}, [userProfile]);
 

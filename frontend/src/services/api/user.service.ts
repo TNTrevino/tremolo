@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import type {
 	GeneralUserInfo,
+	SaveGameResultParams,
 	CreateNoteGameEntryRequest,
 	CreateNoteGameEntryResponse,
 	NoteGameEntry,
@@ -51,11 +52,18 @@ export class UserService {
 	}
 
 	async saveGameResult(
-		entry: CreateNoteGameEntryRequest,
+		params: SaveGameResultParams,
 	): Promise<CreateNoteGameEntryResponse> {
+		const request: CreateNoteGameEntryRequest = {
+			time_length: params.timeLength,
+			total_questions: params.totalQuestions,
+			correct_questions: params.correctQuestions,
+			user_id: params.userId,
+			notes_per_minute: params.notesPerMinute,
+		};
 		const response = await this.client.post<CreateNoteGameEntryResponse>(
 			"/api/note-game/entry",
-			entry,
+			request,
 		);
 		return response.data;
 	}

@@ -52,6 +52,7 @@ export type {
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
 	GeneralUserInfo,
+	UserProfile,
 	ChartDataPoint,
 	MultiMetricChartData,
 	ChartInterval,

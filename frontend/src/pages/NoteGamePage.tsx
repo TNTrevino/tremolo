@@ -37,11 +37,11 @@ export function NoteGamePage() {
 
 				saveResult.mutate(
 					{
-						time_length: formatTimeLength(timeInSeconds),
-						total_questions: stats.total,
-						correct_questions: stats.correct,
-						user_id: user.id,
-						notes_per_minute: stats.npm,
+						timeLength: formatTimeLength(timeInSeconds),
+						totalQuestions: stats.total,
+						correctQuestions: stats.correct,
+						userId: user.id,
+						notesPerMinute: stats.npm,
 					},
 					{
 						onSuccess: () => {

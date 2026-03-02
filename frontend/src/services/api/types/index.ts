@@ -19,11 +19,12 @@ export type {
 
 export type {
 	CreateNoteGameEntryRequest,
+	SaveGameResultParams,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
 } from "./game.types";
 
-export type { GeneralUserInfo } from "./user.types";
+export type { GeneralUserInfo, UserProfile } from "./user.types";
 
 export type {
 	ChartDataPoint,

@@ -23,6 +23,14 @@ export interface NoteGameEntry {
 	created_date: string;
 }
 
+export interface SaveGameResultParams {
+	timeLength: string; // Format: "HH:MM:SS"
+	totalQuestions: number;
+	correctQuestions: number;
+	userId: number;
+	notesPerMinute: number;
+}
+
 export interface CreateNoteGameEntryResponse {
 	message: string;
 	id: number;
