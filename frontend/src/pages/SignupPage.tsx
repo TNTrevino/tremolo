@@ -25,8 +25,6 @@ import type { PasswordRequirement, LoginLocationState } from "@/shared/types";
 import type { ApiError } from "@/services/api/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
 
-export interface SignupPageProps {}
-
 export function SignupPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -79,26 +77,29 @@ export function SignupPage() {
 	const passwordStrength = getPasswordStrength();
 
 	const onSubmit = (data: SignupFormData) => {
-		registerMutation
-			.mutateAsync({
+		registerMutation.mutate(
+			{
 				email: data.email,
 				password: data.password,
 				first_name: data.firstName,
 				last_name: data.lastName,
 				role: data.role,
-			})
-			.then(() => {
-				const navState: LoginLocationState = {
-					successMessage: "Account created! Please log in.",
-				};
-				navigate("/login", { state: navState });
-			})
-			.catch((err) => {
-				const apiError = err as ApiError;
-				setError("root", {
-					message: apiError.message || getErrorMessage(err),
-				});
-			});
+			},
+			{
+				onSuccess: () => {
+					const navState: LoginLocationState = {
+						successMessage: "Account created! Please log in.",
+					};
+					navigate("/login", { state: navState });
+				},
+				onError: (err) => {
+					const apiError = err as unknown as ApiError;
+					setError("root", {
+						message: apiError.message || getErrorMessage(err),
+					});
+				},
+			},
+		);
 	};
 
 	return (

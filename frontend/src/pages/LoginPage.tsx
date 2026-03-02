@@ -23,8 +23,6 @@ import type { LoginLocationState } from "@/shared/types";
 import type { ApiError } from "@/services/api/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
 
-export interface LoginPageProps {}
-
 export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const navigate = useNavigate();
@@ -44,18 +42,18 @@ export function LoginPage() {
 	});
 
 	const onSubmit = (data: LoginFormData) => {
-		loginMutation
-			.mutateAsync(data)
-			.then(() => {
+		loginMutation.mutate(data, {
+			onSuccess: () => {
 				const from = locationState?.from?.pathname ?? "/dashboard";
 				navigate(from, { replace: true });
-			})
-			.catch((err) => {
-				const apiError = err as ApiError;
+			},
+			onError: (err) => {
+				const apiError = err as unknown as ApiError;
 				setError("root", {
 					message: apiError.message || getErrorMessage(err),
 				});
-			});
+			},
+		});
 	};
 
 	return (
