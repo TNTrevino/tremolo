@@ -8,9 +8,12 @@
  */
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
-import { userService } from "@/services/api";
+import {
+	useUserProfile,
+	useUserStats,
+	useClassMetrics,
+} from "@/shared/hooks/queries/useUserQuery";
 import type {
 	GeneralUserInfo,
 	MultiMetricChartData,
@@ -46,50 +49,29 @@ interface DashboardData {
  * @returns Dashboard data with loading and error states
  */
 export function useDashboardData(params?: DashboardDataParams): DashboardData {
-	const authUser = useAuthStore((state) => state.user);
-	const userId = authUser?.id;
-	const isTeacher = authUser?.role === "TEACHER";
+	const isTeacher = useAuthStore((state) => state.user?.role) === "TEACHER";
 
-	// Fetch user profile with general info
 	const {
 		data: userProfile,
 		isLoading: isLoadingProfile,
 		isError: isProfileError,
 		error: profileError,
-	} = useQuery({
-		queryKey: ["user", "profile", userId],
-		queryFn: () => userService.getProfile(userId!),
-		enabled: !!userId,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-	});
+	} = useUserProfile();
 
-	// Fetch user performance stats and chart data
 	const {
 		data: chartData,
 		isLoading: isLoadingStats,
 		isError: isStatsError,
 		error: statsError,
-	} = useQuery({
-		queryKey: ["user", "stats", userId, params],
-		queryFn: () => userService.getStats(userId!, params),
-		enabled: !!userId,
-		staleTime: 2 * 60 * 1000, // 2 minutes - stats change more frequently
-	});
+	} = useUserStats(undefined, params);
 
-	// Fetch teacher's class metrics (only for teachers)
 	const {
-		data: classMetrics,
+		data: classMetricsData,
 		isLoading: isLoadingClass,
 		isError: isClassError,
 		error: classError,
-	} = useQuery({
-		queryKey: ["teacher", "class-metrics", params],
-		queryFn: () => userService.getClassMetrics(params),
-		enabled: !!userId && isTeacher,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-	});
+	} = useClassMetrics(params);
 
-	// Derive stats from user profile
 	const stats = useMemo<DashboardStats | null>(() => {
 		if (!userProfile) return null;
 
@@ -101,11 +83,9 @@ export function useDashboardData(params?: DashboardDataParams): DashboardData {
 		};
 	}, [userProfile]);
 
-	// Aggregate loading state
 	const isLoading =
 		isLoadingProfile || isLoadingStats || (isTeacher && isLoadingClass);
 
-	// Aggregate error state
 	const isError = isProfileError || isStatsError || (isTeacher && isClassError);
 	const error = profileError || statsError || classError || null;
 
@@ -113,7 +93,7 @@ export function useDashboardData(params?: DashboardDataParams): DashboardData {
 		user: userProfile ?? null,
 		stats,
 		chartData: chartData ?? null,
-		classMetrics: classMetrics ?? null,
+		classMetrics: classMetricsData ?? null,
 		isLoading,
 		isError,
 		error: error as Error | null,

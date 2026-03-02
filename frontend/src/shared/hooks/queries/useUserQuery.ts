@@ -15,6 +15,8 @@ export const userKeys = {
 	stats: (userId: number, params?: ChartQueryParams) =>
 		[...userKeys.all, "stats", userId, params] as const,
 	recentGames: () => [...userKeys.all, "recent-games"] as const,
+	classMetrics: (params?: ChartQueryParams) =>
+		[...userKeys.all, "class-metrics", params] as const,
 };
 
 /**
@@ -44,6 +46,21 @@ export function useUserStats(userId?: number, params?: ChartQueryParams) {
 		queryFn: () => userService.getStats(targetId!, params),
 		enabled: !!targetId,
 		staleTime: 2 * 60 * 1000,
+	});
+}
+
+/**
+ * Fetch aggregated class metrics for teachers.
+ */
+export function useClassMetrics(params?: ChartQueryParams) {
+	const authUser = useAuthStore((state) => state.user);
+	const isTeacher = authUser?.role === "TEACHER";
+
+	return useQuery<MultiMetricChartData>({
+		queryKey: userKeys.classMetrics(params),
+		queryFn: () => userService.getClassMetrics(params),
+		enabled: !!authUser?.id && isTeacher,
+		staleTime: 5 * 60 * 1000,
 	});
 }
 
