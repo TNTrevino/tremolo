@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
-import { logError } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 
 export interface UseOSMDOptions {
 	/**
@@ -36,9 +36,10 @@ export interface UseOSMDReturn {
 	 */
 	error: Error | null;
 	/**
-	 * Reference to the OSMD instance (for advanced usage)
+	 * Ref to the OSMD instance (for advanced usage).
+	 * Access `.current` only in event handlers or effects, not during render.
 	 */
-	osmdInstance: OpenSheetMusicDisplay | null;
+	osmdInstanceRef: React.RefObject<OpenSheetMusicDisplay | null>;
 	/**
 	 * Ref to attach to the container element (if not using containerId)
 	 */
@@ -123,35 +124,38 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 	 * Load and render MusicXML string
 	 */
 	const loadAndRender = useCallback(
-		async (musicXml: string) => {
+		(musicXml: string) => {
 			setIsLoading(true);
 			setError(null);
 
-			try {
-				// Initialize or get existing OSMD instance
-				const osmd = osmdInstanceRef.current || initializeOSMD();
+			const osmd = osmdInstanceRef.current || initializeOSMD();
 
-				if (!osmd) {
-					throw new Error("Failed to initialize OSMD instance");
-				}
-
-				// Load the MusicXML
-				await osmd.load(musicXml);
-
-				// Render the sheet music
-				osmd.render();
-
-				onRenderComplete?.();
-			} catch (err) {
-				const error =
-					err instanceof Error
-						? err
-						: new Error("Failed to render sheet music");
+			if (!osmd) {
+				const error = new Error("Failed to initialize OSMD instance");
 				setError(error);
 				onError?.(error);
-			} finally {
 				setIsLoading(false);
+				return Promise.resolve();
 			}
+
+			return osmd
+				.load(musicXml)
+				.then(() => {
+					osmd.render();
+					onRenderComplete?.();
+				})
+				.catch((err) => {
+					logger.error("Failed to render sheet music", err);
+					const error =
+						err instanceof Error
+							? err
+							: new Error("Failed to render sheet music");
+					setError(error);
+					onError?.(error);
+				})
+				.finally(() => {
+					setIsLoading(false);
+				});
 		},
 		[initializeOSMD, onRenderComplete, onError],
 	);
@@ -164,7 +168,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 			try {
 				osmdInstanceRef.current.clear();
 			} catch (err) {
-				logError(err, "useOSMD.clear");
+				logger.error("Failed to clear OSMD", err);
 			}
 		}
 		setError(null);
@@ -179,7 +183,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 				try {
 					osmdInstanceRef.current.clear();
 				} catch (err) {
-					logError(err, "useOSMD.cleanup");
+					logger.error("Failed to clean up OSMD on unmount", err);
 				}
 				osmdInstanceRef.current = null;
 			}
@@ -191,7 +195,7 @@ export function useOSMD(options?: UseOSMDOptions): UseOSMDReturn {
 		clear,
 		isLoading,
 		error,
-		osmdInstance: osmdInstanceRef.current,
+		osmdInstanceRef,
 		containerRef,
 	};
 }

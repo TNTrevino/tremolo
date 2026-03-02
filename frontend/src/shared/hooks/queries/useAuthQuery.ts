@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
-import { authService } from "@/services/api/auth.service";
+import { authService } from "@/services/api";
 import type {
 	LoginRequest,
 	RegisterRequest,

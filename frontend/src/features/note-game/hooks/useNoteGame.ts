@@ -27,6 +27,7 @@ interface UseNoteGameReturn {
 	handleAnswer: (answer: string) => void;
 	endGame: (finalAnswers?: NoteAnswer[]) => void;
 	resetGame: () => void;
+	syncCurrentNote: (noteName: string) => void;
 }
 
 interface UseNoteGameOptions {
@@ -147,14 +148,14 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 				playNoteSound(currentNote);
 			}
 
-			// Check if game should end (notes mode)
+			// Check if game should end (notes mode).
+			// No need to generate a new note here — the GameBoard will
+			// fetch the next note from the backend when answers.length changes.
 			if (
 				settings.gameMode === "notes" &&
 				newAnswers.length >= settings.noteLimit
 			) {
 				endGame(newAnswers);
-			} else {
-				generateRandomNote();
 			}
 		},
 		[
@@ -163,11 +164,19 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			answers,
 			settings.gameMode,
 			settings.noteLimit,
-			generateRandomNote,
 			endGame,
 			playNoteSound,
 		],
 	);
+
+	/**
+	 * Sync the current note with the backend-generated note.
+	 * Called when GameBoard receives a note from the API so
+	 * answer validation compares against the displayed note.
+	 */
+	const syncCurrentNote = useCallback((noteName: string) => {
+		setCurrentNote(noteName);
+	}, []);
 
 	/**
 	 * Reset game to settings screen
@@ -200,5 +209,6 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 		handleAnswer,
 		endGame,
 		resetGame,
+		syncCurrentNote,
 	};
 }

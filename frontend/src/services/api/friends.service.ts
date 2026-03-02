@@ -1,38 +1,36 @@
-import { mainApiClient } from "./clients";
+import type { AxiosInstance } from "axios";
 import type { FriendResponse } from "./types";
 import type { Friend } from "@/features/friends/types";
 
-const mapFriendResponse = (response: FriendResponse): Friend => ({
-	id: response.id,
-	firstName: response.first_name,
-	lastName: response.last_name,
-	role: response.role,
-	instrument: response.instrument,
-	avatarUrl: response.avatar_url,
-	school: response.school,
-});
+export class FriendsService {
+	constructor(private client: AxiosInstance) {}
 
-export const getFriends = async (): Promise<Friend[]> => {
-	const response = await mainApiClient.get<FriendResponse[]>("/api/friends");
-	return response.data.map(mapFriendResponse);
-};
+	private mapFriendResponse(response: FriendResponse): Friend {
+		return {
+			id: response.id,
+			firstName: response.first_name,
+			lastName: response.last_name,
+			role: response.role,
+			instrument: response.instrument,
+			avatarUrl: response.avatar_url,
+			school: response.school,
+		};
+	}
 
-export const searchUsers = async (query: string): Promise<Friend[]> => {
-	const response = await mainApiClient.get<FriendResponse[]>(
-		"/api/friends/search",
-		{ params: { q: query } },
-	);
-	return response.data.map(mapFriendResponse);
-};
+	async getFriends(): Promise<Friend[]> {
+		const response = await this.client.get<FriendResponse[]>("/api/friends");
+		return response.data.map((f) => this.mapFriendResponse(f));
+	}
 
-export const addFriend = async (friendId: number): Promise<void> => {
-	await mainApiClient.post("/api/friends", { friend_id: friendId });
-};
+	async searchUsers(query: string): Promise<Friend[]> {
+		const response = await this.client.get<FriendResponse[]>(
+			"/api/friends/search",
+			{ params: { q: query } },
+		);
+		return response.data.map((f) => this.mapFriendResponse(f));
+	}
 
-export const friendsService = {
-	getFriends,
-	searchUsers,
-	addFriend,
-};
-
-export default friendsService;
+	async addFriend(friendId: number): Promise<void> {
+		await this.client.post("/api/friends", { friend_id: friendId });
+	}
+}

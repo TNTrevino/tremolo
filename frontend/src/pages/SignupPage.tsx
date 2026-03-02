@@ -23,7 +23,7 @@ import { useRegister } from "@/shared/hooks/queries/useAuthQuery";
 import { cn } from "@/lib/utils";
 import type { PasswordRequirement, LoginLocationState } from "@/shared/types";
 import type { ApiError } from "@/services/api/types";
-import { logError, getErrorMessage } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
 export interface SignupPageProps {}
 
@@ -78,28 +78,27 @@ export function SignupPage() {
 
 	const passwordStrength = getPasswordStrength();
 
-	const onSubmit = async (data: SignupFormData) => {
-		try {
-			// Map form data to API format
-			await registerMutation.mutateAsync({
+	const onSubmit = (data: SignupFormData) => {
+		registerMutation
+			.mutateAsync({
 				email: data.email,
 				password: data.password,
 				first_name: data.firstName,
 				last_name: data.lastName,
 				role: data.role,
+			})
+			.then(() => {
+				const navState: LoginLocationState = {
+					successMessage: "Account created! Please log in.",
+				};
+				navigate("/login", { state: navState });
+			})
+			.catch((err) => {
+				const apiError = err as ApiError;
+				setError("root", {
+					message: apiError.message || getErrorMessage(err),
+				});
 			});
-
-			const navState: LoginLocationState = {
-				successMessage: "Account created! Please log in.",
-			};
-			navigate("/login", { state: navState });
-		} catch (err) {
-			logError(err, "SignupPage.onSubmit");
-			const apiError = err as ApiError;
-			setError("root", {
-				message: apiError.message || getErrorMessage(err),
-			});
-		}
 	};
 
 	return (

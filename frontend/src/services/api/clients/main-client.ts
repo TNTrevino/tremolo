@@ -19,6 +19,7 @@ import {
 	setTokens,
 	clearTokens,
 } from "./token";
+import { logger } from "@/lib/logger";
 
 export const mainApiClient: AxiosInstance = axios.create({
 	baseURL: import.meta.env.VITE_BACKEND_MAIN || "http://localhost:5001",
@@ -60,7 +61,7 @@ const processQueue = (error: Error | null = null): void => {
 
 mainApiClient.interceptors.response.use(
 	(response: AxiosResponse) => response,
-	async (error: AxiosError) => {
+	(error: AxiosError) => {
 		const originalRequest = error.config as InternalAxiosRequestConfig & {
 			_retry?: boolean;
 		};
@@ -97,35 +98,37 @@ mainApiClient.interceptors.response.use(
 				return Promise.reject(apiError);
 			}
 
-			try {
-				const response = await axios.post(
+			return axios
+				.post(
 					`${import.meta.env.VITE_BACKEND_MAIN || "http://localhost:5001"}/api/auth/refresh`,
 					{ refresh_token: refreshToken },
-				);
+				)
+				.then((response) => {
+					const { access_token, refresh_token: new_refresh_token } =
+						response.data;
 
-				const { access_token, refresh_token: new_refresh_token } =
-					response.data;
+					setTokens(access_token, new_refresh_token);
+					originalRequest.headers.Authorization = `Bearer ${access_token}`;
 
-				setTokens(access_token, new_refresh_token);
-				originalRequest.headers.Authorization = `Bearer ${access_token}`;
+					processQueue();
+					isRefreshing = false;
 
-				processQueue();
-				isRefreshing = false;
+					return mainApiClient(originalRequest);
+				})
+				.catch((refreshError) => {
+					logger.error("Token refresh failed", refreshError);
+					processQueue(refreshError as Error);
+					isRefreshing = false;
+					clearTokens();
+					window.dispatchEvent(new CustomEvent("auth:logout"));
 
-				return mainApiClient(originalRequest);
-			} catch (refreshError) {
-				processQueue(refreshError as Error);
-				isRefreshing = false;
-				clearTokens();
-				window.dispatchEvent(new CustomEvent("auth:logout"));
-
-				const apiError: ApiError = {
-					error: "Token refresh failed",
-					message: "Please log in again",
-					status: 401,
-				};
-				return Promise.reject(apiError);
-			}
+					const apiError: ApiError = {
+						error: "Token refresh failed",
+						message: "Please log in again",
+						status: 401,
+					};
+					return Promise.reject(apiError);
+				});
 		}
 
 		const apiError: ApiError = {
@@ -138,6 +141,13 @@ mainApiClient.interceptors.response.use(
 				: error.message,
 			status: error.response?.status,
 		};
+
+		logger.error("API request failed", {
+			url: error.config?.url,
+			method: error.config?.method,
+			status: apiError.status,
+			message: apiError.message,
+		});
 
 		return Promise.reject(apiError);
 	},

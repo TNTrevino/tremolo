@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { logError, getErrorMessage } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 import { useToast } from "./useToast";
 
 /**
@@ -96,7 +97,7 @@ export function useAsyncHandler(): AsyncHandlerReturn {
 				return result;
 			} catch (err) {
 				// Log the error with context
-				logError(err, context);
+				logger.error(context ?? "Async operation failed", err);
 
 				// Convert to Error type
 				const errorObj =

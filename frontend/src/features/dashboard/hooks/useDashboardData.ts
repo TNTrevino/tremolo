@@ -10,7 +10,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
-import { userService } from "@/services/api/user.service";
+import { userService } from "@/services/api";
 import type {
 	GeneralUserInfo,
 	MultiMetricChartData,

@@ -7,7 +7,6 @@
 export { useNoteGame, useGameTimer } from "./hooks";
 
 // Components
-export { GameSettings, GameBoard, GameResults } from "./components";
 export type {
 	GameSettingsProps,
 	GameBoardProps,

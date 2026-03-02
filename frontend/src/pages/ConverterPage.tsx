@@ -3,8 +3,9 @@ import { Upload, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SheetMusicDisplay } from "@/features/sheet-music/components";
-import { logError, getErrorMessage } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
+import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
 
 export function ConverterPage() {
 	const [musicXml, setMusicXml] = useState<string>("");
@@ -71,14 +72,14 @@ export function ConverterPage() {
 				setUploadedFileName(file.name);
 				setIsProcessing(false);
 			} catch (err) {
-				logError(err, "ConverterPage.handleFileUpload");
+				logger.error("Failed to read uploaded file", err);
 				setError(`Error reading file: ${getErrorMessage(err)}`);
 				setIsProcessing(false);
 			}
 		};
 
 		reader.onerror = (event) => {
-			logError(event, "ConverterPage.handleFileUpload.reader.onerror");
+			logger.error("FileReader error", event);
 			setError("Failed to read the file. Please try again.");
 			setIsProcessing(false);
 		};
@@ -91,7 +92,7 @@ export function ConverterPage() {
 	};
 
 	const handleRenderError = (renderError: Error) => {
-		logError(renderError, "ConverterPage.handleRenderError");
+		logger.error("Failed to render sheet music", renderError);
 		setError(`Failed to render sheet music: ${getErrorMessage(renderError)}`);
 	};
 

@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Search, UserPlus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { searchUsers, addFriend } from "@/services/api/friends.service";
+import { friendsService } from "@/services/api";
 import { useFriendsStore } from "@/stores/friends.store";
-import { FriendCard } from "./FriendCard";
+import { logger } from "@/lib/logger";
 import type { Friend } from "@/features/friends/types";
+import FriendCard from "./FriendCard";
 
 const DEBOUNCE_MS = 120;
 
@@ -13,7 +14,7 @@ interface AddFriendViewProps {
 	onBack: () => void;
 }
 
-export function AddFriendView({ onBack }: AddFriendViewProps) {
+const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<Friend[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
@@ -27,7 +28,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		inputRef.current?.focus();
 	}, []);
 
-	const search = useCallback(async (searchQuery: string) => {
+	const search = useCallback((searchQuery: string) => {
 		const trimmed = searchQuery.trim();
 		if (!trimmed) {
 			setResults([]);
@@ -35,14 +36,18 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			return;
 		}
 
-		try {
-			const data = await searchUsers(trimmed);
-			setResults(data);
-		} catch {
-			setResults([]);
-		} finally {
-			setIsSearching(false);
-		}
+		friendsService
+			.searchUsers(trimmed)
+			.then((data) => {
+				setResults(data);
+			})
+			.catch((err) => {
+				logger.error("Failed to search users", err);
+				setResults([]);
+			})
+			.finally(() => {
+				setIsSearching(false);
+			});
 	}, []);
 
 	const handleQueryChange = (value: string) => {
@@ -72,17 +77,20 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		};
 	}, []);
 
-	const handleAdd = async (friendId: number) => {
+	const handleAdd = (friendId: number) => {
 		setAddingId(friendId);
-		try {
-			await addFriend(friendId);
-			setAddedIds((prev) => new Set(prev).add(friendId));
-			fetchFriends();
-		} catch {
-			// silently fail -- the backend is idempotent
-		} finally {
-			setAddingId(null);
-		}
+		friendsService
+			.addFriend(friendId)
+			.then(() => {
+				setAddedIds((prev) => new Set(prev).add(friendId));
+				fetchFriends();
+			})
+			.catch((err) => {
+				logger.error("Failed to add friend", err);
+			})
+			.finally(() => {
+				setAddingId(null);
+			});
 	};
 
 	return (
@@ -147,7 +155,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			</div>
 		</div>
 	);
-}
+};
 
 interface AddFriendButtonProps {
 	isAdded: boolean;
@@ -174,3 +182,5 @@ function AddFriendButton({ isAdded, isAdding, onAdd }: AddFriendButtonProps) {
 		</Button>
 	);
 }
+
+export default AddFriendView;

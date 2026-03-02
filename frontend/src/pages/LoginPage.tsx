@@ -21,7 +21,7 @@ import {
 import { useLogin } from "@/shared/hooks/queries/useAuthQuery";
 import type { LoginLocationState } from "@/shared/types";
 import type { ApiError } from "@/services/api/types";
-import { logError, getErrorMessage } from "@/shared/utils/error.utils";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
 export interface LoginPageProps {}
 
@@ -43,18 +43,19 @@ export function LoginPage() {
 		resolver: zodResolver(loginSchema),
 	});
 
-	const onSubmit = async (data: LoginFormData) => {
-		try {
-			await loginMutation.mutateAsync(data);
-			const from = locationState?.from?.pathname ?? "/dashboard";
-			navigate(from, { replace: true });
-		} catch (err) {
-			logError(err, "LoginPage.onSubmit");
-			const apiError = err as ApiError;
-			setError("root", {
-				message: apiError.message || getErrorMessage(err),
+	const onSubmit = (data: LoginFormData) => {
+		loginMutation
+			.mutateAsync(data)
+			.then(() => {
+				const from = locationState?.from?.pathname ?? "/dashboard";
+				navigate(from, { replace: true });
+			})
+			.catch((err) => {
+				const apiError = err as ApiError;
+				setError("root", {
+					message: apiError.message || getErrorMessage(err),
+				});
 			});
-		}
 	};
 
 	return (

@@ -54,4 +54,12 @@ module.exports = {
 		"no-console": ["warn", { allow: ["warn", "error"] }],
 		"prefer-const": "warn",
 	},
+	overrides: [
+		{
+			files: ["src/lib/logger.ts"],
+			rules: {
+				"no-console": "off",
+			},
+		},
+	],
 };

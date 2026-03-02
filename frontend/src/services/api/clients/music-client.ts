@@ -8,6 +8,7 @@
 import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import type { ApiError } from "../types";
+import { logger } from "@/lib/logger";
 
 export const musicApiClient: AxiosInstance = axios.create({
 	baseURL:
@@ -28,6 +29,14 @@ musicApiClient.interceptors.response.use(
 				: "Music generation failed",
 			status: error.response?.status,
 		};
+
+		logger.error("Music API request failed", {
+			url: error.config?.url,
+			method: error.config?.method,
+			status: apiError.status,
+			message: apiError.message,
+		});
+
 		return Promise.reject(apiError);
 	},
 );

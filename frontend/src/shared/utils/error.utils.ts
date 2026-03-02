@@ -91,33 +91,6 @@ export function isApiError(error: unknown): error is AxiosError {
 }
 
 /**
- * Logs error to console with context in development mode
- * In production, this could be replaced with a service like Sentry
- */
-export function logError(error: unknown, context?: string): void {
-	const isDevelopment = import.meta.env.DEV;
-
-	if (isDevelopment) {
-		// eslint-disable-next-line no-console
-		console.group(`🔴 Error ${context ? `in ${context}` : ""}`);
-		console.error(error);
-
-		if (isApiError(error)) {
-			// eslint-disable-next-line no-console
-			console.log("Request config:", error.config);
-			// eslint-disable-next-line no-console
-			console.log("Response:", error.response);
-		}
-
-		// eslint-disable-next-line no-console
-		console.groupEnd();
-	} else {
-		// In production, you might want to send to an error tracking service
-		console.error("Error occurred:", getErrorMessage(error));
-	}
-}
-
-/**
  * Check if error is a network error
  */
 export function isNetworkError(error: unknown): boolean {

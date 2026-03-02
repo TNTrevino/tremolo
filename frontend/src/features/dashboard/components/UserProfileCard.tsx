@@ -7,7 +7,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import type { GeneralUserInfo } from "@/services/api/types";
-import { logError } from "@/shared/utils/error.utils";
+import { logger } from "@/lib/logger";
 
 interface QuickStats {
 	totalSessions: number;
@@ -29,10 +29,7 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
 	if (user.role) {
 		roleDisplay = user.role.charAt(0) + user.role.slice(1).toLowerCase();
 	} else {
-		logError(
-			new Error(`Missing user.role for user ID: ${user.id}`),
-			"UserProfileCard",
-		);
+		logger.warn("Missing user.role for user", { userId: user.id });
 	}
 
 	return (

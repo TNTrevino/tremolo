@@ -25,12 +25,12 @@ export interface GameResultsProps {
  * Game results component
  * Displays performance statistics, charts, and options to play again
  */
-export function GameResults({
+const GameResults = ({
 	gameStats,
 	pastGames = [],
 	isAuthenticated,
 	onPlayAgain,
-}: GameResultsProps) {
+}: GameResultsProps) => {
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
@@ -123,4 +123,6 @@ export function GameResults({
 			</div>
 		</div>
 	);
-}
+};
+
+export default GameResults;
