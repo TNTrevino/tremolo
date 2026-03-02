@@ -4,18 +4,25 @@
 
 /**
  * Game mode options
- * - time: Game runs for a fixed duration
- * - notes: Game runs until a fixed number of notes are answered
+ * - Time: Game runs for a fixed duration
+ * - Notes: Game runs until a fixed number of notes are answered
  */
-export type GameMode = "time" | "notes";
+export enum GameMode {
+	Time = "time",
+	Notes = "notes",
+}
 
 /**
  * Current state of the game
- * - settings: Player is configuring game options
- * - playing: Game is in progress
- * - gameover: Game has ended, showing results
+ * - Settings: Player is configuring game options
+ * - Playing: Game is in progress
+ * - GameOver: Game has ended, showing results
  */
-export type GameState = "settings" | "playing" | "gameover";
+export enum GameState {
+	Settings = "settings",
+	Playing = "playing",
+	GameOver = "gameover",
+}
 
 /**
  * Individual note answer with metadata

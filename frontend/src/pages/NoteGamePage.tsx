@@ -4,7 +4,12 @@ import { useToast } from "@/shared/hooks/useToast";
 import { useSaveGameResult } from "@/shared/hooks/queries";
 import { userService } from "@/services/api";
 import type { GameStats } from "@/shared/types";
-import { useNoteGame, useGameTimer } from "@/features/note-game";
+import {
+	useNoteGame,
+	useGameTimer,
+	GameState,
+	GameMode,
+} from "@/features/note-game";
 import GameBoard from "@/features/note-game/components/GameBoard";
 import GameResults from "@/features/note-game/components/GameResults";
 import GameSettings from "@/features/note-game/components/GameSettings";
@@ -28,7 +33,7 @@ export function NoteGamePage() {
 
 			if (isAuthenticated && user) {
 				const timeInSeconds =
-					stats.gameMode === "time"
+					stats.gameMode === GameMode.Time
 						? stats.limit
 						: Math.round((stats.total / stats.npm) * 60);
 
@@ -76,7 +81,7 @@ export function NoteGamePage() {
 
 	const startGame = () => {
 		handleStartGame();
-		if (settings.gameMode === "time") {
+		if (settings.gameMode === GameMode.Time) {
 			startTimer(settings.timeLimit);
 		}
 	};
@@ -84,7 +89,7 @@ export function NoteGamePage() {
 	return (
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl">
-				{gameState === "settings" && (
+				{gameState === GameState.Settings && (
 					<GameSettings
 						settings={settings}
 						onSettingsChange={updateSettings}
@@ -92,7 +97,7 @@ export function NoteGamePage() {
 					/>
 				)}
 
-				{gameState === "playing" && (
+				{gameState === GameState.Playing && (
 					<GameBoard
 						currentNote={currentNote}
 						answers={answers}
@@ -107,7 +112,7 @@ export function NoteGamePage() {
 					/>
 				)}
 
-				{gameState === "gameover" && gameStats && (
+				{gameState === GameState.GameOver && gameStats && (
 					<GameResults
 						gameStats={gameStats}
 						pastGames={pastGames}

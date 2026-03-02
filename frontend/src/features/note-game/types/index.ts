@@ -3,13 +3,9 @@
  * Re-exports from shared types for feature encapsulation
  */
 
-import type { GameMode } from "@/shared/types";
-export type {
-	GameMode,
-	GameState,
-	NoteAnswer,
-	GameStats,
-} from "@/shared/types";
+import { GameMode, GameState } from "@/shared/types";
+export { GameMode, GameState };
+export type { NoteAnswer, GameStats } from "@/shared/types";
 
 /**
  * Game settings configuration

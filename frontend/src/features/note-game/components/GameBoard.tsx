@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { useNoteGameDisplay } from "@/features/note-game-display";
 import { useGenerateNoteGame } from "@/shared/hooks/queries";
 import type { NoteAnswer } from "../types";
-import { NOTES } from "../types";
+import { GameMode, NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
@@ -14,7 +14,7 @@ export interface GameBoardProps {
 	answers: NoteAnswer[];
 	timeRemaining?: number;
 	noteLimit?: number;
-	gameMode: "time" | "notes";
+	gameMode: GameMode;
 	onAnswer: (answer: string) => void;
 	onNoteGenerated: (noteName: string) => void;
 	formatTime?: (seconds: number) => string;
@@ -85,10 +85,10 @@ const GameBoardInternal = ({
 	}, [answers.length, scale, octave, isReady, loadNote, onNoteGenerated]);
 
 	const getTimerDisplay = () => {
-		if (gameMode === "time" && timeRemaining !== undefined) {
+		if (gameMode === GameMode.Time && timeRemaining !== undefined) {
 			return formatTime ? formatTime(timeRemaining) : `${timeRemaining}s`;
 		}
-		if (gameMode === "notes" && noteLimit !== undefined) {
+		if (gameMode === GameMode.Notes && noteLimit !== undefined) {
 			return `${answers.length}/${noteLimit}`;
 		}
 		return "";
