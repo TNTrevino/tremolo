@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/shared/utils/error.utils";
 import { logger } from "@/lib/logger";
-import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
+import { SheetMusicDisplay } from "@/features/sheet-music/components/SheetMusicDisplay";
 
 export function ConverterPage() {
 	const [musicXml, setMusicXml] = useState<string>("");

@@ -5,7 +5,7 @@ import { Select } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useGenerateMary, useGenerateRandom } from "@/shared/hooks/queries";
 import { getErrorMessage } from "@/shared/utils/error.utils";
-import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
+import { SheetMusicDisplay } from "@/features/sheet-music/components/SheetMusicDisplay";
 
 const scales = [
 	{ label: "C Major", tonic: "C" },

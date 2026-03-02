@@ -14,7 +14,7 @@ import { useAuthStore } from "@/stores/auth.store";
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/pages/LoginPage";
-import FriendsPanel from "./features/friends/components/FriendsPanel";
+import { FriendsPanel } from "@/features/friends/components/FriendsPanel";
 
 // Pages - Lazy loaded for code splitting
 const AboutPage = lazy(() =>
@@ -127,4 +127,4 @@ function App() {
 	);
 }
 
-export default App;
+export { App };

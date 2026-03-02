@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSearchUsers, useAddFriend } from "@/shared/hooks/queries";
 import { logger } from "@/lib/logger";
-import FriendCard from "./FriendCard";
+import { FriendCard } from "./FriendCard";
 
 const DEBOUNCE_MS = 120;
 
@@ -12,7 +12,7 @@ interface AddFriendViewProps {
 	onBack: () => void;
 }
 
-const AddFriendView = ({ onBack }: AddFriendViewProps) => {
+export function AddFriendView({ onBack }: AddFriendViewProps) {
 	const [query, setQuery] = useState("");
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
@@ -123,7 +123,7 @@ const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 			</div>
 		</div>
 	);
-};
+}
 
 interface AddFriendButtonProps {
 	isAdded: boolean;
@@ -150,5 +150,3 @@ function AddFriendButton({ isAdded, isAdding, onAdd }: AddFriendButtonProps) {
 		</Button>
 	);
 }
-
-export default AddFriendView;

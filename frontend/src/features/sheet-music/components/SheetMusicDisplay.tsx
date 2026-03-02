@@ -139,7 +139,7 @@ const SheetMusicDisplayInternal = ({
  * />
  * ```
  */
-const SheetMusicDisplay = (props: SheetMusicDisplayProps) => {
+export function SheetMusicDisplay(props: SheetMusicDisplayProps) {
 	return (
 		<ComponentErrorBoundary
 			fallback={<SheetMusicFallback />}
@@ -151,6 +151,4 @@ const SheetMusicDisplay = (props: SheetMusicDisplayProps) => {
 			<SheetMusicDisplayInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-};
-
-export default SheetMusicDisplay;
+}

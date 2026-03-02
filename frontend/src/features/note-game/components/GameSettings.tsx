@@ -15,11 +15,11 @@ export interface GameSettingsProps {
  * Game settings configuration component
  * Allows players to configure game mode, limits, scale, and octave
  */
-const GameSettings = ({
+export function GameSettings({
 	settings,
 	onSettingsChange,
 	onStartGame,
-}: GameSettingsProps) => {
+}: GameSettingsProps) {
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
@@ -147,6 +147,4 @@ const GameSettings = ({
 			</Card>
 		</div>
 	);
-};
-
-export default GameSettings;
+}

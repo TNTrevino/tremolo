@@ -187,7 +187,7 @@ const GameBoardInternal = ({
  * Game board component for active gameplay
  * Wrapped with error boundary for enhanced error handling
  */
-const GameBoard = (props: GameBoardProps) => {
+export function GameBoard(props: GameBoardProps) {
 	return (
 		<ComponentErrorBoundary
 			fallback={
@@ -203,6 +203,4 @@ const GameBoard = (props: GameBoardProps) => {
 			<GameBoardInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-};
-
-export default GameBoard;
+}

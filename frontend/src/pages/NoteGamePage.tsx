@@ -10,11 +10,9 @@ import {
 	GameState,
 	GameMode,
 } from "@/features/note-game";
-import GameBoard from "@/features/note-game/components/GameBoard";
-import GameResults from "@/features/note-game/components/GameResults";
-import GameSettings from "@/features/note-game/components/GameSettings";
-
-export interface NoteGamePageProps {}
+import { GameBoard } from "@/features/note-game/components/GameBoard";
+import { GameResults } from "@/features/note-game/components/GameResults";
+import { GameSettings } from "@/features/note-game/components/GameSettings";
 
 /**
  * Note Recognition Game Page

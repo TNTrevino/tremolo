@@ -4,7 +4,7 @@ import { useFriendsStore } from "@/stores/friends.store";
 import { useFriends } from "@/shared/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import FriendCard from "./FriendCard";
+import { FriendCard } from "./FriendCard";
 
 interface MyFriendsViewProps {
 	onAddFriend: () => void;

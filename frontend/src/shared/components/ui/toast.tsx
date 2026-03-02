@@ -23,7 +23,7 @@ interface ToastItemProps {
 	onClose: (id: string) => void;
 }
 
-const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
+function ToastItem({ toast, onClose }: ToastItemProps) {
 	const [isExiting, setIsExiting] = React.useState(false);
 
 	React.useEffect(() => {
@@ -108,12 +108,14 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
 			</button>
 		</div>
 	);
-};
+}
 
-export const ToastContainer: React.FC<{
+interface ToastContainerProps {
 	toasts: Toast[];
 	onClose: (id: string) => void;
-}> = ({ toasts, onClose }) => {
+}
+
+export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
 	if (toasts.length === 0) return null;
 
 	return (
@@ -127,4 +129,4 @@ export const ToastContainer: React.FC<{
 			))}
 		</div>
 	);
-};
+}

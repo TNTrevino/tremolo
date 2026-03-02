@@ -20,9 +20,7 @@ const ToastContext = React.createContext<ToastContextValue | undefined>(
 	undefined,
 );
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
-	children,
-}) => {
+export function ToastProvider({ children }: { children: React.ReactNode }) {
 	const [toasts, setToasts] = React.useState<Toast[]>([]);
 
 	const showToast = React.useCallback(
@@ -102,7 +100,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
 	return (
 		<ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 	);
-};
+}
 
 export const useToast = (): ToastContextValue => {
 	const context = React.useContext(ToastContext);
