@@ -10,9 +10,14 @@
  * Includes an interval selector for different time ranges.
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
+import { Select } from "@/shared/components/ui/select";
+import { Button } from "@/shared/components/ui/button";
 import {
 	LineChart,
 	Line,

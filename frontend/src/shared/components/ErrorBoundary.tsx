@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
 		logger.error("ErrorBoundary caught error", error);
 
 		// Log component stack trace
-		console.error("Component stack trace:", errorInfo.componentStack);
+		logger.error("Component stack trace:", errorInfo.componentStack);
 
 		// Store error info in state
 		this.setState({ errorInfo });

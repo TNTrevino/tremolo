@@ -7,7 +7,12 @@
  * - Student management features (coming soon)
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
 import type { GeneralUserInfo } from "@/services/api/types";
 
 interface TeacherDashboardProps {

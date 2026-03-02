@@ -1,7 +1,7 @@
 import { Music2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Select } from "@/shared/components/ui/select";
+import { Card } from "@/shared/components/ui/card";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
 

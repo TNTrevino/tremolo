@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import { useNoteGameDisplay } from "@/features/note-game-display";
 import { useGenerateNoteGame } from "@/shared/hooks/queries";
 import type { NoteAnswer } from "../types";

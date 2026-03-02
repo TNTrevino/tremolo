@@ -9,7 +9,7 @@ import {
 import { useToast } from "@/shared/hooks/useToast";
 import {
 	getErrorMessage,
-	isApiError,
+	isAxiosError,
 	isNetworkError,
 } from "@/shared/utils/error.utils";
 import { logger } from "@/lib/logger";
@@ -71,10 +71,8 @@ export function ErrorTester() {
 			logger.error("ErrorTester: API error test", error);
 			showError(getErrorMessage(error), "API Error");
 
-			// eslint-disable-next-line no-console
-			console.log("Is API Error:", isApiError(error));
-			// eslint-disable-next-line no-console
-			console.log("Is Network Error:", isNetworkError(error));
+			logger.info("Is Axios Error:", isAxiosError(error));
+			logger.info("Is Network Error:", isNetworkError(error));
 		}
 	};
 
@@ -88,10 +86,8 @@ export function ErrorTester() {
 			logger.error("ErrorTester: network error test", error);
 			showError(getErrorMessage(error), "Network Error");
 
-			// eslint-disable-next-line no-console
-			console.log("Is API Error:", isApiError(error));
-			// eslint-disable-next-line no-console
-			console.log("Is Network Error:", isNetworkError(error));
+			logger.info("Is Axios Error:", isAxiosError(error));
+			logger.info("Is Network Error:", isNetworkError(error));
 		}
 	};
 

@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { Upload, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import { getErrorMessage } from "@/shared/utils/error.utils";
 import { logger } from "@/lib/logger";
 import { SheetMusicDisplay } from "@/features/sheet-music/components/SheetMusicDisplay";

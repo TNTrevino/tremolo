@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Search, UserPlus, Loader2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { useSearchUsers, useAddFriend } from "@/shared/hooks/queries";
+import { useDebounce } from "@/shared/hooks/useDebounce";
 import { logger } from "@/lib/logger";
 import { FriendCard } from "./FriendCard";
 
@@ -14,9 +15,8 @@ interface AddFriendViewProps {
 
 export function AddFriendView({ onBack }: AddFriendViewProps) {
 	const [query, setQuery] = useState("");
-	const [debouncedQuery, setDebouncedQuery] = useState("");
+	const debouncedQuery = useDebounce(query, DEBOUNCE_MS);
 	const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
-	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	const { data: results = [], isLoading: isSearching } =
@@ -26,26 +26,6 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 
 	useEffect(() => {
 		inputRef.current?.focus();
-	}, []);
-
-	const handleQueryChange = (value: string) => {
-		setQuery(value);
-
-		if (debounceTimer.current) {
-			clearTimeout(debounceTimer.current);
-		}
-
-		debounceTimer.current = setTimeout(() => {
-			setDebouncedQuery(value);
-		}, DEBOUNCE_MS);
-	};
-
-	useEffect(() => {
-		return () => {
-			if (debounceTimer.current) {
-				clearTimeout(debounceTimer.current);
-			}
-		};
 	}, []);
 
 	const handleAdd = (friendId: number) => {
@@ -80,7 +60,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 						ref={inputRef}
 						placeholder="Search by name..."
 						value={query}
-						onChange={(e) => handleQueryChange(e.target.value)}
+						onChange={(e) => setQuery(e.target.value)}
 						className="pl-9 pr-9"
 					/>
 				</div>

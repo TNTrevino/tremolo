@@ -22,7 +22,7 @@ import {
 	UserProfileCard,
 	DashboardSkeleton,
 } from "@/features/dashboard/components";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import type { ChartInterval } from "@/services/api/types";
 
 /**
