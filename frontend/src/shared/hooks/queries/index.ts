@@ -1,11 +1,5 @@
 // Auth queries
-export {
-	useCurrentUser,
-	useLogin,
-	useRegister,
-	useLogout,
-	authKeys,
-} from "./useAuthQuery";
+export { useLogin, useRegister, useLogout, authKeys } from "./useAuthQuery";
 
 // User queries
 export {
@@ -20,7 +14,6 @@ export {
 	useGenerateMary,
 	useGenerateRandom,
 	useGenerateNoteGame,
-	musicKeys,
 } from "./useMusicQuery";
 
 // Friends queries

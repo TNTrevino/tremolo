@@ -40,6 +40,7 @@ export {
 
 export type {
 	UserRole,
+	ApiUser,
 	User,
 	LoginRequest,
 	LoginResponse,

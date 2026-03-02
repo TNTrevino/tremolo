@@ -6,6 +6,7 @@
 
 export type {
 	UserRole,
+	ApiUser,
 	User,
 	LoginRequest,
 	LoginResponse,
@@ -13,6 +14,7 @@ export type {
 	RegisterResponse,
 	RefreshTokenRequest,
 	RefreshTokenResponse,
+	PasswordRequirement,
 } from "./auth.types";
 
 export type {

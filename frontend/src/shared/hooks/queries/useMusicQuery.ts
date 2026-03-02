@@ -7,13 +7,6 @@ import type {
 	NoteGameResponse,
 } from "@/services/api/types";
 
-export const musicKeys = {
-	all: ["music"] as const,
-	mary: () => [...musicKeys.all, "mary"] as const,
-	rhythm: () => [...musicKeys.all, "rhythm"] as const,
-	noteGame: () => [...musicKeys.all, "note-game"] as const,
-};
-
 /**
  * Mutation to generate "Mary Had a Little Lamb" in different keys/octaves.
  * Returns raw MusicXML string.

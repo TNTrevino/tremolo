@@ -6,7 +6,7 @@ import type {
 	RegisterResponse,
 	RefreshTokenRequest,
 	RefreshTokenResponse,
-	User,
+	ApiUser,
 } from "./types";
 
 interface TokenManager {
@@ -68,8 +68,8 @@ export class AuthService {
 		return response.data;
 	}
 
-	async getCurrentUser(): Promise<User> {
-		const response = await this.client.get<User>("/api/auth/me");
+	async getCurrentUser(): Promise<ApiUser> {
+		const response = await this.client.get<ApiUser>("/api/auth/me");
 		return response.data;
 	}
 

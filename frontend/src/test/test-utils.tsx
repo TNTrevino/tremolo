@@ -1,8 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { render, type RenderOptions } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-
 interface WrapperProps {
 	children: ReactNode;
 }
@@ -11,11 +9,7 @@ interface WrapperProps {
  * Custom render function that wraps components with necessary providers
  */
 function AllProviders({ children }: WrapperProps) {
-	return (
-		<BrowserRouter>
-			<ThemeProvider>{children}</ThemeProvider>
-		</BrowserRouter>
-	);
+	return <BrowserRouter>{children}</BrowserRouter>;
 }
 
 function customRender(

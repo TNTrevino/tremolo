@@ -1,30 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
 import { authService } from "@/services/api";
-import type {
-	LoginRequest,
-	RegisterRequest,
-	User as ApiUser,
-} from "@/services/api/types";
+import type { LoginRequest, RegisterRequest, User } from "@/services/api/types";
+import { mapApiUserToUser } from "@/services/api/mappers/user.mapper";
 
-interface User {
-	id: number;
-	email: string;
-	firstName: string;
-	lastName: string;
-	role: "STUDENT" | "TEACHER" | "PARENT";
-}
-
-// Helper to convert API user to local user format
-const mapApiUserToUser = (apiUser: ApiUser): User => ({
-	id: apiUser.id,
-	email: apiUser.email,
-	firstName: apiUser.first_name,
-	lastName: apiUser.last_name,
-	role: apiUser.role,
-});
-
-// Query Keys
 export const authKeys = {
 	all: ["auth"] as const,
 	currentUser: () => [...authKeys.all, "current-user"] as const,
@@ -33,8 +12,8 @@ export const authKeys = {
 };
 
 /**
- * Hook to get current user information
- * Only runs if user is authenticated
+ * Hook to get current user information.
+ * Only runs if user is authenticated.
  */
 export function useCurrentUser() {
 	const token = useAuthStore((state) => state.token);
@@ -54,51 +33,45 @@ export function useCurrentUser() {
 }
 
 /**
- * Hook to handle user login
+ * Hook to handle user login.
+ * Calls authService directly, then updates Zustand on success.
  */
 export function useLogin() {
 	const queryClient = useQueryClient();
-	const loginUser = useAuthStore((state) => state.loginUser);
 
 	return useMutation({
-		mutationFn: async (credentials: LoginRequest) => {
-			await loginUser(credentials);
-			const user = useAuthStore.getState().user;
-			return user;
-		},
-		onSuccess: (user) => {
-			if (user) {
-				queryClient.setQueryData(authKeys.currentUser(), user);
-			}
+		mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+		onSuccess: (response) => {
+			useAuthStore.getState().setAuthFromLoginResponse(response);
+			const user = mapApiUserToUser(response.user);
+			queryClient.setQueryData(authKeys.currentUser(), user);
 		},
 	});
 }
 
 /**
- * Hook to handle user registration
+ * Hook to handle user registration.
+ * Calls authService directly; does not auto-login.
  */
 export function useRegister() {
-	const registerUser = useAuthStore((state) => state.registerUser);
-
 	return useMutation({
-		mutationFn: async (userData: RegisterRequest) => {
-			await registerUser(userData);
-		},
+		mutationFn: (userData: RegisterRequest) => authService.register(userData),
 	});
 }
 
 /**
- * Hook to handle user logout
+ * Hook to handle user logout.
+ * Calls authService directly, then clears Zustand and query cache.
  */
 export function useLogout() {
 	const queryClient = useQueryClient();
-	const logoutUser = useAuthStore((state) => state.logoutUser);
 
 	return useMutation({
 		mutationFn: async () => {
-			logoutUser();
+			authService.logout();
 		},
 		onSuccess: () => {
+			useAuthStore.getState().clearAuth();
 			queryClient.clear();
 		},
 	});

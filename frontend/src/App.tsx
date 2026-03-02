@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
@@ -115,13 +114,11 @@ function App() {
 	return (
 		<ErrorBoundary>
 			<QueryClientProvider client={queryClient}>
-				<ThemeProvider>
-					<ToastProvider>
-						<BrowserRouter>
-							<AppContent />
-						</BrowserRouter>
-					</ToastProvider>
-				</ThemeProvider>
+				<ToastProvider>
+					<BrowserRouter>
+						<AppContent />
+					</BrowserRouter>
+				</ToastProvider>
 			</QueryClientProvider>
 		</ErrorBoundary>
 	);
