@@ -10,15 +10,9 @@ export interface Friend {
 	school: string;
 }
 
-export interface FriendsStore {
-	friends: Friend[];
+export interface FriendsUIStore {
 	isPanelOpen: boolean;
 	searchQuery: string;
-	isLoading: boolean;
-	error: string | null;
 	togglePanel: () => void;
 	setSearchQuery: (query: string) => void;
-	filteredFriends: () => Friend[];
-	fetchFriends: () => void;
-	resetFriends: () => void;
 }

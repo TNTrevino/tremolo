@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Search, UserPlus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { friendsService } from "@/services/api";
-import { useFriendsStore } from "@/stores/friends.store";
+import { useSearchUsers, useAddFriend } from "@/shared/hooks/queries";
 import { logger } from "@/lib/logger";
-import type { Friend } from "@/features/friends/types";
 import FriendCard from "./FriendCard";
 
 const DEBOUNCE_MS = 120;
@@ -16,38 +14,18 @@ interface AddFriendViewProps {
 
 const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<Friend[]>([]);
-	const [isSearching, setIsSearching] = useState(false);
+	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
-	const [addingId, setAddingId] = useState<number | null>(null);
 	const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const fetchFriends = useFriendsStore((state) => state.fetchFriends);
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	const { data: results = [], isLoading: isSearching } =
+		useSearchUsers(debouncedQuery);
+
+	const addFriend = useAddFriend();
 
 	useEffect(() => {
 		inputRef.current?.focus();
-	}, []);
-
-	const search = useCallback((searchQuery: string) => {
-		const trimmed = searchQuery.trim();
-		if (!trimmed) {
-			setResults([]);
-			setIsSearching(false);
-			return;
-		}
-
-		friendsService
-			.searchUsers(trimmed)
-			.then((data) => {
-				setResults(data);
-			})
-			.catch((err) => {
-				logger.error("Failed to search users", err);
-				setResults([]);
-			})
-			.finally(() => {
-				setIsSearching(false);
-			});
 	}, []);
 
 	const handleQueryChange = (value: string) => {
@@ -57,15 +35,8 @@ const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 			clearTimeout(debounceTimer.current);
 		}
 
-		if (value.trim()) {
-			setIsSearching(true);
-		} else {
-			setIsSearching(false);
-			setResults([]);
-		}
-
 		debounceTimer.current = setTimeout(() => {
-			search(value);
+			setDebouncedQuery(value);
 		}, DEBOUNCE_MS);
 	};
 
@@ -78,19 +49,14 @@ const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 	}, []);
 
 	const handleAdd = (friendId: number) => {
-		setAddingId(friendId);
-		friendsService
-			.addFriend(friendId)
-			.then(() => {
+		addFriend.mutate(friendId, {
+			onSuccess: () => {
 				setAddedIds((prev) => new Set(prev).add(friendId));
-				fetchFriends();
-			})
-			.catch((err) => {
+			},
+			onError: (err) => {
 				logger.error("Failed to add friend", err);
-			})
-			.finally(() => {
-				setAddingId(null);
-			});
+			},
+		});
 	};
 
 	return (
@@ -129,7 +95,9 @@ const AddFriendView = ({ onBack }: AddFriendViewProps) => {
 							action={
 								<AddFriendButton
 									isAdded={addedIds.has(user.id)}
-									isAdding={addingId === user.id}
+									isAdding={
+										addFriend.isPending && addFriend.variables === user.id
+									}
 									onAdd={() => handleAdd(user.id)}
 								/>
 							}
