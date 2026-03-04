@@ -12,14 +12,14 @@ export interface FormFieldProps {
 	htmlFor?: string;
 }
 
-const FormField: React.FC<FormFieldProps> = ({
+export function FormField({
 	label,
 	error,
 	required,
 	children,
 	className,
 	htmlFor,
-}) => {
+}: FormFieldProps) {
 	return (
 		<div className={cn("space-y-1.5", className)}>
 			{label && (
@@ -31,7 +31,4 @@ const FormField: React.FC<FormFieldProps> = ({
 			<FormError>{error}</FormError>
 		</div>
 	);
-};
-FormField.displayName = "FormField";
-
-export { FormField };
+}

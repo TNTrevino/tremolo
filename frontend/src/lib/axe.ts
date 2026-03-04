@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 /**
  * Initialize axe-core accessibility testing in development mode
  * This will log accessibility violations to the console
@@ -9,7 +11,6 @@ export const initAccessibilityAudit = async () => {
 		const axe = await import("@axe-core/react");
 
 		axe.default(React.default, ReactDOM.default, 1000);
-		// eslint-disable-next-line no-console
-		console.log("Accessibility auditing enabled");
+		logger.info("Accessibility auditing enabled");
 	}
 };

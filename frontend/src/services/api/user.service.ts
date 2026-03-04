@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import type {
 	GeneralUserInfo,
+	SaveGameResultParams,
 	CreateNoteGameEntryRequest,
 	CreateNoteGameEntryResponse,
 	NoteGameEntry,
@@ -51,11 +52,18 @@ export class UserService {
 	}
 
 	async saveGameResult(
-		entry: CreateNoteGameEntryRequest,
+		params: SaveGameResultParams,
 	): Promise<CreateNoteGameEntryResponse> {
+		const request: CreateNoteGameEntryRequest = {
+			time_length: params.timeLength,
+			total_questions: params.totalQuestions,
+			correct_questions: params.correctQuestions,
+			user_id: params.userId,
+			notes_per_minute: params.notesPerMinute,
+		};
 		const response = await this.client.post<CreateNoteGameEntryResponse>(
 			"/api/note-game/entry",
-			entry,
+			request,
 		);
 		return response.data;
 	}
@@ -108,24 +116,5 @@ export class UserService {
 			responseType: "blob",
 		});
 		return response.data;
-	}
-
-	formatTimeLength(seconds: number): string {
-		const hours = Math.floor(seconds / 3600);
-		const minutes = Math.floor((seconds % 3600) / 60);
-		const secs = seconds % 60;
-
-		return [hours, minutes, secs]
-			.map((val) => String(val).padStart(2, "0"))
-			.join(":");
-	}
-
-	calculateNPM(correctQuestions: number, timeInSeconds: number): number {
-		if (timeInSeconds === 0) return 0;
-
-		const minutes = timeInSeconds / 60;
-		const npm = correctQuestions / minutes;
-
-		return Math.round(npm);
 	}
 }

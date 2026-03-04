@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode } from "../types";
-import GameSettings from "./GameSettings";
+import { GameSettings } from "./GameSettings";
 
 const defaultSettings: GameSettingsType = {
 	gameMode: GameMode.Time,

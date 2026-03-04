@@ -6,6 +6,7 @@
 
 export type {
 	UserRole,
+	ApiUser,
 	User,
 	LoginRequest,
 	LoginResponse,
@@ -13,15 +14,17 @@ export type {
 	RegisterResponse,
 	RefreshTokenRequest,
 	RefreshTokenResponse,
+	PasswordRequirement,
 } from "./auth.types";
 
 export type {
 	CreateNoteGameEntryRequest,
+	SaveGameResultParams,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
 } from "./game.types";
 
-export type { GeneralUserInfo } from "./user.types";
+export type { GeneralUserInfo, UserProfile } from "./user.types";
 
 export type {
 	ChartDataPoint,

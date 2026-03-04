@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import {
 	LineChart,
 	Line,
@@ -26,12 +26,12 @@ export interface GameResultsProps {
  * Game results component
  * Displays performance statistics, charts, and options to play again
  */
-const GameResults = ({
+export function GameResults({
 	gameStats,
 	pastGames = [],
 	isAuthenticated,
 	onPlayAgain,
-}: GameResultsProps) => {
+}: GameResultsProps) {
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
@@ -126,6 +126,4 @@ const GameResults = ({
 			</div>
 		</div>
 	);
-};
-
-export default GameResults;
+}

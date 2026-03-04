@@ -8,7 +8,7 @@
  * - Total Sessions
  */
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import { TrendingUp, Clock, Target, Calendar } from "lucide-react";
 
 interface DashboardStatsProps {

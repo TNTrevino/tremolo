@@ -6,11 +6,15 @@ import { Navigation } from "./Navigation";
 const mockAuthStore = {
 	user: null as { firstName: string; lastName: string; email: string } | null,
 	isAuthenticated: false,
-	logoutUser: vi.fn(),
 };
 
 vi.mock("@/stores/auth.store", () => ({
 	useAuthStore: () => mockAuthStore,
+}));
+
+const mockLogoutMutate = vi.fn();
+vi.mock("@/shared/hooks/queries/useAuthQuery", () => ({
+	useLogout: () => ({ mutate: mockLogoutMutate }),
 }));
 
 describe("Navigation", () => {
@@ -18,7 +22,7 @@ describe("Navigation", () => {
 		// Reset mock state before each test
 		mockAuthStore.user = null;
 		mockAuthStore.isAuthenticated = false;
-		mockAuthStore.logoutUser = vi.fn();
+		mockLogoutMutate.mockReset();
 	});
 
 	describe("when user is not authenticated", () => {

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Music } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -11,7 +11,7 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@/shared/components/ui/card";
 import { FormField } from "@/shared/components/forms/FormField";
 import { FormInput } from "@/shared/components/forms/FormInput";
 import {
@@ -20,10 +20,7 @@ import {
 } from "@/features/auth/validation/schemas";
 import { useLogin } from "@/shared/hooks/queries/useAuthQuery";
 import type { LoginLocationState } from "@/shared/types";
-import type { ApiError } from "@/services/api/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
-
-export interface LoginPageProps {}
 
 export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
@@ -44,18 +41,17 @@ export function LoginPage() {
 	});
 
 	const onSubmit = (data: LoginFormData) => {
-		loginMutation
-			.mutateAsync(data)
-			.then(() => {
+		loginMutation.mutate(data, {
+			onSuccess: () => {
 				const from = locationState?.from?.pathname ?? "/dashboard";
 				navigate(from, { replace: true });
-			})
-			.catch((err) => {
-				const apiError = err as ApiError;
+			},
+			onError: (err) => {
 				setError("root", {
-					message: apiError.message || getErrorMessage(err),
+					message: getErrorMessage(err),
 				});
-			});
+			},
+		});
 	};
 
 	return (

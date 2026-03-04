@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { X, Search, Loader2, UserPlus } from "lucide-react";
 import { useFriendsStore } from "@/stores/friends.store";
 import { useFriends } from "@/shared/hooks/queries";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import FriendCard from "./FriendCard";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { FriendCard } from "./FriendCard";
 
 interface MyFriendsViewProps {
 	onAddFriend: () => void;

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Music, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -11,7 +11,7 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@/shared/components/ui/card";
 import { FormField } from "@/shared/components/forms/FormField";
 import { FormInput } from "@/shared/components/forms/FormInput";
 import { FormSelect } from "@/shared/components/forms/FormSelect";
@@ -21,11 +21,9 @@ import {
 } from "@/features/auth/validation/schemas";
 import { useRegister } from "@/shared/hooks/queries/useAuthQuery";
 import { cn } from "@/lib/utils";
-import type { PasswordRequirement, LoginLocationState } from "@/shared/types";
-import type { ApiError } from "@/services/api/types";
+import type { LoginLocationState } from "@/shared/types";
+import type { PasswordRequirement } from "@/services/api/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
-
-export interface SignupPageProps {}
 
 export function SignupPage() {
 	const [showPassword, setShowPassword] = useState(false);
@@ -79,26 +77,28 @@ export function SignupPage() {
 	const passwordStrength = getPasswordStrength();
 
 	const onSubmit = (data: SignupFormData) => {
-		registerMutation
-			.mutateAsync({
+		registerMutation.mutate(
+			{
 				email: data.email,
 				password: data.password,
 				first_name: data.firstName,
 				last_name: data.lastName,
 				role: data.role,
-			})
-			.then(() => {
-				const navState: LoginLocationState = {
-					successMessage: "Account created! Please log in.",
-				};
-				navigate("/login", { state: navState });
-			})
-			.catch((err) => {
-				const apiError = err as ApiError;
-				setError("root", {
-					message: apiError.message || getErrorMessage(err),
-				});
-			});
+			},
+			{
+				onSuccess: () => {
+					const navState: LoginLocationState = {
+						successMessage: "Account created! Please log in.",
+					};
+					navigate("/login", { state: navState });
+				},
+				onError: (err) => {
+					setError("root", {
+						message: getErrorMessage(err),
+					});
+				},
+			},
+		);
 	};
 
 	return (

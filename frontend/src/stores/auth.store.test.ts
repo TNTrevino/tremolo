@@ -1,23 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type * as ApiModule from "@/services/api";
+import { describe, it, expect, beforeEach } from "vitest";
 import { useAuthStore } from "./auth.store";
-
-// Mock the auth service
-vi.mock("@/services/api", async (importOriginal) => {
-	const actual = await importOriginal<typeof ApiModule>();
-	return {
-		...actual,
-		authService: {
-			login: vi.fn(),
-			register: vi.fn(),
-			logout: vi.fn(),
-		},
-	};
-});
 
 describe("auth.store", () => {
 	beforeEach(() => {
-		// Reset store state before each test
 		useAuthStore.setState({
 			user: null,
 			token: null,
@@ -79,80 +64,9 @@ describe("auth.store", () => {
 		});
 	});
 
-	describe("logout", () => {
-		it("clears user on logout", () => {
-			useAuthStore.setState({
-				user: {
-					id: 1,
-					email: "test@example.com",
-					firstName: "John",
-					lastName: "Doe",
-					role: "STUDENT" as const,
-				},
-				token: "test-token",
-				isAuthenticated: true,
-			});
-
-			useAuthStore.getState().logout();
-
-			expect(useAuthStore.getState().user).toBeNull();
-		});
-
-		it("clears token on logout", () => {
-			useAuthStore.setState({
-				user: null,
-				token: "test-token",
-				isAuthenticated: true,
-			});
-
-			useAuthStore.getState().logout();
-
-			expect(useAuthStore.getState().token).toBeNull();
-		});
-
-		it("sets isAuthenticated to false on logout", () => {
-			useAuthStore.setState({
-				user: null,
-				token: "test-token",
-				isAuthenticated: true,
-			});
-
-			useAuthStore.getState().logout();
-
-			expect(useAuthStore.getState().isAuthenticated).toBe(false);
-		});
-	});
-
-	describe("logoutUser", () => {
-		it("calls authService.logout and clears state", async () => {
-			const { authService } = await import("@/services/api");
-
-			useAuthStore.setState({
-				user: {
-					id: 1,
-					email: "test@example.com",
-					firstName: "John",
-					lastName: "Doe",
-					role: "STUDENT" as const,
-				},
-				token: "test-token",
-				isAuthenticated: true,
-			});
-
-			useAuthStore.getState().logoutUser();
-
-			expect(authService.logout).toHaveBeenCalled();
-			expect(useAuthStore.getState().user).toBeNull();
-			expect(useAuthStore.getState().token).toBeNull();
-			expect(useAuthStore.getState().isAuthenticated).toBe(false);
-		});
-	});
-
-	describe("loginUser", () => {
-		it("sets user and token on successful login", async () => {
-			const { authService } = await import("@/services/api");
-
-			const mockResponse = {
+	describe("setAuthFromLoginResponse", () => {
+		it("maps API user and sets user, token, and isAuthenticated", () => {
+			const loginResponse = {
 				user: {
 					id: 1,
 					email: "test@example.com",
@@ -164,12 +78,7 @@ describe("auth.store", () => {
 				refresh_token: "refresh-token",
 			};
 
-			vi.mocked(authService.login).mockResolvedValue(mockResponse);
-
-			await useAuthStore.getState().loginUser({
-				email: "test@example.com",
-				password: "password123",
-			});
+			useAuthStore.getState().setAuthFromLoginResponse(loginResponse);
 
 			const state = useAuthStore.getState();
 			expect(state.user).toEqual({
@@ -182,80 +91,49 @@ describe("auth.store", () => {
 			expect(state.token).toBe("access-token");
 			expect(state.isAuthenticated).toBe(true);
 		});
-
-		it("throws error on failed login", async () => {
-			const { authService } = await import("@/services/api");
-
-			vi.mocked(authService.login).mockRejectedValue(
-				new Error("Invalid credentials"),
-			);
-
-			await expect(
-				useAuthStore.getState().loginUser({
-					email: "test@example.com",
-					password: "wrong-password",
-				}),
-			).rejects.toThrow("Invalid credentials");
-		});
 	});
 
-	describe("registerUser", () => {
-		it("calls authService.register", async () => {
-			const { authService } = await import("@/services/api");
-
-			vi.mocked(authService.register).mockResolvedValue({
-				message: "User registered successfully",
+	describe("clearAuth", () => {
+		it("clears user on clearAuth", () => {
+			useAuthStore.setState({
 				user: {
-					id: 2,
-					email: "new@example.com",
-					first_name: "Jane",
-					last_name: "Doe",
-					role: "STUDENT",
+					id: 1,
+					email: "test@example.com",
+					firstName: "John",
+					lastName: "Doe",
+					role: "STUDENT" as const,
 				},
+				token: "test-token",
+				isAuthenticated: true,
 			});
 
-			await useAuthStore.getState().registerUser({
-				email: "new@example.com",
-				password: "password123",
-				first_name: "Jane",
-				last_name: "Doe",
-				role: "STUDENT",
-			});
+			useAuthStore.getState().clearAuth();
 
-			expect(authService.register).toHaveBeenCalledWith({
-				email: "new@example.com",
-				password: "password123",
-				first_name: "Jane",
-				last_name: "Doe",
-				role: "STUDENT",
-			});
+			expect(useAuthStore.getState().user).toBeNull();
 		});
 
-		it("does not auto-login after registration", async () => {
-			const { authService } = await import("@/services/api");
-
-			vi.mocked(authService.register).mockResolvedValue({
-				message: "User registered successfully",
-				user: {
-					id: 2,
-					email: "new@example.com",
-					first_name: "Jane",
-					last_name: "Doe",
-					role: "STUDENT",
-				},
+		it("clears token on clearAuth", () => {
+			useAuthStore.setState({
+				user: null,
+				token: "test-token",
+				isAuthenticated: true,
 			});
 
-			await useAuthStore.getState().registerUser({
-				email: "new@example.com",
-				password: "password123",
-				first_name: "Jane",
-				last_name: "Doe",
-				role: "STUDENT",
+			useAuthStore.getState().clearAuth();
+
+			expect(useAuthStore.getState().token).toBeNull();
+		});
+
+		it("sets isAuthenticated to false on clearAuth", () => {
+			useAuthStore.setState({
+				user: null,
+				token: "test-token",
+				isAuthenticated: true,
 			});
 
-			const state = useAuthStore.getState();
-			expect(state.isAuthenticated).toBe(false);
-			expect(state.user).toBeNull();
+			useAuthStore.getState().clearAuth();
+
+			expect(useAuthStore.getState().isAuthenticated).toBe(false);
 		});
 	});
 });

@@ -40,6 +40,7 @@ export {
 
 export type {
 	UserRole,
+	ApiUser,
 	User,
 	LoginRequest,
 	LoginResponse,
@@ -51,6 +52,7 @@ export type {
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
 	GeneralUserInfo,
+	UserProfile,
 	ChartDataPoint,
 	MultiMetricChartData,
 	ChartInterval,

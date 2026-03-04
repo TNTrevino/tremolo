@@ -15,15 +15,17 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useFriendsStore } from "@/stores/friends.store";
-import { useTheme } from "@/contexts/ThemeContext";
-import { Button } from "@/components/ui/button";
+import { useThemeStore } from "@/stores/theme.store";
+import { useLogout } from "@/shared/hooks/queries/useAuthQuery";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Navigation() {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
-	const { user, logoutUser, isAuthenticated } = useAuthStore();
-	const { theme, toggleTheme } = useTheme();
+	const { user, isAuthenticated } = useAuthStore();
+	const { theme, toggleTheme } = useThemeStore();
+	const logoutMutation = useLogout();
 	const togglePanel = useFriendsStore((state) => state.togglePanel);
 	const isPanelOpen = useFriendsStore((state) => state.isPanelOpen);
 	const location = useLocation();
@@ -39,7 +41,7 @@ export function Navigation() {
 	const isActive = (path: string) => location.pathname === path;
 
 	const handleLogout = () => {
-		logoutUser();
+		logoutMutation.mutate();
 		setUserMenuOpen(false);
 		setMobileMenuOpen(false);
 	};

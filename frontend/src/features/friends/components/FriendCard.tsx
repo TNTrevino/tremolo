@@ -7,7 +7,7 @@ interface FriendCardProps {
 	className?: string;
 }
 
-const FriendCard = ({ user, action, className }: FriendCardProps) => {
+export function FriendCard({ user, action, className }: FriendCardProps) {
 	return (
 		<div
 			className={cn(
@@ -38,6 +38,4 @@ const FriendCard = ({ user, action, className }: FriendCardProps) => {
 			{action}
 		</div>
 	);
-};
-
-export default FriendCard;
+}

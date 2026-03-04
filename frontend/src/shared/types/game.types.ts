@@ -57,13 +57,3 @@ export interface GameStats {
 	/** Octave range used for the game */
 	octave: number;
 }
-
-/**
- * Configuration for password validation
- */
-export interface PasswordRequirement {
-	/** Human-readable requirement description */
-	label: string;
-	/** Whether this requirement is currently met */
-	met: boolean;
-}

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Music2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Select } from "@/shared/components/ui/select";
+import { Card } from "@/shared/components/ui/card";
 import { useGenerateMary, useGenerateRandom } from "@/shared/hooks/queries";
 import { getErrorMessage } from "@/shared/utils/error.utils";
-import SheetMusicDisplay from "@/features/sheet-music/components/SheetMusicDisplay";
+import { SheetMusicDisplay } from "@/features/sheet-music/components/SheetMusicDisplay";
+import { logger } from "@/lib/logger";
 
 const scales = [
 	{ label: "C Major", tonic: "C" },
@@ -95,7 +96,7 @@ export function SheetMusicPage() {
 				{musicXml ? (
 					<SheetMusicDisplay
 						musicXml={musicXml}
-						onError={(err) => console.error(err.message)}
+						onError={(err) => logger.error(err.message)}
 					/>
 				) : (
 					<Card className="p-12 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">

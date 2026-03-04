@@ -5,8 +5,8 @@
  * and quick statistics (total sessions and time reading).
  */
 
-import { Card, CardContent } from "@/components/ui/card";
-import type { GeneralUserInfo } from "@/services/api/types";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import type { UserProfile } from "@/services/api/types";
 import { logger } from "@/lib/logger";
 
 interface QuickStats {
@@ -15,12 +15,12 @@ interface QuickStats {
 }
 
 interface UserProfileCardProps {
-	user: GeneralUserInfo;
+	user: UserProfile;
 	quickStats: QuickStats;
 }
 
 export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
-	const joinDate = new Date(user.created_at).toLocaleDateString("en-US", {
+	const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
 		month: "long",
 		year: "numeric",
 	});
@@ -39,15 +39,15 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
 					{/* Avatar */}
 					<div className="flex-shrink-0">
 						<div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-3xl font-bold">
-							{user.first_name[0]}
-							{user.last_name[0]}
+							{user.firstName[0]}
+							{user.lastName[0]}
 						</div>
 					</div>
 
 					{/* User Info */}
 					<div className="flex-1 text-center md:text-left space-y-2">
 						<h1 className="text-3xl font-bold">
-							{user.first_name} {user.last_name}
+							{user.firstName} {user.lastName}
 						</h1>
 						<div className="flex flex-wrap gap-2 justify-center md:justify-start items-center">
 							<span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">

@@ -125,14 +125,14 @@ export function useNoteAudio(options?: { volume?: number }) {
 			const fileName = getNoteFileName(noteName);
 
 			if (!fileName) {
-				console.warn(`[useNoteAudio] Unknown note name: "${noteName}"`);
+				logger.warn(`[useNoteAudio] Unknown note name: "${noteName}"`);
 				return;
 			}
 
 			const playFunction = soundMap[fileName as keyof typeof soundMap];
 
 			if (!playFunction) {
-				console.warn(
+				logger.warn(
 					`[useNoteAudio] No audio file found for note: "${noteName}" (mapped to ${fileName})`,
 				);
 				return;

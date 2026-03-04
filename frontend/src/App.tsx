@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
@@ -14,7 +13,7 @@ import { useAuthStore } from "@/stores/auth.store";
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/pages/LoginPage";
-import FriendsPanel from "./features/friends/components/FriendsPanel";
+import { FriendsPanel } from "@/features/friends/components/FriendsPanel";
 
 // Pages - Lazy loaded for code splitting
 const AboutPage = lazy(() =>
@@ -115,16 +114,14 @@ function App() {
 	return (
 		<ErrorBoundary>
 			<QueryClientProvider client={queryClient}>
-				<ThemeProvider>
-					<ToastProvider>
-						<BrowserRouter>
-							<AppContent />
-						</BrowserRouter>
-					</ToastProvider>
-				</ThemeProvider>
+				<ToastProvider>
+					<BrowserRouter>
+						<AppContent />
+					</BrowserRouter>
+				</ToastProvider>
 			</QueryClientProvider>
 		</ErrorBoundary>
 	);
 }
 
-export default App;
+export { App };

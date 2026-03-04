@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useFriendsStore } from "@/stores/friends.store";
 import { MyFriendsView } from "./MyFriendsView";
 import { cn } from "@/lib/utils";
-import AddFriendView from "./AddFriendView";
+import { AddFriendView } from "./AddFriendView";
 
-const FriendsPanel = () => {
+export function FriendsPanel() {
 	const [isAddMode, setIsAddMode] = useState(false);
 	const isPanelOpen = useFriendsStore((state) => state.isPanelOpen);
 	const togglePanel = useFriendsStore((state) => state.togglePanel);
@@ -44,6 +44,4 @@ const FriendsPanel = () => {
 			</aside>
 		</>
 	);
-};
-
-export default FriendsPanel;
+}

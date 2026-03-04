@@ -1,5 +1,10 @@
 import { useAuthStore } from "@/stores/auth.store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
 import { User, Target, Award, School, Music, TrendingUp } from "lucide-react";
 
 export function ProfilePage() {

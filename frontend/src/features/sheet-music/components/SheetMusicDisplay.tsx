@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useOSMD } from "@/features/sheet-music/hooks";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { SheetMusicFallback } from "@/shared/components/fallbacks";
+import { logger } from "@/lib/logger";
 
 export interface SheetMusicDisplayProps {
 	/**
@@ -139,18 +140,16 @@ const SheetMusicDisplayInternal = ({
  * />
  * ```
  */
-const SheetMusicDisplay = (props: SheetMusicDisplayProps) => {
+export function SheetMusicDisplay(props: SheetMusicDisplayProps) {
 	return (
 		<ComponentErrorBoundary
 			fallback={<SheetMusicFallback />}
 			onError={(error) => {
-				console.error("SheetMusicDisplay error boundary caught:", error);
+				logger.error("SheetMusicDisplay error boundary caught:", error);
 				props.onError?.(error);
 			}}
 		>
 			<SheetMusicDisplayInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-};
-
-export default SheetMusicDisplay;
+}

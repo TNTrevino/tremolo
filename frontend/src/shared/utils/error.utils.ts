@@ -9,11 +9,7 @@ import type { AxiosError } from "axios";
  * Extracts a user-friendly error message from various error types
  */
 export function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) {
-		return error.message;
-	}
-
-	if (isApiError(error)) {
+	if (isAxiosError(error)) {
 		const axiosError = error as AxiosError<{
 			message?: string;
 			error?: string;
@@ -68,6 +64,10 @@ export function getErrorMessage(error: unknown): string {
 		);
 	}
 
+	if (error instanceof Error) {
+		return error.message;
+	}
+
 	if (typeof error === "string") {
 		return error;
 	}
@@ -80,9 +80,9 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Checks if an error is an API/Axios error
+ * Checks if an error is an Axios error
  */
-export function isApiError(error: unknown): error is AxiosError {
+export function isAxiosError(error: unknown): error is AxiosError {
 	return (
 		error instanceof Error &&
 		"isAxiosError" in error &&
@@ -91,10 +91,25 @@ export function isApiError(error: unknown): error is AxiosError {
 }
 
 /**
+ * Type guard for API error response bodies.
+ * Matches the ApiError interface shape: { error: string; message?: string; status?: number }
+ */
+export function isApiErrorResponse(
+	value: unknown,
+): value is { error: string; message?: string; status?: number } {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"error" in value &&
+		typeof (value as Record<string, unknown>).error === "string"
+	);
+}
+
+/**
  * Check if error is a network error
  */
 export function isNetworkError(error: unknown): boolean {
-	if (!isApiError(error)) return false;
+	if (!isAxiosError(error)) return false;
 
 	return (
 		error.code === "ERR_NETWORK" ||
@@ -107,7 +122,7 @@ export function isNetworkError(error: unknown): boolean {
  * Check if error is an authentication error
  */
 export function isAuthError(error: unknown): boolean {
-	if (!isApiError(error)) return false;
+	if (!isAxiosError(error)) return false;
 
 	return error.response?.status === 401 || error.response?.status === 403;
 }
@@ -116,7 +131,7 @@ export function isAuthError(error: unknown): boolean {
  * Check if error is a validation error
  */
 export function isValidationError(error: unknown): boolean {
-	if (!isApiError(error)) return false;
+	if (!isAxiosError(error)) return false;
 
 	return error.response?.status === 400 || error.response?.status === 422;
 }
@@ -125,6 +140,6 @@ export function isValidationError(error: unknown): boolean {
  * Type guard for checking if an error has a specific status code
  */
 export function hasStatusCode(error: unknown, statusCode: number): boolean {
-	if (!isApiError(error)) return false;
+	if (!isAxiosError(error)) return false;
 	return error.response?.status === statusCode;
 }

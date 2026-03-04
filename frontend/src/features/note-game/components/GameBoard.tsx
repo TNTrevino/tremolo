@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Card } from "@/shared/components/ui/card";
 import { useNoteGameDisplay } from "@/features/note-game-display";
 import { useGenerateNoteGame } from "@/shared/hooks/queries";
 import type { NoteAnswer } from "../types";
@@ -187,7 +187,7 @@ const GameBoardInternal = ({
  * Game board component for active gameplay
  * Wrapped with error boundary for enhanced error handling
  */
-const GameBoard = (props: GameBoardProps) => {
+export function GameBoard(props: GameBoardProps) {
 	return (
 		<ComponentErrorBoundary
 			fallback={
@@ -203,6 +203,4 @@ const GameBoard = (props: GameBoardProps) => {
 			<GameBoardInternal {...props} />
 		</ComponentErrorBoundary>
 	);
-};
-
-export default GameBoard;
+}

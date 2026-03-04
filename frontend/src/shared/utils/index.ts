@@ -5,7 +5,8 @@
 
 export {
 	getErrorMessage,
-	isApiError,
+	isAxiosError,
+	isApiErrorResponse,
 	isNetworkError,
 	isAuthError,
 	isValidationError,

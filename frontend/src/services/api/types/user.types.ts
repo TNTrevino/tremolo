@@ -19,3 +19,16 @@ export interface GeneralUserInfo {
 	average_accuracy?: number;
 	average_npm?: number;
 }
+
+export interface UserProfile {
+	id: number;
+	firstName: string;
+	lastName: string;
+	email: string;
+	role: UserRole;
+	createdAt: string;
+	totalSessions?: number;
+	totalQuestions?: number;
+	averageAccuracy?: number;
+	averageNPM?: number;
+}

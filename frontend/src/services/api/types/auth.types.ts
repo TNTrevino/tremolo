@@ -3,15 +3,26 @@
  *
  * Types for user authentication, registration, and session management.
  * Used with the Go backend (port 5001).
+ *
+ * ApiUser  – snake_case shape returned by the API
+ * User     – camelCase shape used throughout the frontend
  */
 
 export type UserRole = "STUDENT" | "TEACHER" | "PARENT";
 
-export interface User {
+export interface ApiUser {
 	id: number;
 	email: string;
 	first_name: string;
 	last_name: string;
+	role: UserRole;
+}
+
+export interface User {
+	id: number;
+	email: string;
+	firstName: string;
+	lastName: string;
 	role: UserRole;
 }
 
@@ -21,7 +32,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-	user: User;
+	user: ApiUser;
 	access_token: string;
 	refresh_token: string;
 }
@@ -36,7 +47,7 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
 	message: string;
-	user: User;
+	user: ApiUser;
 }
 
 export interface RefreshTokenRequest {
@@ -46,4 +57,9 @@ export interface RefreshTokenRequest {
 export interface RefreshTokenResponse {
 	access_token: string;
 	refresh_token: string;
+}
+
+export interface PasswordRequirement {
+	label: string;
+	met: boolean;
 }

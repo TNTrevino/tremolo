@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/stores/auth.store";
+import { useLogout } from "@/shared/hooks/queries/useAuthQuery";
 import { useNavigate } from "react-router-dom";
 import {
 	Card,
@@ -7,10 +10,10 @@ import {
 	CardHeader,
 	CardTitle,
 	CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { FormField } from "@/shared/components/forms/FormField";
+import { FormInput } from "@/shared/components/forms/FormInput";
 import {
 	Shield,
 	Mail,
@@ -21,36 +24,60 @@ import {
 	EyeOff,
 	AlertTriangle,
 } from "lucide-react";
+import {
+	passwordChangeSchema,
+	deleteAccountSchema,
+	type PasswordChangeFormData,
+	type DeleteAccountFormData,
+} from "@/features/auth/validation/schemas";
+import { useToast } from "@/shared/hooks/useToast";
 
 export function AccountPage() {
-	const { user, logoutUser } = useAuthStore();
+	const { user } = useAuthStore();
 	const navigate = useNavigate();
+	const logoutMutation = useLogout();
+	const { showSuccess, showInfo, showError } = useToast();
 
-	const [currentPassword, setCurrentPassword] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
 	const [showPasswords, setShowPasswords] = useState(false);
-	const [deleteConfirmation, setDeleteConfirmation] = useState("");
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+	const {
+		register: registerPassword,
+		handleSubmit: handlePasswordSubmit,
+		formState: { errors: passwordErrors },
+		reset: resetPasswordForm,
+	} = useForm<PasswordChangeFormData>({
+		resolver: zodResolver(passwordChangeSchema),
+	});
+
+	const {
+		register: registerDelete,
+		handleSubmit: handleDeleteSubmit,
+		formState: { errors: deleteErrors },
+		reset: resetDeleteForm,
+	} = useForm<DeleteAccountFormData>({
+		resolver: zodResolver(deleteAccountSchema),
+	});
 
 	if (!user) return null;
 
-	const handlePasswordUpdate = (e: React.FormEvent) => {
-		e.preventDefault();
-		// Mock password update
-		alert("Password update functionality coming soon!");
+	const onPasswordSubmit = (_data: PasswordChangeFormData) => {
+		showInfo("Password update functionality coming soon!");
+		resetPasswordForm();
 	};
 
 	const handleDownloadData = () => {
-		// Mock data download
-		alert("Your data download will begin shortly. (Feature coming soon)");
+		showInfo("Your data download will begin shortly. (Feature coming soon)");
 	};
 
-	const handleDeleteAccount = () => {
-		if (deleteConfirmation === user.email) {
-			alert("Account deletion would occur here");
-			logoutUser();
-			navigate("/");
+	const onDeleteSubmit = (data: DeleteAccountFormData) => {
+		if (data.emailConfirmation === user.email) {
+			showSuccess("Account deletion would occur here");
+			logoutMutation.mutate(undefined, {
+				onSuccess: () => navigate("/"),
+			});
+		} else {
+			showError("Email does not match your account email");
 		}
 	};
 
@@ -64,7 +91,6 @@ export function AccountPage() {
 					</p>
 				</div>
 
-				{/* Account Security */}
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
@@ -80,22 +106,35 @@ export function AccountPage() {
 						</div>
 					</CardHeader>
 					<CardContent>
-						<form onSubmit={handlePasswordUpdate} className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="currentPassword">Current Password</Label>
+						<form
+							onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+							className="space-y-4"
+						>
+							{passwordErrors.root && (
+								<div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
+									{passwordErrors.root.message}
+								</div>
+							)}
+
+							<FormField
+								label="Current Password"
+								error={passwordErrors.currentPassword?.message}
+								htmlFor="currentPassword"
+							>
 								<div className="relative">
-									<Input
+									<FormInput
 										id="currentPassword"
 										type={showPasswords ? "text" : "password"}
-										value={currentPassword}
-										onChange={(e) => setCurrentPassword(e.target.value)}
 										placeholder="Enter current password"
+										autoComplete="current-password"
 										className="pr-10"
+										{...registerPassword("currentPassword")}
+										error={passwordErrors.currentPassword?.message}
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPasswords(!showPasswords)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
 									>
 										{showPasswords ? (
 											<EyeOff className="h-4 w-4" />
@@ -104,29 +143,37 @@ export function AccountPage() {
 										)}
 									</button>
 								</div>
-							</div>
+							</FormField>
 
-							<div className="space-y-2">
-								<Label htmlFor="newPassword">New Password</Label>
-								<Input
+							<FormField
+								label="New Password"
+								error={passwordErrors.newPassword?.message}
+								htmlFor="newPassword"
+							>
+								<FormInput
 									id="newPassword"
 									type={showPasswords ? "text" : "password"}
-									value={newPassword}
-									onChange={(e) => setNewPassword(e.target.value)}
 									placeholder="Enter new password"
+									autoComplete="new-password"
+									{...registerPassword("newPassword")}
+									error={passwordErrors.newPassword?.message}
 								/>
-							</div>
+							</FormField>
 
-							<div className="space-y-2">
-								<Label htmlFor="confirmPassword">Confirm New Password</Label>
-								<Input
+							<FormField
+								label="Confirm New Password"
+								error={passwordErrors.confirmPassword?.message}
+								htmlFor="confirmPassword"
+							>
+								<FormInput
 									id="confirmPassword"
 									type={showPasswords ? "text" : "password"}
-									value={confirmPassword}
-									onChange={(e) => setConfirmPassword(e.target.value)}
 									placeholder="Confirm new password"
+									autoComplete="new-password"
+									{...registerPassword("confirmPassword")}
+									error={passwordErrors.confirmPassword?.message}
 								/>
-							</div>
+							</FormField>
 
 							<Button type="submit">
 								<Key className="mr-2 h-4 w-4" />
@@ -136,7 +183,6 @@ export function AccountPage() {
 					</CardContent>
 				</Card>
 
-				{/* Email Management */}
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
@@ -151,7 +197,7 @@ export function AccountPage() {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<Label>Current Email</Label>
+							<p className="text-sm font-medium">Current Email</p>
 							<div className="text-lg font-medium">{user.email}</div>
 						</div>
 						<p className="text-sm text-muted-foreground">
@@ -162,7 +208,6 @@ export function AccountPage() {
 					</CardContent>
 				</Card>
 
-				{/* Privacy Settings */}
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
@@ -188,7 +233,6 @@ export function AccountPage() {
 					</CardContent>
 				</Card>
 
-				{/* Data & Privacy */}
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
@@ -216,7 +260,6 @@ export function AccountPage() {
 					</CardContent>
 				</Card>
 
-				{/* Danger Zone */}
 				<Card className="shadow-lg border-destructive/50">
 					<CardHeader>
 						<div className="flex items-center gap-3">
@@ -247,7 +290,6 @@ export function AccountPage() {
 					</CardContent>
 				</Card>
 
-				{/* Delete Confirmation Modal */}
 				{showDeleteModal && (
 					<div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 						<Card className="w-full max-w-md shadow-2xl border-destructive">
@@ -257,38 +299,49 @@ export function AccountPage() {
 								</CardTitle>
 								<CardDescription>This action cannot be undone</CardDescription>
 							</CardHeader>
-							<CardContent className="space-y-4">
-								<p className="text-sm">
-									All your practice data, statistics, and account information
-									will be permanently deleted. Type your email address to
-									confirm:
-								</p>
-								<Input
-									type="email"
-									placeholder={user.email}
-									value={deleteConfirmation}
-									onChange={(e) => setDeleteConfirmation(e.target.value)}
-								/>
-								<div className="flex gap-2">
-									<Button
-										variant="outline"
-										onClick={() => {
-											setShowDeleteModal(false);
-											setDeleteConfirmation("");
-										}}
-										className="flex-1"
+							<CardContent>
+								<form
+									onSubmit={handleDeleteSubmit(onDeleteSubmit)}
+									className="space-y-4"
+								>
+									<p className="text-sm">
+										All your practice data, statistics, and account information
+										will be permanently deleted. Type your email address to
+										confirm:
+									</p>
+									<FormField
+										error={deleteErrors.emailConfirmation?.message}
+										htmlFor="emailConfirmation"
 									>
-										Cancel
-									</Button>
-									<Button
-										variant="destructive"
-										onClick={handleDeleteAccount}
-										disabled={deleteConfirmation !== user.email}
-										className="flex-1"
-									>
-										Permanently Delete Account
-									</Button>
-								</div>
+										<FormInput
+											id="emailConfirmation"
+											type="email"
+											placeholder={user.email}
+											{...registerDelete("emailConfirmation")}
+											error={deleteErrors.emailConfirmation?.message}
+										/>
+									</FormField>
+									<div className="flex gap-2">
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() => {
+												setShowDeleteModal(false);
+												resetDeleteForm();
+											}}
+											className="flex-1"
+										>
+											Cancel
+										</Button>
+										<Button
+											type="submit"
+											variant="destructive"
+											className="flex-1"
+										>
+											Permanently Delete Account
+										</Button>
+									</div>
+								</form>
 							</CardContent>
 						</Card>
 					</div>
