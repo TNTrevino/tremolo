@@ -20,6 +20,7 @@ export interface GameBoardProps {
 	formatTime?: (seconds: number) => string;
 	scale: string;
 	octave: number;
+	isReady?: boolean;
 }
 
 const extractTonic = (scaleStr: string): string => {
@@ -41,8 +42,13 @@ const GameBoardInternal = ({
 	formatTime,
 	scale,
 	octave,
+	isReady: isGameReady,
 }: GameBoardProps) => {
-	const { containerRef, loadNote, isReady } = useNoteGameDisplay({
+	const {
+		containerRef,
+		loadNote,
+		isReady: isDisplayReady,
+	} = useNoteGameDisplay({
 		darkMode: true,
 		zoom: 2.0,
 	});
@@ -50,7 +56,7 @@ const GameBoardInternal = ({
 	const { pop, isInitializing } = useNoteQueue(
 		extractTonic(scale),
 		octave.toString(),
-		isReady,
+		isDisplayReady,
 	);
 
 	const [loadError, setLoadError] = useState(false);
@@ -62,7 +68,7 @@ const GameBoardInternal = ({
 			: 0;
 
 	useEffect(() => {
-		if (!isReady || isInitializing) return;
+		if (!isDisplayReady || isInitializing) return;
 
 		let cancelled = false;
 
@@ -93,7 +99,14 @@ const GameBoardInternal = ({
 		return () => {
 			cancelled = true;
 		};
-	}, [answers.length, isReady, isInitializing, pop, loadNote, onNoteGenerated]);
+	}, [
+		answers.length,
+		isDisplayReady,
+		isInitializing,
+		pop,
+		loadNote,
+		onNoteGenerated,
+	]);
 
 	const getTimerDisplay = () => {
 		if (gameMode === GameMode.Time && timeRemaining !== undefined) {
@@ -151,6 +164,12 @@ const GameBoardInternal = ({
 					</Card>
 				)}
 			</div>
+
+			{isGameReady && (
+				<div className="text-center text-sm text-muted-foreground animate-pulse">
+					Press a key or click a note to begin
+				</div>
+			)}
 
 			{/* Answer Buttons */}
 			<Card className="p-4">
