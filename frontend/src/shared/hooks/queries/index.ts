@@ -6,6 +6,8 @@ export {
 	useUserProfile,
 	useUserStats,
 	useSaveGameResult,
+	useNoteGameSettings,
+	useSaveNoteGameSettings,
 	userKeys,
 } from "./useUserQuery";
 
