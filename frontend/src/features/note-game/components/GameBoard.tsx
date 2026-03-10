@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { useNoteGameDisplay } from "@/features/note-game-display";
-import { useGenerateNoteGame } from "@/shared/hooks/queries";
+import { useNoteQueue } from "../hooks";
 import type { NoteAnswer } from "../types";
 import { GameMode, NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
@@ -22,6 +22,10 @@ export interface GameBoardProps {
 	octave: number;
 }
 
+const extractTonic = (scaleStr: string): string => {
+	return scaleStr.split(" ")[0] ?? "C";
+};
+
 /**
  * Game board component for active gameplay (Internal)
  * Displays score, current note (as sheet music), and answer buttons
@@ -38,16 +42,18 @@ const GameBoardInternal = ({
 	scale,
 	octave,
 }: GameBoardProps) => {
-	const generateNote = useGenerateNoteGame();
-	const mutateRef = useRef(generateNote.mutate);
-	useEffect(() => {
-		mutateRef.current = generateNote.mutate;
-	});
-
 	const { containerRef, loadNote, isReady } = useNoteGameDisplay({
 		darkMode: true,
 		zoom: 2.0,
 	});
+
+	const { pop, isInitializing } = useNoteQueue(
+		extractTonic(scale),
+		octave.toString(),
+		isReady,
+	);
+
+	const [loadError, setLoadError] = useState(false);
 
 	const correctAnswers = answers.filter((a) => a.correct).length;
 	const accuracy =
@@ -55,34 +61,39 @@ const GameBoardInternal = ({
 			? Math.round((correctAnswers / answers.length) * 100)
 			: 0;
 
-	const extractTonic = (scaleStr: string): string => {
-		return scaleStr.split(" ")[0] ?? "C";
-	};
-
-	// Fetch a new note after each answer (or on initial mount).
-	// We gate on isReady so no API call is made until the OSMD
-	// container is mounted.
 	useEffect(() => {
-		if (!isReady) return;
+		if (!isReady || isInitializing) return;
 
 		let cancelled = false;
-		const tonic = extractTonic(scale);
 
-		mutateRef.current(
-			{ scale: tonic, octave: octave.toString() },
-			{
-				onSuccess: async (response) => {
-					if (cancelled) return;
-					await loadNote(response.generatedXml);
-					if (!cancelled) onNoteGenerated(response.noteName);
-				},
-			},
-		);
+		const loadNext = async () => {
+			const note = pop();
+			if (!note) {
+				logger.warn("useNoteQueue: pop() returned null — queue was empty");
+				return;
+			}
+
+			try {
+				await loadNote(note.generatedXml);
+				if (!cancelled) {
+					setLoadError(false);
+					onNoteGenerated(note.noteName);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					logger.error("Failed to render note in OSMD", err);
+					setLoadError(true);
+					onNoteGenerated(note.noteName);
+				}
+			}
+		};
+
+		void loadNext();
 
 		return () => {
 			cancelled = true;
 		};
-	}, [answers.length, scale, octave, isReady, loadNote, onNoteGenerated]);
+	}, [answers.length, isReady, isInitializing, pop, loadNote, onNoteGenerated]);
 
 	const getTimerDisplay = () => {
 		if (gameMode === GameMode.Time && timeRemaining !== undefined) {
@@ -110,7 +121,7 @@ const GameBoardInternal = ({
 				<div className="text-center text-sm text-muted-foreground">
 					Identify this note:
 				</div>
-				{generateNote.isError ? (
+				{loadError ? (
 					<Card className="p-12 min-h-[18.75rem] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
 						<div className="text-center space-y-4">
 							<div className="text-destructive font-medium">
@@ -126,7 +137,7 @@ const GameBoardInternal = ({
 					</Card>
 				) : (
 					<Card className="relative flex items-center justify-center overflow-hidden">
-						{generateNote.isPending && (
+						{isInitializing && (
 							<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
 								<div className="text-center text-muted-foreground">
 									Loading sheet music...
