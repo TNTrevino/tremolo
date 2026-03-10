@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import {
@@ -16,12 +16,12 @@ import {
 import { formatTimeLength } from "@/features/note-game/utils";
 import { GameBoard } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
-import { GameSettings } from "@/features/note-game/components/GameSettings";
+import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 
 /**
  * Note Recognition Game Page
  * Main orchestrator for the note game feature - manages state flow between
- * settings, playing, and results screens
+ * ready, playing, and results screens
  */
 export function NoteGamePage() {
 	const { isAuthenticated, user } = useAuthStore();
@@ -65,6 +65,12 @@ export function NoteGamePage() {
 		[isAuthenticated, user, showSuccess, showError, saveResult],
 	);
 
+	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
+		endGame();
+	});
+
+	const gameStartRef = useRef<() => void>();
+
 	const {
 		gameState,
 		currentNote,
@@ -72,16 +78,29 @@ export function NoteGamePage() {
 		gameStats,
 		settings,
 		updateSettings,
-		startGame: handleStartGame,
 		handleAnswer,
 		endGame,
 		resetGame,
 		syncCurrentNote,
-	} = useNoteGame({ onGameEnd: handleGameEnd });
-
-	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
-		endGame();
+	} = useNoteGame({
+		onGameEnd: handleGameEnd,
+		onGameStart: () => gameStartRef.current?.(),
 	});
+
+	gameStartRef.current = () => {
+		if (settings.gameMode === GameMode.Time) {
+			startTimer(settings.timeLimit);
+		}
+		if (isAuthenticated) {
+			saveSettings.mutate({
+				game_mode: settings.gameMode,
+				time_limit: settings.timeLimit,
+				note_limit: settings.noteLimit,
+				scale: settings.scale,
+				octave: settings.octave,
+			});
+		}
+	};
 
 	useEffect(() => {
 		if (savedSettings) {
@@ -95,56 +114,36 @@ export function NoteGamePage() {
 		}
 	}, [savedSettings, updateSettings]);
 
-	const startGame = () => {
-		handleStartGame();
-		if (settings.gameMode === GameMode.Time) {
-			startTimer(settings.timeLimit);
-		}
-
-		if (isAuthenticated) {
-			saveSettings.mutate({
-				game_mode: settings.gameMode,
-				time_limit: settings.timeLimit,
-				note_limit: settings.noteLimit,
-				scale: settings.scale,
-				octave: settings.octave,
-			});
-		}
-	};
-
 	return (
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl">
-				{gameState === GameState.Settings && (
-					<GameSettings
-						settings={settings}
-						onSettingsChange={updateSettings}
-						onStartGame={startGame}
-					/>
-				)}
-
-				{gameState === GameState.Playing && (
-					<GameBoard
-						currentNote={currentNote}
-						answers={answers}
-						timeRemaining={timeRemaining}
-						noteLimit={settings.noteLimit}
-						gameMode={settings.gameMode}
-						onAnswer={handleAnswer}
-						onNoteGenerated={syncCurrentNote}
-						formatTime={formatTime}
-						scale={settings.scale}
-						octave={settings.octave}
-					/>
-				)}
-
-				{gameState === GameState.GameOver && gameStats && (
+				{gameState === GameState.GameOver && gameStats ? (
 					<GameResults
 						gameStats={gameStats}
 						pastGames={pastGames}
 						isAuthenticated={isAuthenticated}
 						onPlayAgain={resetGame}
 					/>
+				) : (
+					<div className="space-y-6">
+						<SettingsBar
+							settings={settings}
+							onSettingsChange={updateSettings}
+							disabled={gameState === GameState.Playing}
+						/>
+						<GameBoard
+							currentNote={currentNote}
+							answers={answers}
+							timeRemaining={timeRemaining}
+							noteLimit={settings.noteLimit}
+							gameMode={settings.gameMode}
+							onAnswer={handleAnswer}
+							onNoteGenerated={syncCurrentNote}
+							formatTime={formatTime}
+							scale={settings.scale}
+							octave={settings.octave}
+						/>
+					</div>
 				)}
 			</div>
 		</div>
