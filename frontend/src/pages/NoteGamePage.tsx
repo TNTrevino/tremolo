@@ -142,6 +142,7 @@ export function NoteGamePage() {
 							formatTime={formatTime}
 							scale={settings.scale}
 							octave={settings.octave}
+							isReady={gameState === GameState.Ready}
 						/>
 					</div>
 				)}
