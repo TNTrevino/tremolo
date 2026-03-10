@@ -51,6 +51,8 @@ export type {
 	CreateNoteGameEntryRequest,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
+	NoteGameSettingsResponse,
+	NoteGameSettingsRequest,
 	GeneralUserInfo,
 	UserProfile,
 	ChartDataPoint,

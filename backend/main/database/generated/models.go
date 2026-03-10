@@ -27,6 +27,16 @@ type TremoloNoteGameEntry struct {
 	CreatedTime      sql.NullTime `json:"created_time"`
 }
 
+type TremoloNoteGameSetting struct {
+	ID        int32  `json:"id"`
+	UserID    int32  `json:"user_id"`
+	GameMode  string `json:"game_mode"`
+	TimeLimit int32  `json:"time_limit"`
+	NoteLimit int32  `json:"note_limit"`
+	Scale     string `json:"scale"`
+	Octave    int32  `json:"octave"`
+}
+
 type TremoloParentChild struct {
 	ParentID int32 `json:"parent_id"`
 	ChildID  int32 `json:"child_id"`

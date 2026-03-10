@@ -35,3 +35,21 @@ export interface CreateNoteGameEntryResponse {
 	message: string;
 	id: number;
 }
+
+export interface NoteGameSettingsResponse {
+	id: number;
+	user_id: number;
+	game_mode: string;
+	time_limit: number;
+	note_limit: number;
+	scale: string;
+	octave: number;
+}
+
+export interface NoteGameSettingsRequest {
+	game_mode: string;
+	time_limit: number;
+	note_limit: number;
+	scale: string;
+	octave: number;
+}
