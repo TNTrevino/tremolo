@@ -55,15 +55,10 @@ func UpdateNoteGameSettings(c *gin.Context) {
 		return
 	}
 
-	if err := req.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	ctx := c.Request.Context()
 	result, err := services.UpsertNoteGameSettings(ctx, database.Queries, userID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save settings"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
