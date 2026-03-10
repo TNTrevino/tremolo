@@ -8,6 +8,8 @@ import type {
 	ChartQueryParams,
 	SaveGameResultParams,
 	CreateNoteGameEntryResponse,
+	NoteGameSettingsResponse,
+	NoteGameSettingsRequest,
 } from "@/services/api/types";
 
 export const userKeys = {
@@ -18,6 +20,7 @@ export const userKeys = {
 	recentGames: () => [...userKeys.all, "recent-games"] as const,
 	classMetrics: (params?: ChartQueryParams) =>
 		[...userKeys.all, "class-metrics", params] as const,
+	noteGameSettings: () => [...userKeys.all, "note-game-settings"] as const,
 };
 
 /**
@@ -85,6 +88,30 @@ export function useSaveGameResult() {
 			});
 			queryClient.invalidateQueries({
 				queryKey: [...userKeys.all, "profile"],
+			});
+		},
+	});
+}
+
+export function useNoteGameSettings() {
+	const authUser = useAuthStore((state) => state.user);
+
+	return useQuery<NoteGameSettingsResponse | null>({
+		queryKey: userKeys.noteGameSettings(),
+		queryFn: () => userService.getNoteGameSettings(),
+		enabled: !!authUser?.id,
+		staleTime: 10 * 60 * 1000,
+	});
+}
+
+export function useSaveNoteGameSettings() {
+	const queryClient = useQueryClient();
+
+	return useMutation<NoteGameSettingsResponse, Error, NoteGameSettingsRequest>({
+		mutationFn: (settings) => userService.saveNoteGameSettings(settings),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: userKeys.noteGameSettings(),
 			});
 		},
 	});

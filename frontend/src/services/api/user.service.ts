@@ -1,10 +1,12 @@
-import type { AxiosInstance } from "axios";
+import { AxiosError, type AxiosInstance } from "axios";
 import type {
 	GeneralUserInfo,
 	SaveGameResultParams,
 	CreateNoteGameEntryRequest,
 	CreateNoteGameEntryResponse,
 	NoteGameEntry,
+	NoteGameSettingsResponse,
+	NoteGameSettingsRequest,
 	MultiMetricChartData,
 	ChartQueryParams,
 } from "./types";
@@ -115,6 +117,34 @@ export class UserService {
 		const response = await this.client.get(`/api/users/${userId}/data-export`, {
 			responseType: "blob",
 		});
+		return response.data;
+	}
+
+	async getNoteGameSettings(): Promise<NoteGameSettingsResponse | null> {
+		try {
+			const response = await this.client.get<NoteGameSettingsResponse>(
+				"/api/note-game/settings",
+			);
+			const data = response.data as unknown as Record<string, unknown>;
+			if ("settings" in data && data.settings === null) {
+				return null;
+			}
+			return response.data;
+		} catch (error) {
+			if (error instanceof AxiosError && error.response?.status === 404) {
+				return null;
+			}
+			throw error;
+		}
+	}
+
+	async saveNoteGameSettings(
+		settings: NoteGameSettingsRequest,
+	): Promise<NoteGameSettingsResponse> {
+		const response = await this.client.put<NoteGameSettingsResponse>(
+			"/api/note-game/settings",
+			settings,
+		);
 		return response.data;
 	}
 }

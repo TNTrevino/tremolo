@@ -31,6 +31,7 @@ type Querier interface {
 	DeleteAllTestData(ctx context.Context) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
+	DeleteNoteGameSettings(ctx context.Context, userID int32) error
 	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
 	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
 	// relationship queries
@@ -47,6 +48,7 @@ type Querier interface {
 	// Returns users who have a mutual follow relationship with the given user
 	// (both directions exist in the friends table = they are friends)
 	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
+	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
@@ -61,6 +63,7 @@ type Querier interface {
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)
 }
 
 var _ Querier = (*Queries)(nil)

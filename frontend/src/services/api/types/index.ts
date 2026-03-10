@@ -22,6 +22,8 @@ export type {
 	SaveGameResultParams,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
+	NoteGameSettingsResponse,
+	NoteGameSettingsRequest,
 } from "./game.types";
 
 export type { GeneralUserInfo, UserProfile } from "./user.types";
