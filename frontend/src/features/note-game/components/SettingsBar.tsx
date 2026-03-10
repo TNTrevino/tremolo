@@ -6,7 +6,6 @@ import { GameMode, SCALES } from "../types";
 export interface SettingsBarProps {
 	settings: GameSettingsType;
 	onSettingsChange: (settings: Partial<GameSettingsType>) => void;
-	disabled?: boolean;
 }
 
 const TIME_LIMITS = [15, 30, 60, 120] as const;
@@ -21,21 +20,13 @@ function Divider() {
  * Compact horizontal settings bar inspired by Monkeytype.
  * Displays game mode, limit, scale, and octave controls in a single row.
  */
-export function SettingsBar({
-	settings,
-	onSettingsChange,
-	disabled = false,
-}: SettingsBarProps) {
+export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	const isTimeMode = settings.gameMode === GameMode.Time;
 	const limits = isTimeMode ? TIME_LIMITS : NOTE_LIMITS;
 	const activeLimit = isTimeMode ? settings.timeLimit : settings.noteLimit;
 
 	return (
-		<div
-			className={`flex items-center gap-3 bg-card border-2 border-border rounded-lg px-4 py-2 ${
-				disabled ? "pointer-events-none opacity-50" : ""
-			}`}
-		>
+		<div className="flex items-center gap-3 bg-card border-2 border-border rounded-lg px-4 py-2 min-h-[3rem]">
 			{/* Game Mode Toggle */}
 			<div className="flex items-center gap-1">
 				<Button

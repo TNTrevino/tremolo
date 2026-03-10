@@ -16,6 +16,7 @@ import {
 import { formatTimeLength } from "@/features/note-game/utils";
 import { GameBoard } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
+import { ScoreBar } from "@/features/note-game/components/ScoreBar";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 
 /**
@@ -133,23 +134,27 @@ export function NoteGamePage() {
 					/>
 				) : (
 					<div className="space-y-6">
-						<SettingsBar
-							settings={settings}
-							onSettingsChange={updateSettings}
-							disabled={gameState === GameState.Playing}
-						/>
+						{gameState === GameState.Playing ? (
+							<ScoreBar
+								answers={answers}
+								timeRemaining={timeRemaining}
+								noteLimit={settings.noteLimit}
+								gameMode={settings.gameMode}
+								formatTime={formatTime}
+							/>
+						) : (
+							<SettingsBar
+								settings={settings}
+								onSettingsChange={updateSettings}
+							/>
+						)}
 						<GameBoard
 							currentNote={currentNote}
 							answers={answers}
-							timeRemaining={timeRemaining}
-							noteLimit={settings.noteLimit}
-							gameMode={settings.gameMode}
 							onAnswer={handleAnswer}
 							onNoteGenerated={syncCurrentNote}
-							formatTime={formatTime}
 							scale={settings.scale}
 							octave={settings.octave}
-							isReady={gameState === GameState.Ready}
 						/>
 					</div>
 				)}

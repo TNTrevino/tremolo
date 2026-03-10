@@ -12,6 +12,7 @@ export type {
 	GameBoardProps,
 	GameResultsProps,
 	SettingsBarProps,
+	ScoreBarProps,
 } from "./components";
 
 // Types
