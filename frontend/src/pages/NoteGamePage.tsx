@@ -65,11 +65,12 @@ export function NoteGamePage() {
 		[isAuthenticated, user, showSuccess, showError, saveResult],
 	);
 
-	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
-		endGame();
-	});
-
+	const endGameRef = useRef<() => void>();
 	const gameStartRef = useRef<() => void>();
+
+	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
+		endGameRef.current?.();
+	});
 
 	const {
 		gameState,
@@ -87,20 +88,26 @@ export function NoteGamePage() {
 		onGameStart: () => gameStartRef.current?.(),
 	});
 
-	gameStartRef.current = () => {
-		if (settings.gameMode === GameMode.Time) {
-			startTimer(settings.timeLimit);
-		}
-		if (isAuthenticated) {
-			saveSettings.mutate({
-				game_mode: settings.gameMode,
-				time_limit: settings.timeLimit,
-				note_limit: settings.noteLimit,
-				scale: settings.scale,
-				octave: settings.octave,
-			});
-		}
-	};
+	useEffect(() => {
+		endGameRef.current = endGame;
+	}, [endGame]);
+
+	useEffect(() => {
+		gameStartRef.current = () => {
+			if (settings.gameMode === GameMode.Time) {
+				startTimer(settings.timeLimit);
+			}
+			if (isAuthenticated) {
+				saveSettings.mutate({
+					game_mode: settings.gameMode,
+					time_limit: settings.timeLimit,
+					note_limit: settings.noteLimit,
+					scale: settings.scale,
+					octave: settings.octave,
+				});
+			}
+		};
+	}, [settings, startTimer, isAuthenticated, saveSettings]);
 
 	useEffect(() => {
 		if (savedSettings) {
