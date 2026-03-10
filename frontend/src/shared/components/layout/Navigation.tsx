@@ -31,7 +31,7 @@ export function Navigation() {
 	const location = useLocation();
 
 	const navLinks = [
-		{ to: "/", label: "Tremolo" },
+		{ to: "/home", label: "Tremolo" },
 		{ to: "/sheet-music", label: "Practice" },
 		{ to: "/note-game", label: "Note Game" },
 		{ to: "/about", label: "About" },
@@ -51,7 +51,7 @@ export function Navigation() {
 			<div className="container mx-auto px-4">
 				<div className="flex h-16 items-center justify-between">
 					{/* Logo */}
-					<Link to="/" className="flex items-center space-x-2 group">
+					<Link to="/home" className="flex items-center space-x-2 group">
 						<div className="rounded-lg bg-primary p-2 group-hover:scale-110 transition-transform">
 							<Music className="h-6 w-6 text-primary-foreground" />
 						</div>

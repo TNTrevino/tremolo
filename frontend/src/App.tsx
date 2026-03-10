@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 
@@ -68,7 +68,8 @@ function AppContent() {
 				<Suspense fallback={<PageLoader />}>
 					<Routes>
 						{/* Public Routes */}
-						<Route path="/" element={<HomePage />} />
+						<Route path="/" element={<Navigate to="/note-game" replace />} />
+						<Route path="/home" element={<HomePage />} />
 						<Route path="/about" element={<AboutPage />} />
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/signup" element={<SignupPage />} />
