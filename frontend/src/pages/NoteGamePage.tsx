@@ -1,7 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
-import { useSaveGameResult } from "@/shared/hooks/queries";
+import {
+	useSaveGameResult,
+	useNoteGameSettings,
+	useSaveNoteGameSettings,
+} from "@/shared/hooks/queries";
 import type { GameStats } from "@/shared/types";
 import {
 	useNoteGame,
@@ -24,6 +28,8 @@ export function NoteGamePage() {
 	const { showSuccess, showError } = useToast();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
 	const saveResult = useSaveGameResult();
+	const { data: savedSettings } = useNoteGameSettings();
+	const saveSettings = useSaveNoteGameSettings();
 
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {
@@ -77,10 +83,32 @@ export function NoteGamePage() {
 		endGame();
 	});
 
+	useEffect(() => {
+		if (savedSettings) {
+			updateSettings({
+				gameMode: savedSettings.game_mode as GameMode,
+				timeLimit: savedSettings.time_limit,
+				noteLimit: savedSettings.note_limit,
+				scale: savedSettings.scale,
+				octave: savedSettings.octave,
+			});
+		}
+	}, [savedSettings, updateSettings]);
+
 	const startGame = () => {
 		handleStartGame();
 		if (settings.gameMode === GameMode.Time) {
 			startTimer(settings.timeLimit);
+		}
+
+		if (isAuthenticated) {
+			saveSettings.mutate({
+				game_mode: settings.gameMode,
+				time_limit: settings.timeLimit,
+				note_limit: settings.noteLimit,
+				scale: settings.scale,
+				octave: settings.octave,
+			});
 		}
 	};
 
