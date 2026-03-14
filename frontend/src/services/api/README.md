@@ -6,7 +6,7 @@ This directory contains the API service layer for the Tremolo frontend applicati
 
 The application uses a **microservices architecture** with two backend services:
 
-1. **Music Generation Service** (Django, port 8000)
+1. **Music Generation Service** (FastAPI, port 8000)
    - Generates MusicXML for various exercises
    - No authentication required
 

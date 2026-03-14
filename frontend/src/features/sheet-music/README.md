@@ -11,5 +11,5 @@ This feature handles sheet music display and music generation functionality usin
 ## Related Files
 
 - Pages: `SheetMusicPage.tsx`, `ConverterPage.tsx`
-- Services: Music generation backend (Django/Music21)
+- Services: Music generation backend (FastAPI/Music21)
 - Library: OpenSheetMusicDisplay integration

@@ -1,7 +1,7 @@
 /**
  * Music API Client
  *
- * Axios instance for the Django music generation backend (port 8000).
+ * Axios instance for the FastAPI music generation backend (port 8000).
  * No authentication required - returns MusicXML content.
  */
 
