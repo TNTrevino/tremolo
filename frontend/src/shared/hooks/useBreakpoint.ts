@@ -12,12 +12,6 @@ interface Breakpoint {
 	isDesktop: boolean;
 }
 
-let cachedSnapshot: Breakpoint = {
-	isMobile: false,
-	isPhoneLandscape: false,
-	isDesktop: true,
-};
-
 function computeSnapshot(): Breakpoint {
 	const phoneLandscape = window.matchMedia(QUERIES.phoneLandscape).matches;
 	return {
@@ -26,6 +20,11 @@ function computeSnapshot(): Breakpoint {
 		isDesktop: window.matchMedia(QUERIES.desktop).matches && !phoneLandscape,
 	};
 }
+
+let cachedSnapshot: Breakpoint =
+	typeof window !== "undefined"
+		? computeSnapshot()
+		: { isMobile: false, isPhoneLandscape: false, isDesktop: true };
 
 function getSnapshot(): Breakpoint {
 	if (typeof window === "undefined") return cachedSnapshot;
