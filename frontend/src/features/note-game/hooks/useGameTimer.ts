@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 /**
  * Custom hook for managing game timer in time mode
@@ -8,26 +8,28 @@ export function useGameTimer(onTimerEnd?: () => void) {
 	const [timeRemaining, setTimeRemaining] = useState(0);
 	const [isRunning, setIsRunning] = useState(false);
 
+	const onTimerEndRef = useRef(onTimerEnd);
+	useEffect(() => {
+		onTimerEndRef.current = onTimerEnd;
+	}, [onTimerEnd]);
+
 	// Timer countdown effect
 	useEffect(() => {
-		if (isRunning && timeRemaining > 0) {
-			const timer = setInterval(() => {
-				setTimeRemaining((prev) => {
-					if (prev <= 1) {
-						setIsRunning(false);
-						if (onTimerEnd) {
-							onTimerEnd();
-						}
-						return 0;
-					}
-					return prev - 1;
-				});
-			}, 1000);
+		if (!isRunning) return undefined;
 
-			return () => clearInterval(timer);
-		}
-		return undefined;
-	}, [isRunning, timeRemaining, onTimerEnd]);
+		const timer = setInterval(() => {
+			setTimeRemaining((prev) => {
+				if (prev <= 1) {
+					setIsRunning(false);
+					onTimerEndRef.current?.();
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1000);
+
+		return () => clearInterval(timer);
+	}, [isRunning]);
 
 	const startTimer = useCallback((seconds: number) => {
 		setTimeRemaining(seconds);
