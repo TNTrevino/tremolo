@@ -37,25 +37,18 @@ function SettingsBarMobile({ settings, onSettingsChange }: SettingsBarProps) {
 
 	return (
 		<>
-			<div
-				className="flex items-center justify-between bg-card border-2 border-border rounded-lg px-3 py-1.5 cursor-pointer"
+			<button
+				type="button"
+				className="flex items-center justify-between bg-card border-2 border-border rounded-lg px-3 py-1.5 cursor-pointer w-full text-left"
 				onClick={() => setDrawerOpen(true)}
 			>
 				<span className="text-sm text-muted-foreground truncate">
 					{summaryText}
 				</span>
-				<Button
-					size="sm"
-					variant="ghost"
-					className="flex-shrink-0 ml-2"
-					onClick={(e) => {
-						e.stopPropagation();
-						setDrawerOpen(true);
-					}}
-				>
-					<Settings className="h-4 w-4" />
-				</Button>
-			</div>
+				<span className="flex-shrink-0 ml-2 p-1">
+					<Settings className="h-4 w-4 text-muted-foreground" />
+				</span>
+			</button>
 			<MobileSettingsDrawer
 				settings={settings}
 				onSettingsChange={onSettingsChange}
@@ -75,7 +68,8 @@ function SettingsBarLandscape({
 
 	return (
 		<>
-			<div
+			<button
+				type="button"
 				className="flex flex-col items-center justify-center gap-1 bg-card border-2 border-border rounded-lg px-2 py-2 cursor-pointer w-full h-full"
 				onClick={() => setDrawerOpen(true)}
 			>
@@ -88,7 +82,7 @@ function SettingsBarLandscape({
 					</span>
 				))}
 				<Settings className="h-3.5 w-3.5 text-muted-foreground mt-1" />
-			</div>
+			</button>
 			<MobileSettingsDrawer
 				settings={settings}
 				onSettingsChange={onSettingsChange}

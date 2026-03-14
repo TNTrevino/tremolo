@@ -45,7 +45,9 @@ export function MobileSettingsDrawer({
 	return (
 		<>
 			{/* Backdrop */}
-			<div
+			<button
+				type="button"
+				aria-label="Close settings"
 				className={`fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 ${
 					open ? "opacity-100" : "opacity-0 pointer-events-none"
 				}`}
@@ -81,9 +83,9 @@ export function MobileSettingsDrawer({
 
 					{/* Game Mode */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-muted-foreground">
+						<span className="text-sm font-medium text-muted-foreground">
 							Mode
-						</label>
+						</span>
 						<div className="grid grid-cols-2 gap-2">
 							<Button
 								variant={isTimeMode ? "default" : "outline"}
@@ -104,9 +106,9 @@ export function MobileSettingsDrawer({
 
 					{/* Limit */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-muted-foreground">
+						<span className="text-sm font-medium text-muted-foreground">
 							{isTimeMode ? "Time Limit" : "Note Limit"}
-						</label>
+						</span>
 						<div className="grid grid-cols-4 gap-2">
 							{limits.map((limit) => (
 								<Button
@@ -127,10 +129,14 @@ export function MobileSettingsDrawer({
 
 					{/* Scale */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-muted-foreground">
+						<label
+							htmlFor="mobile-scale-select"
+							className="text-sm font-medium text-muted-foreground"
+						>
 							Scale
 						</label>
 						<Select
+							id="mobile-scale-select"
 							className="h-11"
 							value={settings.scale}
 							onChange={(e) => onSettingsChange({ scale: e.target.value })}
@@ -145,10 +151,14 @@ export function MobileSettingsDrawer({
 
 					{/* Octave */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-muted-foreground">
+						<label
+							htmlFor="mobile-octave-select"
+							className="text-sm font-medium text-muted-foreground"
+						>
 							Octave
 						</label>
 						<Select
+							id="mobile-octave-select"
 							className="h-11"
 							value={settings.octave.toString()}
 							onChange={(e) =>
