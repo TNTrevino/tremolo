@@ -301,7 +301,7 @@ AuthService.getToken(): string | null
 
 ### **2. MusicService** (`src/services/MusicService.tsx`)
 
-**Backend:** Django music generation service (`VITE_BACKEND_MUSIC`, port 8000)
+**Backend:** FastAPI music generation service (`VITE_BACKEND_MUSIC`, port 8000)
 
 **API Endpoints:**
 - `POST /mary` - Generate "Mary Had a Little Lamb" in different keys
@@ -981,7 +981,7 @@ const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 - Note game entries (`/api/note-game/*`)
 - Performance charts (`/api/charts/*`)
 
-**2. Django Music Service** (`VITE_BACKEND_MUSIC`)
+**2. FastAPI Music Service** (`VITE_BACKEND_MUSIC`)
 - MusicXML generation (`/mary`, `/random`, `/note-game`)
 - No authentication required
 

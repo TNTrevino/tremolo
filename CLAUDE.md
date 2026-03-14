@@ -17,19 +17,20 @@ This is a **microservices architecture** with three main components:
 - **Key Service**: `MusicService.tsx` handles all music generation API calls and sheet music rendering via OpenSheetMusicDisplay
 - **Routing**: React Router with pages for note games, generated music display, user dashboard, and file conversion
 
-### 2. Music Generation Microservice (Django + Music21)
+### 2. Music Generation Microservice (FastAPI + Music21)
 - **Location**: `backend/music/`
-- **Tech**: Django, Django REST Framework, Music21
+- **Tech**: FastAPI, Uvicorn, Music21
 - **Port**: 8000 (default)
 - **Purpose**: Generate MusicXML files for various exercises
 - **Key Endpoints**:
-  - `/mary` - Generate "Mary Had a Little Lamb" in different keys/octaves
-  - `/random` - Generate random notes with specified rhythm patterns
-  - `/note-game` - Generate single notes for note identification game
+  - `/music/mary` - Generate "Mary Had a Little Lamb" in different keys/octaves
+  - `/music/random` - Generate random notes with specified rhythm patterns
+  - `/music/note-game` - Generate single notes for note identification game
 - **Key Files**:
-  - `music/views.py` - API endpoints
-  - `music/library.py` - Music generation logic
-  - `music/dynamic_mary.py` - Dynamic "Mary Had a Little Lamb" generation
+  - `main.py` - FastAPI app entry point and CORS configuration
+  - `routers/api.py` - API route definitions
+  - `library.py` - Music generation logic
+  - `dynamic_mary.py` - Dynamic "Mary Had a Little Lamb" generation
 
 ### 3. User Tracking Microservice (Go + PostgreSQL)
 - **Location**: `backend/main/`
@@ -47,7 +48,7 @@ This is a **microservices architecture** with three main components:
 
 ## Communication Flow
 
-Frontend (React) → Music Generation Service (Django, port 8000) for MusicXML generation
+Frontend (React) → Music Generation Service (FastAPI, port 8000) for MusicXML generation
 Frontend (React) → User Tracking Service (Go, port 5001) for user data and progress
 
 The frontend uses environment variables `VITE_BACKEND_MUSIC` and `VITE_BACKEND_MAIN` to communicate with the respective backends.
@@ -80,14 +81,13 @@ npm run lint         # Run ESLint
 npm run preview      # Preview production build
 ```
 
-### Music Generation Service (Django)
+### Music Generation Service (FastAPI)
 ```bash
 cd backend/music
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
-python3 manage.py migrate          # Run database migrations
-python3 manage.py runserver        # Start on port 8000
+uvicorn main:app --reload --port 8000
 ```
 
 ### User Tracking Service (Go)
@@ -147,7 +147,7 @@ sqlc generate
 ### Music Generation
 - Music is generated as MusicXML format using the Music21 library
 - The frontend receives XML strings and renders them using OpenSheetMusicDisplay
-- MusicXML is returned with `content_type="application/xml"` from Django endpoints
+- MusicXML is returned with `content_type="application/xml"` from FastAPI endpoints
 
 ### Frontend State Management
 - No centralized state management (Redux/Zustand) - uses React component state
@@ -162,7 +162,7 @@ sqlc generate
 ### Frontend-Backend Integration
 - Axios is used for all HTTP requests
 - Environment variables set via Vite's `import.meta.env`
-- CORS must be configured in Django settings for local development
+- CORS is configured via `CORSMiddleware` in `backend/music/main.py` for local development
 
 ## Code Quality and Pre-Commit Hooks
 
@@ -175,7 +175,7 @@ This repository uses Husky to enforce code quality standards with pre-commit hoo
 - **Behavior**: Auto-formats files and re-stages them
 - **Configuration**: See `frontend/.lintstagedrc.json` for details
 
-### Backend (Python/Django) Code Quality
+### Backend (Python/FastAPI) Code Quality
 - **Tools**: Black (formatter) + flake8 (linter)
 - **Trigger**: Runs automatically on staged `.py` files in `backend/music/`
 - **Behavior**:

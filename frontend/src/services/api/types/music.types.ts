@@ -2,7 +2,7 @@
  * Music Generation Type Definitions
  *
  * Types for music generation requests and responses.
- * Used with the Django backend (port 8000).
+ * Used with the FastAPI backend (port 8000).
  */
 
 export interface MaryRequest {

@@ -24,7 +24,7 @@ You are an elite web designer and frontend architect specializing in React, Type
 ## Technical Guidelines
 
 **Project Context**: This is a music education platform (Tremolo) built with React 18, TypeScript, Vite, and Material UI. The frontend communicates with two microservices:
-- Music generation service (Django, port 8000) - accessed via `VITE_BACKEND_MUSIC`
+- Music generation service (FastAPI, port 8000) - accessed via `VITE_BACKEND_MUSIC`
 - User tracking service (Go, port 5001) - accessed via `VITE_BACKEND_MAIN`
 
 Review the CLAUDE.md context for specific project patterns, existing components, and architectural decisions.
