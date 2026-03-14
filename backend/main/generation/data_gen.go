@@ -3,6 +3,7 @@ package generation
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -13,10 +14,17 @@ func GenerateData() {
 	println("\nGenerating data...\n")
 	println(strings.Repeat("------------------------------", 2))
 
-	// Generate schools
 	fmt.Println(insertFakeSchools())
 
-	// Generate teachers with students
 	// 20 teachers, each with 20 students
-	fmt.Println(insertMultipleTeachersWithStudents(20, 20))
+	teacherIDs, studentIDs := insertMultipleTeachersWithStudents(20, 20)
+	fmt.Printf("Created %d total users\n", len(teacherIDs)+len(studentIDs))
+
+	// If TREMOLO_ env vars are set, create a personal user and wire up friends + students
+	schoolID := int16(rand.IntN(1000) + 1)
+	personalUserID := insertPersonalUser(schoolID)
+	if personalUserID != 0 {
+		insertFriendsForUser(personalUserID, teacherIDs, 10)
+		assignStudentsToUser(personalUserID, studentIDs, 20)
+	}
 }

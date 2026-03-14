@@ -1,331 +1,323 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Music, Check, X } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
 import {
-	TextField,
-	MenuItem,
-	FormControl,
-	InputLabel,
-	Select,
-	SelectChangeEvent,
-} from "@mui/material";
-import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
-import { AuthService } from "../services/AuthService";
-import { UserRole } from "../models/models";
-import PasswordRequirements from "../components/PasswordRequirements";
-import { validatePasswordRequirements } from "../utils/passwordValidation";
-import { AuthFormContainer } from "../components/auth/AuthFormContainer";
-import { AuthCard } from "../components/auth/AuthCard";
-import { PasswordField } from "../components/auth/PasswordField";
-import { PasswordStrengthMeter } from "../components/auth/PasswordStrengthMeter";
-import { AuthFormFooter } from "../components/auth/AuthFormFooter";
-import { SubmitButton } from "../components/auth/SubmitButton";
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
+import { FormField } from "@/shared/components/forms/FormField";
+import { FormInput } from "@/shared/components/forms/FormInput";
+import { FormSelect } from "@/shared/components/forms/FormSelect";
 import {
-	validateEmail,
-	validateName,
-	validateConfirmPassword,
-	calculatePasswordStrength,
-	getPasswordStrengthColor,
-	getPasswordStrengthLabel,
-} from "../utils/formValidation";
+	signupSchema,
+	type SignupFormData,
+} from "@/features/auth/validation/schemas";
+import { useRegister } from "@/shared/hooks/queries/useAuthQuery";
+import { cn } from "@/lib/utils";
+import type { LoginLocationState } from "@/shared/types";
+import type { PasswordRequirement } from "@/services/api/types";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
-const SignupPage = () => {
-	const [firstName, setFirstName] = useState<string>("");
-	const [lastName, setLastName] = useState<string>("");
-	const [email, setEmail] = useState<string>("");
-	const [password, setPassword] = useState<string>("");
-	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [role, setRole] = useState<UserRole>("student");
-	const [showPassword, setShowPassword] = useState<boolean>(false);
-	const [showConfirmPassword, setShowConfirmPassword] =
-		useState<boolean>(false);
-	const [passwordTouched, setPasswordTouched] = useState<boolean>(false);
-
-	const [error, setError] = useState<string>("");
-	const [firstNameError, setFirstNameError] = useState<string>("");
-	const [lastNameError, setLastNameError] = useState<string>("");
-	const [emailError, setEmailError] = useState<string>("");
-	const [passwordError, setPasswordError] = useState<string>("");
-	const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
-
-	const [isLoading, setIsLoading] = useState<boolean>(false);
-	const [successMessage, setSuccessMessage] = useState<string>("");
-
-	const { isAuthenticated } = useAuth();
+export function SignupPage() {
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [passwordFocused, setPasswordFocused] = useState(false);
 	const navigate = useNavigate();
+	const registerMutation = useRegister();
 
-	useEffect(() => {
-		if (isAuthenticated) {
-			navigate("/dashboard", { replace: true });
-		}
-	}, [isAuthenticated, navigate]);
+	const {
+		register,
+		handleSubmit,
+		watch,
+		formState: { errors },
+		setError,
+	} = useForm<SignupFormData>({
+		resolver: zodResolver(signupSchema),
+		defaultValues: {
+			role: "STUDENT",
+		},
+	});
 
-	const { isValid: isPasswordValid } = validatePasswordRequirements(password);
-	const passwordStrength = calculatePasswordStrength(password);
+	// React Hook Form's watch() is intentionally not memoized
+	// eslint-disable-next-line react-hooks/incompatible-library
+	const password = watch("password", "");
 
-	const validatePasswordField = (password: string): boolean => {
-		if (!password) {
-			setPasswordError("Password is required");
-			return false;
-		}
-		if (!isPasswordValid) {
-			setPasswordError("Password does not meet all requirements");
-			return false;
-		}
-		setPasswordError("");
-		return true;
+	// Password validation
+	const passwordRequirements: PasswordRequirement[] = [
+		{ label: "At least 8 characters", met: password.length >= 8 },
+		{ label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
+		{ label: "Contains lowercase letter", met: /[a-z]/.test(password) },
+		{ label: "Contains number", met: /\d/.test(password) },
+		{
+			label: "Contains special character",
+			met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+		},
+	];
+
+	// Password strength
+	const getPasswordStrength = () => {
+		const metCount = passwordRequirements.filter((req) => req.met).length;
+		if (metCount === 0) return { label: "", color: "", width: "0%" };
+		if (metCount <= 2)
+			return { label: "Weak", color: "bg-destructive", width: "25%" };
+		if (metCount === 3)
+			return { label: "Fair", color: "bg-orange-500", width: "50%" };
+		if (metCount === 4)
+			return { label: "Good", color: "bg-yellow-500", width: "75%" };
+		return { label: "Strong", color: "bg-green-500", width: "100%" };
 	};
 
-	const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setFirstName(e.target.value);
-		if (firstNameError) {
-			validateName(e.target.value, "First name", setFirstNameError);
-		}
-	};
+	const passwordStrength = getPasswordStrength();
 
-	const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setLastName(e.target.value);
-		if (lastNameError) {
-			validateName(e.target.value, "Last name", setLastNameError);
-		}
-	};
-
-	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setEmail(e.target.value);
-		if (emailError) {
-			validateEmail(e.target.value, setEmailError);
-		}
-	};
-
-	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newPassword = e.target.value;
-		setPassword(newPassword);
-		if (passwordTouched && passwordError) {
-			validatePasswordField(newPassword);
-		}
-		if (confirmPassword) {
-			validateConfirmPassword(
-				confirmPassword,
-				newPassword,
-				setConfirmPasswordError,
-			);
-		}
-	};
-
-	const handleConfirmPasswordChange = (
-		e: React.ChangeEvent<HTMLInputElement>,
-	) => {
-		setConfirmPassword(e.target.value);
-		if (confirmPasswordError) {
-			validateConfirmPassword(
-				e.target.value,
-				password,
-				setConfirmPasswordError,
-			);
-		}
-	};
-
-	const handleRoleChange = (event: SelectChangeEvent<UserRole>) => {
-		setRole(event.target.value as UserRole);
-	};
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-		setSuccessMessage("");
-
-		const isFirstNameValid = validateName(
-			firstName,
-			"First name",
-			setFirstNameError,
+	const onSubmit = (data: SignupFormData) => {
+		registerMutation.mutate(
+			{
+				email: data.email,
+				password: data.password,
+				first_name: data.firstName,
+				last_name: data.lastName,
+				role: data.role,
+			},
+			{
+				onSuccess: () => {
+					const navState: LoginLocationState = {
+						successMessage: "Account created! Please log in.",
+					};
+					navigate("/login", { state: navState });
+				},
+				onError: (err) => {
+					setError("root", {
+						message: getErrorMessage(err),
+					});
+				},
+			},
 		);
-		const isLastNameValid = validateName(
-			lastName,
-			"Last name",
-			setLastNameError,
-		);
-		const isEmailValid = validateEmail(email, setEmailError);
-		const isPasswordValid = validatePasswordField(password);
-		const isConfirmPasswordValid = validateConfirmPassword(
-			confirmPassword,
-			password,
-			setConfirmPasswordError,
-		);
-
-		if (
-			!isFirstNameValid ||
-			!isLastNameValid ||
-			!isEmailValid ||
-			!isPasswordValid ||
-			!isConfirmPasswordValid
-		) {
-			return;
-		}
-
-		setIsLoading(true);
-
-		try {
-			await AuthService.register({
-				email,
-				password,
-				first_name: firstName.trim(),
-				last_name: lastName.trim(),
-				role,
-			});
-
-			setSuccessMessage(
-				"Account created successfully! Redirecting to login...",
-			);
-
-			navigate("/login", {
-				state: { message: "Account created! Please log in." },
-			});
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Registration failed");
-		} finally {
-			setIsLoading(false);
-		}
 	};
 
 	return (
-		<AuthFormContainer>
-			<AuthCard
-				title="Create Your Account"
-				subtitle="Join Tremolo and start your musical journey"
-				error={error}
-				successMessage={successMessage}
-				onSubmit={handleSubmit}
-			>
-				<TextField
-					fullWidth
-					id="firstName"
-					label="First Name"
-					name="firstName"
-					autoComplete="given-name"
-					autoFocus
-					value={firstName}
-					onChange={handleFirstNameChange}
-					onBlur={() =>
-						validateName(firstName, "First name", setFirstNameError)
-					}
-					error={!!firstNameError}
-					helperText={firstNameError}
-					disabled={isLoading}
-					required
-					sx={{ mb: 2 }}
-				/>
+		<div className="min-h-screen flex items-center justify-center py-12 px-4">
+			<Card className="w-full max-w-md shadow-lg">
+				<CardHeader className="space-y-1 text-center">
+					<div className="flex justify-center mb-4">
+						<div className="rounded-lg bg-primary p-3">
+							<Music className="h-8 w-8 text-primary-foreground" />
+						</div>
+					</div>
+					<CardTitle className="text-3xl font-bold">
+						Create Your Account
+					</CardTitle>
+					<CardDescription className="text-base">
+						Join Tremolo and start your musical journey
+					</CardDescription>
+				</CardHeader>
 
-				<TextField
-					fullWidth
-					id="lastName"
-					label="Last Name"
-					name="lastName"
-					autoComplete="family-name"
-					value={lastName}
-					onChange={handleLastNameChange}
-					onBlur={() => validateName(lastName, "Last name", setLastNameError)}
-					error={!!lastNameError}
-					helperText={lastNameError}
-					disabled={isLoading}
-					required
-					sx={{ mb: 2 }}
-				/>
+				<form onSubmit={handleSubmit(onSubmit)}>
+					<CardContent className="space-y-4">
+						{errors.root && (
+							<div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
+								{errors.root.message}
+							</div>
+						)}
 
-				<TextField
-					fullWidth
-					id="email"
-					label="Email Address"
-					name="email"
-					type="email"
-					autoComplete="email"
-					value={email}
-					onChange={handleEmailChange}
-					onBlur={() => validateEmail(email, setEmailError)}
-					error={!!emailError}
-					helperText={emailError}
-					disabled={isLoading}
-					required
-					sx={{ mb: 2 }}
-				/>
+						<div className="grid grid-cols-2 gap-4">
+							<FormField
+								label="First Name"
+								error={errors.firstName?.message}
+								htmlFor="firstName"
+							>
+								<FormInput
+									id="firstName"
+									placeholder="John"
+									autoComplete="given-name"
+									{...register("firstName")}
+									error={errors.firstName?.message}
+								/>
+							</FormField>
 
-				<PasswordField
-					id="password"
-					label="Password"
-					value={password}
-					onChange={handlePasswordChange}
-					onBlur={() => {
-						setPasswordTouched(true);
-						validatePasswordField(password);
-					}}
-					error={passwordError}
-					showPassword={showPassword}
-					onToggleVisibility={() => setShowPassword(!showPassword)}
-					disabled={isLoading}
-					autoComplete="new-password"
-					required
-					sx={{ mb: 1 }}
-				/>
+							<FormField
+								label="Last Name"
+								error={errors.lastName?.message}
+								htmlFor="lastName"
+							>
+								<FormInput
+									id="lastName"
+									placeholder="Doe"
+									autoComplete="family-name"
+									{...register("lastName")}
+									error={errors.lastName?.message}
+								/>
+							</FormField>
+						</div>
 
-				<PasswordRequirements
-					password={password}
-					show={passwordTouched || !!password}
-				/>
+						<FormField
+							label="Email Address"
+							error={errors.email?.message}
+							htmlFor="email"
+						>
+							<FormInput
+								id="email"
+								type="email"
+								placeholder="you@example.com"
+								autoComplete="email"
+								{...register("email")}
+								error={errors.email?.message}
+							/>
+						</FormField>
 
-				<PasswordStrengthMeter
-					password={password}
-					strength={passwordStrength}
-					strengthColor={getPasswordStrengthColor(passwordStrength)}
-					strengthLabel={getPasswordStrengthLabel(passwordStrength)}
-				/>
+						<FormField
+							label="Password"
+							error={errors.password?.message}
+							htmlFor="password"
+						>
+							<div className="relative">
+								<FormInput
+									id="password"
+									type={showPassword ? "text" : "password"}
+									placeholder="••••••••"
+									autoComplete="new-password"
+									className="pr-10"
+									{...register("password")}
+									error={errors.password?.message}
+									onFocus={() => setPasswordFocused(true)}
+									onBlur={() => setPasswordFocused(false)}
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</button>
+							</div>
 
-				<PasswordField
-					id="confirmPassword"
-					label="Confirm Password"
-					value={confirmPassword}
-					onChange={handleConfirmPasswordChange}
-					onBlur={() =>
-						validateConfirmPassword(
-							confirmPassword,
-							password,
-							setConfirmPasswordError,
-						)
-					}
-					error={confirmPasswordError}
-					showPassword={showConfirmPassword}
-					onToggleVisibility={() =>
-						setShowConfirmPassword(!showConfirmPassword)
-					}
-					disabled={isLoading}
-					autoComplete="new-password"
-					required
-					sx={{ mb: 2 }}
-				/>
+							{(passwordFocused || password) && (
+								<div className="space-y-2 p-3 rounded-md bg-muted/50 border border-border">
+									<p className="text-xs font-medium">Password Requirements:</p>
+									<div className="space-y-1">
+										{passwordRequirements.map((req, index) => (
+											<div
+												key={index}
+												className="flex items-center gap-2 text-xs"
+											>
+												{req.met ? (
+													<Check className="h-3 w-3 text-green-500" />
+												) : (
+													<X className="h-3 w-3 text-muted-foreground" />
+												)}
+												<span className={cn(req.met && "text-green-500")}>
+													{req.label}
+												</span>
+											</div>
+										))}
+									</div>
 
-				<FormControl fullWidth sx={{ mb: 3 }}>
-					<InputLabel id="role-label">I am a...</InputLabel>
-					<Select
-						labelId="role-label"
-						id="role"
-						value={role}
-						label="I am a..."
-						onChange={handleRoleChange}
-						disabled={isLoading}
-					>
-						<MenuItem value="student">Student</MenuItem>
-						<MenuItem value="teacher">Teacher</MenuItem>
-						<MenuItem value="parent">Parent</MenuItem>
-					</Select>
-				</FormControl>
+									{password && (
+										<div className="space-y-1 pt-2">
+											<div className="flex justify-between text-xs">
+												<span>Strength:</span>
+												<span
+													className={cn(
+														"font-medium",
+														passwordStrength.color.replace("bg-", "text-"),
+													)}
+												>
+													{passwordStrength.label}
+												</span>
+											</div>
+											<div className="h-2 bg-muted rounded-full overflow-hidden">
+												<div
+													className={cn(
+														"h-full transition-all",
+														passwordStrength.color,
+													)}
+													style={{ width: passwordStrength.width }}
+												/>
+											</div>
+										</div>
+									)}
+								</div>
+							)}
+						</FormField>
 
-				<SubmitButton isLoading={isLoading} buttonText="Create Account" />
-			</AuthCard>
+						<FormField
+							label="Confirm Password"
+							error={errors.confirmPassword?.message}
+							htmlFor="confirmPassword"
+						>
+							<div className="relative">
+								<FormInput
+									id="confirmPassword"
+									type={showConfirmPassword ? "text" : "password"}
+									placeholder="••••••••"
+									autoComplete="new-password"
+									className="pr-10"
+									{...register("confirmPassword")}
+									error={errors.confirmPassword?.message}
+								/>
+								<button
+									type="button"
+									onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{showConfirmPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</button>
+							</div>
+						</FormField>
 
-			<AuthFormFooter
-				text="Already have an account?"
-				linkText="Login"
-				linkTo="/login"
-			/>
-		</AuthFormContainer>
+						<FormField
+							label="I am a..."
+							error={errors.role?.message}
+							htmlFor="role"
+						>
+							<FormSelect
+								id="role"
+								{...register("role")}
+								error={errors.role?.message}
+							>
+								<option value="STUDENT">Student</option>
+								<option value="TEACHER">Teacher</option>
+								<option value="PARENT">Parent</option>
+							</FormSelect>
+						</FormField>
+					</CardContent>
+
+					<CardFooter className="flex flex-col space-y-4">
+						<Button
+							type="submit"
+							className="w-full"
+							size="lg"
+							loading={registerMutation.isPending}
+						>
+							Create Account
+						</Button>
+
+						<p className="text-sm text-center text-muted-foreground">
+							Already have an account?{" "}
+							<Link
+								to="/login"
+								className="text-primary font-medium hover:underline"
+							>
+								Login
+							</Link>
+						</p>
+					</CardFooter>
+				</form>
+			</Card>
+		</div>
 	);
-};
-
-export default SignupPage;
+}

@@ -15,10 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ============================================================================
-// GetTeachers Tests
-// ============================================================================
-
 // TestGetTeachers_Success tests that GetTeachers returns a list of teachers
 func TestGetTeachers_Success(t *testing.T) {
 	t.Parallel()
@@ -97,10 +93,6 @@ func TestGetTeachers_NoTeachers(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// GetTeacher Tests
-// ============================================================================
-
 // TestGetTeacher_Success tests that GetTeacher returns a specific teacher by ID
 func TestGetTeacher_Success(t *testing.T) {
 	t.Parallel()
@@ -159,7 +151,7 @@ func TestGetTeacher_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
 
 	// Parse response
-	var response map[string]interface{}
+	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err, "Failed to parse JSON response")
 
@@ -186,7 +178,6 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -202,7 +193,7 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
 
 			// Parse response
-			var response map[string]interface{}
+			var response map[string]any
 			err := json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err, "Failed to parse JSON response")
 
@@ -212,10 +203,6 @@ func TestGetTeacher_InvalidID(t *testing.T) {
 		})
 	}
 }
-
-// ============================================================================
-// GetSchoolStudents Tests
-// ============================================================================
 
 // TestGetSchoolStudents_Success tests that GetSchoolStudents returns a list of students
 func TestGetSchoolStudents_Success(t *testing.T) {
@@ -304,10 +291,6 @@ func TestGetSchoolStudents_NoStudents(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// GetSchoolTeachers Tests (same as GetTeachers)
-// ============================================================================
-
 // TestGetSchoolTeachers_Success tests that GetSchoolTeachers returns a list of teachers
 func TestGetSchoolTeachers_Success(t *testing.T) {
 	t.Parallel()
@@ -356,10 +339,6 @@ func TestGetSchoolTeachers_Success(t *testing.T) {
 		assert.NotEmpty(t, teacher.LastName, "Expected teacher to have a last name")
 	}
 }
-
-// ============================================================================
-// Additional Edge Case Tests
-// ============================================================================
 
 // TestGetTeacher_NegativeID tests that GetTeacher handles negative IDs correctly
 func TestGetTeacher_NegativeID(t *testing.T) {

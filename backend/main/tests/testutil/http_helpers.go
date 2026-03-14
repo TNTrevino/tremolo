@@ -46,7 +46,7 @@ func CreateGinContext(method, path string) (*gin.Context, *httptest.ResponseReco
 }
 
 // CreateGinContextWithBody creates a gin context with a JSON request body.
-func CreateGinContextWithBody(method, path string, body interface{}) (*gin.Context, *httptest.ResponseRecorder) {
+func CreateGinContextWithBody(method, path string, body any) (*gin.Context, *httptest.ResponseRecorder) {
 	if method == "" {
 		method = http.MethodPost
 	}
@@ -84,7 +84,7 @@ func CreateGinContextWithUserID(method, path string, userID int) (*gin.Context, 
 }
 
 // ParseJSONResponse parses the JSON response body into the given struct.
-func ParseJSONResponse(t *testing.T, w *httptest.ResponseRecorder, v interface{}) {
+func ParseJSONResponse(t *testing.T, w *httptest.ResponseRecorder, v any) {
 	t.Helper()
 	err := json.Unmarshal(w.Body.Bytes(), v)
 	require.NoError(t, err, "Failed to parse JSON response: %s", w.Body.String())

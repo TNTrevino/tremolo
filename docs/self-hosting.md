@@ -449,7 +449,7 @@ curl http://tremolonotes.com
 
 ```bash
 # Check runner status
-cd ~/actions-runner
+cd ~/tremolo-actions-runner
 ./svc.sh status
 
 # Restart runner
@@ -457,6 +457,36 @@ sudo ./svc.sh restart
 
 # Check logs
 journalctl -u actions.runner.* -f
+```
+
+### GitHub Actions Runner Service Commands
+
+```bash
+cd ~/tremolo-actions-runner
+
+# Install as systemd service (run once after ./config.sh)
+sudo ./svc.sh install
+
+# Start the service
+sudo ./svc.sh start
+
+# Stop the service
+sudo ./svc.sh stop
+
+# Check status
+./svc.sh status
+
+# Restart the service
+sudo ./svc.sh restart
+
+# Uninstall the service
+sudo ./svc.sh uninstall
+
+# Tail runner logs
+journalctl -u actions.runner.* -f
+
+# Or check runner's own log files
+tail -f ~/tremolo-actions-runner/_diag/*.log
 ```
 
 ### Database connection issues
@@ -470,6 +500,150 @@ sudo systemctl status postgresql
 
 # Verify DATABASE_URL in .env
 grep DATABASE_URL ~/projects/tremolo/.env
+```
+
+---
+
+## Common Pitfalls
+
+### 1. Wrong GitHub Actions runner architecture
+
+Raspberry Pi 5 is ARM64, not x64. Download the correct version:
+
+```bash
+# Wrong - x64
+curl -o actions-runner-linux-x64-*.tar.gz ...
+
+# Correct - ARM64
+curl -o actions-runner-linux-arm64-*.tar.gz ...
+```
+
+Error you'll see: `cannot execute binary file: Exec format error`
+
+---
+
+### 2. `.env` file with `export` breaks systemd
+
+systemd's `EnvironmentFile` doesn't understand shell syntax:
+
+```bash
+# Wrong - breaks systemd
+export DATABASE_URL="..."
+
+# Correct - works for both systemd and source
+DATABASE_URL="..."
+```
+
+Fix existing file:
+```bash
+sed -i 's/^export //' ~/projects/tremolo/.env
+```
+
+---
+
+### 3. `secrets` not available in workflow `defaults`
+
+GitHub Actions `secrets` context isn't available in `defaults.run.working-directory`:
+
+```yaml
+# Wrong - will fail
+defaults:
+  run:
+    working-directory: ${{ secrets.BASE_DIR }}
+
+# Correct - use job-level env
+env:
+  BASE_DIR: ${{ secrets.BASE_DIR }}
+steps:
+  - run: cd $BASE_DIR && ...
+```
+
+---
+
+### 4. VITE_* variables not available during build
+
+`source .env` alone doesn't export variables to child processes like `npm`:
+
+```bash
+# Wrong - npm won't see variables
+source .env
+npm run build
+
+# Correct - set -a exports all sourced variables
+set -a && source .env && set +a
+npm run build
+```
+
+---
+
+### 5. rsync target directory doesn't exist
+
+rsync won't create parent directories:
+
+```bash
+# Error: mkdir "/var/www/tremolo" failed: No such file or directory
+
+# Fix - create it first on the target server
+ssh reverse-proxy "mkdir -p /var/www/tremolo"
+```
+
+---
+
+### 6. rsync permission denied
+
+The SSH user needs write access to the target directory:
+
+```bash
+# Error: Permission denied (13)
+
+# Fix - change ownership to SSH user
+ssh reverse-proxy  # SSH in interactively
+sudo chown -R noe:noe /var/www/tremolo
+
+# Verify
+touch /var/www/tremolo/test && rm /var/www/tremolo/test && echo "OK"
+```
+
+Note: `sudo` over non-interactive SSH often fails. SSH in first, then run sudo.
+
+---
+
+### 7. Duplicate CI workflow runs
+
+If workflows trigger on both `push` and `pull_request`, you get duplicate runs:
+
+```yaml
+# Causes duplicates when pushing to a branch with open PR
+on:
+  push:
+    branches: [main, prod]
+  pull_request:
+    branches: [main, prod]
+
+# Better - CI only on PRs, deploy only on push to prod
+# ci.yml
+on:
+  pull_request:
+    branches: [main, prod]
+
+# deploy.yml
+on:
+  push:
+    branches: [prod]
+```
+
+---
+
+### 8. PostgreSQL foreign key references need schema prefix
+
+When using a custom schema, all references need the prefix:
+
+```sql
+# Wrong - looks in public schema
+school_id int references schools (id)
+
+# Correct - explicit schema
+school_id int references tremolo.schools (id)
 ```
 
 ---

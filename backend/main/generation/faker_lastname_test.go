@@ -18,7 +18,7 @@ func TestFakerLastNameIssue(t *testing.T) {
 	emptyCount := 0
 	var emptyIndices []int
 
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		lastName := fake.LastName()
 		if lastName == "" {
 			emptyCount++
@@ -36,7 +36,7 @@ func TestFakerLastNameIssue(t *testing.T) {
 
 	// Test FirstName as well
 	emptyFirstNameCount := 0
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		firstName := fake.FirstName()
 		if firstName == "" {
 			emptyFirstNameCount++
@@ -58,7 +58,7 @@ func TestWorkaroundForEmptyLastName(t *testing.T) {
 	}
 
 	// Test current workaround
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		lastName := fake.LastName() + "x"
 		if len(lastName) <= 1 { // Only "x"
 			t.Errorf("Workaround failed at iteration %d: lastName is '%s'", i, lastName)
@@ -78,7 +78,7 @@ func TestAlternativeSolutionRetry(t *testing.T) {
 	// Alternative: retry until we get a non-empty last name
 	generateNonEmptyLastName := func() string {
 		maxRetries := 10
-		for i := 0; i < maxRetries; i++ {
+		for range maxRetries {
 			lastName := fake.LastName()
 			if lastName != "" {
 				return lastName
@@ -89,7 +89,7 @@ func TestAlternativeSolutionRetry(t *testing.T) {
 	}
 
 	// Test this approach
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		lastName := generateNonEmptyLastName()
 		if lastName == "" {
 			t.Errorf("Retry solution failed at iteration %d", i)
@@ -97,11 +97,4 @@ func TestAlternativeSolutionRetry(t *testing.T) {
 	}
 
 	t.Logf("Retry solution works for all 100 attempts")
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

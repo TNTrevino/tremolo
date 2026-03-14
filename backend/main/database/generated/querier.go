@@ -11,6 +11,10 @@ import (
 
 type Querier interface {
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
+	// Inserts both directions to create an instant mutual friendship.
+	// ON CONFLICT DO NOTHING makes this idempotent.
+	CreateMutualFriendship(ctx context.Context, arg CreateMutualFriendshipParams) error
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
@@ -27,6 +31,7 @@ type Querier interface {
 	DeleteAllTestData(ctx context.Context) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
+	DeleteNoteGameSettings(ctx context.Context, userID int32) error
 	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
 	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
 	// relationship queries
@@ -38,18 +43,27 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
-	GetEntriesByUserID(ctx context.Context, userID int32) ([]NoteGameEntry, error)
+	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
+	// Returns users who have a mutual follow relationship with the given user
+	// (both directions exist in the friends table = they are friends)
+	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
+	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
+	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByRoleAndID(ctx context.Context, arg GetUserByRoleAndIDParams) (GetUserByRoleAndIDRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
-	GetUserRole(ctx context.Context, id int32) (sql.NullString, error)
-	GetUsersByRole(ctx context.Context, role sql.NullString) ([]GetUsersByRoleRow, error)
+	GetUserRole(ctx context.Context, id int32) (string, error)
+	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
 	LockAccount(ctx context.Context, arg LockAccountParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
+	// Case-insensitive contains search on full name, excluding the current user
+	// and anyone they are already mutual friends with
+	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -116,7 +116,7 @@ func generateChronologicalDates(count int, startDate, endDate time.Time) []time.
 	dates := make([]time.Time, count)
 
 	// Generate random dates
-	for i := 0; i < count; i++ {
+	for i := range count {
 		dates[i] = generateDateInRange(startDate, endDate)
 	}
 
@@ -154,12 +154,9 @@ func generateRealisticNPM(skillLevel SkillLevel, variance float64) int {
 
 	// Apply variance (variance is a percentage, e.g., 0.2 for ±20%)
 	varianceAmount := int(float64(baseNPM) * variance)
-	npmWithVariance := baseNPM + rand.IntN(varianceAmount*2+1) - varianceAmount
-
-	// Ensure we stay within bounds
-	if npmWithVariance < minNPM {
-		npmWithVariance = minNPM
-	}
+	npmWithVariance := max(
+		// Ensure we stay within bounds
+		baseNPM+rand.IntN(varianceAmount*2+1)-varianceAmount, minNPM)
 	if npmWithVariance > maxNPM {
 		npmWithVariance = maxNPM
 	}
@@ -201,10 +198,7 @@ func generateAccuracyScore(baseAccuracy float64, variance float64) float64 {
 // Helper function: Calculate session length based on questions and NPM
 func calculateSessionLength(totalQuestions int, npm int) string {
 	// Calculate minutes: totalQuestions / NPM
-	minutes := totalQuestions / npm
-	if minutes < 1 {
-		minutes = 1
-	}
+	minutes := max(totalQuestions/npm, 1)
 
 	// Add some random seconds for realism
 	seconds := rand.IntN(60)
@@ -280,7 +274,7 @@ func generateRealisticNoteGameEntries(studentID int16, entryCount int, profile S
 	dates := generateChronologicalDates(entryCount, startDate, endDate)
 
 	// Generate entries with realistic progress
-	for i := 0; i < entryCount; i++ {
+	for i := range entryCount {
 		entryDate := dates[i]
 
 		// Calculate days since start
@@ -295,10 +289,7 @@ func generateRealisticNoteGameEntries(studentID int16, entryCount int, profile S
 		accuracyVariance := (1.0 - profile.Consistency) * 0.2
 
 		// Calculate NPM variance range, ensuring it's at least 1 to avoid IntN(0) panic
-		npmVarianceRange := int(float64(currentNPM) * npmVariance * 2)
-		if npmVarianceRange < 1 {
-			npmVarianceRange = 1
-		}
+		npmVarianceRange := max(int(float64(currentNPM)*npmVariance*2), 1)
 		actualNPM := currentNPM + rand.IntN(npmVarianceRange) - int(float64(currentNPM)*npmVariance)
 		actualAccuracy := currentAccuracy + (rand.Float64()*currentAccuracy*accuracyVariance*2 - currentAccuracy*accuracyVariance)
 
@@ -396,51 +387,51 @@ func generateFakeSchool() dtos.School {
 }
 
 func generateFakeUser(role dtos.Role, schoolID int16) dtos.User {
-	// Generate first name with retry logic
-	fakeFirstName := fake.FirstName()
-	if fakeFirstName == "" {
-		fakeFirstName = "Student" // Fallback
-	}
+	maxRetries := 10
 
-	// Generate last name with retry logic (removed "x" workaround)
-	fakeLastName := fake.LastName()
-	if fakeLastName == "" {
-		// Retry once
-		fakeLastName = fake.LastName()
-		if fakeLastName == "" {
-			// Fallback to a default last name
-			fakeLastName = "User"
-		}
-	}
-
-	fakeEmail := fakeFirstName + "." + fakeLastName + "@email.com"
-
-	// Hash the default password "password123" for all fake users
 	passwordHash, err := services.HashPassword("password123")
 	if err != nil {
-		log.Printf("Failed to hash password: %v", err)
-		return dtos.User{}
+		log.Panicf("Failed to hash password: %v", err)
 	}
 
-	user := dtos.User{
-		FirstName:    fakeFirstName,
-		LastName:     fakeLastName,
-		Email:        fakeEmail,
-		PasswordHash: passwordHash,
-		Role:         role,
-		SchoolID:     schoolID,
-		CreatedDate:  generateFakeDateCreated(),
-		CreatedTime:  generateFakeTimeCreated(),
+	for attempt := range maxRetries {
+		fakeFirstName := fake.FirstName()
+		if fakeFirstName == "" {
+			fakeFirstName = "Student"
+		}
+
+		fakeLastName := fake.LastName()
+		if fakeLastName == "" {
+			fakeLastName = fake.LastName()
+			if fakeLastName == "" {
+				fakeLastName = "User"
+			}
+		}
+
+		fakeEmail := fmt.Sprintf("%s.%s.%d@email.com", fakeFirstName, fakeLastName, rand.IntN(100000))
+
+		user := dtos.User{
+			FirstName:    fakeFirstName,
+			LastName:     fakeLastName,
+			Email:        fakeEmail,
+			PasswordHash: passwordHash,
+			Role:         role,
+			SchoolID:     schoolID,
+			CreatedDate:  generateFakeDateCreated(),
+			CreatedTime:  generateFakeTimeCreated(),
+		}
+
+		err := user.ValidateUser()
+		if err != nil {
+			log.Printf("User validation failed (attempt %d/%d): %v", attempt+1, maxRetries, err)
+			continue
+		}
+
+		return user
 	}
 
-	err = user.ValidateUser()
-	if err != nil {
-		// TODO: better error handling
-		log.Printf("User validation failed: %v", err)
-		return dtos.User{}
-	}
-
-	return user
+	log.Panicf("Failed to generate a valid fake user after %d attempts (role=%s, schoolID=%d)", maxRetries, role, schoolID)
+	return dtos.User{}
 }
 
 func generateFakeEntryTimeLength() string {

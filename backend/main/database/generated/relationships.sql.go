@@ -10,7 +10,7 @@ import (
 )
 
 const deleteAllParentChildrenByChild = `-- name: DeleteAllParentChildrenByChild :exec
-delete from parent_child
+delete from tremolo.parent_child
 where child_id = $1
 `
 
@@ -20,7 +20,7 @@ func (q *Queries) DeleteAllParentChildrenByChild(ctx context.Context, childID in
 }
 
 const deleteAllParentChildrenByParent = `-- name: DeleteAllParentChildrenByParent :exec
-delete from parent_child
+delete from tremolo.parent_child
 where parent_id = $1
 `
 
@@ -30,7 +30,7 @@ func (q *Queries) DeleteAllParentChildrenByParent(ctx context.Context, parentID 
 }
 
 const deleteAllTeacherParentsByParent = `-- name: DeleteAllTeacherParentsByParent :exec
-delete from teacher_parent
+delete from tremolo.teacher_parent
 where parent_id = $1
 `
 
@@ -40,7 +40,7 @@ func (q *Queries) DeleteAllTeacherParentsByParent(ctx context.Context, parentID 
 }
 
 const deleteAllTeacherParentsByTeacher = `-- name: DeleteAllTeacherParentsByTeacher :exec
-delete from teacher_parent
+delete from tremolo.teacher_parent
 where teacher_id = $1
 `
 
@@ -50,7 +50,7 @@ func (q *Queries) DeleteAllTeacherParentsByTeacher(ctx context.Context, teacherI
 }
 
 const deleteAllTeacherStudentsByStudent = `-- name: DeleteAllTeacherStudentsByStudent :exec
-delete from teacher_student
+delete from tremolo.teacher_student
 where student_id = $1
 `
 
@@ -60,7 +60,7 @@ func (q *Queries) DeleteAllTeacherStudentsByStudent(ctx context.Context, student
 }
 
 const deleteAllTeacherStudentsByTeacher = `-- name: DeleteAllTeacherStudentsByTeacher :exec
-delete from teacher_student
+delete from tremolo.teacher_student
 where teacher_id = $1
 `
 
@@ -70,7 +70,7 @@ func (q *Queries) DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacher
 }
 
 const deleteParentChildRelationship = `-- name: DeleteParentChildRelationship :exec
-delete from parent_child
+delete from tremolo.parent_child
 where parent_id = $1 and child_id = $2
 `
 
@@ -85,7 +85,7 @@ func (q *Queries) DeleteParentChildRelationship(ctx context.Context, arg DeleteP
 }
 
 const deleteTeacherParentRelationship = `-- name: DeleteTeacherParentRelationship :exec
-delete from teacher_parent
+delete from tremolo.teacher_parent
 where teacher_id = $1 and parent_id = $2
 `
 
@@ -101,7 +101,7 @@ func (q *Queries) DeleteTeacherParentRelationship(ctx context.Context, arg Delet
 
 const deleteTeacherStudentRelationship = `-- name: DeleteTeacherStudentRelationship :exec
 
-delete from teacher_student
+delete from tremolo.teacher_student
 where teacher_id = $1 and student_id = $2
 `
 

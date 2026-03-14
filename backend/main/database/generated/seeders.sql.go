@@ -12,7 +12,7 @@ import (
 )
 
 const createNoteGameEntryWithDate = `-- name: CreateNoteGameEntryWithDate :one
-insert into note_game_entries (
+insert into tremolo.note_game_entries (
   user_id,
   time_length,
   total_questions,
@@ -59,7 +59,7 @@ func (q *Queries) CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNot
 }
 
 const createSchool = `-- name: CreateSchool :one
-insert into schools (
+insert into tremolo.schools (
   title,
   city,
   county,
@@ -106,7 +106,7 @@ func (q *Queries) CreateSchool(ctx context.Context, arg CreateSchoolParams) (int
 }
 
 const createTeacherStudentAssociation = `-- name: CreateTeacherStudentAssociation :exec
-insert into teacher_student (
+insert into tremolo.teacher_student (
   teacher_id,
   student_id
 )
@@ -127,11 +127,11 @@ func (q *Queries) CreateTeacherStudentAssociation(ctx context.Context, arg Creat
 }
 
 const createUserWithPassword = `-- name: CreateUserWithPassword :one
-insert into users (
+insert into tremolo.users (
   first_name,
   last_name,
   school_id,
-  role,
+  role_id,
   email,
   password
 )
@@ -150,7 +150,7 @@ type CreateUserWithPasswordParams struct {
 	FirstName string         `json:"first_name"`
 	LastName  string         `json:"last_name"`
 	SchoolID  sql.NullInt32  `json:"school_id"`
-	Role      sql.NullString `json:"role"`
+	RoleID    int32          `json:"role_id"`
 	Email     sql.NullString `json:"email"`
 	Password  string         `json:"password"`
 }
@@ -160,7 +160,7 @@ func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWith
 		arg.FirstName,
 		arg.LastName,
 		arg.SchoolID,
-		arg.Role,
+		arg.RoleID,
 		arg.Email,
 		arg.Password,
 	)
@@ -170,7 +170,7 @@ func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWith
 }
 
 const deleteAllTestData = `-- name: DeleteAllTestData :exec
-delete from note_game_entries
+delete from tremolo.friends
 `
 
 func (q *Queries) DeleteAllTestData(ctx context.Context) error {

@@ -120,10 +120,10 @@ setup_frontend() {
   cd "$FRONTEND_DIR"
 }
 
-# Setup backend/music (Python/Django)
+# Setup backend/music (Python/FastAPI)
 setup_backend_music() {
   BACKEND_MUSIC_DIR="$ROOT_DIR/backend/music"
-  print_header "Setting up Backend Music Service (Django)"
+  print_header "Setting up Backend Music Service (FastAPI)"
 
   if [ ! -d "$BACKEND_MUSIC_DIR" ]; then
     print_error "backend/music directory not found"

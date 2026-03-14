@@ -1,4 +1,4 @@
-name: Django Checks
+name: FastAPI Checks
 
 on:
   pull_request:
@@ -39,5 +39,5 @@ jobs:
           black --check .
 
       # TODO: we really need to make some basic tests!
-      # - name: Run Django tests
-      #   run: python manage.py test
+      # - name: Run tests
+      #   run: pytest

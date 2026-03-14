@@ -9,7 +9,14 @@ import (
 	"time"
 )
 
-type NoteGameEntry struct {
+type TremoloFriend struct {
+	UserID      int32        `json:"user_id"`
+	FriendID    int32        `json:"friend_id"`
+	CreatedDate sql.NullTime `json:"created_date"`
+	CreatedTime sql.NullTime `json:"created_time"`
+}
+
+type TremoloNoteGameEntry struct {
 	ID               int32        `json:"id"`
 	UserID           int32        `json:"user_id"`
 	TimeLength       time.Time    `json:"time_length"`
@@ -20,12 +27,27 @@ type NoteGameEntry struct {
 	CreatedTime      sql.NullTime `json:"created_time"`
 }
 
-type ParentChild struct {
+type TremoloNoteGameSetting struct {
+	ID        int32  `json:"id"`
+	UserID    int32  `json:"user_id"`
+	GameMode  string `json:"game_mode"`
+	TimeLimit int32  `json:"time_limit"`
+	NoteLimit int32  `json:"note_limit"`
+	Scale     string `json:"scale"`
+	Octave    int32  `json:"octave"`
+}
+
+type TremoloParentChild struct {
 	ParentID int32 `json:"parent_id"`
 	ChildID  int32 `json:"child_id"`
 }
 
-type School struct {
+type TremoloRole struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
+type TremoloSchool struct {
 	ID          int32        `json:"id"`
 	Title       string       `json:"title"`
 	City        string       `json:"city"`
@@ -36,21 +58,20 @@ type School struct {
 	CreatedTime sql.NullTime `json:"created_time"`
 }
 
-type TeacherParent struct {
+type TremoloTeacherParent struct {
 	TeacherID int32 `json:"teacher_id"`
 	ParentID  int32 `json:"parent_id"`
 }
 
-type TeacherStudent struct {
+type TremoloTeacherStudent struct {
 	TeacherID int32 `json:"teacher_id"`
 	StudentID int32 `json:"student_id"`
 }
 
-type User struct {
+type TremoloUser struct {
 	ID                  int32          `json:"id"`
 	FirstName           string         `json:"first_name"`
 	LastName            string         `json:"last_name"`
-	Role                sql.NullString `json:"role"`
 	Email               sql.NullString `json:"email"`
 	Password            string         `json:"password"`
 	FailedLoginAttempts int32          `json:"failed_login_attempts"`
@@ -58,4 +79,6 @@ type User struct {
 	SchoolID            sql.NullInt32  `json:"school_id"`
 	CreatedDate         sql.NullTime   `json:"created_date"`
 	CreatedTime         sql.NullTime   `json:"created_time"`
+	Instrument          sql.NullString `json:"instrument"`
+	RoleID              int32          `json:"role_id"`
 }

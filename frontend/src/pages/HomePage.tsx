@@ -1,228 +1,217 @@
+import { Link } from "react-router-dom";
+import { Music2, TrendingUp, Target, School, User, Users } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
 import {
-	Box,
-	Button,
 	Card,
 	CardContent,
-	Container,
-	Grid,
-	Typography,
-	Avatar,
-	Fade,
-} from "@mui/material";
-import { Link } from "react-router-dom";
-import MusicNoteIcon from "@mui/icons-material/MusicNote";
-import SpeedIcon from "@mui/icons-material/Speed";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import SchoolIcon from "@mui/icons-material/School";
-import PersonIcon from "@mui/icons-material/Person";
-import GroupIcon from "@mui/icons-material/Group";
-import { landingPageStyles } from "../styles";
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
 
-const HomePage = () => {
-	const features = [
-		{
-			icon: <MusicNoteIcon sx={{ fontSize: 40 }} />,
-			title: "Note Recognition Game",
-			description:
-				"Master note reading with our interactive game that adapts to your skill level. Practice identifying notes across different octaves and scales.",
-		},
-		{
-			icon: <SpeedIcon sx={{ fontSize: 40 }} />,
-			title: "Rhythm Practice",
-			description:
-				"Develop sight-reading skills with customizable rhythm patterns. Practice 8th notes, 16th notes, and complex patterns at your own pace.",
-		},
-		{
-			icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-			title: "Track Progress",
-			description:
-				"Monitor your improvement with detailed analytics. See accuracy rates, notes per minute, and identify areas for growth.",
-		},
-	];
-
-	const steps = [
-		{
-			number: "1",
-			title: "Choose Your Exercise",
-			description:
-				"Select from note games, rhythm practice, or custom exercises",
-		},
-		{
-			number: "2",
-			title: "Practice & Learn",
-			description:
-				"Work through exercises tailored to your skill level and goals",
-		},
-		{
-			number: "3",
-			title: "Track Improvement",
-			description: "View your progress and celebrate your musical growth",
-		},
-	];
-
-	const audiences = [
-		{
-			icon: <SchoolIcon sx={{ fontSize: 40 }} />,
-			title: "Music Teachers",
-			description:
-				"Create custom exercises for your students. Track their progress and assign targeted practice sessions.",
-		},
-		{
-			icon: <PersonIcon sx={{ fontSize: 40 }} />,
-			title: "Students",
-			description:
-				"Build sight-reading confidence for auditions, competitions, and UIL. Practice anytime, anywhere.",
-		},
-		{
-			icon: <GroupIcon sx={{ fontSize: 40 }} />,
-			title: "Musicians",
-			description:
-				"Advanced musicians can sharpen skills in specific chord structures, scale patterns, and complex rhythms.",
-		},
-	];
-
+export function HomePage() {
 	return (
-		<Fade in={true} timeout={500}>
-			<Box>
-				<Box sx={landingPageStyles.heroSection}>
-					<Container maxWidth="lg">
-						<Typography variant="h1" sx={landingPageStyles.heroTitle}>
-							Master Music Sight Reading
-						</Typography>
-						<Typography variant="h5" sx={landingPageStyles.heroSubtitle}>
+		<div className="min-h-screen">
+			{/* Hero Section */}
+			<section className="relative py-20 px-4 bg-gradient-to-br from-primary/20 via-background to-accent/20">
+				<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMwLTkuOTQgOC4wNi0xOCAxOC0xOCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-40" />
+				<div className="container mx-auto max-w-6xl relative z-10">
+					<div className="text-center space-y-6 animate-fade-in">
+						<h1 className="text-5xl md:text-7xl font-bold leading-tight text-balance">
+							Master Music <span className="text-primary">Sight Reading</span>
+						</h1>
+						<p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
 							The customizable platform for music students, teachers, and
 							performers to practice sight reading and note recognition
-						</Typography>
-						<Button
-							component={Link}
-							to="/note-game"
-							variant="contained"
-							color="secondary"
-							size="large"
-							sx={landingPageStyles.heroButton}
-						>
-							Start Practicing Now
-						</Button>
-					</Container>
-				</Box>
+						</p>
+						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
+							<Link to="/note-game">
+								<Button size="xl" className="w-full sm:w-auto">
+									<Music2 className="mr-2 h-5 w-5" />
+									Start Practicing Now
+								</Button>
+							</Link>
+						</div>
+					</div>
+				</div>
+			</section>
 
-				<Container maxWidth="lg">
-					<Box sx={landingPageStyles.section}>
-						<Typography variant="h3" sx={landingPageStyles.sectionTitle}>
-							Everything You Need to Excel
-						</Typography>
-						<Grid container spacing={4}>
-							{features.map((feature, index) => (
-								<Grid item xs={12} md={4} key={index}>
-									<Card elevation={3} sx={landingPageStyles.featureCard}>
-										<CardContent sx={landingPageStyles.featureCardContent}>
-											<Avatar sx={landingPageStyles.featureIcon}>
-												{feature.icon}
-											</Avatar>
-											<Typography
-												variant="h6"
-												sx={landingPageStyles.featureTitle}
-											>
-												{feature.title}
-											</Typography>
-											<Typography variant="body2" color="text.secondary">
-												{feature.description}
-											</Typography>
-										</CardContent>
-									</Card>
-								</Grid>
-							))}
-						</Grid>
-					</Box>
+			{/* Features Section */}
+			<section className="py-20 px-4">
+				<div className="container mx-auto max-w-6xl">
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<Card className="group hover:border-primary hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+									<Music2 className="h-6 w-6 text-primary" />
+								</div>
+								<CardTitle>Note Recognition Game</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Interactive games that help you identify notes quickly and
+									accurately. Track your speed and accuracy in real-time.
+								</CardDescription>
+							</CardContent>
+						</Card>
 
-					<Box sx={landingPageStyles.section}>
-						<Typography variant="h3" sx={landingPageStyles.sectionTitle}>
-							How It Works
-						</Typography>
-						<Box sx={{ maxWidth: "800px", mx: "auto" }}>
-							{steps.map((step, index) => (
-								<Box key={index} sx={landingPageStyles.stepContainer}>
-									<Box sx={landingPageStyles.stepNumber}>{step.number}</Box>
-									<Box>
-										<Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-											{step.title}
-										</Typography>
-										<Typography variant="body1" color="text.secondary">
-											{step.description}
-										</Typography>
-									</Box>
-								</Box>
-							))}
-						</Box>
-					</Box>
+						<Card className="group hover:border-primary hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+									<Target className="h-6 w-6 text-accent" />
+								</div>
+								<CardTitle>Rhythm Practice</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Customizable exercises focusing on specific rhythm patterns.
+									Perfect for UIL preparation and auditions.
+								</CardDescription>
+							</CardContent>
+						</Card>
 
-					<Box sx={landingPageStyles.section}>
-						<Typography variant="h3" sx={landingPageStyles.sectionTitle}>
-							Built For Everyone
-						</Typography>
-						<Grid container spacing={4}>
-							{audiences.map((audience, index) => (
-								<Grid item xs={12} md={4} key={index}>
-									<Card sx={landingPageStyles.audienceCard}>
-										<Avatar
-											sx={{
-												...landingPageStyles.featureIcon,
-												mx: "auto",
-											}}
-										>
-											{audience.icon}
-										</Avatar>
-										<Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-											{audience.title}
-										</Typography>
-										<Typography variant="body2" color="text.secondary">
-											{audience.description}
-										</Typography>
-									</Card>
-								</Grid>
-							))}
-						</Grid>
-					</Box>
+						<Card className="group hover:border-primary hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+									<TrendingUp className="h-6 w-6 text-primary" />
+								</div>
+								<CardTitle>Track Progress</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Detailed analytics showing your improvement over time. Set
+									goals and celebrate your musical growth.
+								</CardDescription>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</section>
 
-					<Box
-						sx={{
-							...landingPageStyles.section,
-							textAlign: "center",
-							bgcolor: "grey.100",
-							borderRadius: 2,
-							py: 6,
-							mb: 4,
-						}}
-					>
-						<Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-							Ready to Improve Your Sight Reading?
-						</Typography>
-						<Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
-							Join students and teachers who are already seeing results
-						</Typography>
-						<Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
-							<Button
-								component={Link}
-								to="/note-game"
-								variant="contained"
-								size="large"
-							>
+			{/* How It Works Section */}
+			<section className="py-20 px-4 bg-muted/30">
+				<div className="container mx-auto max-w-4xl">
+					<h2 className="text-4xl font-bold text-center mb-12">How It Works</h2>
+					<div className="space-y-8">
+						{[
+							{
+								step: 1,
+								title: "Choose Your Exercise",
+								description:
+									"Select from note games, rhythm practice, or custom exercises tailored to your needs.",
+							},
+							{
+								step: 2,
+								title: "Practice & Learn",
+								description:
+									"Work through exercises tailored to your skill level and goals with immediate feedback.",
+							},
+							{
+								step: 3,
+								title: "Track Improvement",
+								description:
+									"View your progress and celebrate your musical growth with detailed analytics.",
+							},
+						].map((item) => (
+							<div key={item.step} className="flex gap-6 items-start">
+								<div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+									{item.step}
+								</div>
+								<div className="flex-1">
+									<h3 className="text-2xl font-bold mb-2">{item.title}</h3>
+									<p className="text-muted-foreground text-lg">
+										{item.description}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</section>
+
+			{/* Built For Everyone Section */}
+			<section className="py-20 px-4">
+				<div className="container mx-auto max-w-6xl">
+					<h2 className="text-4xl font-bold text-center mb-12">
+						Built For Everyone
+					</h2>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<Card className="hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+									<School className="h-6 w-6 text-primary" />
+								</div>
+								<CardTitle>Music Teachers</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Create custom exercises, track student progress, and assign
+									practice sessions. Perfect for classroom and individual
+									instruction.
+								</CardDescription>
+							</CardContent>
+						</Card>
+
+						<Card className="hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+									<User className="h-6 w-6 text-accent" />
+								</div>
+								<CardTitle>Students</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Build sight-reading confidence for auditions, competitions,
+									and UIL practice. Work at your own pace and track your
+									improvement.
+								</CardDescription>
+							</CardContent>
+						</Card>
+
+						<Card className="hover:shadow-lg transition-all">
+							<CardHeader>
+								<div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+									<Users className="h-6 w-6 text-primary" />
+								</div>
+								<CardTitle>Musicians</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardDescription className="text-base">
+									Advanced practice for specific chord structures, scale
+									patterns, and complex rhythms. Take your skills to the next
+									level.
+								</CardDescription>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</section>
+
+			{/* Final CTA Section */}
+			<section className="py-20 px-4 bg-gradient-to-br from-primary/10 to-accent/10">
+				<div className="container mx-auto max-w-4xl text-center space-y-6">
+					<h2 className="text-4xl font-bold">
+						Ready to Improve Your Sight Reading?
+					</h2>
+					<p className="text-xl text-muted-foreground">
+						Join students and teachers who are already seeing results
+					</p>
+					<div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+						<Link to="/note-game">
+							<Button size="lg">
+								<Music2 className="mr-2 h-5 w-5" />
 								Start Note Game
 							</Button>
-							<Button
-								component={Link}
-								to="/sheet-music"
-								variant="outlined"
-								size="large"
-							>
+						</Link>
+						<Link to="/sheet-music">
+							<Button size="lg" variant="outline">
+								<Target className="mr-2 h-5 w-5" />
 								Try Rhythm Practice
 							</Button>
-						</Box>
-					</Box>
-				</Container>
-			</Box>
-		</Fade>
+						</Link>
+					</div>
+				</div>
+			</section>
+		</div>
 	);
-};
-
-export default HomePage;
+}

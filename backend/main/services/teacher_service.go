@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sight-reading/database"
 	"sight-reading/database/generated"
+	"sight-reading/logger"
 	"strconv"
 
 	dtos "sight-reading/DTOs"
@@ -37,12 +38,22 @@ func CreateUser(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
+	roleID, err := database.Queries.GetRoleIDByName(ctx, string(reqBody.Role))
+	if err != nil {
+		logger.Error("Failed to resolve role", "error", err.Error(), "role", reqBody.Role)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid role",
+			"message": "Role not found",
+		})
+		return
+	}
+
 	params := generated.CreateUserParams{
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
 		Email:     sql.NullString{String: reqBody.Email, Valid: reqBody.Email != ""},
 		Password:  reqBody.PasswordHash,
-		Role:      sql.NullString{String: string(reqBody.Role), Valid: true},
+		RoleID:    roleID,
 	}
 
 	if reqBody.SchoolID != 0 {
@@ -60,7 +71,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"body":   convertCreateUserRowToDTO(createdUser),
+		"body":   convertCreateUserRowToUserResponse(createdUser, string(reqBody.Role)),
 		"status": "teacher created sucessfully",
 	})
 }
@@ -68,7 +79,7 @@ func CreateUser(c *gin.Context) {
 func GetStudents(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	users, err := database.Queries.GetUsersByRole(ctx, sql.NullString{String: string(dtos.Student), Valid: true})
+	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Student))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   err.Error(),
@@ -94,7 +105,7 @@ func GetStudent(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	params := generated.GetUserByRoleAndIDParams{
-		Role: sql.NullString{String: string(dtos.Student), Valid: true},
+		Name: string(dtos.Student),
 		ID:   int32(id),
 	}
 

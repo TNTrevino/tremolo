@@ -10,7 +10,7 @@ import (
 func TestShouldDecreasePerformance(t *testing.T) {
 	// Test with 100% probability - should always return true
 	count := 0
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		if shouldDecreasePerformance(1.0) {
 			count++
 		}
@@ -21,7 +21,7 @@ func TestShouldDecreasePerformance(t *testing.T) {
 
 	// Test with 0% probability - should always return false
 	count = 0
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		if shouldDecreasePerformance(0.0) {
 			count++
 		}
@@ -32,7 +32,7 @@ func TestShouldDecreasePerformance(t *testing.T) {
 
 	// Test with 50% probability - should be roughly 50
 	count = 0
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		if shouldDecreasePerformance(0.5) {
 			count++
 		}
@@ -51,7 +51,7 @@ func TestGenerateDateInRange(t *testing.T) {
 	endDate := time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)
 
 	// Generate 100 dates and verify they're all within range
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		date := generateDateInRange(startDate, endDate)
 
 		if date.Before(startDate) {
@@ -113,7 +113,7 @@ func TestGenerateRealisticNPM(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Generate 100 NPM values and verify they're all within expected range
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			npm := generateRealisticNPM(tc.skillLevel, 0.2)
 
 			if npm < tc.minExpected {
@@ -169,7 +169,7 @@ func TestGenerateAccuracyScore(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Generate 100 accuracy scores
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			accuracy := generateAccuracyScore(tc.baseAccuracy, tc.variance)
 
 			// Verify accuracy is within bounds [30, 98]
@@ -217,7 +217,7 @@ func TestCalculateSessionLength(t *testing.T) {
 // Test generateStudentProgressProfile
 func TestGenerateStudentProgressProfile(t *testing.T) {
 	// Generate 100 profiles and verify they have valid values
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		profile := generateStudentProgressProfile()
 
 		// Verify skill level is valid
@@ -356,7 +356,7 @@ func TestGenerateRealisticNoteGameEntries(t *testing.T) {
 // Test generateFakeDateCreated
 func TestGenerateFakeDateCreated(t *testing.T) {
 	// Generate 100 dates and verify they're all within 2024-2025 and before current date
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		dateSQL := generateFakeDateCreated()
 
 		if !dateSQL.Valid {
@@ -389,7 +389,7 @@ func TestGenerateFakeDateCreated(t *testing.T) {
 // Test generateFakeTimeCreated
 func TestGenerateFakeTimeCreated(t *testing.T) {
 	// Generate 100 times and verify format
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		timeSQL := generateFakeTimeCreated()
 
 		if !timeSQL.Valid {
