@@ -27,9 +27,9 @@ export class NoteGameDisplay {
 
 		this.osmd.zoom = this.zoom;
 
-		if (this.darkMode) {
-			this.osmd.setOptions({ defaultColorMusic: "#FFFFFF" });
-		}
+		this.osmd.setOptions({
+			defaultColorMusic: this.darkMode ? "#FFFFFF" : "#000000",
+		});
 
 		const rules = this.osmd.EngravingRules;
 		rules.PageLeftMargin = 0;
