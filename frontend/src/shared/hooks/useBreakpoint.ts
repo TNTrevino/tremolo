@@ -28,6 +28,15 @@ function computeSnapshot(): Breakpoint {
 }
 
 function getSnapshot(): Breakpoint {
+	if (typeof window === "undefined") return cachedSnapshot;
+	const next = computeSnapshot();
+	if (
+		next.isMobile !== cachedSnapshot.isMobile ||
+		next.isPhoneLandscape !== cachedSnapshot.isPhoneLandscape ||
+		next.isDesktop !== cachedSnapshot.isDesktop
+	) {
+		cachedSnapshot = next;
+	}
 	return cachedSnapshot;
 }
 
@@ -39,9 +48,6 @@ function subscribe(callback: () => void): () => void {
 	const mediaQueryLists = Object.values(QUERIES).map((q) =>
 		window.matchMedia(q),
 	);
-
-	// Compute initial snapshot on subscribe
-	cachedSnapshot = computeSnapshot();
 
 	const handleChange = () => {
 		const next = computeSnapshot();
