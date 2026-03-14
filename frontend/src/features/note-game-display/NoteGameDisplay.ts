@@ -72,6 +72,15 @@ export class NoteGameDisplay {
 		});
 	}
 
+	setDarkMode(dark: boolean): void {
+		if (dark === this.darkMode) return;
+		this.darkMode = dark;
+		this.osmd.setOptions({
+			defaultColorMusic: dark ? "#FFFFFF" : "#000000",
+		});
+		this.refresh();
+	}
+
 	refresh(): void {
 		this.osmd.render();
 		requestAnimationFrame(() => this.centerContent());

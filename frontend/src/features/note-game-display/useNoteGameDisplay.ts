@@ -62,7 +62,15 @@ export function useNoteGameDisplay(
 			instanceRef.current = null;
 			setIsReady(false);
 		};
-	}, [zoom, darkMode, padding]);
+		// darkMode is handled by the separate effect below so that toggling
+		// the theme re-colors the existing OSMD instance instead of tearing
+		// it down (which would reset the note queue and lose the current note).
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [zoom, padding]);
+
+	useEffect(() => {
+		instanceRef.current?.setDarkMode(darkMode ?? false);
+	}, [darkMode]);
 
 	const loadNote = useCallback(async (musicXml: string) => {
 		if (!instanceRef.current) return;
