@@ -128,14 +128,11 @@ describe("useNoteQueue", () => {
 	});
 
 	it("clears queue and re-initializes when scale changes", async () => {
-		// Initial hydrate (2 notes) + pop-triggered refill (2 notes) + scale-change hydrate (2 notes)
+		// Initial hydrate resolves immediately, but the pop-triggered refill
+		// uses deferred promises so we can change the scale while it's in-flight.
 		mockGenerate
 			.mockResolvedValueOnce(fakeNote("C"))
-			.mockResolvedValueOnce(fakeNote("D"))
-			.mockResolvedValueOnce(fakeNote("C2"))
-			.mockResolvedValueOnce(fakeNote("D2"))
-			.mockResolvedValueOnce(fakeNote("E"))
-			.mockResolvedValueOnce(fakeNote("F#"));
+			.mockResolvedValueOnce(fakeNote("D"));
 
 		const { result, rerender } = renderHook(
 			({ scale }) => useNoteQueue(scale, "4", true),
@@ -146,28 +143,49 @@ describe("useNoteQueue", () => {
 			expect(result.current.isInitializing).toBe(false);
 		});
 
-		// Queue should have the original notes
+		// Set up deferred promises for the pop-triggered refill so it stays
+		// in-flight when we change the scale.
+		let resolveStale1!: (v: NoteGameResponse) => void;
+		let resolveStale2!: (v: NoteGameResponse) => void;
+		mockGenerate
+			.mockImplementationOnce(
+				() =>
+					new Promise<NoteGameResponse>((r) => {
+						resolveStale1 = r;
+					}),
+			)
+			.mockImplementationOnce(
+				() =>
+					new Promise<NoteGameResponse>((r) => {
+						resolveStale2 = r;
+					}),
+			);
+
+		// Pop triggers a background refill that is now pending
 		let note: NoteGameResponse | null = null;
 		act(() => {
 			note = result.current.pop();
 		});
 		expect(note).toEqual(fakeNote("C"));
 
-		// Wait for the pop-triggered background refill to complete
-		await waitFor(() => {
-			expect(mockGenerate).toHaveBeenCalledTimes(4);
-		});
+		// Change scale while the old refill is still in-flight
+		mockGenerate
+			.mockResolvedValueOnce(fakeNote("E"))
+			.mockResolvedValueOnce(fakeNote("F#"));
 
 		rerender({ scale: "E" });
 
-		// Should go back to initializing while new notes are fetched
 		expect(result.current.isInitializing).toBe(true);
+
+		// Now resolve the stale in-flight hydrate -- these should be discarded
+		resolveStale1(fakeNote("STALE_C1"));
+		resolveStale2(fakeNote("STALE_C2"));
 
 		await waitFor(() => {
 			expect(result.current.isInitializing).toBe(false);
 		});
 
-		// Pop should return the new scale's notes, not stale ones
+		// Pop should return only the new scale's notes, not stale ones
 		act(() => {
 			note = result.current.pop();
 		});
