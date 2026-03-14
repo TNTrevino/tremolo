@@ -14,7 +14,7 @@ export interface NoteGameDisplayOptions {
 	/** OSMD zoom level for single-note rendering. Defaults to ~2.0. */
 	zoom?: number;
 
-	/** Whether to render in dark mode (sets note color to white). */
+	/** Whether to render in dark mode. Sets note color to white when true, black when false. */
 	darkMode?: boolean;
 
 	/** Padding around the viewBox crop in pixels. */

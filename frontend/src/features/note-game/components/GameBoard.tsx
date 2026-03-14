@@ -9,6 +9,7 @@ import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
+import { useThemeStore } from "@/stores/theme.store";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -128,12 +129,14 @@ function useGameBoardCore({
 	scale: string;
 	octave: number;
 }) {
+	const theme = useThemeStore((s) => s.theme);
+
 	const {
 		containerRef,
 		loadNote,
 		isReady: isDisplayReady,
 	} = useNoteGameDisplay({
-		darkMode: true,
+		darkMode: theme === "dark",
 		zoom: 2.0,
 	});
 
