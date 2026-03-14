@@ -123,8 +123,8 @@ export function NoteGamePage() {
 	}, [savedSettings, updateSettings]);
 
 	return (
-		<div className="min-h-screen py-8 px-4">
-			<div className="container mx-auto max-w-6xl">
+		<div className="h-[calc(100vh-4rem)] flex flex-col py-4 px-4">
+			<div className="container mx-auto max-w-6xl flex flex-col flex-1 min-h-0">
 				{gameState === GameState.GameOver && gameStats ? (
 					<GameResults
 						gameStats={gameStats}
@@ -133,21 +133,23 @@ export function NoteGamePage() {
 						onPlayAgain={resetGame}
 					/>
 				) : (
-					<div className="space-y-6">
-						{gameState === GameState.Playing ? (
-							<ScoreBar
-								answers={answers}
-								timeRemaining={timeRemaining}
-								noteLimit={settings.noteLimit}
-								gameMode={settings.gameMode}
-								formatTime={formatTime}
-							/>
-						) : (
-							<SettingsBar
-								settings={settings}
-								onSettingsChange={updateSettings}
-							/>
-						)}
+					<div className="flex flex-col flex-1 min-h-0 gap-4">
+						<div className="flex-shrink-0">
+							{gameState === GameState.Playing ? (
+								<ScoreBar
+									answers={answers}
+									timeRemaining={timeRemaining}
+									noteLimit={settings.noteLimit}
+									gameMode={settings.gameMode}
+									formatTime={formatTime}
+								/>
+							) : (
+								<SettingsBar
+									settings={settings}
+									onSettingsChange={updateSettings}
+								/>
+							)}
+						</div>
 						<GameBoard
 							currentNote={currentNote}
 							answers={answers}

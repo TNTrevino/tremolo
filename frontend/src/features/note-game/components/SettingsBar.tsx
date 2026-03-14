@@ -13,12 +13,12 @@ const NOTE_LIMITS = [10, 25, 50, 100] as const;
 const OCTAVES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 function Divider() {
-	return <div className="w-px bg-border self-stretch" />;
+	return <div className="hidden md:block w-px bg-border self-stretch" />;
 }
 
 /**
  * Compact horizontal settings bar inspired by Monkeytype.
- * Displays game mode, limit, scale, and octave controls in a single row.
+ * Single row on md+ screens, wraps into grouped rows on smaller screens.
  */
 export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	const isTimeMode = settings.gameMode === GameMode.Time;
@@ -26,7 +26,7 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	const activeLimit = isTimeMode ? settings.timeLimit : settings.noteLimit;
 
 	return (
-		<div className="flex items-center gap-3 bg-card border-2 border-border rounded-lg px-4 py-2 min-h-[3rem]">
+		<div className="flex flex-wrap items-center gap-2 md:gap-3 bg-card border-2 border-border rounded-lg px-3 md:px-4 py-2">
 			{/* Game Mode Toggle */}
 			<div className="flex items-center gap-1">
 				<Button
@@ -67,33 +67,32 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 
 			<Divider />
 
-			{/* Scale Dropdown */}
-			<Select
-				className="w-28 h-9"
-				value={settings.scale}
-				onChange={(e) => onSettingsChange({ scale: e.target.value })}
-			>
-				{SCALES.map((scale) => (
-					<option key={scale} value={scale}>
-						{scale}
-					</option>
-				))}
-			</Select>
+			{/* Dropdowns grouped together so they wrap as a pair */}
+			<div className="flex items-center gap-2 [&>div]:w-auto">
+				<Select
+					className="w-28 h-9"
+					value={settings.scale}
+					onChange={(e) => onSettingsChange({ scale: e.target.value })}
+				>
+					{SCALES.map((scale) => (
+						<option key={scale} value={scale}>
+							{scale}
+						</option>
+					))}
+				</Select>
 
-			<Divider />
-
-			{/* Octave Dropdown */}
-			<Select
-				className="w-28 h-9"
-				value={settings.octave.toString()}
-				onChange={(e) => onSettingsChange({ octave: Number(e.target.value) })}
-			>
-				{OCTAVES.map((octave) => (
-					<option key={octave} value={octave}>
-						Octave {octave}
-					</option>
-				))}
-			</Select>
+				<Select
+					className="w-28 h-9"
+					value={settings.octave.toString()}
+					onChange={(e) => onSettingsChange({ octave: Number(e.target.value) })}
+				>
+					{OCTAVES.map((octave) => (
+						<option key={octave} value={octave}>
+							Octave {octave}
+						</option>
+					))}
+				</Select>
+			</div>
 		</div>
 	);
 }
