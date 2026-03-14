@@ -1,13 +1,8 @@
 import { useState, useCallback } from "react";
 import type { NoteAnswer, GameStats, GameSettings } from "../types";
-import { GameState, GameMode, NOTES, ACCIDENTALS } from "../types";
+import { GameState, GameMode } from "../types";
 import { useNoteAudio } from "./useNoteAudio";
 import { useKeyboardInput } from "./useKeyboardInput";
-
-// Generate all possible notes
-const ALL_NOTES = ACCIDENTALS.flatMap((acc) =>
-	NOTES.map((note) => `${note}${acc}`),
-);
 
 interface UseNoteGameReturn {
 	// Game state
@@ -23,7 +18,6 @@ interface UseNoteGameReturn {
 
 	// Actions
 	updateSettings: (settings: Partial<GameSettings>) => void;
-	startGame: () => void;
 	handleAnswer: (answer: string) => void;
 	endGame: (finalAnswers?: NoteAnswer[]) => void;
 	resetGame: () => void;
@@ -33,6 +27,7 @@ interface UseNoteGameReturn {
 interface UseNoteGameOptions {
 	initialSettings?: Partial<GameSettings>;
 	onGameEnd?: (stats: GameStats) => void;
+	onGameStart?: () => void;
 }
 
 /**
@@ -40,7 +35,7 @@ interface UseNoteGameOptions {
  * Handles game state, note generation, answer validation, and statistics
  */
 export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
-	const { initialSettings, onGameEnd } = options || {};
+	const { initialSettings, onGameEnd, onGameStart } = options || {};
 
 	// Audio playback hook
 	const { playNoteSound } = useNoteAudio();
@@ -56,7 +51,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	});
 
 	// Game state
-	const [gameState, setGameState] = useState<GameState>(GameState.Settings);
+	const [gameState, setGameState] = useState<GameState>(GameState.Ready);
 	const [currentNote, setCurrentNote] = useState("C");
 	const [answers, setAnswers] = useState<NoteAnswer[]>([]);
 	const [gameStartTime, setGameStartTime] = useState(0);
@@ -64,32 +59,11 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
 	/**
-	 * Generate a random note from all possible notes
-	 */
-	const generateRandomNote = useCallback(() => {
-		const randomNote =
-			ALL_NOTES[Math.floor(Math.random() * ALL_NOTES.length)] ?? "C";
-		setCurrentNote(randomNote);
-		setQuestionStartTime(Date.now());
-	}, []);
-
-	/**
 	 * Update game settings (only allowed in settings state)
 	 */
 	const updateSettings = useCallback((newSettings: Partial<GameSettings>) => {
 		setSettings((prev) => ({ ...prev, ...newSettings }));
 	}, []);
-
-	/**
-	 * Start a new game
-	 */
-	const startGame = useCallback(() => {
-		setGameState(GameState.Playing);
-		setAnswers([]);
-		setGameStartTime(Date.now());
-		setGameStats(null);
-		generateRandomNote();
-	}, [generateRandomNote]);
 
 	/**
 	 * End the game and calculate statistics
@@ -127,11 +101,21 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	);
 
 	/**
-	 * Handle a note answer
+	 * Handle a note answer.
+	 * When the game is in Ready state, the first answer transitions to Playing.
 	 */
 	const handleAnswer = useCallback(
 		(answer: string) => {
-			const timeToAnswer = Date.now() - questionStartTime;
+			// First answer transitions from Ready to Playing
+			if (gameState === GameState.Ready) {
+				setGameState(GameState.Playing);
+				setGameStartTime(Date.now());
+				onGameStart?.();
+			}
+
+			const effectiveQuestionStart =
+				questionStartTime === 0 ? Date.now() : questionStartTime;
+			const timeToAnswer = Date.now() - effectiveQuestionStart;
 			const correct = answer === currentNote;
 
 			const newAnswer: NoteAnswer = {
@@ -159,6 +143,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			}
 		},
 		[
+			gameState,
 			currentNote,
 			questionStartTime,
 			answers,
@@ -166,6 +151,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 			settings.noteLimit,
 			endGame,
 			playNoteSound,
+			onGameStart,
 		],
 	);
 
@@ -176,13 +162,14 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	 */
 	const syncCurrentNote = useCallback((noteName: string) => {
 		setCurrentNote(noteName);
+		setQuestionStartTime(Date.now());
 	}, []);
 
 	/**
 	 * Reset game to settings screen
 	 */
 	const resetGame = useCallback(() => {
-		setGameState(GameState.Settings);
+		setGameState(GameState.Ready);
 		setGameStats(null);
 		setAnswers([]);
 	}, []);
@@ -190,7 +177,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	// Set up keyboard input - only enabled when game is playing
 	useKeyboardInput({
 		onNoteInput: handleAnswer,
-		enabled: gameState === GameState.Playing,
+		enabled: gameState === GameState.Playing || gameState === GameState.Ready,
 	});
 
 	return {
@@ -205,7 +192,6 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 
 		// Actions
 		updateSettings,
-		startGame,
 		handleAnswer,
 		endGame,
 		resetGame,

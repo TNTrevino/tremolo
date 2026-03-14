@@ -15,11 +15,13 @@ export enum GameMode {
 /**
  * Current state of the game
  * - Settings: Player is configuring game options
+ * - Ready: First note displayed, waiting for player's first answer
  * - Playing: Game is in progress
  * - GameOver: Game has ended, showing results
  */
 export enum GameState {
 	Settings = "settings",
+	Ready = "ready",
 	Playing = "playing",
 	GameOver = "gameover",
 }

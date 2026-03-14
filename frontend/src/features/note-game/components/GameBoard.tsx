@@ -4,7 +4,7 @@ import { Card } from "@/shared/components/ui/card";
 import { useNoteGameDisplay } from "@/features/note-game-display";
 import { useNoteQueue } from "../hooks";
 import type { NoteAnswer } from "../types";
-import { GameMode, NOTES } from "../types";
+import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
@@ -12,12 +12,8 @@ import { logger } from "@/lib/logger";
 export interface GameBoardProps {
 	currentNote: string;
 	answers: NoteAnswer[];
-	timeRemaining?: number;
-	noteLimit?: number;
-	gameMode: GameMode;
 	onAnswer: (answer: string) => void;
 	onNoteGenerated: (noteName: string) => void;
-	formatTime?: (seconds: number) => string;
 	scale: string;
 	octave: number;
 }
@@ -28,21 +24,21 @@ const extractTonic = (scaleStr: string): string => {
 
 /**
  * Game board component for active gameplay (Internal)
- * Displays score, current note (as sheet music), and answer buttons
+ * Displays current note (as sheet music) and answer buttons
  */
 const GameBoardInternal = ({
 	currentNote,
 	answers,
-	timeRemaining,
-	noteLimit,
-	gameMode,
 	onAnswer,
 	onNoteGenerated,
-	formatTime,
 	scale,
 	octave,
 }: GameBoardProps) => {
-	const { containerRef, loadNote, isReady } = useNoteGameDisplay({
+	const {
+		containerRef,
+		loadNote,
+		isReady: isDisplayReady,
+	} = useNoteGameDisplay({
 		darkMode: true,
 		zoom: 2.0,
 	});
@@ -50,19 +46,13 @@ const GameBoardInternal = ({
 	const { pop, isInitializing } = useNoteQueue(
 		extractTonic(scale),
 		octave.toString(),
-		isReady,
+		isDisplayReady,
 	);
 
 	const [loadError, setLoadError] = useState(false);
 
-	const correctAnswers = answers.filter((a) => a.correct).length;
-	const accuracy =
-		answers.length > 0
-			? Math.round((correctAnswers / answers.length) * 100)
-			: 0;
-
 	useEffect(() => {
-		if (!isReady || isInitializing) return;
+		if (!isDisplayReady || isInitializing) return;
 
 		let cancelled = false;
 
@@ -93,34 +83,19 @@ const GameBoardInternal = ({
 		return () => {
 			cancelled = true;
 		};
-	}, [answers.length, isReady, isInitializing, pop, loadNote, onNoteGenerated]);
-
-	const getTimerDisplay = () => {
-		if (gameMode === GameMode.Time && timeRemaining !== undefined) {
-			return formatTime ? formatTime(timeRemaining) : `${timeRemaining}s`;
-		}
-		if (gameMode === GameMode.Notes && noteLimit !== undefined) {
-			return `${answers.length}/${noteLimit}`;
-		}
-		return "";
-	};
+	}, [
+		answers.length,
+		isDisplayReady,
+		isInitializing,
+		pop,
+		loadNote,
+		onNoteGenerated,
+	]);
 
 	return (
 		<div className="space-y-6">
-			{/* Score Bar */}
-			<div className="flex justify-between items-center bg-card border-2 border-border p-4 rounded-lg">
-				<div className="text-lg font-medium">
-					Score: {correctAnswers}/{answers.length}
-				</div>
-				<div className="text-lg font-bold">{getTimerDisplay()}</div>
-				<div className="text-lg font-medium">Accuracy: {accuracy}%</div>
-			</div>
-
 			{/* Note Display */}
 			<div className="space-y-2">
-				<div className="text-center text-sm text-muted-foreground">
-					Identify this note:
-				</div>
 				{loadError ? (
 					<Card className="p-12 min-h-[18.75rem] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
 						<div className="text-center space-y-4">

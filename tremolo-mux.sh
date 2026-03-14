@@ -8,6 +8,9 @@ tmux has-session -t "$SESSION" 2>/dev/null && tmux kill-session -t "$SESSION"
 tmux new-session -d -s "$SESSION" -n "editor" -c "$ROOT"
 tmux send-keys -t "$SESSION:editor" "nvim" Enter
 
+tmux new-window -t "$SESSION" -n "opencode" -c "$ROOT"
+tmux send-keys -t "$SESSION:opencode" "opencode" Enter
+
 tmux new-window -t "$SESSION" -n "go" -c "$ROOT/backend/main"
 tmux send-keys -t "$SESSION:go" "source $ROOT/tremolo.sh && trem go run main.go" Enter
 
