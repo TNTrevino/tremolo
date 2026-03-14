@@ -9,7 +9,9 @@ export function useGameTimer(onTimerEnd?: () => void) {
 	const [isRunning, setIsRunning] = useState(false);
 
 	const onTimerEndRef = useRef(onTimerEnd);
-	onTimerEndRef.current = onTimerEnd;
+	useEffect(() => {
+		onTimerEndRef.current = onTimerEnd;
+	}, [onTimerEnd]);
 
 	// Timer countdown effect
 	useEffect(() => {
