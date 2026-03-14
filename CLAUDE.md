@@ -98,8 +98,6 @@ go run main.go --fake-it           # Run with fake data generation
 air                                # Run with hot reload (requires air CLI)
 ```
 
-The Go service uses Air for hot reloading in development (configured in `.air.toml`).
-
 ## Database
 
 The PostgreSQL schema lives in the `tremolo` schema and is managed via versioned migrations. Key tables:
