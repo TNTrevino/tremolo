@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: simplify controllers to thin routing layer\n\nControllers now only define routes and delegate directly to service\nfunctions. Request parsing, authentication, and response handling\nhave moved to services. This reduces controller boilerplate and\nkeeps HTTP logic close to business logic in service functions.\nEOF\n\\)\")"
+    ]
+  }
+}

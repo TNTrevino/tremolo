@@ -93,11 +93,11 @@ const GameBoardInternal = ({
 	]);
 
 	return (
-		<div className="space-y-6">
-			{/* Note Display */}
-			<div className="space-y-2">
+		<div className="flex flex-col flex-1 min-h-0 gap-4">
+			{/* Note Display -- shrinks to fit available space */}
+			<div className="flex-1 min-h-0">
 				{loadError ? (
-					<Card className="p-12 min-h-[18.75rem] flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+					<Card className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
 						<div className="text-center space-y-4">
 							<div className="text-destructive font-medium">
 								Failed to load sheet music
@@ -111,7 +111,7 @@ const GameBoardInternal = ({
 						</div>
 					</Card>
 				) : (
-					<Card className="relative flex items-center justify-center overflow-hidden">
+					<Card className="h-full relative flex items-center justify-center overflow-hidden">
 						{isInitializing && (
 							<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
 								<div className="text-center text-muted-foreground">
@@ -119,24 +119,21 @@ const GameBoardInternal = ({
 								</div>
 							</div>
 						)}
-						<div
-							ref={containerRef}
-							className="w-full aspect-[2/1] overflow-hidden"
-						/>
+						<div ref={containerRef} className="w-full h-full overflow-hidden" />
 					</Card>
 				)}
 			</div>
 
-			{/* Answer Buttons */}
-			<Card className="p-4">
-				<div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+			{/* Answer Buttons -- never shrink, always visible */}
+			<Card className="flex-shrink-0 p-4">
+				<div className="grid grid-cols-7 gap-2">
 					{/* Sharps */}
 					{NOTES.map((note) => (
 						<Button
 							key={`${note}#`}
 							variant="outline"
 							onClick={() => onAnswer(`${note}#`)}
-							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
+							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
 						>
 							{note}#
 						</Button>
@@ -147,7 +144,7 @@ const GameBoardInternal = ({
 							key={note}
 							variant="default"
 							onClick={() => onAnswer(note)}
-							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
+							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
 						>
 							{note}
 						</Button>
@@ -158,7 +155,7 @@ const GameBoardInternal = ({
 							key={`${note}b`}
 							variant="outline"
 							onClick={() => onAnswer(`${note}b`)}
-							className="h-12 sm:h-16 text-base sm:text-lg font-bold"
+							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
 						>
 							{note}b
 						</Button>
