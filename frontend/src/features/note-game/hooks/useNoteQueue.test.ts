@@ -127,6 +127,58 @@ describe("useNoteQueue", () => {
 		});
 	});
 
+	it("clears queue and re-initializes when scale changes", async () => {
+		// Initial hydrate (2 notes) + pop-triggered refill (2 notes) + scale-change hydrate (2 notes)
+		mockGenerate
+			.mockResolvedValueOnce(fakeNote("C"))
+			.mockResolvedValueOnce(fakeNote("D"))
+			.mockResolvedValueOnce(fakeNote("C2"))
+			.mockResolvedValueOnce(fakeNote("D2"))
+			.mockResolvedValueOnce(fakeNote("E"))
+			.mockResolvedValueOnce(fakeNote("F#"));
+
+		const { result, rerender } = renderHook(
+			({ scale }) => useNoteQueue(scale, "4", true),
+			{ initialProps: { scale: "C" } },
+		);
+
+		await waitFor(() => {
+			expect(result.current.isInitializing).toBe(false);
+		});
+
+		// Queue should have the original notes
+		let note: NoteGameResponse | null = null;
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("C"));
+
+		// Wait for the pop-triggered background refill to complete
+		await waitFor(() => {
+			expect(mockGenerate).toHaveBeenCalledTimes(4);
+		});
+
+		rerender({ scale: "E" });
+
+		// Should go back to initializing while new notes are fetched
+		expect(result.current.isInitializing).toBe(true);
+
+		await waitFor(() => {
+			expect(result.current.isInitializing).toBe(false);
+		});
+
+		// Pop should return the new scale's notes, not stale ones
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("E"));
+
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("F#"));
+	});
+
 	it("failed fetches in hydrate are handled gracefully (Promise.allSettled)", async () => {
 		mockGenerate
 			.mockRejectedValueOnce(new Error("network error"))

@@ -54,6 +54,10 @@ export function useNoteQueue(
 	useEffect(() => {
 		if (!isReady) return;
 
+		queueRef.current = [];
+		inflightRef.current = false;
+		setIsInitializing(true);
+
 		let cancelled = false;
 
 		hydrate(HYDRATE_BATCH).then(() => {
