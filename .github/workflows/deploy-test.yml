@@ -1,13 +1,13 @@
-name: Deploy Prod - Pi
+name: Deploy QA - Pi
 
 on:
   push:
-    branches: [prod]
+    branches: [qa]
   workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: geekom
+    runs-on: pi
     steps:
       - uses: actions/checkout@v4
 
