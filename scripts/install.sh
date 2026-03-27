@@ -52,9 +52,3 @@ echo -e "     $(code "sudoedit /etc/tremolo/.env")"
 echo -e "  2. Deploy application code to ${CODE}/opt/tremolo${RESET} (handled by CI)"
 echo "  3. Start services:"
 echo -e "     $(code "sudo systemctl start tremolo-api tremolo-music")"
-echo ""
-read -p "Seed the database with fake data? [y/N] " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  "$SCRIPT_DIR/seed.sh"
-fi
