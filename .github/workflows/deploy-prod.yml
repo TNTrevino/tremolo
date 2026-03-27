@@ -50,5 +50,5 @@ jobs:
         run: |
           set -a && source /etc/tremolo/.env && set +a
           sleep 5
-          curl -f http://localhost:$USER_SERVICE_PORT/api/auth/me || echo "Go API may require auth"
-          curl -f http://localhost:$MUSIC_SERVICE_PORT/music/docs || echo "Music API docs endpoint"
+          curl -f http://localhost:$USER_SERVICE_PORT/health
+          curl -f http://localhost:$MUSIC_SERVICE_PORT/music/health

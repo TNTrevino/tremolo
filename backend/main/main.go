@@ -56,6 +56,7 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	router.Use(cors.New(config))
 
+	controllers.SetupHealthRoutes(router)
 	controllers.SetupAuthRoutes(router)
 	controllers.SetupTeacherRoutes(router)
 	controllers.SetupChartRoutes(router)
