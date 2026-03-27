@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          set -a && source /etc/tremolo/.env && set +a
+          npm ci
+          npm run build
+
+      - name: Build Go Service
+        working-directory: backend/main
+        run: |
+          go build -o tremolo-api main.go
+
+      - name: Setup Python venv
+        working-directory: backend/music
+        run: |
+          python3 -m venv env || true
+          source env/bin/activate
+          pip install -r requirements.txt
+
+      - name: Deploy Artifacts
+        run: |
+          sudo mkdir -p /opt/tremolo/backend/main
+          sudo mkdir -p /opt/tremolo/backend/music
+          sudo cp backend/main/tremolo-api /opt/tremolo/backend/main/tremolo-api
+          sudo rsync -a --delete backend/music/ /opt/tremolo/backend/music/
+
+      - name: Restart Services
+        run: |
+          sudo systemctl restart tremolo-api
+          sudo systemctl restart tremolo-music
+
+      - name: Sync Frontend to Reverse Proxy
+        run: |
+          rsync -avz --delete frontend/dist/ reverse-proxy:/var/www/tremolo/
+
+      - name: Health Check
+        run: |
+          set -a && source /etc/tremolo/.env && set +a
+          sleep 5
+          curl -f http://localhost:$USER_SERVICE_PORT/health
+          curl -f http://localhost:$MUSIC_SERVICE_PORT/music/health

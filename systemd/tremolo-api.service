@@ -1,0 +1,16 @@
+[Unit]
+Description=Tremolo User Tracking API
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=noetrevino
+WorkingDirectory=/opt/tremolo/backend/main
+EnvironmentFile=/etc/tremolo/.env
+ExecStart=/opt/tremolo/backend/main/tremolo-api
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
