@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
+import { useBreakpoint } from "@/shared/hooks";
 import { useNoteGameDisplay } from "@/features/note-game-display";
 import { useNoteQueue } from "../hooks";
 import type { NoteAnswer } from "../types";
@@ -8,6 +9,7 @@ import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
+import { useThemeStore } from "@/stores/theme.store";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -22,24 +24,119 @@ const extractTonic = (scaleStr: string): string => {
 	return scaleStr.split(" ")[0] ?? "C";
 };
 
-/**
- * Game board component for active gameplay (Internal)
- * Displays current note (as sheet music) and answer buttons
- */
-const GameBoardInternal = ({
+interface NoteDisplayProps {
+	currentNote: string;
+	containerRef: React.RefObject<HTMLDivElement>;
+	isInitializing: boolean;
+	loadError: boolean;
+	className?: string;
+}
+
+function NoteDisplay({
 	currentNote,
-	answers,
+	containerRef,
+	isInitializing,
+	loadError,
+	className = "",
+}: NoteDisplayProps) {
+	return (
+		<div className={className}>
+			{loadError ? (
+				<Card className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
+					<div className="text-center space-y-4">
+						<div className="text-destructive font-medium">
+							Failed to load sheet music
+						</div>
+						<div className="text-sm text-muted-foreground">
+							Falling back to text display
+						</div>
+						<div className="text-9xl font-bold text-primary animate-fade-in">
+							{currentNote}
+						</div>
+					</div>
+				</Card>
+			) : (
+				<Card className="h-full relative flex items-center justify-center overflow-hidden">
+					{isInitializing && (
+						<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+							<div className="text-center text-muted-foreground">
+								Loading sheet music...
+							</div>
+						</div>
+					)}
+					<div ref={containerRef} className="w-full h-full overflow-hidden" />
+				</Card>
+			)}
+		</div>
+	);
+}
+
+export interface NoteButtonGridProps {
+	onAnswer: (answer: string) => void;
+	buttonHeight: string;
+}
+
+export function NoteButtonGrid({
 	onAnswer,
+	buttonHeight,
+}: NoteButtonGridProps) {
+	return (
+		<Card className="flex-shrink-0 p-2 sm:p-4">
+			<div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+				{NOTES.map((note) => (
+					<Button
+						key={`${note}#`}
+						variant="outline"
+						onClick={() => onAnswer(`${note}#`)}
+						className={`${buttonHeight} font-bold px-0 sm:px-2`}
+					>
+						{note}#
+					</Button>
+				))}
+				{NOTES.map((note) => (
+					<Button
+						key={note}
+						variant="default"
+						onClick={() => onAnswer(note)}
+						className={`${buttonHeight} font-bold px-0 sm:px-2`}
+					>
+						{note}
+					</Button>
+				))}
+				{NOTES.map((note) => (
+					<Button
+						key={`${note}b`}
+						variant="outline"
+						onClick={() => onAnswer(`${note}b`)}
+						className={`${buttonHeight} font-bold px-0 sm:px-2`}
+					>
+						{note}b
+					</Button>
+				))}
+			</div>
+		</Card>
+	);
+}
+
+function useGameBoardCore({
+	answers,
 	onNoteGenerated,
 	scale,
 	octave,
-}: GameBoardProps) => {
+}: {
+	answers: NoteAnswer[];
+	onNoteGenerated: (noteName: string) => void;
+	scale: string;
+	octave: number;
+}) {
+	const theme = useThemeStore((s) => s.theme);
+
 	const {
 		containerRef,
 		loadNote,
 		isReady: isDisplayReady,
 	} = useNoteGameDisplay({
-		darkMode: true,
+		darkMode: theme === "dark",
 		zoom: 2.0,
 	});
 
@@ -59,7 +156,7 @@ const GameBoardInternal = ({
 		const loadNext = async () => {
 			const note = pop();
 			if (!note) {
-				logger.warn("useNoteQueue: pop() returned null — queue was empty");
+				logger.warn("useNoteQueue: pop() returned null -- queue was empty");
 				return;
 			}
 
@@ -92,83 +189,115 @@ const GameBoardInternal = ({
 		onNoteGenerated,
 	]);
 
-	return (
-		<div className="flex flex-col flex-1 min-h-0 gap-4">
-			{/* Note Display -- shrinks to fit available space */}
-			<div className="flex-1 min-h-0">
-				{loadError ? (
-					<Card className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-						<div className="text-center space-y-4">
-							<div className="text-destructive font-medium">
-								Failed to load sheet music
-							</div>
-							<div className="text-sm text-muted-foreground">
-								Falling back to text display
-							</div>
-							<div className="text-9xl font-bold text-primary animate-fade-in">
-								{currentNote}
-							</div>
-						</div>
-					</Card>
-				) : (
-					<Card className="h-full relative flex items-center justify-center overflow-hidden">
-						{isInitializing && (
-							<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-								<div className="text-center text-muted-foreground">
-									Loading sheet music...
-								</div>
-							</div>
-						)}
-						<div ref={containerRef} className="w-full h-full overflow-hidden" />
-					</Card>
-				)}
-			</div>
+	return { containerRef, isInitializing, loadError };
+}
 
-			{/* Answer Buttons -- never shrink, always visible */}
-			<Card className="flex-shrink-0 p-4">
-				<div className="grid grid-cols-7 gap-2">
-					{/* Sharps */}
-					{NOTES.map((note) => (
-						<Button
-							key={`${note}#`}
-							variant="outline"
-							onClick={() => onAnswer(`${note}#`)}
-							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
-						>
-							{note}#
-						</Button>
-					))}
-					{/* Naturals */}
-					{NOTES.map((note) => (
-						<Button
-							key={note}
-							variant="default"
-							onClick={() => onAnswer(note)}
-							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
-						>
-							{note}
-						</Button>
-					))}
-					{/* Flats */}
-					{NOTES.map((note) => (
-						<Button
-							key={`${note}b`}
-							variant="outline"
-							onClick={() => onAnswer(`${note}b`)}
-							className="h-10 sm:h-16 text-xs sm:text-lg font-bold"
-						>
-							{note}b
-						</Button>
-					))}
-				</div>
-			</Card>
+export interface GameBoardLandscapeProps extends GameBoardProps {
+	statusBar: React.ReactNode;
+}
+
+/**
+ * Game board for phone landscape layout (Internal).
+ * Two-row layout: top row has settings/score bar + note display side by side,
+ * bottom row has the button grid spanning full width for bigger tap targets.
+ */
+const GameBoardLandscapeInternal = ({
+	currentNote,
+	answers,
+	onAnswer,
+	onNoteGenerated,
+	scale,
+	octave,
+	statusBar,
+}: GameBoardLandscapeProps) => {
+	const { containerRef, isInitializing, loadError } = useGameBoardCore({
+		answers,
+		onNoteGenerated,
+		scale,
+		octave,
+	});
+
+	return (
+		<div className="flex flex-col flex-1 min-h-0 gap-1.5">
+			<div className="flex gap-1.5 min-h-0 flex-1">
+				<div className="w-28 flex-shrink-0">{statusBar}</div>
+				<NoteDisplay
+					currentNote={currentNote}
+					containerRef={containerRef}
+					isInitializing={isInitializing}
+					loadError={loadError}
+					className="flex-1 min-h-0"
+				/>
+			</div>
+			<NoteButtonGrid onAnswer={onAnswer} buttonHeight="h-8 text-xs" />
+		</div>
+	);
+};
+
+export function GameBoardLandscape(props: GameBoardLandscapeProps) {
+	return (
+		<ComponentErrorBoundary
+			fallback={
+				<GameBoardFallback
+					onRestart={() => window.location.reload()}
+					errorMessage="Game board encountered an error"
+				/>
+			}
+			onError={(error) => {
+				logger.error("GameBoard error boundary caught error", error);
+			}}
+		>
+			<GameBoardLandscapeInternal {...props} />
+		</ComponentErrorBoundary>
+	);
+}
+
+/**
+ * Game board component for active gameplay (Internal)
+ * Displays current note (as sheet music) and answer buttons in a vertical stack.
+ *
+ * On mobile portrait the note display is constrained so buttons get more room.
+ */
+const GameBoardInternal = ({
+	currentNote,
+	answers,
+	onAnswer,
+	onNoteGenerated,
+	scale,
+	octave,
+}: GameBoardProps) => {
+	const { isMobile } = useBreakpoint();
+
+	const { containerRef, isInitializing, loadError } = useGameBoardCore({
+		answers,
+		onNoteGenerated,
+		scale,
+		octave,
+	});
+
+	const noteDisplayClassName = isMobile
+		? "flex-1 min-h-0 max-h-[45vh]"
+		: "flex-1 min-h-0";
+
+	const buttonHeight = "h-11 sm:h-16 text-xs sm:text-lg";
+
+	return (
+		<div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-4">
+			<NoteDisplay
+				currentNote={currentNote}
+				containerRef={containerRef}
+				isInitializing={isInitializing}
+				loadError={loadError}
+				className={noteDisplayClassName}
+			/>
+			<NoteButtonGrid onAnswer={onAnswer} buttonHeight={buttonHeight} />
 		</div>
 	);
 };
 
 /**
- * Game board component for active gameplay
- * Wrapped with error boundary for enhanced error handling
+ * Game board component for active gameplay.
+ * Wrapped with error boundary for enhanced error handling.
  */
 export function GameBoard(props: GameBoardProps) {
 	return (

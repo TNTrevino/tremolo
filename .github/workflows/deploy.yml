@@ -1,58 +1,56 @@
-name: Deploy Prod - Pi
+name: Deploy
 
 on:
-  push:
-    branches: [prod]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
 
 jobs:
   deploy:
-    runs-on: self-hosted
-    env:
-      BASE_DIR: ${{ secrets.BASE_DIR }}
-
+    runs-on: ${{ inputs.runner }}
     steps:
-      # build
-      - name: Pull Latest Code
-        run: |
-          cd $BASE_DIR
-          git fetch origin
-          git reset --hard origin/${{ github.ref_name }}
+      - uses: actions/checkout@v4
 
       - name: Build Frontend
+        working-directory: frontend
         run: |
-          set -a && source $BASE_DIR/.env && set +a
-          cd $BASE_DIR/frontend
+          set -a && source /etc/tremolo/.env && set +a
           npm ci
-          npm run build -- --outDir dist-new
-          rm -rf dist
-          mv dist-new dist
+          npm run build
 
       - name: Build Go Service
+        working-directory: backend/main
         run: |
-          cd $BASE_DIR/backend/main
-          go build -o tremolo-api-new main.go
-          mv tremolo-api-new tremolo-api
+          go build -o tremolo-api main.go
 
-      - name: Setup Python
+      - name: Setup Python venv
+        working-directory: backend/music
         run: |
-          cd $BASE_DIR/backend/music
           python3 -m venv env || true
           source env/bin/activate
           pip install -r requirements.txt
 
-      # deploy
+      - name: Deploy Artifacts
+        run: |
+          mkdir -p /opt/tremolo/backend/main
+          mkdir -p /opt/tremolo/backend/music
+          cp backend/main/tremolo-api /opt/tremolo/backend/main/tremolo-api
+          rsync -a --delete backend/music/ /opt/tremolo/backend/music/
+
       - name: Restart Services
         run: |
           sudo systemctl restart tremolo-api
           sudo systemctl restart tremolo-music
 
-      - name: Sync Frontend Files to Reverse Proxy
+      - name: Sync Frontend to Reverse Proxy
         run: |
-          rsync -avz --delete $BASE_DIR/frontend/dist/ reverse-proxy:/var/www/tremolo/
+          rsync -avz --delete frontend/dist/ reverse-proxy:/var/www/tremolo/
 
       - name: Health Check
         run: |
+          set -a && source /etc/tremolo/.env && set +a
           sleep 5
-          curl -f http://localhost:5001/api/auth/me || echo "Go API may require auth"
-          curl -f http://localhost:8000/music/docs || echo "Music API docs endpoint"
+          curl -f http://localhost:$USER_SERVICE_PORT/health
+          curl -f http://localhost:$MUSIC_SERVICE_PORT/music/health

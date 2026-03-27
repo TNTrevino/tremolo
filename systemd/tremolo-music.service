@@ -1,0 +1,16 @@
+[Unit]
+Description=Tremolo Music Generation Service
+After=network.target
+
+[Service]
+Type=simple
+User=noetrevino
+WorkingDirectory=/opt/tremolo/backend/music
+EnvironmentFile=/etc/tremolo/.env
+ExecStart=/opt/tremolo/backend/music/env/bin/gunicorn -c gunicorn_config.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

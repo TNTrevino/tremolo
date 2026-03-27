@@ -27,9 +27,9 @@ export class NoteGameDisplay {
 
 		this.osmd.zoom = this.zoom;
 
-		if (this.darkMode) {
-			this.osmd.setOptions({ defaultColorMusic: "#FFFFFF" });
-		}
+		this.osmd.setOptions({
+			defaultColorMusic: this.darkMode ? "#FFFFFF" : "#000000",
+		});
 
 		const rules = this.osmd.EngravingRules;
 		rules.PageLeftMargin = 0;
@@ -70,6 +70,15 @@ export class NoteGameDisplay {
 				resolve();
 			});
 		});
+	}
+
+	setDarkMode(dark: boolean): void {
+		if (dark === this.darkMode) return;
+		this.darkMode = dark;
+		this.osmd.setOptions({
+			defaultColorMusic: dark ? "#FFFFFF" : "#000000",
+		});
+		this.refresh();
 	}
 
 	refresh(): void {

@@ -26,10 +26,11 @@ export function useNoteQueue(
 } {
 	const queueRef = useRef<NoteGameResponse[]>([]);
 	const inflightRef = useRef(false);
+	const generationRef = useRef(0);
 	const [isInitializing, setIsInitializing] = useState(true);
 
 	const hydrate = useCallback(
-		async (count: number) => {
+		async (count: number, generation: number) => {
 			if (inflightRef.current) return;
 			inflightRef.current = true;
 
@@ -38,6 +39,8 @@ export function useNoteQueue(
 					musicService.generateNoteGame({ scale, octave }),
 				);
 				const results = await Promise.allSettled(promises);
+
+				if (generation !== generationRef.current) return;
 
 				for (const result of results) {
 					if (result.status === "fulfilled") {
@@ -54,9 +57,14 @@ export function useNoteQueue(
 	useEffect(() => {
 		if (!isReady) return;
 
+		const generation = ++generationRef.current;
+		queueRef.current = [];
+		inflightRef.current = false;
+		setIsInitializing(true);
+
 		let cancelled = false;
 
-		hydrate(HYDRATE_BATCH).then(() => {
+		hydrate(HYDRATE_BATCH, generation).then(() => {
 			if (!cancelled) setIsInitializing(false);
 		});
 
@@ -69,7 +77,7 @@ export function useNoteQueue(
 		const item = queueRef.current.shift() ?? null;
 
 		if (queueRef.current.length < QUEUE_LOW_WATER) {
-			void hydrate(HYDRATE_BATCH);
+			void hydrate(HYDRATE_BATCH, generationRef.current);
 		}
 
 		return item;

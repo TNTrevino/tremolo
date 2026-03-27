@@ -1,0 +1,63 @@
+name: Claude PR Issue Closer
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  link-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Link closing issues
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Your job is to determine which open GitHub issues this PR closes,
+            fixes, or resolves, then append the appropriate closing keywords
+            to the PR body so GitHub auto-closes them on merge. It is possible the branch's
+            name is associated to a ticket. E.g. feature-{issue_number}/description.
+            In this case, figure out what keyword is most appropriate. (Related, fixes, etc...)
+
+            Steps:
+            1. Run `gh pr diff ${{ github.event.pull_request.number }}` to see the changes.
+            2. Run `gh pr view ${{ github.event.pull_request.number }} --json title,body`
+               to read the PR title and current body.
+            3. Run `gh issue list --state open --limit 50 --json number,title,body,labels`
+               to get all open issues.
+            4. Compare the PR diff and title/body against every open issue.
+               An issue is a match if the PR directly addresses, fixes, or
+               resolves the problem or feature request described in that issue.
+               Be conservative: only match issues where the code changes
+               clearly and fully address the issue. Do not match tangentially
+               related issues.
+            5. If there are matching issues, append closing keywords to the
+               PR body. Use `gh pr edit ${{ github.event.pull_request.number }} --body "..."`.
+               The new body should be the existing body (preserved exactly)
+               with a blank line and then one `Closes #<number>` per matched
+               issue, each on its own line. For example:
+
+               <existing body>
+
+               Closes #12
+               Closes #34
+
+               If the PR body already contains a closing keyword for an issue
+               (Closes, Fixes, Resolves followed by the issue number), do not
+               duplicate it.
+            6. If no issues match, do nothing. Do not edit the PR.
+
+          claude_args: '--allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue list:*),Bash(gh pr edit:*)" --model sonnet'

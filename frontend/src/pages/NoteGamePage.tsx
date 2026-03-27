@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
+import { useBreakpoint } from "@/shared/hooks";
 import {
 	useSaveGameResult,
 	useNoteGameSettings,
@@ -14,7 +15,10 @@ import {
 	GameMode,
 } from "@/features/note-game";
 import { formatTimeLength } from "@/features/note-game/utils";
-import { GameBoard } from "@/features/note-game/components/GameBoard";
+import {
+	GameBoard,
+	GameBoardLandscape,
+} from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
 import { ScoreBar } from "@/features/note-game/components/ScoreBar";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
@@ -27,6 +31,7 @@ import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 export function NoteGamePage() {
 	const { isAuthenticated, user } = useAuthStore();
 	const { showSuccess, showError } = useToast();
+	const { isPhoneLandscape } = useBreakpoint();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
 	const saveResult = useSaveGameResult();
 	const { data: savedSettings } = useNoteGameSettings();
@@ -122,8 +127,41 @@ export function NoteGamePage() {
 		}
 	}, [savedSettings, updateSettings]);
 
+	const statusBar =
+		gameState === GameState.Playing ? (
+			<ScoreBar
+				answers={answers}
+				timeRemaining={timeRemaining}
+				noteLimit={settings.noteLimit}
+				gameMode={settings.gameMode}
+				formatTime={formatTime}
+			/>
+		) : (
+			<SettingsBar settings={settings} onSettingsChange={updateSettings} />
+		);
+
+	const gameBoardProps = {
+		currentNote,
+		answers,
+		onAnswer: handleAnswer,
+		onNoteGenerated: syncCurrentNote,
+		scale: settings.scale,
+		octave: settings.octave,
+	};
+
+	const landscapeLayout = (
+		<GameBoardLandscape {...gameBoardProps} statusBar={statusBar} />
+	);
+
+	const portraitLayout = (
+		<div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-4">
+			<div className="flex-shrink-0">{statusBar}</div>
+			<GameBoard {...gameBoardProps} />
+		</div>
+	);
+
 	return (
-		<div className="h-[calc(100vh-4rem)] flex flex-col py-4 px-4">
+		<div className="h-[calc(100vh-4rem)] flex flex-col py-2 px-2 sm:py-4 sm:px-4">
 			<div className="container mx-auto max-w-6xl flex flex-col flex-1 min-h-0">
 				{gameState === GameState.GameOver && gameStats ? (
 					<GameResults
@@ -132,33 +170,10 @@ export function NoteGamePage() {
 						isAuthenticated={isAuthenticated}
 						onPlayAgain={resetGame}
 					/>
+				) : isPhoneLandscape ? (
+					landscapeLayout
 				) : (
-					<div className="flex flex-col flex-1 min-h-0 gap-4">
-						<div className="flex-shrink-0">
-							{gameState === GameState.Playing ? (
-								<ScoreBar
-									answers={answers}
-									timeRemaining={timeRemaining}
-									noteLimit={settings.noteLimit}
-									gameMode={settings.gameMode}
-									formatTime={formatTime}
-								/>
-							) : (
-								<SettingsBar
-									settings={settings}
-									onSettingsChange={updateSettings}
-								/>
-							)}
-						</div>
-						<GameBoard
-							currentNote={currentNote}
-							answers={answers}
-							onAnswer={handleAnswer}
-							onNoteGenerated={syncCurrentNote}
-							scale={settings.scale}
-							octave={settings.octave}
-						/>
-					</div>
+					portraitLayout
 				)}
 			</div>
 		</div>
