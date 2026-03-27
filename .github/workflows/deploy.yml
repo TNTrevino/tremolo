@@ -34,10 +34,10 @@ jobs:
 
       - name: Deploy Artifacts
         run: |
-          sudo mkdir -p /opt/tremolo/backend/main
-          sudo mkdir -p /opt/tremolo/backend/music
-          sudo cp backend/main/tremolo-api /opt/tremolo/backend/main/tremolo-api
-          sudo rsync -a --delete backend/music/ /opt/tremolo/backend/music/
+          mkdir -p /opt/tremolo/backend/main
+          mkdir -p /opt/tremolo/backend/music
+          cp backend/main/tremolo-api /opt/tremolo/backend/main/tremolo-api
+          rsync -a --delete backend/music/ /opt/tremolo/backend/music/
 
       - name: Restart Services
         run: |
