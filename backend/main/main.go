@@ -64,7 +64,11 @@ func main() {
 	controllers.SetupNoteGameSettingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
 
-	err := router.Run(":5001")
+	port := os.Getenv("USER_SERVICE_PORT")
+	if port == "" {
+		port = "5001"
+	}
+	err := router.Run(":" + port)
 	if err != nil {
 		panic(err.Error())
 	}
