@@ -7,10 +7,7 @@ Type=simple
 User=noetrevino
 WorkingDirectory=/opt/tremolo/backend/music
 EnvironmentFile=/etc/tremolo/.env
-ExecStart=/opt/tremolo/backend/music/env/bin/gunicorn main:app \
-    -w 4 \
-    -k uvicorn.workers.UvicornWorker \
-    -b 0.0.0.0:${MUSIC_SERVICE_PORT}
+ExecStart=/opt/tremolo/backend/music/env/bin/gunicorn -c gunicorn_config.py
 Restart=always
 RestartSec=5
 
