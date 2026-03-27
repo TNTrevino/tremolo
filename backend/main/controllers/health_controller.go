@@ -16,7 +16,11 @@ func healthCheck(c *gin.Context) {
 	httpStatus := http.StatusOK
 	checks := make(map[string]string)
 
-	if err := database.DBConn.Ping(); err != nil {
+	if database.DBConn == nil {
+		status = "unhealthy"
+		httpStatus = http.StatusServiceUnavailable
+		checks["database"] = "not initialized"
+	} else if err := database.DBConn.Ping(); err != nil {
 		status = "unhealthy"
 		httpStatus = http.StatusServiceUnavailable
 		checks["database"] = err.Error()
