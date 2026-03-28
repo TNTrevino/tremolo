@@ -103,7 +103,7 @@ elif ENVIRONMENT == "production":
     max_requests_jitter = 50  # Add randomness to restart timing
 
 # Application
-app_uri = "main:app"
+wsgi_app = "main:app"
 
 # SSL/HTTPS (optional, configure if needed)
 # keyfile = "/path/to/keyfile.pem"
