@@ -35,6 +35,11 @@ jobs:
           source env/bin/activate
           pip install -r requirements.txt
 
+      - name: Stop Services
+        run: |
+          sudo systemctl stop tremolo-api
+          sudo systemctl stop tremolo-music
+
       - name: Deploy Artifacts
         run: |
           mkdir -p /opt/tremolo/backend/main
@@ -42,10 +47,10 @@ jobs:
           cp backend/main/tremolo-api /opt/tremolo/backend/main/tremolo-api
           rsync -a --delete backend/music/ /opt/tremolo/backend/music/
 
-      - name: Restart Services
+      - name: Start Services
         run: |
-          sudo systemctl restart tremolo-api
-          sudo systemctl restart tremolo-music
+          sudo systemctl start tremolo-api
+          sudo systemctl start tremolo-music
 
       - name: Sync Frontend to Reverse Proxy
         run: |
