@@ -6,6 +6,9 @@ on:
       runner:
         required: true
         type: string
+      frontend-dest:
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -46,7 +49,7 @@ jobs:
 
       - name: Sync Frontend to Reverse Proxy
         run: |
-          rsync -avz --delete frontend/dist/ reverse-proxy:/var/www/tremolo/
+          rsync -avz --delete frontend/dist/ ${{ inputs.frontend-dest }}
 
       - name: Health Check
         run: |
