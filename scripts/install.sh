@@ -7,8 +7,8 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 source "$SCRIPT_DIR/colors.sh"
 
 if [ "$EUID" -ne 0 ]; then
-  red "Run as root: sudo $0"
-  exit 1
+	red "Run as root: sudo $0"
+	exit 1
 fi
 
 green "Creating application directories..."
@@ -18,11 +18,11 @@ mkdir -p /opt/tremolo/backend/music
 green "Setting up environment config..."
 mkdir -p /etc/tremolo
 if [ ! -f /etc/tremolo/.env ]; then
-  cp "$REPO_DIR/.env.example" /etc/tremolo/.env
-  chmod 600 /etc/tremolo/.env
-  dim "Copied .env.example to /etc/tremolo/.env (edit with real values before starting services)"
+	cp "$REPO_DIR/.env.example" /etc/tremolo/.env
+	chmod 644 /etc/tremolo/.env
+	dim "Copied .env.example to /etc/tremolo/.env (edit with real values before starting services)"
 else
-  dim "/etc/tremolo/.env already exists, skipping"
+	dim "/etc/tremolo/.env already exists, skipping"
 fi
 
 green "Installing systemd services..."
@@ -49,6 +49,5 @@ echo ""
 bold "Next steps:"
 echo "  1. Edit /etc/tremolo/.env with your production values"
 echo -e "     $(code "sudoedit /etc/tremolo/.env")"
-echo -e "  2. Deploy application code to ${CODE}/opt/tremolo${RESET} (handled by CI)"
-echo "  3. Start services:"
+echo "  2. Start services:"
 echo -e "     $(code "sudo systemctl start tremolo-api tremolo-music")"
