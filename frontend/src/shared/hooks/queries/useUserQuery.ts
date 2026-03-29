@@ -10,6 +10,8 @@ import type {
 	CreateNoteGameEntryResponse,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	KeyboardBindingsResponse,
+	KeyboardBindingsRequest,
 } from "@/services/api/types";
 
 export const userKeys = {
@@ -21,6 +23,7 @@ export const userKeys = {
 	classMetrics: (params?: ChartQueryParams) =>
 		[...userKeys.all, "class-metrics", params] as const,
 	noteGameSettings: () => [...userKeys.all, "note-game-settings"] as const,
+	keyboardBindings: () => [...userKeys.all, "keyboard-bindings"] as const,
 };
 
 /**
@@ -112,6 +115,30 @@ export function useSaveNoteGameSettings() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: userKeys.noteGameSettings(),
+			});
+		},
+	});
+}
+
+export function useKeyboardBindings() {
+	const authUser = useAuthStore((state) => state.user);
+
+	return useQuery<KeyboardBindingsResponse | null>({
+		queryKey: userKeys.keyboardBindings(),
+		queryFn: () => userService.getKeyboardBindings(),
+		enabled: !!authUser?.id,
+		staleTime: 10 * 60 * 1000,
+	});
+}
+
+export function useSaveKeyboardBindings() {
+	const queryClient = useQueryClient();
+
+	return useMutation<KeyboardBindingsResponse, Error, KeyboardBindingsRequest>({
+		mutationFn: (bindings) => userService.saveKeyboardBindings(bindings),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: userKeys.keyboardBindings(),
 			});
 		},
 	});

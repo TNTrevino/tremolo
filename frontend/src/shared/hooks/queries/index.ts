@@ -8,6 +8,8 @@ export {
 	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
+	useKeyboardBindings,
+	useSaveKeyboardBindings,
 	userKeys,
 } from "./useUserQuery";
 
