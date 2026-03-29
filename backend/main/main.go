@@ -56,6 +56,7 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	router.Use(cors.New(config))
 
+	controllers.SetupHealthRoutes(router)
 	controllers.SetupAuthRoutes(router)
 	controllers.SetupTeacherRoutes(router)
 	controllers.SetupChartRoutes(router)
@@ -64,7 +65,11 @@ func main() {
 	controllers.SetupNoteGameSettingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
 
-	err := router.Run(":5001")
+	port := os.Getenv("USER_SERVICE_PORT")
+	if port == "" {
+		port = "5001"
+	}
+	err := router.Run(":" + port)
 	if err != nil {
 		panic(err.Error())
 	}

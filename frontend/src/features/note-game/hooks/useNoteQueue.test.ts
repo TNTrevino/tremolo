@@ -127,6 +127,76 @@ describe("useNoteQueue", () => {
 		});
 	});
 
+	it("clears queue and re-initializes when scale changes", async () => {
+		// Initial hydrate resolves immediately, but the pop-triggered refill
+		// uses deferred promises so we can change the scale while it's in-flight.
+		mockGenerate
+			.mockResolvedValueOnce(fakeNote("C"))
+			.mockResolvedValueOnce(fakeNote("D"));
+
+		const { result, rerender } = renderHook(
+			({ scale }) => useNoteQueue(scale, "4", true),
+			{ initialProps: { scale: "C" } },
+		);
+
+		await waitFor(() => {
+			expect(result.current.isInitializing).toBe(false);
+		});
+
+		// Set up deferred promises for the pop-triggered refill so it stays
+		// in-flight when we change the scale.
+		let resolveStale1!: (v: NoteGameResponse) => void;
+		let resolveStale2!: (v: NoteGameResponse) => void;
+		mockGenerate
+			.mockImplementationOnce(
+				() =>
+					new Promise<NoteGameResponse>((r) => {
+						resolveStale1 = r;
+					}),
+			)
+			.mockImplementationOnce(
+				() =>
+					new Promise<NoteGameResponse>((r) => {
+						resolveStale2 = r;
+					}),
+			);
+
+		// Pop triggers a background refill that is now pending
+		let note: NoteGameResponse | null = null;
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("C"));
+
+		// Change scale while the old refill is still in-flight
+		mockGenerate
+			.mockResolvedValueOnce(fakeNote("E"))
+			.mockResolvedValueOnce(fakeNote("F#"));
+
+		rerender({ scale: "E" });
+
+		expect(result.current.isInitializing).toBe(true);
+
+		// Now resolve the stale in-flight hydrate -- these should be discarded
+		resolveStale1(fakeNote("STALE_C1"));
+		resolveStale2(fakeNote("STALE_C2"));
+
+		await waitFor(() => {
+			expect(result.current.isInitializing).toBe(false);
+		});
+
+		// Pop should return only the new scale's notes, not stale ones
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("E"));
+
+		act(() => {
+			note = result.current.pop();
+		});
+		expect(note).toEqual(fakeNote("F#"));
+	});
+
 	it("failed fetches in hydrate are handled gracefully (Promise.allSettled)", async () => {
 		mockGenerate
 			.mockRejectedValueOnce(new Error("network error"))

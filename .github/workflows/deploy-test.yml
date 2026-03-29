@@ -1,0 +1,13 @@
+name: Deploy QA - Pi
+
+on:
+  push:
+    branches: [qa]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      runner: pi
+      frontend-dest: reverse-proxy:/var/www/tremolo-test/

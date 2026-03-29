@@ -1,0 +1,36 @@
+name: Claude Label Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Auto-label Issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+
+            1. Run `gh label list --json name` to get available labels
+            2. Run `gh issue view ${{ github.event.issue.number }} --json title,body` to read the issue
+            3. Based on the title and body, pick 1-3 labels that best describe this issue
+            4. Apply them with `gh issue edit ${{ github.event.issue.number }} --add-label "label1,label2"`
+
+            Only use labels that already exist. Do not create new labels.
+            Pick the most specific applicable labels. When in doubt, use fewer labels.
+
+          claude_args: '--allowed-tools "Bash(gh label list:*),Bash(gh issue view:*),Bash(gh issue edit:*)" --model haiku'

@@ -8,6 +8,27 @@ from services.dynamic_mary import DiatonicInformation
 router = APIRouter()
 
 
+@router.get("/health", tags=["Health"])
+async def health_check():
+    checks = {}
+
+    try:
+        from music21 import note as m21note
+
+        n = m21note.Note("C4")
+        checks["music21"] = "operational"
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "unhealthy",
+                "checks": {"music21": str(e)},
+            },
+        )
+
+    return {"status": "healthy", "checks": checks}
+
+
 @router.post(
     "/mary",
     response_class=Response,

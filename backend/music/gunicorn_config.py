@@ -15,7 +15,7 @@ import multiprocessing
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count() * 2 + 1))
-PORT = int(os.getenv("PORT", 8000))
+PORT = int(os.getenv("MUSIC_SERVICE_PORT", 8000))
 HOST = os.getenv("HOST", "0.0.0.0")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
 
@@ -103,7 +103,7 @@ elif ENVIRONMENT == "production":
     max_requests_jitter = 50  # Add randomness to restart timing
 
 # Application
-app_uri = "main:app"
+wsgi_app = "main:app"
 
 # SSL/HTTPS (optional, configure if needed)
 # keyfile = "/path/to/keyfile.pem"
