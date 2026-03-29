@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import { useBreakpoint } from "@/shared/hooks";
@@ -6,7 +6,9 @@ import {
 	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
+	useKeyboardBindings,
 } from "@/shared/hooks/queries";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
 import type { GameStats } from "@/shared/types";
 import {
 	useNoteGame,
@@ -36,6 +38,34 @@ export function NoteGamePage() {
 	const saveResult = useSaveGameResult();
 	const { data: savedSettings } = useNoteGameSettings();
 	const saveSettings = useSaveNoteGameSettings();
+	const { data: savedKeyboardBindings } = useKeyboardBindings();
+
+	const keyBindings = useMemo(() => {
+		if (!savedKeyboardBindings) return undefined;
+		return {
+			C: savedKeyboardBindings.key_c,
+			"C#": savedKeyboardBindings.key_c_sharp,
+			Cb: savedKeyboardBindings.key_c_flat,
+			D: savedKeyboardBindings.key_d,
+			"D#": savedKeyboardBindings.key_d_sharp,
+			Db: savedKeyboardBindings.key_d_flat,
+			E: savedKeyboardBindings.key_e,
+			"E#": savedKeyboardBindings.key_e_sharp,
+			Eb: savedKeyboardBindings.key_e_flat,
+			F: savedKeyboardBindings.key_f,
+			"F#": savedKeyboardBindings.key_f_sharp,
+			Fb: savedKeyboardBindings.key_f_flat,
+			G: savedKeyboardBindings.key_g,
+			"G#": savedKeyboardBindings.key_g_sharp,
+			Gb: savedKeyboardBindings.key_g_flat,
+			A: savedKeyboardBindings.key_a,
+			"A#": savedKeyboardBindings.key_a_sharp,
+			Ab: savedKeyboardBindings.key_a_flat,
+			B: savedKeyboardBindings.key_b,
+			"B#": savedKeyboardBindings.key_b_sharp,
+			Bb: savedKeyboardBindings.key_b_flat,
+		};
+	}, [savedKeyboardBindings]);
 
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {
@@ -92,6 +122,7 @@ export function NoteGamePage() {
 	} = useNoteGame({
 		onGameEnd: handleGameEnd,
 		onGameStart: () => gameStartRef.current?.(),
+		keyBindings,
 	});
 
 	useEffect(() => {
@@ -147,6 +178,7 @@ export function NoteGamePage() {
 		onNoteGenerated: syncCurrentNote,
 		scale: settings.scale,
 		octave: settings.octave,
+		keyBindings: keyBindings ?? DEFAULT_NOTE_TO_KEY_MAP,
 	};
 
 	const landscapeLayout = (
