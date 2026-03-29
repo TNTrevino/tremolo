@@ -24,6 +24,8 @@ export type {
 	CreateNoteGameEntryResponse,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	KeyboardBindingsResponse,
+	KeyboardBindingsRequest,
 } from "./game.types";
 
 export type { GeneralUserInfo, UserProfile } from "./user.types";
