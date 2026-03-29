@@ -7,6 +7,8 @@ import type {
 	NoteGameEntry,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	KeyboardBindingsResponse,
+	KeyboardBindingsRequest,
 	MultiMetricChartData,
 	ChartQueryParams,
 } from "./types";
@@ -144,6 +146,34 @@ export class UserService {
 		const response = await this.client.put<NoteGameSettingsResponse>(
 			"/api/note-game/settings",
 			settings,
+		);
+		return response.data;
+	}
+
+	async getKeyboardBindings(): Promise<KeyboardBindingsResponse | null> {
+		try {
+			const response = await this.client.get<KeyboardBindingsResponse>(
+				"/api/note-game/keyboard-bindings",
+			);
+			const data = response.data as unknown as Record<string, unknown>;
+			if ("settings" in data && data.settings === null) {
+				return null;
+			}
+			return response.data;
+		} catch (error) {
+			if (error instanceof AxiosError && error.response?.status === 404) {
+				return null;
+			}
+			throw error;
+		}
+	}
+
+	async saveKeyboardBindings(
+		bindings: KeyboardBindingsRequest,
+	): Promise<KeyboardBindingsResponse> {
+		const response = await this.client.put<KeyboardBindingsResponse>(
+			"/api/note-game/keyboard-bindings",
+			bindings,
 		);
 		return response.data;
 	}
