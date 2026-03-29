@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Keyboard, Settings } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
@@ -269,10 +269,13 @@ export function SettingsBar({
 		saveBindings.mutate(request);
 	}
 
-	function apiResponseToNoteMap(): Record<string, string> {
-		if (!savedBindings) return DEFAULT_NOTE_TO_KEY_MAP;
-		return keyBindingsToNoteMap(savedBindings.key_bindings);
-	}
+	const currentBindings = useMemo(
+		() =>
+			savedBindings
+				? keyBindingsToNoteMap(savedBindings.key_bindings)
+				: DEFAULT_NOTE_TO_KEY_MAP,
+		[savedBindings],
+	);
 
 	let variant: React.ReactNode;
 
@@ -314,7 +317,7 @@ export function SettingsBar({
 				<KeyboardBindingsDialog
 					open={dialogOpen}
 					onOpenChange={handleDialogOpenChange}
-					bindings={apiResponseToNoteMap()}
+					bindings={currentBindings}
 					onSave={handleSaveBindings}
 				/>
 			) : (
