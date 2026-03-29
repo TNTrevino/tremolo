@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { Settings } from "lucide-react";
+import { Keyboard, Settings } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Select } from "@/shared/components/ui/select";
 import { useBreakpoint } from "@/shared/hooks";
+import { useAuthStore } from "@/stores/auth.store";
+import {
+	useKeyboardBindings,
+	useSaveKeyboardBindings,
+} from "@/shared/hooks/queries";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
 import { MobileSettingsDrawer } from "./MobileSettingsDrawer";
+import { KeyboardBindingsDialog } from "./KeyboardBindingsDialog";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
+import type { KeyboardBindingsRequest } from "@/services/api/types";
 
 export interface SettingsBarProps {
 	settings: GameSettingsType;
@@ -174,19 +182,84 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
  */
 export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	const { isMobile, isPhoneLandscape } = useBreakpoint();
+	const { isAuthenticated } = useAuthStore();
+	const { data: savedBindings } = useKeyboardBindings();
+	const saveBindings = useSaveKeyboardBindings();
+	const [dialogOpen, setDialogOpen] = useState(false);
+
+	function handleSaveBindings(noteToKey: Record<string, string>) {
+		const request: KeyboardBindingsRequest = {
+			key_c: noteToKey["C"] ?? "",
+			key_c_sharp: noteToKey["C#"] ?? "",
+			key_c_flat: noteToKey["Cb"] ?? "",
+			key_d: noteToKey["D"] ?? "",
+			key_d_sharp: noteToKey["D#"] ?? "",
+			key_d_flat: noteToKey["Db"] ?? "",
+			key_e: noteToKey["E"] ?? "",
+			key_e_sharp: noteToKey["E#"] ?? "",
+			key_e_flat: noteToKey["Eb"] ?? "",
+			key_f: noteToKey["F"] ?? "",
+			key_f_sharp: noteToKey["F#"] ?? "",
+			key_f_flat: noteToKey["Fb"] ?? "",
+			key_g: noteToKey["G"] ?? "",
+			key_g_sharp: noteToKey["G#"] ?? "",
+			key_g_flat: noteToKey["Gb"] ?? "",
+			key_a: noteToKey["A"] ?? "",
+			key_a_sharp: noteToKey["A#"] ?? "",
+			key_a_flat: noteToKey["Ab"] ?? "",
+			key_b: noteToKey["B"] ?? "",
+			key_b_sharp: noteToKey["B#"] ?? "",
+			key_b_flat: noteToKey["Bb"] ?? "",
+		};
+		saveBindings.mutate(request);
+	}
+
+	function apiResponseToNoteMap(): Record<string, string> {
+		if (!savedBindings) return DEFAULT_NOTE_TO_KEY_MAP;
+		return {
+			C: savedBindings.key_c,
+			"C#": savedBindings.key_c_sharp,
+			Cb: savedBindings.key_c_flat,
+			D: savedBindings.key_d,
+			"D#": savedBindings.key_d_sharp,
+			Db: savedBindings.key_d_flat,
+			E: savedBindings.key_e,
+			"E#": savedBindings.key_e_sharp,
+			Eb: savedBindings.key_e_flat,
+			F: savedBindings.key_f,
+			"F#": savedBindings.key_f_sharp,
+			Fb: savedBindings.key_f_flat,
+			G: savedBindings.key_g,
+			"G#": savedBindings.key_g_sharp,
+			Gb: savedBindings.key_g_flat,
+			A: savedBindings.key_a,
+			"A#": savedBindings.key_a_sharp,
+			Ab: savedBindings.key_a_flat,
+			B: savedBindings.key_b,
+			"B#": savedBindings.key_b_sharp,
+			Bb: savedBindings.key_b_flat,
+		};
+	}
+
+	let variant: React.ReactNode;
 
 	if (isPhoneLandscape) {
-		return (
+		variant = (
 			<SettingsBarLandscape
 				settings={settings}
 				onSettingsChange={onSettingsChange}
 			/>
 		);
-	}
-
-	if (isMobile) {
-		return (
+	} else if (isMobile) {
+		variant = (
 			<SettingsBarMobile
+				settings={settings}
+				onSettingsChange={onSettingsChange}
+			/>
+		);
+	} else {
+		variant = (
+			<SettingsBarDesktop
 				settings={settings}
 				onSettingsChange={onSettingsChange}
 			/>
@@ -194,9 +267,26 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	}
 
 	return (
-		<SettingsBarDesktop
-			settings={settings}
-			onSettingsChange={onSettingsChange}
-		/>
+		<>
+			{variant}
+			{isAuthenticated && (
+				<>
+					<button
+						type="button"
+						onClick={() => setDialogOpen(true)}
+						className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+						aria-label="Configure keyboard bindings"
+					>
+						<Keyboard className="h-5 w-5" />
+					</button>
+					<KeyboardBindingsDialog
+						open={dialogOpen}
+						onOpenChange={setDialogOpen}
+						bindings={apiResponseToNoteMap()}
+						onSave={handleSaveBindings}
+					/>
+				</>
+			)}
+		</>
 	);
 }
