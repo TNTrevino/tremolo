@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type KeyboardBindingsRequest struct {
+type KeyBindings struct {
 	KeyC      string `json:"key_c"       validate:"required,max=20"`
 	KeyD      string `json:"key_d"       validate:"required,max=20"`
 	KeyE      string `json:"key_e"       validate:"required,max=20"`
@@ -32,30 +32,14 @@ type KeyboardBindingsRequest struct {
 	KeyBFlat  string `json:"key_b_flat"  validate:"required,max=20"`
 }
 
+type KeyboardBindingsRequest struct {
+	KeyBindings KeyBindings `json:"key_bindings" validate:"required"`
+}
+
 type KeyboardBindingsResponse struct {
-	ID        int    `json:"id"`
-	UserID    int    `json:"user_id"`
-	KeyC      string `json:"key_c"`
-	KeyD      string `json:"key_d"`
-	KeyE      string `json:"key_e"`
-	KeyF      string `json:"key_f"`
-	KeyG      string `json:"key_g"`
-	KeyA      string `json:"key_a"`
-	KeyB      string `json:"key_b"`
-	KeyCSharp string `json:"key_c_sharp"`
-	KeyDSharp string `json:"key_d_sharp"`
-	KeyESharp string `json:"key_e_sharp"`
-	KeyFSharp string `json:"key_f_sharp"`
-	KeyGSharp string `json:"key_g_sharp"`
-	KeyASharp string `json:"key_a_sharp"`
-	KeyBSharp string `json:"key_b_sharp"`
-	KeyCFlat  string `json:"key_c_flat"`
-	KeyDFlat  string `json:"key_d_flat"`
-	KeyEFlat  string `json:"key_e_flat"`
-	KeyFFlat  string `json:"key_f_flat"`
-	KeyGFlat  string `json:"key_g_flat"`
-	KeyAFlat  string `json:"key_a_flat"`
-	KeyBFlat  string `json:"key_b_flat"`
+	ID          int         `json:"id"`
+	UserID      int         `json:"user_id"`
+	KeyBindings KeyBindings `json:"key_bindings"`
 }
 
 func (r *KeyboardBindingsRequest) Validate() error {
@@ -118,32 +102,33 @@ func (r *KeyboardBindingsRequest) Validate() error {
 		}
 	}
 
+	kb := r.KeyBindings
 	seen := make(map[string]string)
 	bindings := []struct {
 		note  string
 		value string
 	}{
-		{"C", r.KeyC},
-		{"D", r.KeyD},
-		{"E", r.KeyE},
-		{"F", r.KeyF},
-		{"G", r.KeyG},
-		{"A", r.KeyA},
-		{"B", r.KeyB},
-		{"C#", r.KeyCSharp},
-		{"D#", r.KeyDSharp},
-		{"E#", r.KeyESharp},
-		{"F#", r.KeyFSharp},
-		{"G#", r.KeyGSharp},
-		{"A#", r.KeyASharp},
-		{"B#", r.KeyBSharp},
-		{"Cb", r.KeyCFlat},
-		{"Db", r.KeyDFlat},
-		{"Eb", r.KeyEFlat},
-		{"Fb", r.KeyFFlat},
-		{"Gb", r.KeyGFlat},
-		{"Ab", r.KeyAFlat},
-		{"Bb", r.KeyBFlat},
+		{"C", kb.KeyC},
+		{"D", kb.KeyD},
+		{"E", kb.KeyE},
+		{"F", kb.KeyF},
+		{"G", kb.KeyG},
+		{"A", kb.KeyA},
+		{"B", kb.KeyB},
+		{"C#", kb.KeyCSharp},
+		{"D#", kb.KeyDSharp},
+		{"E#", kb.KeyESharp},
+		{"F#", kb.KeyFSharp},
+		{"G#", kb.KeyGSharp},
+		{"A#", kb.KeyASharp},
+		{"B#", kb.KeyBSharp},
+		{"Cb", kb.KeyCFlat},
+		{"Db", kb.KeyDFlat},
+		{"Eb", kb.KeyEFlat},
+		{"Fb", kb.KeyFFlat},
+		{"Gb", kb.KeyGFlat},
+		{"Ab", kb.KeyAFlat},
+		{"Bb", kb.KeyBFlat},
 	}
 
 	for _, b := range bindings {

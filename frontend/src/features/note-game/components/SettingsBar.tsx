@@ -1,7 +1,15 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Keyboard, Settings } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Select } from "@/shared/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/shared/components/ui/dialog";
 import { useBreakpoint } from "@/shared/hooks";
 import { useAuthStore } from "@/stores/auth.store";
 import {
@@ -24,6 +32,40 @@ export interface SettingsBarProps {
 const TIME_LIMITS = [15, 30, 60, 120] as const;
 const NOTE_LIMITS = [10, 25, 50, 100] as const;
 const OCTAVES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+
+interface KeyboardUpsellDialogProps {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}
+
+function KeyboardUpsellDialog({
+	open,
+	onOpenChange,
+}: KeyboardUpsellDialogProps) {
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Customize Keyboard Input</DialogTitle>
+				</DialogHeader>
+				<div className="px-6 py-4 space-y-3">
+					<p className="text-base text-muted-foreground">
+						Create an account to configure your own keyboard bindings for all 21
+						notes and have them saved across sessions.
+					</p>
+				</div>
+				<DialogFooter>
+					<Button variant="ghost" onClick={() => onOpenChange(false)}>
+						Cancel
+					</Button>
+					<Link to="/signup">
+						<Button variant="default">Create Account</Button>
+					</Link>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
 
 function Divider() {
 	return <div className="w-px bg-border self-stretch" />;
@@ -199,55 +241,58 @@ export function SettingsBar({
 
 	function handleSaveBindings(noteToKey: Record<string, string>) {
 		const request: KeyboardBindingsRequest = {
-			key_c: noteToKey["C"] ?? "",
-			key_c_sharp: noteToKey["C#"] ?? "",
-			key_c_flat: noteToKey["Cb"] ?? "",
-			key_d: noteToKey["D"] ?? "",
-			key_d_sharp: noteToKey["D#"] ?? "",
-			key_d_flat: noteToKey["Db"] ?? "",
-			key_e: noteToKey["E"] ?? "",
-			key_e_sharp: noteToKey["E#"] ?? "",
-			key_e_flat: noteToKey["Eb"] ?? "",
-			key_f: noteToKey["F"] ?? "",
-			key_f_sharp: noteToKey["F#"] ?? "",
-			key_f_flat: noteToKey["Fb"] ?? "",
-			key_g: noteToKey["G"] ?? "",
-			key_g_sharp: noteToKey["G#"] ?? "",
-			key_g_flat: noteToKey["Gb"] ?? "",
-			key_a: noteToKey["A"] ?? "",
-			key_a_sharp: noteToKey["A#"] ?? "",
-			key_a_flat: noteToKey["Ab"] ?? "",
-			key_b: noteToKey["B"] ?? "",
-			key_b_sharp: noteToKey["B#"] ?? "",
-			key_b_flat: noteToKey["Bb"] ?? "",
+			key_bindings: {
+				key_c: noteToKey["C"] ?? "",
+				key_c_sharp: noteToKey["C#"] ?? "",
+				key_c_flat: noteToKey["Cb"] ?? "",
+				key_d: noteToKey["D"] ?? "",
+				key_d_sharp: noteToKey["D#"] ?? "",
+				key_d_flat: noteToKey["Db"] ?? "",
+				key_e: noteToKey["E"] ?? "",
+				key_e_sharp: noteToKey["E#"] ?? "",
+				key_e_flat: noteToKey["Eb"] ?? "",
+				key_f: noteToKey["F"] ?? "",
+				key_f_sharp: noteToKey["F#"] ?? "",
+				key_f_flat: noteToKey["Fb"] ?? "",
+				key_g: noteToKey["G"] ?? "",
+				key_g_sharp: noteToKey["G#"] ?? "",
+				key_g_flat: noteToKey["Gb"] ?? "",
+				key_a: noteToKey["A"] ?? "",
+				key_a_sharp: noteToKey["A#"] ?? "",
+				key_a_flat: noteToKey["Ab"] ?? "",
+				key_b: noteToKey["B"] ?? "",
+				key_b_sharp: noteToKey["B#"] ?? "",
+				key_b_flat: noteToKey["Bb"] ?? "",
+			},
 		};
 		saveBindings.mutate(request);
 	}
 
 	function apiResponseToNoteMap(): Record<string, string> {
 		if (!savedBindings) return DEFAULT_NOTE_TO_KEY_MAP;
+		const kb = savedBindings.key_bindings;
 		return {
-			C: savedBindings.key_c,
-			"C#": savedBindings.key_c_sharp,
-			Cb: savedBindings.key_c_flat,
-			D: savedBindings.key_d,
-			"D#": savedBindings.key_d_sharp,
-			Db: savedBindings.key_d_flat,
-			E: savedBindings.key_e,
-			"E#": savedBindings.key_e_sharp,
-			Eb: savedBindings.key_e_flat,
-			F: savedBindings.key_f,
-			"F#": savedBindings.key_f_sharp,
-			Fb: savedBindings.key_f_flat,
-			G: savedBindings.key_g,
-			"G#": savedBindings.key_g_sharp,
-			Gb: savedBindings.key_g_flat,
-			A: savedBindings.key_a,
-			"A#": savedBindings.key_a_sharp,
-			Ab: savedBindings.key_a_flat,
-			B: savedBindings.key_b,
-			"B#": savedBindings.key_b_sharp,
-			Bb: savedBindings.key_b_flat,
+			C: kb.key_c,
+			"C#": kb.key_c_sharp,
+			Cb: kb.key_c_flat,
+			D: kb.key_d,
+			"D#": kb.key_d_sharp,
+			Db: kb.key_d_flat,
+			E: kb.key_e,
+			"E#": kb.key_e_sharp,
+			Eb: kb.key_e_flat,
+			F: kb.key_f,
+			"F#": kb.key_f_sharp,
+			Fb: kb.key_f_flat,
+			G: kb.key_g,
+			"G#": kb.key_g_sharp,
+			Gb: kb.key_g_flat,
+			A: kb.key_a,
+			"A#": kb.key_a_sharp,
+			Ab: kb.key_a_flat,
+			B: kb.key_b,
+			"B#": kb.key_b_sharp,
+			Bb: kb.key_b_flat,
 		};
 	}
 
@@ -279,23 +324,26 @@ export function SettingsBar({
 	return (
 		<>
 			{variant}
-			{isAuthenticated && (
-				<>
-					<button
-						type="button"
-						onClick={() => handleDialogOpenChange(true)}
-						className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
-						aria-label="Configure keyboard bindings"
-					>
-						<Keyboard className="h-5 w-5" />
-					</button>
-					<KeyboardBindingsDialog
-						open={dialogOpen}
-						onOpenChange={handleDialogOpenChange}
-						bindings={apiResponseToNoteMap()}
-						onSave={handleSaveBindings}
-					/>
-				</>
+			<button
+				type="button"
+				onClick={() => handleDialogOpenChange(true)}
+				className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+				aria-label="Configure keyboard bindings"
+			>
+				<Keyboard className="h-5 w-5" />
+			</button>
+			{isAuthenticated ? (
+				<KeyboardBindingsDialog
+					open={dialogOpen}
+					onOpenChange={handleDialogOpenChange}
+					bindings={apiResponseToNoteMap()}
+					onSave={handleSaveBindings}
+				/>
+			) : (
+				<KeyboardUpsellDialog
+					open={dialogOpen}
+					onOpenChange={handleDialogOpenChange}
+				/>
 			)}
 		</>
 	);

@@ -24,6 +24,7 @@ export type {
 	CreateNoteGameEntryResponse,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	KeyBindings,
 	KeyboardBindingsResponse,
 	KeyboardBindingsRequest,
 } from "./game.types";
