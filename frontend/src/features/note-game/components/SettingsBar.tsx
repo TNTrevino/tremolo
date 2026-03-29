@@ -18,6 +18,7 @@ import type { KeyboardBindingsRequest } from "@/services/api/types";
 export interface SettingsBarProps {
 	settings: GameSettingsType;
 	onSettingsChange: (settings: Partial<GameSettingsType>) => void;
+	onDialogOpenChange?: (open: boolean) => void;
 }
 
 const TIME_LIMITS = [15, 30, 60, 120] as const;
@@ -180,12 +181,21 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
  * Conditionally renders the appropriate layout variant based on viewport,
  * so only one is ever mounted at a time.
  */
-export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
+export function SettingsBar({
+	settings,
+	onSettingsChange,
+	onDialogOpenChange,
+}: SettingsBarProps) {
 	const { isMobile, isPhoneLandscape } = useBreakpoint();
 	const { isAuthenticated } = useAuthStore();
 	const { data: savedBindings } = useKeyboardBindings();
 	const saveBindings = useSaveKeyboardBindings();
 	const [dialogOpen, setDialogOpen] = useState(false);
+
+	function handleDialogOpenChange(open: boolean) {
+		setDialogOpen(open);
+		onDialogOpenChange?.(open);
+	}
 
 	function handleSaveBindings(noteToKey: Record<string, string>) {
 		const request: KeyboardBindingsRequest = {
@@ -273,7 +283,7 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 				<>
 					<button
 						type="button"
-						onClick={() => setDialogOpen(true)}
+						onClick={() => handleDialogOpenChange(true)}
 						className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
 						aria-label="Configure keyboard bindings"
 					>
@@ -281,7 +291,7 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 					</button>
 					<KeyboardBindingsDialog
 						open={dialogOpen}
-						onOpenChange={setDialogOpen}
+						onOpenChange={handleDialogOpenChange}
 						bindings={apiResponseToNoteMap()}
 						onSave={handleSaveBindings}
 					/>

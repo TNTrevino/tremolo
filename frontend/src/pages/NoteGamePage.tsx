@@ -35,6 +35,7 @@ export function NoteGamePage() {
 	const { showSuccess, showError } = useToast();
 	const { isPhoneLandscape } = useBreakpoint();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
+	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
 	const saveResult = useSaveGameResult();
 	const { data: savedSettings } = useNoteGameSettings();
 	const saveSettings = useSaveNoteGameSettings();
@@ -123,6 +124,7 @@ export function NoteGamePage() {
 		onGameEnd: handleGameEnd,
 		onGameStart: () => gameStartRef.current?.(),
 		keyBindings,
+		inputDisabled: bindingsDialogOpen,
 	});
 
 	useEffect(() => {
@@ -168,7 +170,11 @@ export function NoteGamePage() {
 				formatTime={formatTime}
 			/>
 		) : (
-			<SettingsBar settings={settings} onSettingsChange={updateSettings} />
+			<SettingsBar
+				settings={settings}
+				onSettingsChange={updateSettings}
+				onDialogOpenChange={setBindingsDialogOpen}
+			/>
 		);
 
 	const gameBoardProps = {

@@ -22,6 +22,7 @@ function KeyboardBindingsDialogContent({
 	onOpenChange,
 }: Omit<KeyboardBindingsDialogProps, "open">) {
 	const [draft, setDraft] = useState<Record<string, string>>(bindings);
+	const [listeningNote, setListeningNote] = useState<string | null>(null);
 
 	function handleSave() {
 		onSave(draft);
@@ -35,10 +36,21 @@ function KeyboardBindingsDialogContent({
 	return (
 		<DialogContent>
 			<DialogHeader>
-				<DialogTitle>Keyboard Bindings</DialogTitle>
+				<DialogTitle className="flex items-center gap-3">
+					Keyboard Bindings
+					{listeningNote && (
+						<span className="text-sm font-normal text-muted-foreground/50">
+							listening...
+						</span>
+					)}
+				</DialogTitle>
 			</DialogHeader>
 			<div className="p-6">
-				<KeyboardBindingsEditor bindings={draft} onChange={setDraft} />
+				<KeyboardBindingsEditor
+					bindings={draft}
+					onChange={setDraft}
+					onListeningChange={setListeningNote}
+				/>
 			</div>
 			<DialogFooter>
 				<Button variant="ghost" onClick={handleCancel}>

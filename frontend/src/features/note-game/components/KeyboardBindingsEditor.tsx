@@ -34,6 +34,7 @@ const DEFAULT_BINDINGS: Record<string, string> = {
 export interface KeyboardBindingsEditorProps {
 	bindings: Record<string, string>;
 	onChange: (bindings: Record<string, string>) => void;
+	onListeningChange?: (note: string | null) => void;
 }
 
 interface NoteKeyButtonProps {
@@ -55,12 +56,13 @@ function NoteKeyButton({
 			onClick={onClick}
 			className={cn(
 				"h-16 flex-col gap-0.5 px-1",
-				isListening && "ring-2 ring-primary animate-pulse",
+				isListening &&
+					"border-primary/40 bg-primary/5 shadow-[0_0_6px_0] shadow-primary/20",
 			)}
 		>
 			<span className="text-sm font-bold">{note}</span>
 			{isListening ? (
-				<span className="text-xs text-primary">Press a key...</span>
+				<span className="text-xs text-primary/60">...</span>
 			) : (
 				<span className="text-xs text-muted-foreground">
 					{assignedKey ?? "---"}
@@ -73,8 +75,14 @@ function NoteKeyButton({
 export function KeyboardBindingsEditor({
 	bindings,
 	onChange,
+	onListeningChange,
 }: KeyboardBindingsEditorProps) {
 	const [listeningNote, setListeningNote] = useState<string | null>(null);
+
+	function setListening(note: string | null) {
+		setListeningNote(note);
+		onListeningChange?.(note);
+	}
 
 	useEffect(() => {
 		if (listeningNote === null) return;
@@ -83,7 +91,7 @@ export function KeyboardBindingsEditor({
 			e.preventDefault();
 
 			if (e.key === "Escape") {
-				setListeningNote(null);
+				setListening(null);
 				return;
 			}
 
@@ -101,7 +109,7 @@ export function KeyboardBindingsEditor({
 			}
 
 			onChange(updated);
-			setListeningNote(null);
+			setListening(null);
 		}
 
 		window.addEventListener("keydown", handleKeyDown);
@@ -121,7 +129,7 @@ export function KeyboardBindingsEditor({
 							note={note}
 							assignedKey={bindings[note]}
 							isListening={listeningNote === note}
-							onClick={() => setListeningNote(note)}
+							onClick={() => setListening(note)}
 						/>
 					))}
 				</div>
