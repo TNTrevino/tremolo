@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -79,10 +79,13 @@ export function KeyboardBindingsEditor({
 }: KeyboardBindingsEditorProps) {
 	const [listeningNote, setListeningNote] = useState<string | null>(null);
 
-	function setListening(note: string | null) {
-		setListeningNote(note);
-		onListeningChange?.(note);
-	}
+	const setListening = useCallback(
+		(note: string | null) => {
+			setListeningNote(note);
+			onListeningChange?.(note);
+		},
+		[onListeningChange],
+	);
 
 	useEffect(() => {
 		if (listeningNote === null) return;
@@ -114,7 +117,7 @@ export function KeyboardBindingsEditor({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [listeningNote, bindings, onChange]);
+	}, [listeningNote, bindings, onChange, setListening]);
 
 	function renderRow(label: string, notes: readonly string[]) {
 		return (
