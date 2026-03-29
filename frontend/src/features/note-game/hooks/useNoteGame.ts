@@ -28,6 +28,7 @@ interface UseNoteGameOptions {
 	initialSettings?: Partial<GameSettings>;
 	onGameEnd?: (stats: GameStats) => void;
 	onGameStart?: () => void;
+	keyBindings?: Record<string, string>;
 }
 
 /**
@@ -35,7 +36,8 @@ interface UseNoteGameOptions {
  * Handles game state, note generation, answer validation, and statistics
  */
 export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
-	const { initialSettings, onGameEnd, onGameStart } = options || {};
+	const { initialSettings, onGameEnd, onGameStart, keyBindings } =
+		options || {};
 
 	// Audio playback hook
 	const { playNoteSound } = useNoteAudio();
@@ -178,6 +180,7 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	useKeyboardInput({
 		onNoteInput: handleAnswer,
 		enabled: gameState === GameState.Playing || gameState === GameState.Ready,
+		keyBindings,
 	});
 
 	return {
