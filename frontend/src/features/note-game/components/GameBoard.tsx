@@ -10,30 +10,7 @@ import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBounda
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
 import { useThemeStore } from "@/stores/theme.store";
-
-const DEFAULT_NOTE_TO_KEY_MAP: Record<string, string> = {
-	"C#": "q",
-	"D#": "w",
-	"E#": "e",
-	"F#": "r",
-	"G#": "t",
-	"A#": "y",
-	"B#": "u",
-	C: "a",
-	D: "s",
-	E: "d",
-	F: "f",
-	G: "g",
-	A: "h",
-	B: "j",
-	Cb: "z",
-	Db: "x",
-	Eb: "c",
-	Fb: "v",
-	Gb: "b",
-	Ab: "n",
-	Bb: "m",
-};
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 
 export interface GameBoardProps {
 	currentNote: string;

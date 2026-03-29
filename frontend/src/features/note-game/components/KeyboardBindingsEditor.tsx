@@ -2,34 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 
 const SHARP_NOTES = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"] as const;
 const NATURAL_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const FLAT_NOTES = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"] as const;
-
-const DEFAULT_BINDINGS: Record<string, string> = {
-	"C#": "q",
-	"D#": "w",
-	"E#": "e",
-	"F#": "r",
-	"G#": "t",
-	"A#": "y",
-	"B#": "u",
-	C: "a",
-	D: "s",
-	E: "d",
-	F: "f",
-	G: "g",
-	A: "h",
-	B: "j",
-	Cb: "z",
-	Db: "x",
-	Eb: "c",
-	Fb: "v",
-	Gb: "b",
-	Ab: "n",
-	Bb: "m",
-};
 
 export interface KeyboardBindingsEditorProps {
 	bindings: Record<string, string>;
@@ -94,6 +71,7 @@ export function KeyboardBindingsEditor({
 			e.preventDefault();
 
 			if (e.key === "Escape") {
+				e.stopPropagation();
 				setListening(null);
 				return;
 			}
@@ -115,8 +93,9 @@ export function KeyboardBindingsEditor({
 			setListening(null);
 		}
 
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		document.addEventListener("keydown", handleKeyDown, { capture: true });
+		return () =>
+			document.removeEventListener("keydown", handleKeyDown, { capture: true });
 	}, [listeningNote, bindings, onChange, setListening]);
 
 	function renderRow(label: string, notes: readonly string[]) {
@@ -149,7 +128,7 @@ export function KeyboardBindingsEditor({
 				<Button
 					variant="ghost"
 					size="sm"
-					onClick={() => onChange(DEFAULT_BINDINGS)}
+					onClick={() => onChange(DEFAULT_NOTE_TO_KEY_MAP)}
 				>
 					Reset to Defaults
 				</Button>

@@ -16,7 +16,10 @@ import {
 	GameState,
 	GameMode,
 } from "@/features/note-game";
-import { formatTimeLength } from "@/features/note-game/utils";
+import {
+	formatTimeLength,
+	keyBindingsToNoteMap,
+} from "@/features/note-game/utils";
 import {
 	GameBoard,
 	GameBoardLandscape,
@@ -41,33 +44,13 @@ export function NoteGamePage() {
 	const saveSettings = useSaveNoteGameSettings();
 	const { data: savedKeyboardBindings } = useKeyboardBindings();
 
-	const keyBindings = useMemo(() => {
-		if (!savedKeyboardBindings) return undefined;
-		const kb = savedKeyboardBindings.key_bindings;
-		return {
-			C: kb.key_c,
-			"C#": kb.key_c_sharp,
-			Cb: kb.key_c_flat,
-			D: kb.key_d,
-			"D#": kb.key_d_sharp,
-			Db: kb.key_d_flat,
-			E: kb.key_e,
-			"E#": kb.key_e_sharp,
-			Eb: kb.key_e_flat,
-			F: kb.key_f,
-			"F#": kb.key_f_sharp,
-			Fb: kb.key_f_flat,
-			G: kb.key_g,
-			"G#": kb.key_g_sharp,
-			Gb: kb.key_g_flat,
-			A: kb.key_a,
-			"A#": kb.key_a_sharp,
-			Ab: kb.key_a_flat,
-			B: kb.key_b,
-			"B#": kb.key_b_sharp,
-			Bb: kb.key_b_flat,
-		};
-	}, [savedKeyboardBindings]);
+	const keyBindings = useMemo(
+		() =>
+			savedKeyboardBindings
+				? keyBindingsToNoteMap(savedKeyboardBindings.key_bindings)
+				: undefined,
+		[savedKeyboardBindings],
+	);
 
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {

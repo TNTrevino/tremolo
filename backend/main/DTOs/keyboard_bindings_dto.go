@@ -46,60 +46,18 @@ func (r *KeyboardBindingsRequest) Validate() error {
 	validate := validator.New()
 	err := validate.Struct(r)
 	if err != nil {
-		var errorMessage []string
-
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-				case "KeyC":
-					errorMessage = append(errorMessage, "KeyC: is required and must be at most 20 characters")
-				case "KeyD":
-					errorMessage = append(errorMessage, "KeyD: is required and must be at most 20 characters")
-				case "KeyE":
-					errorMessage = append(errorMessage, "KeyE: is required and must be at most 20 characters")
-				case "KeyF":
-					errorMessage = append(errorMessage, "KeyF: is required and must be at most 20 characters")
-				case "KeyG":
-					errorMessage = append(errorMessage, "KeyG: is required and must be at most 20 characters")
-				case "KeyA":
-					errorMessage = append(errorMessage, "KeyA: is required and must be at most 20 characters")
-				case "KeyB":
-					errorMessage = append(errorMessage, "KeyB: is required and must be at most 20 characters")
-				case "KeyCSharp":
-					errorMessage = append(errorMessage, "KeyCSharp: is required and must be at most 20 characters")
-				case "KeyDSharp":
-					errorMessage = append(errorMessage, "KeyDSharp: is required and must be at most 20 characters")
-				case "KeyESharp":
-					errorMessage = append(errorMessage, "KeyESharp: is required and must be at most 20 characters")
-				case "KeyFSharp":
-					errorMessage = append(errorMessage, "KeyFSharp: is required and must be at most 20 characters")
-				case "KeyGSharp":
-					errorMessage = append(errorMessage, "KeyGSharp: is required and must be at most 20 characters")
-				case "KeyASharp":
-					errorMessage = append(errorMessage, "KeyASharp: is required and must be at most 20 characters")
-				case "KeyBSharp":
-					errorMessage = append(errorMessage, "KeyBSharp: is required and must be at most 20 characters")
-				case "KeyCFlat":
-					errorMessage = append(errorMessage, "KeyCFlat: is required and must be at most 20 characters")
-				case "KeyDFlat":
-					errorMessage = append(errorMessage, "KeyDFlat: is required and must be at most 20 characters")
-				case "KeyEFlat":
-					errorMessage = append(errorMessage, "KeyEFlat: is required and must be at most 20 characters")
-				case "KeyFFlat":
-					errorMessage = append(errorMessage, "KeyFFlat: is required and must be at most 20 characters")
-				case "KeyGFlat":
-					errorMessage = append(errorMessage, "KeyGFlat: is required and must be at most 20 characters")
-				case "KeyAFlat":
-					errorMessage = append(errorMessage, "KeyAFlat: is required and must be at most 20 characters")
-				case "KeyBFlat":
-					errorMessage = append(errorMessage, "KeyBFlat: is required and must be at most 20 characters")
-				}
-			}
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			return err
 		}
-
-		if len(errorMessage) > 0 {
-			return errors.New(strings.Join(errorMessage, ",\n"))
+		var errorMessages []string
+		for _, fieldErr := range errs {
+			errorMessages = append(errorMessages, fmt.Sprintf("%s: is required and must be at most 20 characters", fieldErr.StructField()))
 		}
+		if len(errorMessages) > 0 {
+			return errors.New(strings.Join(errorMessages, ",\n"))
+		}
+		return err
 	}
 
 	kb := r.KeyBindings

@@ -35,7 +35,7 @@ func GetKeyboardBindings(c *gin.Context) {
 	}
 
 	if result == nil {
-		c.JSON(http.StatusOK, gin.H{"settings": nil})
+		c.JSON(http.StatusNotFound, gin.H{"error": "No keyboard bindings found"})
 		return
 	}
 
