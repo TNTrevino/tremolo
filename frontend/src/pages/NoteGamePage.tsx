@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/shared/hooks/useToast";
 import { useBreakpoint } from "@/shared/hooks";
@@ -6,7 +6,9 @@ import {
 	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
+	useKeyboardBindings,
 } from "@/shared/hooks/queries";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
 import type { GameStats } from "@/shared/types";
 import {
 	useNoteGame,
@@ -14,7 +16,10 @@ import {
 	GameState,
 	GameMode,
 } from "@/features/note-game";
-import { formatTimeLength } from "@/features/note-game/utils";
+import {
+	formatTimeLength,
+	keyBindingsToNoteMap,
+} from "@/features/note-game/utils";
 import {
 	GameBoard,
 	GameBoardLandscape,
@@ -33,9 +38,19 @@ export function NoteGamePage() {
 	const { showSuccess, showError } = useToast();
 	const { isPhoneLandscape } = useBreakpoint();
 	const [pastGames, setPastGames] = useState<GameStats[]>([]);
+	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
 	const saveResult = useSaveGameResult();
 	const { data: savedSettings } = useNoteGameSettings();
 	const saveSettings = useSaveNoteGameSettings();
+	const { data: savedKeyboardBindings } = useKeyboardBindings();
+
+	const keyBindings = useMemo(
+		() =>
+			savedKeyboardBindings
+				? keyBindingsToNoteMap(savedKeyboardBindings.key_bindings)
+				: undefined,
+		[savedKeyboardBindings],
+	);
 
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {
@@ -92,6 +107,8 @@ export function NoteGamePage() {
 	} = useNoteGame({
 		onGameEnd: handleGameEnd,
 		onGameStart: () => gameStartRef.current?.(),
+		keyBindings,
+		inputDisabled: bindingsDialogOpen,
 	});
 
 	useEffect(() => {
@@ -137,7 +154,11 @@ export function NoteGamePage() {
 				formatTime={formatTime}
 			/>
 		) : (
-			<SettingsBar settings={settings} onSettingsChange={updateSettings} />
+			<SettingsBar
+				settings={settings}
+				onSettingsChange={updateSettings}
+				onDialogOpenChange={setBindingsDialogOpen}
+			/>
 		);
 
 	const gameBoardProps = {
@@ -147,6 +168,7 @@ export function NoteGamePage() {
 		onNoteGenerated: syncCurrentNote,
 		scale: settings.scale,
 		octave: settings.octave,
+		keyBindings: keyBindings ?? DEFAULT_NOTE_TO_KEY_MAP,
 	};
 
 	const landscapeLayout = (

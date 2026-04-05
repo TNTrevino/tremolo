@@ -29,6 +29,7 @@ type Querier interface {
 	DeleteAllTeacherStudentsByStudent(ctx context.Context, studentID int32) error
 	DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacherID int32) error
 	DeleteAllTestData(ctx context.Context) error
+	DeleteKeyboardBindings(ctx context.Context, userID int32) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
 	DeleteNoteGameSettings(ctx context.Context, userID int32) error
@@ -48,6 +49,7 @@ type Querier interface {
 	// Returns users who have a mutual follow relationship with the given user
 	// (both directions exist in the friends table = they are friends)
 	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
+	GetKeyboardBindings(ctx context.Context, userID int32) (TremoloKeyboardBinding, error)
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
@@ -63,6 +65,7 @@ type Querier interface {
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error)
 	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)
 }
 

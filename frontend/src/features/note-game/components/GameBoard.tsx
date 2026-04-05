@@ -10,6 +10,7 @@ import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBounda
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
 import { useThemeStore } from "@/stores/theme.store";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -18,6 +19,7 @@ export interface GameBoardProps {
 	onNoteGenerated: (noteName: string) => void;
 	scale: string;
 	octave: number;
+	keyBindings?: Record<string, string>;
 }
 
 const extractTonic = (scaleStr: string): string => {
@@ -74,45 +76,75 @@ function NoteDisplay({
 export interface NoteButtonGridProps {
 	onAnswer: (answer: string) => void;
 	buttonHeight: string;
+	keyBindings?: Record<string, string>;
 }
 
 export function NoteButtonGrid({
 	onAnswer,
 	buttonHeight,
+	keyBindings,
 }: NoteButtonGridProps) {
+	const keyMap = keyBindings ?? DEFAULT_NOTE_TO_KEY_MAP;
+
 	return (
 		<Card className="flex-shrink-0 p-2 sm:p-4">
 			<div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-				{NOTES.map((note) => (
-					<Button
-						key={`${note}#`}
-						variant="outline"
-						onClick={() => onAnswer(`${note}#`)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}#
-					</Button>
-				))}
-				{NOTES.map((note) => (
-					<Button
-						key={note}
-						variant="default"
-						onClick={() => onAnswer(note)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}
-					</Button>
-				))}
-				{NOTES.map((note) => (
-					<Button
-						key={`${note}b`}
-						variant="outline"
-						onClick={() => onAnswer(`${note}b`)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}b
-					</Button>
-				))}
+				{NOTES.map((note) => {
+					const noteKey = `${note}#`;
+					const boundKey = keyMap[noteKey];
+					return (
+						<Button
+							key={noteKey}
+							variant="outline"
+							onClick={() => onAnswer(noteKey)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{noteKey}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
+				{NOTES.map((note) => {
+					const boundKey = keyMap[note];
+					return (
+						<Button
+							key={note}
+							variant="default"
+							onClick={() => onAnswer(note)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{note}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
+				{NOTES.map((note) => {
+					const noteKey = `${note}b`;
+					const boundKey = keyMap[noteKey];
+					return (
+						<Button
+							key={noteKey}
+							variant="outline"
+							onClick={() => onAnswer(noteKey)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{noteKey}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
 			</div>
 		</Card>
 	);
@@ -209,6 +241,7 @@ const GameBoardLandscapeInternal = ({
 	scale,
 	octave,
 	statusBar,
+	keyBindings,
 }: GameBoardLandscapeProps) => {
 	const { containerRef, isInitializing, loadError } = useGameBoardCore({
 		answers,
@@ -229,7 +262,11 @@ const GameBoardLandscapeInternal = ({
 					className="flex-1 min-h-0"
 				/>
 			</div>
-			<NoteButtonGrid onAnswer={onAnswer} buttonHeight="h-8 text-xs" />
+			<NoteButtonGrid
+				onAnswer={onAnswer}
+				buttonHeight="h-8 text-xs"
+				keyBindings={keyBindings}
+			/>
 		</div>
 	);
 };
@@ -265,6 +302,7 @@ const GameBoardInternal = ({
 	onNoteGenerated,
 	scale,
 	octave,
+	keyBindings,
 }: GameBoardProps) => {
 	const { isMobile } = useBreakpoint();
 
@@ -290,7 +328,11 @@ const GameBoardInternal = ({
 				loadError={loadError}
 				className={noteDisplayClassName}
 			/>
-			<NoteButtonGrid onAnswer={onAnswer} buttonHeight={buttonHeight} />
+			<NoteButtonGrid
+				onAnswer={onAnswer}
+				buttonHeight={buttonHeight}
+				keyBindings={keyBindings}
+			/>
 		</div>
 	);
 };
