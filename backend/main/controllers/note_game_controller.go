@@ -18,6 +18,7 @@ func SetupNoteGameRoutes(router *gin.Engine) {
 	{
 		noteGame.POST("/entry", CreateNoteGameEntry)
 		noteGame.GET("/recent", GetRecentNoteGameEntries)
+		noteGame.GET("/activity", GetDailyActivityCounts)
 	}
 }
 
@@ -70,4 +71,23 @@ func GetRecentNoteGameEntries(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, entries)
+}
+
+// GetDailyActivityCounts returns per-day game counts for the activity heatmap
+// Protected: Requires JWT authentication
+func GetDailyActivityCounts(c *gin.Context) {
+	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	counts, err := services.GetDailyActivityCounts(ctx, database.Queries, authenticatedUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch activity data"})
+		return
+	}
+
+	c.JSON(http.StatusOK, counts)
 }

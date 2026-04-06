@@ -280,6 +280,50 @@ func (q *Queries) FetchTeacherChartDataInRange(ctx context.Context, arg FetchTea
 	return items, nil
 }
 
+const getDailyActivityCounts = `-- name: GetDailyActivityCounts :many
+select
+    created_date,
+    count(*)::int as game_count
+from tremolo.note_game_entries
+where user_id = $1
+  and created_date >= current_date - interval '1 day' * $2
+group by created_date
+order by created_date asc
+`
+
+type GetDailyActivityCountsParams struct {
+	UserID   int32       `json:"user_id"`
+	DaysBack interface{} `json:"days_back"`
+}
+
+type GetDailyActivityCountsRow struct {
+	CreatedDate sql.NullTime `json:"created_date"`
+	GameCount   int32        `json:"game_count"`
+}
+
+func (q *Queries) GetDailyActivityCounts(ctx context.Context, arg GetDailyActivityCountsParams) ([]GetDailyActivityCountsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDailyActivityCounts, arg.UserID, arg.DaysBack)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetDailyActivityCountsRow{}
+	for rows.Next() {
+		var i GetDailyActivityCountsRow
+		if err := rows.Scan(&i.CreatedDate, &i.GameCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEntriesByUserID = `-- name: GetEntriesByUserID :many
 select id, user_id, time_length, total_questions, correct_questions, notes_per_minute, created_date, created_time
 from tremolo.note_game_entries

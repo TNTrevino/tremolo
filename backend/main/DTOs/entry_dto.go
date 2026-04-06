@@ -32,6 +32,12 @@ type NoteGameEntryResponse struct {
 	CreatedDate      string  `json:"created_date"`
 }
 
+// DailyActivityCount represents a single day's game count for the activity heatmap.
+type DailyActivityCount struct {
+	Date      string `json:"date"`
+	GameCount int    `json:"game_count"`
+}
+
 // add an or to the hours to ensure the miliary time and nothing else
 
 func (entry *Entry) ValidateEntry() error {
