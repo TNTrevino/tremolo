@@ -6,6 +6,7 @@ export {
 	useUserProfile,
 	useUserStats,
 	useRecentGameEntries,
+	useActivityHeatmap,
 	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,

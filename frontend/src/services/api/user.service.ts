@@ -11,6 +11,7 @@ import type {
 	KeyboardBindingsRequest,
 	MultiMetricChartData,
 	ChartQueryParams,
+	DailyActivityCount,
 } from "./types";
 
 export class UserService {
@@ -68,6 +69,13 @@ export class UserService {
 		const response = await this.client.post<CreateNoteGameEntryResponse>(
 			"/api/note-game/entry",
 			request,
+		);
+		return response.data;
+	}
+
+	async getActivityHeatmap(): Promise<DailyActivityCount[]> {
+		const response = await this.client.get<DailyActivityCount[]>(
+			"/api/note-game/activity",
 		);
 		return response.data;
 	}

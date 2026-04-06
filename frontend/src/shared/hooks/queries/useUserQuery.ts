@@ -13,6 +13,7 @@ import type {
 	KeyboardBindingsResponse,
 	KeyboardBindingsRequest,
 	NoteGameEntry,
+	DailyActivityCount,
 } from "@/services/api/types";
 
 export const userKeys = {
@@ -23,6 +24,7 @@ export const userKeys = {
 	recentGames: () => [...userKeys.all, "recent-games"] as const,
 	classMetrics: (params?: ChartQueryParams) =>
 		[...userKeys.all, "class-metrics", params] as const,
+	activity: () => [...userKeys.all, "activity"] as const,
 	noteGameSettings: () => [...userKeys.all, "note-game-settings"] as const,
 	keyboardBindings: () => [...userKeys.all, "keyboard-bindings"] as const,
 };
@@ -76,6 +78,20 @@ export function useRecentGameEntries() {
 }
 
 /**
+ * Fetch daily game counts for the activity heatmap (last ~1 year).
+ */
+export function useActivityHeatmap() {
+	const authUser = useAuthStore((state) => state.user);
+
+	return useQuery<DailyActivityCount[]>({
+		queryKey: userKeys.activity(),
+		queryFn: () => userService.getActivityHeatmap(),
+		enabled: !!authUser?.id,
+		staleTime: 5 * 60 * 1000,
+	});
+}
+
+/**
  * Fetch aggregated class metrics for teachers.
  */
 export function useClassMetrics(params?: ChartQueryParams) {
@@ -101,6 +117,7 @@ export function useSaveGameResult() {
 		mutationFn: (entry) => userService.saveGameResult(entry),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: userKeys.recentGames() });
+			queryClient.invalidateQueries({ queryKey: userKeys.activity() });
 			queryClient.invalidateQueries({
 				queryKey: userKeys.all,
 				predicate: (query) => query.queryKey[1] === "stats",

@@ -27,6 +27,7 @@ export type {
 	KeyBindings,
 	KeyboardBindingsResponse,
 	KeyboardBindingsRequest,
+	DailyActivityCount,
 } from "./game.types";
 
 export type { GeneralUserInfo, UserProfile } from "./user.types";
