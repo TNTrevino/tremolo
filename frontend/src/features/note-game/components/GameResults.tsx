@@ -11,7 +11,6 @@ import {
 import { useRecentGameEntries } from "@/shared/hooks/queries";
 import type { GameStats } from "../types";
 import { GameMode } from "../types";
-import { useRecentGameEntries } from "@/shared/hooks/queries";
 
 export interface GameResultsProps {
 	gameStats: GameStats;

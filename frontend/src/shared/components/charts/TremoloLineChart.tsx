@@ -87,7 +87,10 @@ function TremoloTooltip({
 	}
 
 	const headerText = tooltipLabelFormatter
-		? tooltipLabelFormatter(label, payload[0]?.payload as Record<string, unknown>)
+		? tooltipLabelFormatter(
+				label,
+				payload[0]?.payload as Record<string, unknown>,
+			)
 		: String(label);
 
 	return (
@@ -188,7 +191,9 @@ export function TremoloLineChart({
 	// Recharts types `dataKey` loosely (string | number | function); we only use string keys.
 	const handleLegendClick = (payload: { dataKey?: unknown }) => {
 		const key =
-			typeof payload.dataKey === "string" ? payload.dataKey : String(payload.dataKey ?? "");
+			typeof payload.dataKey === "string"
+				? payload.dataKey
+				: String(payload.dataKey ?? "");
 		setHiddenSeries((prev) => {
 			const next = new Set(prev);
 			if (next.has(key)) {
@@ -202,7 +207,9 @@ export function TremoloLineChart({
 
 	const legendFormatter = (value: string, entry: { dataKey?: unknown }) => {
 		const key =
-			typeof entry.dataKey === "string" ? entry.dataKey : String(entry.dataKey ?? "");
+			typeof entry.dataKey === "string"
+				? entry.dataKey
+				: String(entry.dataKey ?? "");
 		const isHidden = hiddenSeries.has(key);
 		return (
 			<span
@@ -219,7 +226,10 @@ export function TremoloLineChart({
 
 	return (
 		<ResponsiveContainer width="100%" height={height}>
-			<LineChart data={data} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
+			<LineChart
+				data={data}
+				margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
+			>
 				<CartesianGrid
 					vertical={false}
 					stroke="hsl(var(--border))"

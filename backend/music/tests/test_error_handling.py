@@ -25,12 +25,16 @@ class TestMaryErrorHandling:
 
     def test_mary_octave_as_string_returns_422(self, client):
         """Octave as string instead of int should return 422 (validation)"""
-        response = client.post("/music/mary", json={"tonic": "C", "octave": "four"})
+        response = client.post(
+            "/music/mary", json={"tonic": "C", "octave": "four"}
+        )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_mary_octave_as_float_returns_422(self, client):
         """Octave as float should return 422"""
-        response = client.post("/music/mary", json={"tonic": "C", "octave": 4.5})
+        response = client.post(
+            "/music/mary", json={"tonic": "C", "octave": 4.5}
+        )
         # FastAPI may accept this and pass as int, so check both
         assert response.status_code in [200, 422]
 
@@ -84,7 +88,9 @@ class TestMaryErrorHandling:
 
     def test_mary_null_octave_returns_422(self, client):
         """Null octave should return 422"""
-        response = client.post("/music/mary", json={"tonic": "C", "octave": None})
+        response = client.post(
+            "/music/mary", json={"tonic": "C", "octave": None}
+        )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_mary_extra_field_ignored(self, client):
@@ -109,8 +115,12 @@ class TestMaryErrorHandling:
 
     def test_mary_case_sensitivity_for_notes(self, client):
         """Test case sensitivity - lowercase 'c' vs uppercase 'C'"""
-        response_lower = client.post("/music/mary", json={"tonic": "c", "octave": 4})
-        response_upper = client.post("/music/mary", json={"tonic": "C", "octave": 4})
+        response_lower = client.post(
+            "/music/mary", json={"tonic": "c", "octave": 4}
+        )
+        response_upper = client.post(
+            "/music/mary", json={"tonic": "C", "octave": 4}
+        )
         # May support both or only uppercase - just check consistency
         assert response_lower.status_code in [200, 400]
         assert response_upper.status_code in [200, 400]
@@ -123,7 +133,8 @@ class TestRandomErrorHandling:
     def test_random_invalid_rhythm_with_digit_9(self, client):
         """Rhythm with invalid digit '9' should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "9999", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "9999", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "something is not right" in response.text.lower()
@@ -131,7 +142,8 @@ class TestRandomErrorHandling:
     def test_random_invalid_rhythm_with_digit_2(self, client):
         """Rhythm with digit '2' - may be valid depending on interpretation"""
         response = client.post(
-            "/music/random", json={"rhythm": "2222", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "2222", "rhythmType": 16, "tonic": "C"},
         )
         # Digit '2' may be interpreted as valid by music21
         assert response.status_code in [200, 400]
@@ -139,21 +151,24 @@ class TestRandomErrorHandling:
     def test_random_invalid_rhythm_with_letter(self, client):
         """Rhythm with letters should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "ABCD", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "ABCD", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_random_invalid_rhythm_type_32(self, client):
         """Invalid rhythmType 32 should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 32, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 32, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_random_invalid_rhythm_type_8_with_wrong_pattern(self, client):
         """Type 8 with 4-digit pattern - may be accepted"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 8, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 8, "tonic": "C"},
         )
         # Pattern length may not be strictly validated
         assert response.status_code in [200, 400]
@@ -161,7 +176,8 @@ class TestRandomErrorHandling:
     def test_random_invalid_rhythm_type_16_with_wrong_pattern(self, client):
         """Type 16 with 2-digit pattern - may be accepted"""
         response = client.post(
-            "/music/random", json={"rhythm": "11", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "11", "rhythmType": 16, "tonic": "C"},
         )
         # Pattern length may not be strictly validated
         assert response.status_code in [200, 400]
@@ -169,7 +185,8 @@ class TestRandomErrorHandling:
     def test_random_rhythm_type_as_string_returns_422(self, client):
         """rhythmType as string - FastAPI may coerce to int"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": "16", "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": "16", "tonic": "C"},
         )
         # FastAPI may coerce "16" to int 16
         assert response.status_code in [200, 400, 422]
@@ -177,19 +194,24 @@ class TestRandomErrorHandling:
     def test_random_invalid_tonic_h_returns_400(self, client):
         """Invalid tonic 'H' should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "H"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "H"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "something is not right" in response.text.lower()
 
     def test_random_missing_rhythm_returns_422(self, client):
         """Missing 'rhythm' field returns 422"""
-        response = client.post("/music/random", json={"rhythmType": 16, "tonic": "C"})
+        response = client.post(
+            "/music/random", json={"rhythmType": 16, "tonic": "C"}
+        )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_random_missing_rhythm_type_returns_422(self, client):
         """Missing 'rhythmType' field returns 422"""
-        response = client.post("/music/random", json={"rhythm": "1111", "tonic": "C"})
+        response = client.post(
+            "/music/random", json={"rhythm": "1111", "tonic": "C"}
+        )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_random_missing_tonic_returns_422(self, client):
@@ -207,21 +229,24 @@ class TestRandomErrorHandling:
     def test_random_null_rhythm_returns_422(self, client):
         """Null rhythm returns 422"""
         response = client.post(
-            "/music/random", json={"rhythm": None, "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": None, "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_random_null_rhythm_type_returns_422(self, client):
         """Null rhythmType returns 422"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": None, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": None, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_random_null_tonic_returns_422(self, client):
         """Null tonic returns 422"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": None}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": None},
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -249,14 +274,16 @@ class TestRandomErrorHandling:
     def test_random_rhythm_type_0_returns_400(self, client):
         """rhythmType 0 should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 0, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 0, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_random_rhythm_type_negative_returns_400(self, client):
         """Negative rhythmType should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": -1, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": -1, "tonic": "C"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -267,13 +294,17 @@ class TestNoteGameErrorHandling:
 
     def test_note_game_invalid_scale_h_returns_400(self, client):
         """Invalid scale 'H' returns 400"""
-        response = client.post("/music/note-game", json={"scale": "H", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "H", "octave": "4"}
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "something is not right" in response.text.lower()
 
     def test_note_game_invalid_scale_z_returns_400(self, client):
         """Invalid scale 'Z' returns 400"""
-        response = client.post("/music/note-game", json={"scale": "Z", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "Z", "octave": "4"}
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_note_game_invalid_octave_string_99_returns_400(self, client):
@@ -293,7 +324,9 @@ class TestNoteGameErrorHandling:
 
     def test_note_game_octave_as_int_coerced(self, client):
         """Octave as int may be coerced to string by Pydantic"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": 4})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": 4}
+        )
         assert response.status_code in [200, 422]
 
     def test_note_game_octave_non_numeric_string_returns_400(self, client):
@@ -334,24 +367,31 @@ class TestNoteGameErrorHandling:
 
     def test_note_game_empty_scale_string_returns_400_or_422(self, client):
         """Empty scale string returns error"""
-        response = client.post("/music/note-game", json={"scale": "", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "", "octave": "4"}
+        )
         assert response.status_code in [400, 422]
 
     def test_note_game_empty_octave_string_returns_400_or_422(self, client):
         """Empty octave string returns error"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": ""})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": ""}
+        )
         assert response.status_code in [400, 422]
 
     def test_note_game_extra_fields_ignored(self, client):
         """Extra fields should be ignored"""
         response = client.post(
-            "/music/note-game", json={"scale": "C", "octave": "4", "extra": "field"}
+            "/music/note-game",
+            json={"scale": "C", "octave": "4", "extra": "field"},
         )
         assert response.status_code == 200
 
     def test_note_game_scale_lowercase_c(self, client):
         """Test case sensitivity - lowercase scale"""
-        response = client.post("/music/note-game", json={"scale": "c", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "c", "octave": "4"}
+        )
         # May support both or only uppercase
         assert response.status_code in [200, 400]
 
@@ -372,7 +412,8 @@ class TestErrorMessageFormat:
     def test_random_error_format_contains_exception(self, client):
         """Random error should follow DRF error format"""
         response = client.post(
-            "/music/random", json={"rhythm": "9999", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "9999", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 400
         error_msg = response.text
@@ -380,7 +421,9 @@ class TestErrorMessageFormat:
 
     def test_note_game_error_format_contains_exception(self, client):
         """Note-game error should follow DRF error format"""
-        response = client.post("/music/note-game", json={"scale": "H", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "H", "octave": "4"}
+        )
         assert response.status_code == 400
         error_msg = response.text
         assert "something is not right" in error_msg.lower()
@@ -403,7 +446,8 @@ class TestBoundaryConditions:
     def test_random_shortest_type_16_pattern(self, client):
         """Shortest valid type 16 pattern"""
         response = client.post(
-            "/music/random", json={"rhythm": "0", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "0", "rhythmType": 16, "tonic": "C"},
         )
         # May or may not be valid
         assert response.status_code in [200, 400]
@@ -418,10 +462,14 @@ class TestBoundaryConditions:
 
     def test_note_game_octave_boundary_2(self, client):
         """Octave "2" should work"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "2"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "2"}
+        )
         assert response.status_code in [200, 400]
 
     def test_note_game_octave_boundary_6(self, client):
         """Octave "6" should work"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "6"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "6"}
+        )
         assert response.status_code in [200, 400]

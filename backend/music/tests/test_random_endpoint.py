@@ -24,7 +24,8 @@ class TestRandomEndpointHappyPath:
     def test_random_returns_xml_content_type(self, client):
         """Response should have application/xml content type"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/xml"
@@ -32,7 +33,8 @@ class TestRandomEndpointHappyPath:
     def test_random_response_is_valid_xml(self, client):
         """Response should be parseable as valid XML"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
 
@@ -85,7 +87,8 @@ class TestRandomEndpointStructure:
     def test_random_xml_contains_musical_elements(self, client):
         """Response XML should contain expected musical elements"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
 
@@ -100,7 +103,8 @@ class TestRandomEndpointStructure:
     def test_random_pattern_1111_generates_4_notes(self, client):
         """Pattern '1111' for type 16 should generate 4 notes"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
 
@@ -115,7 +119,8 @@ class TestRandomEndpointStructure:
     def test_random_response_not_empty(self, client):
         """Response should not be empty"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         assert len(response.content) > 0, "Response is empty"
@@ -177,7 +182,8 @@ class TestRandomEndpointErrorHandling:
     def test_random_invalid_tonic(self, client, random_error_pattern):
         """Invalid tonic should return 400"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "H"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "H"},
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert random_error_pattern in response.text
@@ -205,7 +211,8 @@ class TestRandomEndpointRandomnessValidation:
     def test_random_type_16_generates_random_notes(self, client):
         """Verify type 16 generates random notes (not identical responses)"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
 
@@ -229,14 +236,16 @@ class TestRandomEndpointRandomnessValidation:
     def test_random_type_8_generates_random_notes(self, client):
         """Verify type 8 generates random notes (not identical responses)"""
         response = client.post(
-            "/music/random", json={"rhythm": "11", "rhythmType": 8, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "11", "rhythmType": 8, "tonic": "C"},
         )
         assert response.status_code == 200
 
         # Make multiple requests - all should be valid
         for _ in range(5):
             response = client.post(
-                "/music/random", json={"rhythm": "11", "rhythmType": 8, "tonic": "C"}
+                "/music/random",
+                json={"rhythm": "11", "rhythmType": 8, "tonic": "C"},
             )
             assert response.status_code == 200
             assert len(response.content) > 0

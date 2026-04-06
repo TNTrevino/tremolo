@@ -22,7 +22,9 @@ def test_random_endpoint_exists():
 
 def test_note_game_endpoint_exists():
     """Test that /note-game endpoint is accessible"""
-    response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+    response = client.post(
+        "/music/note-game", json={"scale": "C", "octave": "4"}
+    )
     # Should return 200 or handle the request (not 404)
     assert response.status_code != 404
 
@@ -45,7 +47,9 @@ def test_random_returns_xml():
 
 def test_note_game_returns_json():
     """Test that /note-game returns JSON with expected structure"""
-    response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+    response = client.post(
+        "/music/note-game", json={"scale": "C", "octave": "4"}
+    )
     if response.status_code == 200:
         data = response.json()
         assert "generatedXml" in data
@@ -55,7 +59,9 @@ def test_note_game_returns_json():
 
 def test_mary_error_handling():
     """Test that /mary handles invalid input with 400 status"""
-    response = client.post("/music/mary", json={"tonic": "InvalidNote", "octave": 4})
+    response = client.post(
+        "/music/mary", json={"tonic": "InvalidNote", "octave": 4}
+    )
     # Should return 400 for invalid note
     if response.status_code == 400:
         assert "not currently supported" in response.text
@@ -64,7 +70,8 @@ def test_mary_error_handling():
 def test_random_error_handling():
     """Test that /random handles errors with 400 status"""
     response = client.post(
-        "/music/random", json={"rhythm": "invalid", "rhythmType": 999, "tonic": "X"}
+        "/music/random",
+        json={"rhythm": "invalid", "rhythmType": 999, "tonic": "X"},
     )
     # Should return 400 for invalid input
     if response.status_code == 400:

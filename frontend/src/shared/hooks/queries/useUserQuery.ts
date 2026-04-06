@@ -161,23 +161,6 @@ export function useSaveNoteGameSettings() {
 	});
 }
 
-/**
- * Fetch recent game entries for the authenticated user.
- */
-export function useRecentGameEntries() {
-	const authUser = useAuthStore((state) => state.user);
-
-	return useQuery<NoteGameEntry[]>({
-		queryKey: userKeys.recentGames(),
-		queryFn: () => userService.getRecentGameEntries(),
-		enabled: !!authUser?.id,
-		staleTime: 2 * 60 * 1000,
-		meta: {
-			errorTitle: "Failed to load recent games",
-		},
-	});
-}
-
 export function useKeyboardBindings() {
 	const authUser = useAuthStore((state) => state.user);
 

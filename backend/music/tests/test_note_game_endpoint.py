@@ -25,13 +25,17 @@ class TestNoteGameEndpointHappyPath:
 
     def test_note_game_returns_json_content_type(self, client):
         """Response should have application/json content type"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         assert "application/json" in response.headers["content-type"]
 
     def test_note_game_response_structure(self, client):
         """Response should have required fields with correct types"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -52,7 +56,9 @@ class TestNoteGameEndpointHappyPath:
 
     def test_note_game_xml_is_valid(self, client):
         """The generatedXml field should contain valid XML"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -67,7 +73,9 @@ class TestNoteGameEndpointHappyPath:
 
     def test_note_game_note_name_is_valid(self, client):
         """The noteName should be a valid musical note"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -119,7 +127,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_response_is_json_serializable(self, client):
         """Response should be valid JSON"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         # Should not raise exception
@@ -128,7 +138,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_xml_not_empty(self, client):
         """generatedXml field should not be empty"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -136,7 +148,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_xml_contains_note_element(self, client):
         """The generatedXml should contain musical elements"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -150,7 +164,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_no_extra_fields(self, client):
         """Response should only contain expected fields"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -247,7 +263,9 @@ class TestNoteGameErrorHandling:
 
     def test_note_game_octave_as_int_coerced(self, client):
         """Octave as int may be coerced to string by Pydantic"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": 4})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": 4}
+        )
         assert response.status_code in [
             200,
             422,
@@ -277,7 +295,8 @@ class TestNoteGameErrorHandling:
     def test_note_game_extra_fields_ignored(self, client):
         """Extra fields should be ignored"""
         response = client.post(
-            "/music/note-game", json={"scale": "C", "octave": "4", "extra": "field"}
+            "/music/note-game",
+            json={"scale": "C", "octave": "4", "extra": "field"},
         )
         assert response.status_code == 200, "Extra fields should be ignored"
 
@@ -287,13 +306,17 @@ class TestNoteGameContentType:
 
     def test_note_game_content_type_is_json(self, client):
         """Content-Type should be application/json"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         assert "application/json" in response.headers["content-type"]
 
     def test_note_game_charset_in_content_type(self, client):
         """Content-Type should specify UTF-8 or similar"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         content_type = response.headers["content-type"]
         # May contain charset, but not required

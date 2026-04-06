@@ -13,13 +13,16 @@ class TestAllEndpointsAccessible:
     def test_random_endpoint_accessible(self, client):
         """Verify /random endpoint exists and accepts requests"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code != 404
 
     def test_note_game_endpoint_accessible(self, client):
         """Verify /note-game endpoint exists and accepts requests"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code != 404
 
 
@@ -45,7 +48,10 @@ class TestEndpointErrorConsistency:
         """All endpoints should return 400/422, not 500 for bad input"""
         test_cases = [
             ("/music/mary", {"tonic": "INVALID", "octave": 4}),
-            ("/music/random", {"rhythm": "INVALID", "rhythmType": 16, "tonic": "C"}),
+            (
+                "/music/random",
+                {"rhythm": "INVALID", "rhythmType": 16, "tonic": "C"},
+            ),
             ("/music/note-game", {"scale": "INVALID", "octave": "4"}),
         ]
 
@@ -64,7 +70,9 @@ class TestMultipleRequestsHandling:
     def test_mary_multiple_sequential_requests(self, client):
         """Multiple sequential requests to /mary should all succeed"""
         for i in range(5):
-            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
+            response = client.post(
+                "/music/mary", json={"tonic": "C", "octave": 4}
+            )
             assert response.status_code == 200, f"Request {i} failed"
 
     def test_random_multiple_sequential_requests(self, client):
@@ -116,7 +124,9 @@ class TestResponseConsistency:
     def test_mary_consistent_response_format(self, client):
         """Multiple /mary calls should have consistent response format"""
         for _ in range(3):
-            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
+            response = client.post(
+                "/music/mary", json={"tonic": "C", "octave": 4}
+            )
             assert response.status_code == 200
             assert response.headers["content-type"] == "application/xml"
             assert isinstance(response.content, bytes)
@@ -159,7 +169,8 @@ class TestEndpointIndependence:
 
         # Call /random
         response2 = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response2.status_code == 200
 
@@ -179,7 +190,9 @@ class TestConcurrentLikeRequests:
         """Rapid sequential requests to /mary"""
         responses = []
         for _ in range(10):
-            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
+            response = client.post(
+                "/music/mary", json={"tonic": "C", "octave": 4}
+            )
             assert response.status_code == 200
             responses.append(response)
 

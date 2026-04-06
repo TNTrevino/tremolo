@@ -36,7 +36,6 @@ export function useSearchUsers(query: string) {
 	// are handled inline in AddFriendView rather than surfaced as a toast.
 	return useQuery<Friend[]>({
 		queryKey: friendsKeys.search(trimmed),
-		meta: { suppressErrorToast: true },
 		queryFn: () => friendsService.searchUsers(trimmed),
 		enabled: trimmed.length > 0,
 		staleTime: 30 * 1000,

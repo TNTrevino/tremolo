@@ -89,7 +89,7 @@ export function useNoteQueue(
 		return () => {
 			cancelled = true;
 		};
-	}, [isReady, hydrate]);
+	}, [isReady, hydrate, showError]);
 
 	const pop = useCallback((): NoteGameResponse | null => {
 		const item = queueRef.current.shift() ?? null;

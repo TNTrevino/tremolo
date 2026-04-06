@@ -69,7 +69,8 @@ class TestRandomResponseFormat:
     def test_random_response_content_type_exactly_xml(self, client):
         """Content-Type should be application/xml"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         ct = response.headers.get("content-type", "")
@@ -78,7 +79,8 @@ class TestRandomResponseFormat:
     def test_random_response_is_bytes_not_string(self, client):
         """Response content should be bytes"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         assert isinstance(response.content, bytes)
@@ -86,7 +88,8 @@ class TestRandomResponseFormat:
     def test_random_xml_is_well_formed(self, client):
         """XML must be well-formed"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         try:
@@ -97,7 +100,8 @@ class TestRandomResponseFormat:
     def test_random_xml_size_reasonable(self, client):
         """Response size should be reasonable"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         size = len(response.content)
@@ -107,7 +111,8 @@ class TestRandomResponseFormat:
     def test_random_xml_has_root_element(self, client):
         """XML should have valid root element"""
         response = client.post(
-            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random",
+            json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
         )
         assert response.status_code == 200
         root = ET.fromstring(response.content)
@@ -120,14 +125,18 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_response_content_type_json(self, client):
         """Content-Type should be application/json"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         ct = response.headers.get("content-type", "")
         assert "application/json" in ct
 
     def test_note_game_response_is_valid_json(self, client):
         """Response must be valid JSON"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         try:
             data = response.json()
@@ -137,7 +146,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_json_structure_exact(self, client):
         """JSON should have exact structure"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         data = response.json()
 
@@ -149,7 +160,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_all_fields_are_strings(self, client):
         """All fields should be strings"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         data = response.json()
 
@@ -159,7 +172,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_xml_field_is_valid_xml(self, client):
         """The generatedXml field must contain valid XML"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         data = response.json()
 
@@ -170,7 +185,9 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_note_name_format(self, client):
         """noteName should be A-G optionally with # or -"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         data = response.json()
 
@@ -185,14 +202,18 @@ class TestNoteGameResponseFormat:
 
     def test_note_game_octave_matches_request(self, client):
         """noteOctave in response should match request octave"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "5"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "5"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["noteOctave"] == "5"
 
     def test_note_game_no_extra_fields(self, client):
         """Response should only contain expected fields"""
-        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post(
+            "/music/note-game", json={"scale": "C", "octave": "4"}
+        )
         assert response.status_code == 200
         data = response.json()
         expected = {"generatedXml", "noteName", "noteOctave"}

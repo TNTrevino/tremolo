@@ -59,7 +59,8 @@ function getColorLevel(count: number, quartiles: Quartiles): number {
 function computeQuartiles(values: number[]): Quartiles {
 	const sorted = values.filter((v) => v > 0).sort((a, b) => a - b);
 	if (sorted.length === 0) return [1, 2, 3];
-	const q = (p: number): number => sorted[Math.min(Math.floor(p * sorted.length), sorted.length - 1)]!;
+	const q = (p: number): number =>
+		sorted[Math.min(Math.floor(p * sorted.length), sorted.length - 1)]!;
 	return [q(0.25), q(0.5), q(0.75)];
 }
 
@@ -181,7 +182,9 @@ export interface ActivityHeatmapProps {
 	data: DailyActivityCount[];
 }
 
-export const ActivityHeatmap = memo(function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+export const ActivityHeatmap = memo(function ActivityHeatmap({
+	data,
+}: ActivityHeatmapProps) {
 	const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
 	const { cells, monthLabels, totalWeeks, quartiles } = useMemo(() => {
@@ -253,9 +256,7 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({ data }: ActivityH
 							key={`day-${i}`}
 							x={0}
 							y={
-								TOP_LABEL_HEIGHT +
-								i * (CELL_SIZE + CELL_GAP) +
-								CELL_SIZE * 0.8
+								TOP_LABEL_HEIGHT + i * (CELL_SIZE + CELL_GAP) + CELL_SIZE * 0.8
 							}
 							className="fill-muted-foreground"
 							fontSize={10}
@@ -267,11 +268,8 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({ data }: ActivityH
 
 				{/* Cells */}
 				{cells.map((cell) => {
-					const x =
-						LEFT_LABEL_WIDTH + cell.weekIndex * (CELL_SIZE + CELL_GAP);
-					const y =
-						TOP_LABEL_HEIGHT +
-						cell.dayOfWeek * (CELL_SIZE + CELL_GAP);
+					const x = LEFT_LABEL_WIDTH + cell.weekIndex * (CELL_SIZE + CELL_GAP);
+					const y = TOP_LABEL_HEIGHT + cell.dayOfWeek * (CELL_SIZE + CELL_GAP);
 					const level = getColorLevel(cell.count, quartiles);
 					return (
 						<rect

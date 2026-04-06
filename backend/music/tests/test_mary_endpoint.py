@@ -58,7 +58,9 @@ class TestMaryEndpointHappyPath:
         # Note: E# is not supported by music21 (it's enharmonic to F)
         tonics = ["C", "G", "F", "D-", "A", "B-"]
         for tonic in tonics:
-            response = client.post("/music/mary", json={"tonic": tonic, "octave": 4})
+            response = client.post(
+                "/music/mary", json={"tonic": tonic, "octave": 4}
+            )
             assert response.status_code == 200, f"Failed for tonic {tonic}"
             assert response.headers["content-type"] == "application/xml"
             # Verify it's valid XML
@@ -83,7 +85,9 @@ class TestMaryEndpointErrorHandling:
         """Invalid note names should return 400"""
         invalid_notes = ["H", "Z", "X", "Q"]
         for note in invalid_notes:
-            response = client.post("/music/mary", json={"tonic": note, "octave": 4})
+            response = client.post(
+                "/music/mary", json={"tonic": note, "octave": 4}
+            )
             assert (
                 response.status_code == status.HTTP_400_BAD_REQUEST
             ), f"Expected 400 for note {note}, got {response.status_code}"
