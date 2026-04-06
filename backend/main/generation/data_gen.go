@@ -3,6 +3,7 @@ package generation
 
 import (
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"strings"
 )
@@ -10,11 +11,11 @@ import (
 func GenerateData() {
 	initFaker()
 
-	println(strings.Repeat("------------------------------", 2))
-	println("\nGenerating data...\n")
-	println(strings.Repeat("------------------------------", 2))
+	log.Println(strings.Repeat("------------------------------", 2))
+	log.Println("Generating data...")
+	log.Println(strings.Repeat("------------------------------", 2))
 
-	fmt.Println(insertFakeSchools())
+	log.Println(insertFakeSchools())
 
 	// 20 teachers, each with 20 students
 	teacherIDs, studentIDs := insertMultipleTeachersWithStudents(20, 20)
