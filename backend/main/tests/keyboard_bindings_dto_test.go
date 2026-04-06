@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// --- Task 6: Happy paths ---
+// --- Validate() happy path tests ---
 
 func TestKeyboardBindingsValidation_DefaultBindingsPass(t *testing.T) {
 	t.Parallel()
@@ -75,7 +75,7 @@ func TestKeyboardBindingsValidation_NumericKeys(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// --- Task 7: Error paths ---
+// --- Validate() error path tests ---
 
 func TestKeyboardBindingsValidation_EmptyRequiredKey(t *testing.T) {
 	t.Parallel()

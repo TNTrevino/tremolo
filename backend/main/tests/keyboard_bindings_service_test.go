@@ -14,7 +14,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Task 2: CreateDefaultKeyboardBindings
+// CreateDefaultKeyboardBindings tests
 // ---------------------------------------------------------------------------
 
 // TestKeyboardBindings_CreateDefault_SeedsAllKeys verifies that
@@ -92,7 +92,7 @@ func TestKeyboardBindings_CreateDefault_Idempotent(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Task 3: GetKeyboardBindings
+// GetKeyboardBindings tests
 // ---------------------------------------------------------------------------
 
 // TestKeyboardBindings_Get_WithBindings verifies that GetKeyboardBindings
@@ -146,7 +146,7 @@ func TestKeyboardBindings_Get_InvalidUserID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Task 4: UpsertKeyboardBindings
+// UpsertKeyboardBindings tests
 // ---------------------------------------------------------------------------
 
 // TestKeyboardBindings_Upsert_Insert verifies inserting fresh custom bindings
