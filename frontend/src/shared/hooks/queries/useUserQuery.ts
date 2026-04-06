@@ -166,7 +166,7 @@ export function useKeyboardBindings() {
 
 	return useQuery<KeyboardBindingsResponse | null>({
 		queryKey: userKeys.keyboardBindings(),
-		meta: { errorTitle: "Failed to load key bindings" },
+		meta: { suppressErrorToast: true },
 		queryFn: () => userService.getKeyboardBindings(),
 		enabled: !!authUser?.id,
 		staleTime: 10 * 60 * 1000,
