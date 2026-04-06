@@ -17,7 +17,7 @@ func TestKeyboardBindingsValidation_DefaultBindingsPass(t *testing.T) {
 	t.Parallel()
 
 	req := &dtos.KeyboardBindingsRequest{
-		KeyBindings: services.DEFAULT_KEYBOARD_BINDINGS,
+		KeyBindings: services.DefaultKeyboardBindings,
 	}
 
 	err := req.Validate()
@@ -81,7 +81,7 @@ func TestKeyboardBindingsValidation_EmptyRequiredKey(t *testing.T) {
 	t.Parallel()
 
 	// Start from valid defaults and blank out KeyC.
-	kb := services.DEFAULT_KEYBOARD_BINDINGS
+	kb := services.DefaultKeyboardBindings
 	kb.KeyC = ""
 
 	req := &dtos.KeyboardBindingsRequest{KeyBindings: kb}
@@ -94,7 +94,7 @@ func TestKeyboardBindingsValidation_EmptyRequiredKey(t *testing.T) {
 func TestKeyboardBindingsValidation_KeyExceedsMaxLength(t *testing.T) {
 	t.Parallel()
 
-	kb := services.DEFAULT_KEYBOARD_BINDINGS
+	kb := services.DefaultKeyboardBindings
 	kb.KeyD = strings.Repeat("x", 21) // 21 chars, exceeds max=20
 
 	req := &dtos.KeyboardBindingsRequest{KeyBindings: kb}
@@ -107,7 +107,7 @@ func TestKeyboardBindingsValidation_KeyExceedsMaxLength(t *testing.T) {
 func TestKeyboardBindingsValidation_DuplicateKeyAssignment(t *testing.T) {
 	t.Parallel()
 
-	kb := services.DEFAULT_KEYBOARD_BINDINGS
+	kb := services.DefaultKeyboardBindings
 	kb.KeyD = kb.KeyC // duplicate: both map to "a"
 
 	req := &dtos.KeyboardBindingsRequest{KeyBindings: kb}
@@ -120,7 +120,7 @@ func TestKeyboardBindingsValidation_DuplicateKeyAssignment(t *testing.T) {
 func TestKeyboardBindingsValidation_MultipleEmptyKeys(t *testing.T) {
 	t.Parallel()
 
-	kb := services.DEFAULT_KEYBOARD_BINDINGS
+	kb := services.DefaultKeyboardBindings
 	kb.KeyC = ""
 	kb.KeyA = ""
 	kb.KeyGSharp = ""
