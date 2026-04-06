@@ -126,13 +126,13 @@ select
     total_questions
 from tremolo.note_game_entries
 where user_id = $1
-  and created_date >= current_date - interval '1 day' * $2
+  and created_date >= current_date - interval '1 day' * $2::int
 order by created_date, created_time asc
 `
 
 type FetchChartDataInRangeParams struct {
-	UserID   int32       `json:"user_id"`
-	DaysBack interface{} `json:"days_back"`
+	UserID   int32 `json:"user_id"`
+	DaysBack int32 `json:"days_back"`
 }
 
 type FetchChartDataInRangeRow struct {
@@ -234,13 +234,13 @@ select
 from tremolo.note_game_entries nge
 inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = $1
-  and nge.created_date >= current_date - interval '1 day' * $2
+  and nge.created_date >= current_date - interval '1 day' * $2::int
 order by nge.created_date, nge.created_time asc
 `
 
 type FetchTeacherChartDataInRangeParams struct {
-	TeacherID int32       `json:"teacher_id"`
-	DaysBack  interface{} `json:"days_back"`
+	TeacherID int32 `json:"teacher_id"`
+	DaysBack  int32 `json:"days_back"`
 }
 
 type FetchTeacherChartDataInRangeRow struct {
@@ -286,14 +286,14 @@ select
     count(*)::int as game_count
 from tremolo.note_game_entries
 where user_id = $1
-  and created_date >= current_date - interval '1 day' * $2
+  and created_date >= current_date - interval '1 day' * $2::int
 group by created_date
 order by created_date asc
 `
 
 type GetDailyActivityCountsParams struct {
-	UserID   int32       `json:"user_id"`
-	DaysBack interface{} `json:"days_back"`
+	UserID   int32 `json:"user_id"`
+	DaysBack int32 `json:"days_back"`
 }
 
 type GetDailyActivityCountsRow struct {
