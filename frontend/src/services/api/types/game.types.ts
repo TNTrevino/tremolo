@@ -92,6 +92,6 @@ export interface KeyboardBindingsRequest {
 }
 
 export interface DailyActivityCount {
-	date: string; // "2026-04-05"
+	date: string; // "YYYY-MM-DD"
 	game_count: number;
 }

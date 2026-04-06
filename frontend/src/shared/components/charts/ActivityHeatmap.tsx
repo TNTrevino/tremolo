@@ -69,7 +69,7 @@ function computeQuartiles(values: number[]): Quartiles {
 /* ------------------------------------------------------------------ */
 
 interface GridCell {
-	date: string; // "2026-04-05"
+	date: string; // "YYYY-MM-DD"
 	dayOfWeek: number; // 0 = Sun … 6 = Sat
 	weekIndex: number; // 0 = leftmost column
 	count: number;

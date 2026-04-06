@@ -161,6 +161,15 @@ export function useSaveNoteGameSettings() {
 	});
 }
 
+/**
+ * Fetch the user's custom keyboard bindings for the note game.
+ *
+ * Error suppression is intentional here: when this query fails (network error,
+ * 500, etc.) the consuming component falls back to DEFAULT_NOTE_TO_KEY_MAP, so
+ * the game remains fully playable. A 404 is already mapped to null by the
+ * service layer. Showing a toast on every non-404 failure would be disruptive
+ * (fires on page load) and the user can still play with default bindings.
+ */
 export function useKeyboardBindings() {
 	const authUser = useAuthStore((state) => state.user);
 
