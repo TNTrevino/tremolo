@@ -191,6 +191,7 @@ build/
 # Compiled output
 *.d.ts
 !vite-env.d.ts
+!frontend/src/shared/types/*.d.ts
 *.tsbuildinfo
 
 # IDE-specific files
