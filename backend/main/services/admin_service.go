@@ -4,6 +4,7 @@ import (
 	"net/http"
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/logger"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -14,10 +15,8 @@ func GetTeachers(c *gin.Context) {
 
 	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Teacher))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   err.Error(),
-			"message": "not able to get all the teachers",
-		})
+		logger.Error("failed to get teachers", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve teachers"})
 		return
 	}
 
@@ -58,10 +57,8 @@ func GetSchoolTeachers(c *gin.Context) {
 
 	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Teacher))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   err.Error(),
-			"message": "not able to get all the teachers",
-		})
+		logger.Error("failed to get school teachers", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve teachers"})
 		return
 	}
 
@@ -73,10 +70,8 @@ func GetSchoolStudents(c *gin.Context) {
 
 	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Student))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   err.Error(),
-			"message": "not able to get all the students",
-		})
+		logger.Error("failed to get school students", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve students"})
 		return
 	}
 

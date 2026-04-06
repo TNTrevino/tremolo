@@ -26,7 +26,7 @@ func SetupUserInfoRoutes(router *gin.Engine) {
 func GetGeneralUserInfo(c *gin.Context) {
 	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 

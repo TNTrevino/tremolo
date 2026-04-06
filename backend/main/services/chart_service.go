@@ -24,7 +24,7 @@ func GetUserChartData(c *gin.Context) {
 	// Step 1: Authenticate and authorize
 	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -68,7 +68,7 @@ func GetTeacherClassChartData(c *gin.Context) {
 	// Step 1: Authenticate and verify teacher role
 	teacherID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 

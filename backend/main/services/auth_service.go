@@ -167,7 +167,7 @@ func Login(c *gin.Context) {
 func GetCurrentUser(c *gin.Context) {
 	uid, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
