@@ -47,7 +47,8 @@ export interface TremoloReferenceLine {
 }
 
 export interface TremoloLineChartProps {
-	data: Array<Record<string, unknown>>;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	data: Array<Record<string, any>>;
 	series: TremoloSeries[];
 	/** Field in each data point used for the X axis */
 	xKey: string;

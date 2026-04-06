@@ -212,7 +212,7 @@ export function PerformanceChart({
 					</div>
 				) : (
 					<TremoloLineChart
-						data={transformedData as unknown as Array<Record<string, unknown>>}
+						data={transformedData}
 						series={ALL_SERIES}
 						xKey="time"
 						height={360}

@@ -126,7 +126,7 @@ export function GameResults({
 						</span>
 					</div>
 					<TremoloLineChart
-						data={chartData as unknown as Array<Record<string, unknown>>}
+						data={chartData}
 						series={NPM_SERIES}
 						xKey="index"
 						height={300}
