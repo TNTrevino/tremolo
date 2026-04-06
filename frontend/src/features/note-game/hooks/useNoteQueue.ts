@@ -29,7 +29,6 @@ export function useNoteQueue(
 	const inflightRef = useRef(false);
 	const generationRef = useRef(0);
 	const [isInitializing, setIsInitializing] = useState(true);
-
 	const { showError } = useToast();
 
 	const hydrate = useCallback(
@@ -51,6 +50,7 @@ export function useNoteQueue(
 						queueRef.current.push(result.value);
 					} else {
 						anyFailed = true;
+						console.error("[useNoteQueue] Note fetch failed:", result.reason);
 					}
 				}
 
@@ -74,9 +74,17 @@ export function useNoteQueue(
 
 		let cancelled = false;
 
-		hydrate(HYDRATE_BATCH, generation).then(() => {
-			if (!cancelled) setIsInitializing(false);
-		});
+		hydrate(HYDRATE_BATCH, generation)
+			.then(() => {
+				if (!cancelled) setIsInitializing(false);
+			})
+			.catch((err) => {
+				if (!cancelled) {
+					setIsInitializing(false);
+					showError("Failed to initialize note queue. Please refresh.");
+					console.error("[useNoteQueue] Initial hydration failed", err);
+				}
+			});
 
 		return () => {
 			cancelled = true;
