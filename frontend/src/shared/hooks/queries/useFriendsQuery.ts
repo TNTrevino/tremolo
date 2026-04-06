@@ -40,6 +40,8 @@ export function useSearchUsers(query: string) {
 		queryFn: () => friendsService.searchUsers(trimmed),
 		enabled: trimmed.length > 0,
 		staleTime: 30 * 1000,
+		// suppress global toast — search errors are shown inline in AddFriendView
+		meta: { suppressErrorToast: true },
 	});
 }
 
