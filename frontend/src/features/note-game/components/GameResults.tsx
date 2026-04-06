@@ -1,26 +1,45 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
-import {
-	LineChart,
-	Line,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	Legend,
-	ResponsiveContainer,
-} from "recharts";
+import { TremoloLineChart } from "@/shared/components/charts/TremoloLineChart";
+import type {
+	TremoloSeries,
+	TremoloReferenceLine,
+} from "@/shared/components/charts/TremoloLineChart";
+import { useRecentGameEntries } from "@/shared/hooks/queries";
 import type { GameStats } from "../types";
 import { GameMode } from "../types";
 
 export interface GameResultsProps {
 	gameStats: GameStats;
-	pastGames?: GameStats[];
 	isAuthenticated: boolean;
 	onPlayAgain: () => void;
 }
+
+interface RecentGamePoint {
+	index: number;
+	npm: number;
+	accuracy: number;
+	date: string;
+}
+
+const NPM_SERIES: TremoloSeries[] = [
+	{
+		key: "npm",
+		name: "NPM",
+		color: "hsl(var(--primary))",
+		format: (v) => v.toFixed(1),
+		showPB: true,
+	},
+	{
+		key: "accuracy",
+		name: "Accuracy",
+		color: "hsl(var(--accent))",
+		format: (v) => `${v.toFixed(1)}%`,
+	},
+];
 
 /**
  * Game results component
@@ -28,10 +47,52 @@ export interface GameResultsProps {
  */
 export function GameResults({
 	gameStats,
-	pastGames = [],
 	isAuthenticated,
 	onPlayAgain,
 }: GameResultsProps) {
+	const { data: recentEntries } = useRecentGameEntries();
+
+	// Backend returns newest-first; reverse to oldest-left, then compute derived fields.
+	const chartData = useMemo<RecentGamePoint[]>(() => {
+		if (!recentEntries || recentEntries.length === 0) return [];
+		return [...recentEntries]
+			.reverse()
+			.map((entry, i) => ({
+				index: i + 1,
+				npm: entry.notes_per_minute,
+				accuracy:
+					entry.total_questions > 0
+						? (entry.correct_questions / entry.total_questions) * 100
+						: 0,
+				date: entry.created_date,
+			}));
+	}, [recentEntries]);
+
+	const referenceLines = useMemo<TremoloReferenceLine[]>(() => {
+		if (chartData.length < 2) return [];
+		const avg =
+			chartData.reduce((sum, p) => sum + p.npm, 0) / chartData.length;
+		return [{ value: avg, label: `avg ${avg.toFixed(1)}` }];
+	}, [chartData]);
+
+	const formatTooltipLabel = (
+		value: unknown,
+		payload?: Record<string, unknown>,
+	) => {
+		const idx = typeof value === "number" ? value : Number(value);
+		const date = payload?.date as string | undefined;
+		const dateLabel = date
+			? new Date(date).toLocaleDateString("en-US", {
+					month: "short",
+					day: "numeric",
+					year: "numeric",
+				})
+			: "";
+		return dateLabel ? `Game ${idx} · ${dateLabel}` : `Game ${idx}`;
+	};
+
+	const showChart = isAuthenticated && chartData.length >= 2;
+
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
@@ -56,39 +117,23 @@ export function GameResults({
 			</div>
 
 			{/* Performance Chart */}
-			{isAuthenticated && pastGames.length > 0 && (
+			{showChart && (
 				<Card className="p-6">
-					<h3 className="text-xl font-bold mb-4">Recent Games Performance</h3>
-					<ResponsiveContainer width="100%" height={300}>
-						<LineChart
-							data={pastGames.map((game, i) => ({ game: i + 1, ...game }))}
-						>
-							<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-							<XAxis dataKey="game" className="text-xs" />
-							<YAxis className="text-xs" />
-							<Tooltip
-								contentStyle={{
-									backgroundColor: "hsl(var(--card))",
-									border: "2px solid hsl(var(--border))",
-								}}
-							/>
-							<Legend />
-							<Line
-								type="monotone"
-								dataKey="npm"
-								stroke="hsl(var(--primary))"
-								strokeWidth={2}
-								name="NPM"
-							/>
-							<Line
-								type="monotone"
-								dataKey="accuracy"
-								stroke="hsl(var(--accent))"
-								strokeWidth={2}
-								name="Accuracy %"
-							/>
-						</LineChart>
-					</ResponsiveContainer>
+					<div className="mb-4 flex items-baseline justify-between">
+						<h3 className="text-xl font-bold">Recent Games</h3>
+						<span className="text-xs text-muted-foreground">
+							Last {chartData.length} · click legend to toggle
+						</span>
+					</div>
+					<TremoloLineChart
+						data={chartData as unknown as Array<Record<string, unknown>>}
+						series={NPM_SERIES}
+						xKey="index"
+						height={300}
+						xTickFormatter={(value) => `${value}`}
+						tooltipLabelFormatter={formatTooltipLabel}
+						referenceLines={referenceLines}
+					/>
 				</Card>
 			)}
 

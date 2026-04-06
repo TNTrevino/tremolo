@@ -37,7 +37,6 @@ export function NoteGamePage() {
 	const { isAuthenticated, user } = useAuthStore();
 	const { showSuccess, showError } = useToast();
 	const { isPhoneLandscape } = useBreakpoint();
-	const [pastGames, setPastGames] = useState<GameStats[]>([]);
 	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
 	const saveResult = useSaveGameResult();
 	const { data: savedSettings } = useNoteGameSettings();
@@ -54,8 +53,6 @@ export function NoteGamePage() {
 
 	const handleGameEnd = useCallback(
 		(stats: GameStats) => {
-			setPastGames((prev) => [...prev.slice(-9), stats]);
-
 			if (isAuthenticated && user) {
 				const timeInSeconds =
 					stats.gameMode === GameMode.Time
@@ -188,7 +185,6 @@ export function NoteGamePage() {
 				{gameState === GameState.GameOver && gameStats ? (
 					<GameResults
 						gameStats={gameStats}
-						pastGames={pastGames}
 						isAuthenticated={isAuthenticated}
 						onPlayAgain={resetGame}
 					/>
