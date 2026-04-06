@@ -12,6 +12,7 @@ export {
 	useSaveNoteGameSettings,
 	useKeyboardBindings,
 	useSaveKeyboardBindings,
+	useRecentGameEntries,
 	userKeys,
 } from "./useUserQuery";
 

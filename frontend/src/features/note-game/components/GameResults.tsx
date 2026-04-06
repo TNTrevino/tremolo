@@ -11,6 +11,7 @@ import {
 import { useRecentGameEntries } from "@/shared/hooks/queries";
 import type { GameStats } from "../types";
 import { GameMode } from "../types";
+import { useRecentGameEntries } from "@/shared/hooks/queries";
 
 export interface GameResultsProps {
 	gameStats: GameStats;
@@ -50,28 +51,26 @@ export function GameResults({
 	isAuthenticated,
 	onPlayAgain,
 }: GameResultsProps) {
-	const { data: recentEntries } = useRecentGameEntries();
+	const { data: recentEntries, isError: recentEntriesError } =
+		useRecentGameEntries();
 
 	// Backend returns newest-first; reverse to oldest-left, then compute derived fields.
 	const chartData = useMemo<RecentGamePoint[]>(() => {
 		if (!recentEntries || recentEntries.length === 0) return [];
-		return [...recentEntries]
-			.reverse()
-			.map((entry, i) => ({
-				index: i + 1,
-				npm: entry.notes_per_minute,
-				accuracy:
-					entry.total_questions > 0
-						? (entry.correct_questions / entry.total_questions) * 100
-						: 0,
-				date: entry.created_date,
-			}));
+		return [...recentEntries].reverse().map((entry, i) => ({
+			index: i + 1,
+			npm: entry.notes_per_minute,
+			accuracy:
+				entry.total_questions > 0
+					? (entry.correct_questions / entry.total_questions) * 100
+					: 0,
+			date: entry.created_date,
+		}));
 	}, [recentEntries]);
 
 	const referenceLines = useMemo<TremoloReferenceLine[]>(() => {
 		if (chartData.length < 2) return [];
-		const avg =
-			chartData.reduce((sum, p) => sum + p.npm, 0) / chartData.length;
+		const avg = chartData.reduce((sum, p) => sum + p.npm, 0) / chartData.length;
 		return [{ value: avg, label: `avg ${avg.toFixed(1)}` }];
 	}, [chartData]);
 
@@ -117,6 +116,13 @@ export function GameResults({
 			</div>
 
 			{/* Performance Chart */}
+			{isAuthenticated && recentEntriesError && (
+				<Card className="p-6">
+					<p className="text-sm text-muted-foreground text-center">
+						Could not load recent games. Your result was still saved.
+					</p>
+				</Card>
+			)}
 			{showChart && (
 				<Card className="p-6">
 					<div className="mb-4 flex items-baseline justify-between">
