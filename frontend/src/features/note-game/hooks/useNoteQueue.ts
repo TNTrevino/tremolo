@@ -86,7 +86,7 @@ export function useNoteQueue(
 	const pop = useCallback((): NoteGameResponse | null => {
 		const item = queueRef.current.shift() ?? null;
 
-		if (queueRef.current.length < QUEUE_LOW_WATER) {
+		if (item !== null && queueRef.current.length < QUEUE_LOW_WATER) {
 			void hydrate(HYDRATE_BATCH, generationRef.current);
 		}
 
