@@ -1,10 +1,10 @@
 /**
  * Performance Chart Component
  *
- * Displays NPM over time with an optional Accuracy overlay toggle.
- * Keeps the interval selector (day/week/month/year) and teacher view toggle.
- * Session count and total questions are surfaced as KPI cards via DashboardStats
- * rather than being squeezed onto this chart's Y-axis.
+ * Displays NPM, Accuracy, and Total Questions over time. NPM is shown by
+ * default; Accuracy and Total Questions start hidden and can be toggled via
+ * the legend. Includes an interval selector (day/week/month/year) and an
+ * optional teacher view toggle.
  */
 
 import { useMemo } from "react";
