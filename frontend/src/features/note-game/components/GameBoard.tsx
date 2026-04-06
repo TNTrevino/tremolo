@@ -24,7 +24,8 @@ export interface GameBoardProps {
 
 const extractTonic = (scaleStr: string): string => {
 	const tonic = scaleStr.split(" ")[0] ?? "C";
-	// music21 uses "-" for flats (e.g. "B-"), but the UI uses "b" (e.g. "Bb")
+	// The UI uses "b" for flats (e.g. "Bb"), but music21 expects "-" (e.g. "B-").
+	// Convert before sending to the backend.
 	return tonic.replace("b", "-");
 };
 
