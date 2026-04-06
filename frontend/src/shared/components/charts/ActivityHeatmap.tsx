@@ -9,7 +9,7 @@
  * - Hover tooltip shows the date and game count.
  */
 
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { DailyActivityCount } from "@/services/api/types";
 
 /* ------------------------------------------------------------------ */
@@ -181,7 +181,7 @@ export interface ActivityHeatmapProps {
 	data: DailyActivityCount[];
 }
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+export const ActivityHeatmap = memo(function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 	const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
 	const { cells, monthLabels, totalWeeks, quartiles } = useMemo(() => {
@@ -189,6 +189,36 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 		const q = computeQuartiles(grid.cells.map((c) => c.count));
 		return { ...grid, quartiles: q };
 	}, [data]);
+
+	/** Lookup map for event delegation: date string → cell data. */
+	const cellByDate = useMemo(() => {
+		const map = new Map<string, GridCell>();
+		for (const c of cells) map.set(c.date, c);
+		return map;
+	}, [cells]);
+
+	const handleMouseMove = useCallback(
+		(e: React.MouseEvent<SVGSVGElement>) => {
+			const target = e.target as SVGElement;
+			const date = target.getAttribute("data-date");
+			if (!date) {
+				setTooltip(null);
+				return;
+			}
+			const cell = cellByDate.get(date);
+			if (!cell) return;
+			const svgRect = e.currentTarget.getBoundingClientRect();
+			setTooltip({
+				x: e.clientX - svgRect.left,
+				y: e.clientY - svgRect.top - 8,
+				date: cell.date,
+				count: cell.count,
+			});
+		},
+		[cellByDate],
+	);
+
+	const handleMouseLeave = useCallback(() => setTooltip(null), []);
 
 	const svgWidth = LEFT_LABEL_WIDTH + totalWeeks * (CELL_SIZE + CELL_GAP);
 	const svgHeight = TOP_LABEL_HEIGHT + DAYS_IN_WEEK * (CELL_SIZE + CELL_GAP);
@@ -200,6 +230,8 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 				className="block w-full h-auto"
 				role="img"
 				aria-label="Activity heatmap showing games played per day"
+				onMouseMove={handleMouseMove}
+				onMouseLeave={handleMouseLeave}
 			>
 				{/* Month labels */}
 				{monthLabels.map((m) => (
@@ -244,6 +276,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 					return (
 						<rect
 							key={cell.date}
+							data-date={cell.date}
 							x={x}
 							y={y}
 							width={CELL_SIZE}
@@ -252,18 +285,6 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 							ry={CELL_RADIUS}
 							fill={COLOR_LEVELS[level]}
 							className="transition-colors duration-100"
-							onMouseEnter={(e) => {
-								const rect = (
-									e.currentTarget.closest("svg") as SVGSVGElement
-								).getBoundingClientRect();
-								setTooltip({
-									x: e.clientX - rect.left,
-									y: e.clientY - rect.top - 8,
-									date: cell.date,
-									count: cell.count,
-								});
-							}}
-							onMouseLeave={() => setTooltip(null)}
 						/>
 					);
 				})}
@@ -308,4 +329,4 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 			</div>
 		</div>
 	);
-}
+});
