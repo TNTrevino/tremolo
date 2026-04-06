@@ -20,6 +20,7 @@ export function useCurrentUser() {
 
 	return useQuery({
 		queryKey: [...authKeys.currentUser(), token],
+		meta: { errorTitle: "Failed to load account" },
 		queryFn: async (): Promise<User> => {
 			if (!token) {
 				throw new Error("No authentication token found");
@@ -72,6 +73,7 @@ export function useLogout() {
 		mutationFn: async () => {
 			authService.logout();
 		},
+		meta: { errorTitle: "Sign out failed" },
 		onSuccess: () => {
 			useAuthStore.getState().clearAuth();
 			queryClient.clear();

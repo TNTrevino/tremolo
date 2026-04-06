@@ -76,13 +76,13 @@ function QueryProviderWithToast({ children }: { children: React.ReactNode }) {
 				queryCache: new QueryCache({
 					onError: (error, query) => {
 						if (query.meta?.suppressErrorToast) return;
-						showError(getErrorMessage(error), "Something went wrong");
+						showError(getErrorMessage(error), query.meta?.errorTitle ?? "Something went wrong");
 					},
 				}),
 				mutationCache: new MutationCache({
 					onError: (error, _vars, _ctx, mutation) => {
 						if (mutation.meta?.suppressErrorToast) return;
-						showError(getErrorMessage(error), "Something went wrong");
+						showError(getErrorMessage(error), mutation.meta?.errorTitle ?? "Something went wrong");
 					},
 				}),
 				defaultOptions: {

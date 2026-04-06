@@ -18,6 +18,7 @@ export function useFriends() {
 
 	return useQuery<Friend[]>({
 		queryKey: friendsKeys.list(),
+		meta: { errorTitle: "Failed to load friends" },
 		queryFn: () => friendsService.getFriends(),
 		enabled: isAuthenticated,
 		staleTime: 60 * 1000,
@@ -31,8 +32,11 @@ export function useFriends() {
 export function useSearchUsers(query: string) {
 	const trimmed = query.trim();
 
+	// suppressErrorToast: search fires on every keystroke — transient failures
+	// are handled inline in AddFriendView rather than surfaced as a toast.
 	return useQuery<Friend[]>({
 		queryKey: friendsKeys.search(trimmed),
+		meta: { suppressErrorToast: true },
 		queryFn: () => friendsService.searchUsers(trimmed),
 		enabled: trimmed.length > 0,
 		staleTime: 30 * 1000,
@@ -48,6 +52,7 @@ export function useAddFriend() {
 
 	return useMutation({
 		mutationFn: (friendId: number) => friendsService.addFriend(friendId),
+		meta: { errorTitle: "Failed to add friend" },
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: friendsKeys.list() });
 		},

@@ -38,6 +38,7 @@ export function useUserProfile(userId?: number) {
 
 	return useQuery<UserProfile>({
 		queryKey: userKeys.profile(targetId!),
+		meta: { errorTitle: "Failed to load profile" },
 		queryFn: async () => {
 			const raw = await userService.getProfile(targetId!);
 			return mapGeneralUserInfo(raw);
@@ -56,6 +57,7 @@ export function useUserStats(userId?: number, params?: ChartQueryParams) {
 
 	return useQuery<MultiMetricChartData>({
 		queryKey: userKeys.stats(targetId!, params),
+		meta: { errorTitle: "Failed to load statistics" },
 		queryFn: () => userService.getStats(targetId!, params),
 		enabled: !!targetId,
 		staleTime: 2 * 60 * 1000,
@@ -71,6 +73,7 @@ export function useRecentGameEntries() {
 
 	return useQuery<NoteGameEntry[]>({
 		queryKey: userKeys.recentGames(),
+		meta: { errorTitle: "Failed to load recent games" },
 		queryFn: () => userService.getRecentGameEntries(),
 		enabled: !!authUser?.id,
 		staleTime: 60 * 1000,
@@ -85,6 +88,7 @@ export function useActivityHeatmap() {
 
 	return useQuery<DailyActivityCount[]>({
 		queryKey: userKeys.activity(),
+		meta: { errorTitle: "Failed to load activity" },
 		queryFn: () => userService.getActivityHeatmap(),
 		enabled: !!authUser?.id,
 		staleTime: 5 * 60 * 1000,
@@ -100,6 +104,7 @@ export function useClassMetrics(params?: ChartQueryParams) {
 
 	return useQuery<MultiMetricChartData>({
 		queryKey: userKeys.classMetrics(params),
+		meta: { errorTitle: "Failed to load class metrics" },
 		queryFn: () => userService.getClassMetrics(params),
 		enabled: !!authUser?.id && isTeacher,
 		staleTime: 5 * 60 * 1000,
@@ -135,6 +140,7 @@ export function useNoteGameSettings() {
 
 	return useQuery<NoteGameSettingsResponse | null>({
 		queryKey: userKeys.noteGameSettings(),
+		meta: { errorTitle: "Failed to load game settings" },
 		queryFn: () => userService.getNoteGameSettings(),
 		enabled: !!authUser?.id,
 		staleTime: 10 * 60 * 1000,
@@ -146,6 +152,7 @@ export function useSaveNoteGameSettings() {
 
 	return useMutation<NoteGameSettingsResponse, Error, NoteGameSettingsRequest>({
 		mutationFn: (settings) => userService.saveNoteGameSettings(settings),
+		meta: { errorTitle: "Failed to save game settings" },
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: userKeys.noteGameSettings(),
@@ -159,6 +166,7 @@ export function useKeyboardBindings() {
 
 	return useQuery<KeyboardBindingsResponse | null>({
 		queryKey: userKeys.keyboardBindings(),
+		meta: { errorTitle: "Failed to load key bindings" },
 		queryFn: () => userService.getKeyboardBindings(),
 		enabled: !!authUser?.id,
 		staleTime: 10 * 60 * 1000,
@@ -170,6 +178,7 @@ export function useSaveKeyboardBindings() {
 
 	return useMutation<KeyboardBindingsResponse, Error, KeyboardBindingsRequest>({
 		mutationFn: (bindings) => userService.saveKeyboardBindings(bindings),
+		meta: { errorTitle: "Failed to save key bindings" },
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: userKeys.keyboardBindings(),
