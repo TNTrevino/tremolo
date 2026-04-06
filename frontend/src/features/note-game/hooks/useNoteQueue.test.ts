@@ -10,6 +10,11 @@ vi.mock("@/services/api", () => ({
 	},
 }));
 
+const mockShowError = vi.fn();
+vi.mock("@/shared/hooks/useToast", () => ({
+	useToast: () => ({ showError: mockShowError }),
+}));
+
 const mockGenerate = musicService.generateNoteGame as Mock;
 
 function fakeNote(name: string): NoteGameResponse {
@@ -22,6 +27,7 @@ function fakeNote(name: string): NoteGameResponse {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockShowError.mockClear();
 });
 
 describe("useNoteQueue", () => {
@@ -223,5 +229,6 @@ describe("useNoteQueue", () => {
 		});
 
 		expect(second).toBeNull();
+		expect(mockShowError).toHaveBeenCalledTimes(1);
 	});
 });

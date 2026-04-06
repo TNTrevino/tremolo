@@ -44,6 +44,7 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
+	GetDailyActivityCounts(ctx context.Context, arg GetDailyActivityCountsParams) ([]GetDailyActivityCountsRow, error)
 	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
 	// Returns users who have a mutual follow relationship with the given user

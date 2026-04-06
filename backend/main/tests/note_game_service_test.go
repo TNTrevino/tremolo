@@ -353,6 +353,77 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	}
 }
 
+// TestGetDailyActivityCounts tests the GetDailyActivityCounts service function
+func TestGetDailyActivityCounts(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	t.Run("returns empty slice when user has no entries", func(t *testing.T) {
+		t.Parallel()
+
+		email := testutil.UniqueEmail(t, "activity_no_entries")
+		userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+		counts, err := services.GetDailyActivityCounts(context.Background(), database.Queries, userID)
+		require.NoError(t, err)
+		require.NotNil(t, counts, "Expected empty slice, got nil")
+		assert.Empty(t, counts)
+	})
+
+	t.Run("returns correct counts for user entries", func(t *testing.T) {
+		t.Parallel()
+
+		email := testutil.UniqueEmail(t, "activity_correct_counts")
+		userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+		// Insert 2 entries on "today" and 1 entry on "today" as well (all same day since we can't control timestamps)
+		// We create 3 entries total; all will fall on today's date
+		for range 3 {
+			testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
+		}
+
+		counts, err := services.GetDailyActivityCounts(context.Background(), database.Queries, userID)
+		require.NoError(t, err)
+		require.NotEmpty(t, counts, "Expected at least one day with activity")
+
+		// All entries are on the same day, so there should be exactly 1 date entry with count 3
+		assert.Len(t, counts, 1, "Expected exactly 1 day with activity")
+		assert.Equal(t, 3, counts[0].GameCount, "Expected game count of 3 for today")
+	})
+
+	t.Run("only returns entries for the authenticated user", func(t *testing.T) {
+		t.Parallel()
+
+		email1 := testutil.UniqueEmail(t, "activity_isolation_user1")
+		userID1 := testutil.CreateTestUserWithDefaults(t, email1, "STUDENT")
+
+		email2 := testutil.UniqueEmail(t, "activity_isolation_user2")
+		userID2 := testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
+
+		// Create 2 entries for user1
+		for range 2 {
+			testutil.CreateTestNoteGameEntryWithDefaults(t, userID1)
+		}
+
+		// Create 4 entries for user2
+		for range 4 {
+			testutil.CreateTestNoteGameEntryWithDefaults(t, userID2)
+		}
+
+		// Fetch counts for user1 and verify they don't include user2's counts
+		counts1, err := services.GetDailyActivityCounts(context.Background(), database.Queries, userID1)
+		require.NoError(t, err)
+		require.NotEmpty(t, counts1)
+		assert.Equal(t, 2, counts1[0].GameCount, "Expected user1 to have 2 games")
+
+		// Fetch counts for user2 and verify they don't include user1's counts
+		counts2, err := services.GetDailyActivityCounts(context.Background(), database.Queries, userID2)
+		require.NoError(t, err)
+		require.NotEmpty(t, counts2)
+		assert.Equal(t, 4, counts2[0].GameCount, "Expected user2 to have 4 games")
+	})
+}
+
 // TestCreateNoteGameEntry_VerifyStoredData tests that data is correctly stored and retrievable
 func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 	testutil.SetupTestDB(t)

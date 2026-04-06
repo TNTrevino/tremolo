@@ -72,6 +72,40 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 	return int64(entryID), nil
 }
 
+// ActivityHeatmapDays is the number of days of activity data to return (≈1 year).
+const ActivityHeatmapDays = 365
+
+// GetDailyActivityCounts returns per-day game counts for the activity heatmap.
+func GetDailyActivityCounts(ctx context.Context, q generated.Querier, authenticatedUserID int) ([]dtos.DailyActivityCount, error) {
+	rows, err := q.GetDailyActivityCounts(ctx, generated.GetDailyActivityCountsParams{
+		UserID:   int32(authenticatedUserID),
+		DaysBack: ActivityHeatmapDays,
+	})
+	if err != nil {
+		logger.Error("Failed to fetch daily activity counts",
+			"error", err.Error(),
+			"user_id", authenticatedUserID)
+		return nil, err
+	}
+
+	counts := make([]dtos.DailyActivityCount, 0, len(rows))
+	for _, row := range rows {
+		if !row.CreatedDate.Valid {
+			continue
+		}
+		counts = append(counts, dtos.DailyActivityCount{
+			Date:      row.CreatedDate.Time.Format("2006-01-02"),
+			GameCount: int(row.GameCount),
+		})
+	}
+
+	logger.Debug("Daily activity counts fetched successfully",
+		"user_id", authenticatedUserID,
+		"days_with_activity", len(counts))
+
+	return counts, nil
+}
+
 // GetRecentNoteGameEntries retrieves the last 30 note game entries for a user
 func GetRecentNoteGameEntries(ctx context.Context, q generated.Querier, authenticatedUserID int) ([]dtos.NoteGameEntryResponse, error) {
 	rows, err := q.GetRecentEntriesByUserID(ctx, int32(authenticatedUserID))

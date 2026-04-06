@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { musicService } from "@/services/api";
 import type { NoteGameResponse } from "@/services/api/types";
+import { useToast } from "@/shared/hooks/useToast";
 
 const QUEUE_LOW_WATER = 2;
 const HYDRATE_BATCH = 2;
@@ -28,6 +29,10 @@ export function useNoteQueue(
 	const inflightRef = useRef(false);
 	const generationRef = useRef(0);
 	const [isInitializing, setIsInitializing] = useState(true);
+	// showError is referentially stable: it's wrapped in useCallback inside
+	// ToastProvider and only depends on showToast (which itself has zero deps).
+	// Safe to include directly in dependency arrays without causing re-renders.
+	const { showError } = useToast();
 
 	const hydrate = useCallback(
 		async (count: number, generation: number) => {
@@ -42,16 +47,24 @@ export function useNoteQueue(
 
 				if (generation !== generationRef.current) return;
 
+				let anyFailed = false;
 				for (const result of results) {
 					if (result.status === "fulfilled") {
 						queueRef.current.push(result.value);
+					} else {
+						anyFailed = true;
+						console.error("[useNoteQueue] Note fetch failed:", result.reason);
 					}
+				}
+
+				if (anyFailed) {
+					showError("Failed to load note. Please try again.");
 				}
 			} finally {
 				inflightRef.current = false;
 			}
 		},
-		[scale, octave],
+		[scale, octave, showError],
 	);
 
 	useEffect(() => {
@@ -64,19 +77,27 @@ export function useNoteQueue(
 
 		let cancelled = false;
 
-		hydrate(HYDRATE_BATCH, generation).then(() => {
-			if (!cancelled) setIsInitializing(false);
-		});
+		hydrate(HYDRATE_BATCH, generation)
+			.then(() => {
+				if (!cancelled) setIsInitializing(false);
+			})
+			.catch((err) => {
+				if (!cancelled) {
+					setIsInitializing(false);
+					showError("Failed to initialize note queue. Please refresh.");
+					console.error("[useNoteQueue] Initial hydration failed", err);
+				}
+			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [isReady, hydrate]);
+	}, [isReady, hydrate, showError]);
 
 	const pop = useCallback((): NoteGameResponse | null => {
 		const item = queueRef.current.shift() ?? null;
 
-		if (queueRef.current.length < QUEUE_LOW_WATER) {
+		if (item !== null && queueRef.current.length < QUEUE_LOW_WATER) {
 			void hydrate(HYDRATE_BATCH, generationRef.current);
 		}
 

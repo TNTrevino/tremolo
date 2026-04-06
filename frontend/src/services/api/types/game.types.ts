@@ -90,3 +90,8 @@ export interface KeyboardBindingsResponse {
 export interface KeyboardBindingsRequest {
 	key_bindings: KeyBindings;
 }
+
+export interface DailyActivityCount {
+	date: string; // "YYYY-MM-DD"
+	game_count: number;
+}

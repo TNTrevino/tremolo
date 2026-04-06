@@ -9,6 +9,21 @@ import (
 	"sight-reading/logger"
 )
 
+// DEFAULT_KEYBOARD_BINDINGS defines the standard QWERTY layout for the note game.
+// Naturals (home row): a,s,d,f,g,h,j  Sharps (top row): q,w,e,r,t,y,u  Flats (bottom row): z,x,c,v,b,n,m
+var DEFAULT_KEYBOARD_BINDINGS = dtos.KeyBindings{
+	KeyC: "a", KeyD: "s", KeyE: "d", KeyF: "f", KeyG: "g", KeyA: "h", KeyB: "j",
+	KeyCSharp: "q", KeyDSharp: "w", KeyESharp: "e", KeyFSharp: "r", KeyGSharp: "t", KeyASharp: "y", KeyBSharp: "u",
+	KeyCFlat: "z", KeyDFlat: "x", KeyEFlat: "c", KeyFFlat: "v", KeyGFlat: "b", KeyAFlat: "n", KeyBFlat: "m",
+}
+
+// CreateDefaultKeyboardBindings seeds a new user with the standard QWERTY key layout.
+func CreateDefaultKeyboardBindings(ctx context.Context, q generated.Querier, userID int) error {
+	req := &dtos.KeyboardBindingsRequest{KeyBindings: DEFAULT_KEYBOARD_BINDINGS}
+	_, err := UpsertKeyboardBindings(ctx, q, userID, req)
+	return err
+}
+
 func GetKeyboardBindings(ctx context.Context, q generated.Querier, userID int) (*dtos.KeyboardBindingsResponse, error) {
 	row, err := q.GetKeyboardBindings(ctx, int32(userID))
 	if err != nil {

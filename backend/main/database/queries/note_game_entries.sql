@@ -83,6 +83,16 @@ where ts.teacher_id = @teacher_id
   and nge.created_date >= current_date - interval '1 day' * @days_back
 order by nge.created_date, nge.created_time asc;
 
+-- name: GetDailyActivityCounts :many
+select
+    created_date,
+    count(*)::int as game_count
+from tremolo.note_game_entries
+where user_id = @user_id
+  and created_date >= current_date - interval '1 day' * @days_back
+group by created_date
+order by created_date asc;
+
 -- name: DeleteNoteGameEntryByID :exec
 delete from tremolo.note_game_entries
 where id = $1;

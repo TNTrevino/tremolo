@@ -4,7 +4,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useSearchUsers, useAddFriend } from "@/shared/hooks/queries";
 import { useDebounce } from "@/shared/hooks/useDebounce";
-import { logger } from "@/lib/logger";
 import { FriendCard } from "./FriendCard";
 
 const DEBOUNCE_MS = 120;
@@ -19,8 +18,11 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 	const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const { data: results = [], isLoading: isSearching } =
-		useSearchUsers(debouncedQuery);
+	const {
+		data: results = [],
+		isLoading: isSearching,
+		isError: searchFailed,
+	} = useSearchUsers(debouncedQuery);
 
 	const addFriend = useAddFriend();
 
@@ -32,9 +34,6 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		addFriend.mutate(friendId, {
 			onSuccess: () => {
 				setAddedIds((prev) => new Set(prev).add(friendId));
-			},
-			onError: (err) => {
-				logger.error("Failed to add friend", err);
 			},
 		});
 	};
@@ -67,7 +66,23 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 			</div>
 
 			<div className="flex-1 overflow-y-auto p-2">
-				{results.length > 0 ? (
+				{searchFailed ? (
+					<div className="flex flex-col items-center justify-center h-32 gap-1">
+						<p className="text-sm text-destructive text-center py-4">
+							Search failed. Check your connection and try again.
+						</p>
+					</div>
+				) : isSearching ? (
+					<div className="flex items-center justify-center h-32">
+						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+					</div>
+				) : results.length === 0 && debouncedQuery ? (
+					<div className="flex flex-col items-center justify-center h-32 gap-1">
+						<p className="text-sm font-medium text-muted-foreground">
+							No users found
+						</p>
+					</div>
+				) : results.length > 0 ? (
 					results.map((user) => (
 						<FriendCard
 							key={user.id}
@@ -83,16 +98,6 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 							}
 						/>
 					))
-				) : isSearching ? (
-					<div className="flex items-center justify-center h-32">
-						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					</div>
-				) : query.trim() ? (
-					<div className="flex flex-col items-center justify-center h-32 gap-1">
-						<p className="text-sm font-medium text-muted-foreground">
-							No users found
-						</p>
-					</div>
 				) : (
 					<div className="flex flex-col items-center justify-center h-32 gap-1">
 						<p className="text-sm font-medium text-muted-foreground">

@@ -31,6 +31,7 @@ func SetupTestDB(t *testing.T) {
 			setupErr = fmt.Errorf("DATABASE_URL environment variable not set")
 			return
 		}
+		initTestLogger()
 		database.InitializeDBConnection()
 	})
 
@@ -87,6 +88,10 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
+	if err := services.CreateDefaultKeyboardBindings(context.Background(), database.Queries, int(createdUser.ID)); err != nil {
+		t.Logf("Warning: failed to seed default keyboard bindings for test user %d: %v", createdUser.ID, err)
+	}
+
 	// Register cleanup to delete the user after the test
 	t.Cleanup(func() {
 		DeleteTestUser(t, int(createdUser.ID))
@@ -120,6 +125,12 @@ func DeleteTestUser(t *testing.T, userID int) {
 	err := database.Queries.DeleteNoteGameEntriesByUserID(ctx, int32(userID))
 	if err != nil {
 		t.Logf("Warning: Failed to delete note game entries for user %d: %v", userID, err)
+	}
+
+	// Delete keyboard bindings
+	err = database.Queries.DeleteKeyboardBindings(ctx, int32(userID))
+	if err != nil {
+		t.Logf("Warning: Failed to delete keyboard bindings for user %d: %v", userID, err)
 	}
 
 	// Delete teacher-student associations where user is teacher

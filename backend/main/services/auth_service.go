@@ -275,6 +275,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	if err := CreateDefaultKeyboardBindings(ctx, database.Queries, int(createdUser.ID)); err != nil {
+		logger.Error("Failed to seed default keyboard bindings for new user",
+			"error", err.Error(),
+			"user_id", createdUser.ID)
+	}
+
 	response := dtos.RegisterResponse{
 		Message: "User created successfully",
 		User:    convertCreateUserRowToUserResponse(createdUser, reqBody.Role),

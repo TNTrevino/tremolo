@@ -1,7 +1,12 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/lib/query-client";
+import {
+	QueryClient,
+	QueryClientProvider,
+	QueryCache,
+	MutationCache,
+} from "@tanstack/react-query";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
@@ -56,6 +61,49 @@ const PageLoader = () => (
 function ToastContainerWrapper() {
 	const { toasts, removeToast } = useToast();
 	return <ToastContainer toasts={toasts} onClose={removeToast} />;
+}
+
+/**
+ * Creates the QueryClient with global error toasting via cache-level handlers.
+ * Must be rendered inside ToastProvider so it can access useToast.
+ */
+function QueryProviderWithToast({ children }: { children: React.ReactNode }) {
+	const { showError } = useToast();
+
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				queryCache: new QueryCache({
+					onError: (error, query) => {
+						if (query.meta?.suppressErrorToast) return;
+						showError(
+							getErrorMessage(error),
+							query.meta?.errorTitle ?? "Something went wrong",
+						);
+					},
+				}),
+				mutationCache: new MutationCache({
+					onError: (error, _vars, _ctx, mutation) => {
+						if (mutation.meta?.suppressErrorToast) return;
+						showError(
+							getErrorMessage(error),
+							mutation.meta?.errorTitle ?? "Something went wrong",
+						);
+					},
+				}),
+				defaultOptions: {
+					queries: {
+						staleTime: 60 * 1000,
+						refetchOnWindowFocus: false,
+						retry: 1,
+					},
+				},
+			}),
+	);
+
+	return (
+		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+	);
 }
 
 function AppContent() {
@@ -114,13 +162,13 @@ function AppContent() {
 function App() {
 	return (
 		<ErrorBoundary>
-			<QueryClientProvider client={queryClient}>
-				<ToastProvider>
+			<ToastProvider>
+				<QueryProviderWithToast>
 					<BrowserRouter>
 						<AppContent />
 					</BrowserRouter>
-				</ToastProvider>
-			</QueryClientProvider>
+				</QueryProviderWithToast>
+			</ToastProvider>
 		</ErrorBoundary>
 	);
 }

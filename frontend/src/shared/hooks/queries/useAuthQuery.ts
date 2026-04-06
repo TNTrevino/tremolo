@@ -20,6 +20,7 @@ export function useCurrentUser() {
 
 	return useQuery({
 		queryKey: [...authKeys.currentUser(), token],
+		meta: { errorTitle: "Failed to load account" },
 		queryFn: async (): Promise<User> => {
 			if (!token) {
 				throw new Error("No authentication token found");
@@ -41,6 +42,7 @@ export function useLogin() {
 
 	return useMutation({
 		mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+		meta: { suppressErrorToast: true },
 		onSuccess: (response) => {
 			useAuthStore.getState().setAuthFromLoginResponse(response);
 			const user = mapApiUserToUser(response.user);
@@ -56,6 +58,7 @@ export function useLogin() {
 export function useRegister() {
 	return useMutation({
 		mutationFn: (userData: RegisterRequest) => authService.register(userData),
+		meta: { suppressErrorToast: true },
 	});
 }
 
@@ -68,8 +71,9 @@ export function useLogout() {
 
 	return useMutation({
 		mutationFn: async () => {
-			authService.logout();
+			await authService.logout();
 		},
+		meta: { errorTitle: "Sign out failed" },
 		onSuccess: () => {
 			useAuthStore.getState().clearAuth();
 			queryClient.clear();

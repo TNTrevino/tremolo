@@ -14,6 +14,7 @@ import type {
 export function useGenerateMary() {
 	return useMutation({
 		mutationFn: (request: MaryRequest) => musicService.generateMary(request),
+		meta: { errorTitle: "Failed to generate sheet music" },
 	});
 }
 
@@ -25,6 +26,7 @@ export function useGenerateRandom() {
 	return useMutation({
 		mutationFn: (request: RandomNotesRequest) =>
 			musicService.generateRandom(request),
+		meta: { errorTitle: "Failed to generate sheet music" },
 	});
 }
 
@@ -36,5 +38,6 @@ export function useGenerateNoteGame() {
 	return useMutation({
 		mutationFn: (request: NoteGameRequest): Promise<NoteGameResponse> =>
 			musicService.generateNoteGame(request),
+		meta: { errorTitle: "Failed to generate note" },
 	});
 }

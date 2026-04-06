@@ -5,6 +5,8 @@ export { useLogin, useRegister, useLogout, authKeys } from "./useAuthQuery";
 export {
 	useUserProfile,
 	useUserStats,
+	useRecentGameEntries,
+	useActivityHeatmap,
 	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
