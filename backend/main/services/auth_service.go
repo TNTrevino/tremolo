@@ -276,7 +276,7 @@ func Register(c *gin.Context) {
 	}
 
 	if err := CreateDefaultKeyboardBindings(ctx, database.Queries, int(createdUser.ID)); err != nil {
-		logger.Warn("Failed to seed default keyboard bindings for new user",
+		logger.Error("Failed to seed default keyboard bindings for new user",
 			"error", err.Error(),
 			"user_id", createdUser.ID)
 	}
