@@ -12,6 +12,7 @@ import type {
 	NoteGameSettingsRequest,
 	KeyboardBindingsResponse,
 	KeyboardBindingsRequest,
+	NoteGameEntry,
 } from "@/services/api/types";
 
 export const userKeys = {
@@ -56,6 +57,21 @@ export function useUserStats(userId?: number, params?: ChartQueryParams) {
 		queryFn: () => userService.getStats(targetId!, params),
 		enabled: !!targetId,
 		staleTime: 2 * 60 * 1000,
+	});
+}
+
+/**
+ * Fetch the authenticated user's most recent note-game entries (up to 30).
+ * Returns newest-first; callers should reverse if they need oldest-first.
+ */
+export function useRecentGameEntries() {
+	const authUser = useAuthStore((state) => state.user);
+
+	return useQuery<NoteGameEntry[]>({
+		queryKey: userKeys.recentGames(),
+		queryFn: () => userService.getRecentGameEntries(),
+		enabled: !!authUser?.id,
+		staleTime: 60 * 1000,
 	});
 }
 
