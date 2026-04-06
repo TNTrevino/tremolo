@@ -23,8 +23,13 @@ export interface GameBoardProps {
 }
 
 const extractTonic = (scaleStr: string): string => {
-	return scaleStr.split(" ")[0] ?? "C";
+	const tonic = scaleStr.split(" ")[0] ?? "C";
+	// music21 uses "-" for flats (e.g. "B-"), but the UI uses "b" (e.g. "Bb")
+	return tonic.replace("b", "-");
 };
+
+/** Convert music21 flat notation ("-") back to UI notation ("b"). */
+const fromMusic21NoteName = (name: string): string => name.replace("-", "b");
 
 interface NoteDisplayProps {
 	currentNote: string;
@@ -196,13 +201,13 @@ function useGameBoardCore({
 				await loadNote(note.generatedXml);
 				if (!cancelled) {
 					setLoadError(false);
-					onNoteGenerated(note.noteName);
+					onNoteGenerated(fromMusic21NoteName(note.noteName));
 				}
 			} catch (err) {
 				if (!cancelled) {
 					logger.error("Failed to render note in OSMD", err);
 					setLoadError(true);
-					onNoteGenerated(note.noteName);
+					onNoteGenerated(fromMusic21NoteName(note.noteName));
 				}
 			}
 		};
