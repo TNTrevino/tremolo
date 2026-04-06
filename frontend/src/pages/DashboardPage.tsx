@@ -15,6 +15,7 @@
 import { useState } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useDashboardData } from "@/features/dashboard/hooks";
+import { useActivityHeatmap } from "@/shared/hooks/queries";
 import {
 	DashboardStats,
 	PerformanceChart,
@@ -22,7 +23,8 @@ import {
 	UserProfileCard,
 	DashboardSkeleton,
 } from "@/features/dashboard/components";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { ActivityHeatmap } from "@/shared/components/charts/ActivityHeatmap";
 import type { ChartInterval } from "@/services/api/types";
 
 /**
@@ -52,6 +54,8 @@ export function DashboardPage() {
 			interval,
 			days: interval === "day" ? 30 : undefined,
 		});
+
+	const { data: activityData } = useActivityHeatmap();
 
 	// Show loading skeleton
 	if (isLoading) {
@@ -111,6 +115,18 @@ export function DashboardPage() {
 					viewMode={viewMode}
 					onViewModeChange={setViewMode}
 				/>
+
+				{/* Activity Heatmap */}
+				{activityData && (
+					<Card className="shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-2xl">Activity</CardTitle>
+						</CardHeader>
+						<CardContent className="overflow-x-auto">
+							<ActivityHeatmap data={activityData} />
+						</CardContent>
+					</Card>
+				)}
 
 				{/* Stats Grid */}
 				<DashboardStats
