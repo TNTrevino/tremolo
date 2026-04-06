@@ -1,6 +1,6 @@
 /**
  * Shared line chart wrapper that encodes the Tremolo house style:
- * - No resting dots, crosshair cursor on hover, formatted tooltip
+ * - Small resting dots, crosshair cursor on hover, formatted tooltip
  * - Soft horizontal-only grid, clean axes
  * - Interactive legend (click to toggle series visibility)
  * - Optional average reference line and personal-best highlight
