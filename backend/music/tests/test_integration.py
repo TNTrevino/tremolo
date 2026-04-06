@@ -7,19 +7,19 @@ class TestAllEndpointsAccessible:
 
     def test_mary_endpoint_accessible(self, client):
         """Verify /mary endpoint exists and accepts requests"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code != 404
 
     def test_random_endpoint_accessible(self, client):
         """Verify /random endpoint exists and accepts requests"""
         response = client.post(
-            "/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
         )
         assert response.status_code != 404
 
     def test_note_game_endpoint_accessible(self, client):
         """Verify /note-game endpoint exists and accepts requests"""
-        response = client.post("/note-game", json={"scale": "C", "octave": "4"})
+        response = client.post("/music/note-game", json={"scale": "C", "octave": "4"})
         assert response.status_code != 404
 
 
@@ -30,9 +30,9 @@ class TestEndpointErrorConsistency:
     def test_all_endpoints_handle_empty_payload(self, client):
         """All endpoints should handle empty payload gracefully"""
         endpoints = [
-            ("/mary", 422),
-            ("/random", 422),
-            ("/note-game", 422),
+            ("/music/mary", 422),
+            ("/music/random", 422),
+            ("/music/note-game", 422),
         ]
 
         for endpoint, expected_status in endpoints:
@@ -44,9 +44,9 @@ class TestEndpointErrorConsistency:
     def test_all_endpoints_return_errors_not_500(self, client):
         """All endpoints should return 400/422, not 500 for bad input"""
         test_cases = [
-            ("/mary", {"tonic": "INVALID", "octave": 4}),
-            ("/random", {"rhythm": "INVALID", "rhythmType": 16, "tonic": "C"}),
-            ("/note-game", {"scale": "INVALID", "octave": "4"}),
+            ("/music/mary", {"tonic": "INVALID", "octave": 4}),
+            ("/music/random", {"rhythm": "INVALID", "rhythmType": 16, "tonic": "C"}),
+            ("/music/note-game", {"scale": "INVALID", "octave": "4"}),
         ]
 
         for endpoint, payload in test_cases:
@@ -64,14 +64,14 @@ class TestMultipleRequestsHandling:
     def test_mary_multiple_sequential_requests(self, client):
         """Multiple sequential requests to /mary should all succeed"""
         for i in range(5):
-            response = client.post("/mary", json={"tonic": "C", "octave": 4})
+            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
             assert response.status_code == 200, f"Request {i} failed"
 
     def test_random_multiple_sequential_requests(self, client):
         """Multiple sequential requests to /random should all succeed"""
         for i in range(5):
             response = client.post(
-                "/random",
+                "/music/random",
                 json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
             )
             assert response.status_code == 200, f"Request {i} failed"
@@ -80,24 +80,24 @@ class TestMultipleRequestsHandling:
         """Multiple sequential requests to /note-game should all succeed"""
         for i in range(5):
             response = client.post(
-                "/note-game", json={"scale": "C", "octave": "4"}
+                "/music/note-game", json={"scale": "C", "octave": "4"}
             )
             assert response.status_code == 200, f"Request {i} failed"
 
     def test_mixed_endpoint_requests(self, client):
         """Should be able to call different endpoints in sequence"""
         payloads = [
-            ("post", "/mary", {"tonic": "C", "octave": 4}),
+            ("post", "/music/mary", {"tonic": "C", "octave": 4}),
             (
                 "post",
-                "/random",
+                "/music/random",
                 {"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
             ),
-            ("post", "/note-game", {"scale": "C", "octave": "4"}),
-            ("post", "/mary", {"tonic": "G", "octave": 5}),
+            ("post", "/music/note-game", {"scale": "C", "octave": "4"}),
+            ("post", "/music/mary", {"tonic": "G", "octave": 5}),
             (
                 "post",
-                "/random",
+                "/music/random",
                 {"rhythm": "11", "rhythmType": 8, "tonic": "G"},
             ),
         ]
@@ -116,7 +116,7 @@ class TestResponseConsistency:
     def test_mary_consistent_response_format(self, client):
         """Multiple /mary calls should have consistent response format"""
         for _ in range(3):
-            response = client.post("/mary", json={"tonic": "C", "octave": 4})
+            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
             assert response.status_code == 200
             assert response.headers["content-type"] == "application/xml"
             assert isinstance(response.content, bytes)
@@ -125,7 +125,7 @@ class TestResponseConsistency:
         """Multiple /random calls should have consistent response format"""
         for _ in range(3):
             response = client.post(
-                "/random",
+                "/music/random",
                 json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
             )
             assert response.status_code == 200
@@ -136,7 +136,7 @@ class TestResponseConsistency:
         """Multiple /note-game calls should have consistent response format"""
         for _ in range(3):
             response = client.post(
-                "/note-game", json={"scale": "C", "octave": "4"}
+                "/music/note-game", json={"scale": "C", "octave": "4"}
             )
             assert response.status_code == 200
             assert "application/json" in response.headers["content-type"]
@@ -154,17 +154,17 @@ class TestEndpointIndependence:
     def test_endpoint_calls_dont_affect_next_call(self, client):
         """Calling one endpoint shouldn't affect results from another"""
         # Call /mary
-        response1 = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response1 = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response1.status_code == 200
 
         # Call /random
         response2 = client.post(
-            "/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
+            "/music/random", json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"}
         )
         assert response2.status_code == 200
 
         # Call /mary again with different input
-        response3 = client.post("/mary", json={"tonic": "G", "octave": 5})
+        response3 = client.post("/music/mary", json={"tonic": "G", "octave": 5})
         assert response3.status_code == 200
 
         # First and third responses should be different (different input)
@@ -179,7 +179,7 @@ class TestConcurrentLikeRequests:
         """Rapid sequential requests to /mary"""
         responses = []
         for _ in range(10):
-            response = client.post("/mary", json={"tonic": "C", "octave": 4})
+            response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
             assert response.status_code == 200
             responses.append(response)
 
@@ -191,7 +191,7 @@ class TestConcurrentLikeRequests:
         responses = []
         for _ in range(10):
             response = client.post(
-                "/random",
+                "/music/random",
                 json={"rhythm": "1111", "rhythmType": 16, "tonic": "C"},
             )
             assert response.status_code == 200
@@ -205,7 +205,7 @@ class TestConcurrentLikeRequests:
         responses = []
         for _ in range(10):
             response = client.post(
-                "/note-game", json={"scale": "C", "octave": "4"}
+                "/music/note-game", json={"scale": "C", "octave": "4"}
             )
             assert response.status_code == 200
             responses.append(response)
