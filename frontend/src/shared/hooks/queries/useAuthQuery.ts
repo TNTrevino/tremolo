@@ -71,7 +71,7 @@ export function useLogout() {
 
 	return useMutation({
 		mutationFn: async () => {
-			authService.logout();
+			await authService.logout();
 		},
 		meta: { errorTitle: "Sign out failed" },
 		onSuccess: () => {
