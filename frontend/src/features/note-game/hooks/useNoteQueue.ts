@@ -29,6 +29,9 @@ export function useNoteQueue(
 	const inflightRef = useRef(false);
 	const generationRef = useRef(0);
 	const [isInitializing, setIsInitializing] = useState(true);
+	// showError is referentially stable: it's wrapped in useCallback inside
+	// ToastProvider and only depends on showToast (which itself has zero deps).
+	// Safe to include directly in dependency arrays without causing re-renders.
 	const { showError } = useToast();
 
 	const hydrate = useCallback(
