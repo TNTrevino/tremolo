@@ -53,7 +53,7 @@ select
     total_questions
 from tremolo.note_game_entries
 where user_id = @user_id
-  and created_date >= current_date - interval '1 day' * @days_back
+  and created_date >= current_date - interval '1 day' * @days_back::int
 order by created_date, created_time asc;
 
 -- Teacher aggregate queries (joining with teacher_student table)
@@ -80,7 +80,7 @@ select
 from tremolo.note_game_entries nge
 inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
 where ts.teacher_id = @teacher_id
-  and nge.created_date >= current_date - interval '1 day' * @days_back
+  and nge.created_date >= current_date - interval '1 day' * @days_back::int
 order by nge.created_date, nge.created_time asc;
 
 -- name: GetDailyActivityCounts :many
@@ -89,7 +89,7 @@ select
     count(*)::int as game_count
 from tremolo.note_game_entries
 where user_id = @user_id
-  and created_date >= current_date - interval '1 day' * @days_back
+  and created_date >= current_date - interval '1 day' * @days_back::int
 group by created_date
 order by created_date asc;
 
