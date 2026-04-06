@@ -15,7 +15,7 @@ func GenerateData() {
 	log.Println("Generating data...")
 	log.Println(strings.Repeat("------------------------------", 2))
 
-	fmt.Println(insertFakeSchools())
+	log.Println(insertFakeSchools())
 
 	// 20 teachers, each with 20 students
 	teacherIDs, studentIDs := insertMultipleTeachersWithStudents(20, 20)
