@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { musicService } from "@/services/api";
 import type { NoteGameResponse } from "@/services/api/types";
+import { useToast } from "@/shared/hooks/useToast";
 
 const QUEUE_LOW_WATER = 2;
 const HYDRATE_BATCH = 2;
@@ -29,6 +30,8 @@ export function useNoteQueue(
 	const generationRef = useRef(0);
 	const [isInitializing, setIsInitializing] = useState(true);
 
+	const { showError } = useToast();
+
 	const hydrate = useCallback(
 		async (count: number, generation: number) => {
 			if (inflightRef.current) return;
@@ -42,16 +45,23 @@ export function useNoteQueue(
 
 				if (generation !== generationRef.current) return;
 
+				let anyFailed = false;
 				for (const result of results) {
 					if (result.status === "fulfilled") {
 						queueRef.current.push(result.value);
+					} else {
+						anyFailed = true;
 					}
+				}
+
+				if (anyFailed) {
+					showError("Failed to load note. Please try again.");
 				}
 			} finally {
 				inflightRef.current = false;
 			}
 		},
-		[scale, octave],
+		[scale, octave, showError],
 	);
 
 	useEffect(() => {
