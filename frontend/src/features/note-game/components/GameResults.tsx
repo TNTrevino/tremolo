@@ -26,7 +26,9 @@ interface RecentGamePoint {
 	date: string;
 }
 
-const NPM_SERIES: TremoloSeries[] = [
+const NPM_SERIES: Array<
+	TremoloSeries & { key: keyof RecentGamePoint & string }
+> = [
 	{
 		key: "npm",
 		name: "NPM",

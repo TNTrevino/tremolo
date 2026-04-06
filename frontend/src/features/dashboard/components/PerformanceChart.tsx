@@ -68,7 +68,9 @@ function transformChartData(data: MultiMetricChartData): PerformancePoint[] {
 	return combined;
 }
 
-const ALL_SERIES: TremoloSeries[] = [
+const ALL_SERIES: Array<
+	TremoloSeries & { key: keyof PerformancePoint & string }
+> = [
 	{
 		key: "npm",
 		name: "Notes Per Minute",
@@ -90,7 +92,10 @@ const ALL_SERIES: TremoloSeries[] = [
 ];
 
 /** Series keys that are hidden until the user clicks them in the legend */
-const INITIALLY_HIDDEN = ["accuracy", "questions"];
+const INITIALLY_HIDDEN: Array<keyof PerformancePoint & string> = [
+	"accuracy",
+	"questions",
+];
 
 function formatXAxisLabel(timestamp: unknown, interval: ChartInterval): string {
 	if (typeof timestamp !== "string" || !timestamp) return "";

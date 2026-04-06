@@ -46,12 +46,11 @@ export interface TremoloReferenceLine {
 	color?: string;
 }
 
-export interface TremoloLineChartProps {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	data: Array<Record<string, any>>;
-	series: TremoloSeries[];
+export interface TremoloLineChartProps<T extends object> {
+	data: T[];
+	series: Array<TremoloSeries & { key: keyof T & string }>;
 	/** Field in each data point used for the X axis */
-	xKey: string;
+	xKey: keyof T & string;
 	/** Height in pixels; defaults to 320 */
 	height?: number;
 	/** Formats raw X values to tick labels */
@@ -66,7 +65,7 @@ export interface TremoloLineChartProps {
 	/** Whether to render the legend row; defaults to true */
 	showLegend?: boolean;
 	/** Series keys that start hidden (user can click legend to enable) */
-	initialHiddenSeries?: string[];
+	initialHiddenSeries?: Array<keyof T & string>;
 }
 
 /**
@@ -80,7 +79,9 @@ function TremoloTooltip({
 	tooltipLabelFormatter,
 }: TooltipProps<number, string> & {
 	series: TremoloSeries[];
-	tooltipLabelFormatter?: TremoloLineChartProps["tooltipLabelFormatter"];
+	tooltipLabelFormatter?: TremoloLineChartProps<
+		Record<string, unknown>
+	>["tooltipLabelFormatter"];
 }) {
 	if (!active || !payload || payload.length === 0) {
 		return null;
@@ -154,7 +155,7 @@ function PBDot(props: {
 	);
 }
 
-export function TremoloLineChart({
+export function TremoloLineChart<T extends object>({
 	data,
 	series,
 	xKey,
@@ -164,7 +165,7 @@ export function TremoloLineChart({
 	referenceLines,
 	showLegend = true,
 	initialHiddenSeries,
-}: TremoloLineChartProps) {
+}: TremoloLineChartProps<T>) {
 	const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(
 		() => new Set(initialHiddenSeries ?? []),
 	);
