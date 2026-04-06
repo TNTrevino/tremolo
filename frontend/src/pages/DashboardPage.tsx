@@ -24,7 +24,7 @@ import {
 	DashboardSkeleton,
 } from "@/features/dashboard/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { ActivityHeatmap } from "@/shared/components/charts/ActivityHeatmap";
+import { ActivityHeatmap } from "@/shared/components/charts";
 import type { ChartInterval } from "@/services/api/types";
 
 /**

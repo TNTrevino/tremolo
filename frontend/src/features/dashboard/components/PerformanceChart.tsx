@@ -16,11 +16,11 @@ import {
 } from "@/shared/components/ui/card";
 import { Select } from "@/shared/components/ui/select";
 import { Button } from "@/shared/components/ui/button";
-import { TremoloLineChart } from "@/shared/components/charts/TremoloLineChart";
-import type {
-	TremoloSeries,
-	TremoloReferenceLine,
-} from "@/shared/components/charts/TremoloLineChart";
+import {
+	TremoloLineChart,
+	type TremoloSeries,
+	type TremoloReferenceLine,
+} from "@/shared/components/charts";
 import type { MultiMetricChartData, ChartInterval } from "@/services/api/types";
 
 interface PerformanceChartProps {

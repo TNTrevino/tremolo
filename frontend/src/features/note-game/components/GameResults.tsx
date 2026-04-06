@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
-import { TremoloLineChart } from "@/shared/components/charts/TremoloLineChart";
-import type {
-	TremoloSeries,
-	TremoloReferenceLine,
-} from "@/shared/components/charts/TremoloLineChart";
+import {
+	TremoloLineChart,
+	type TremoloSeries,
+	type TremoloReferenceLine,
+} from "@/shared/components/charts";
 import { useRecentGameEntries } from "@/shared/hooks/queries";
 import type { GameStats } from "../types";
 import { GameMode } from "../types";
