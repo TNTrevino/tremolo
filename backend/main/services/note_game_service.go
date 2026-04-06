@@ -99,7 +99,7 @@ func GetDailyActivityCounts(ctx context.Context, q generated.Querier, authentica
 		})
 	}
 
-	logger.Info("Daily activity counts fetched successfully",
+	logger.Debug("Daily activity counts fetched successfully",
 		"user_id", authenticatedUserID,
 		"days_with_activity", len(counts))
 
