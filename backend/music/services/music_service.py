@@ -69,7 +69,7 @@ class MusicService:
         elif note_type == 8:
             stream = self._build_rhythm(variant, tone, self.EIGHTH_DURATIONS)
         else:
-            raise Exception("this rhythm is not supported")
+            raise ValueError("this rhythm is not supported")
 
         return self.stream_to_xml_bytes(stream)
 

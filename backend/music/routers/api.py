@@ -1,10 +1,15 @@
+import logging
+
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response, JSONResponse
 from music21 import note as m21note
+from music21.exceptions21 import Music21Exception
 
 from models import MaryInput, RandomInput, NoteGameInput
 from services.deps import get_music_service
 from services.music_service import MusicService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -52,10 +57,16 @@ async def get_mary_had(
     """
     try:
         music = service.get_mary_had(payload.tonic, payload.octave)
-    except Exception as e:
+    except (ValueError, KeyError, Music21Exception) as e:
         return Response(
             content=f"The note {e} is not currently supported, reconsider you root note",
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception:
+        logger.exception("Unexpected error in /mary")
+        return Response(
+            content="Internal server error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     return Response(content=music, media_type="application/xml")
@@ -102,11 +113,16 @@ async def get_random_notes(
         music = service.get_random_notes(
             payload.rhythmType, payload.rhythm, payload.tonic
         )
-    except Exception as e:
-        e = str(e)
+    except (ValueError, KeyError, Music21Exception) as e:
         return Response(
             content=f"something is not right!{e}",
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception:
+        logger.exception("Unexpected error in /random")
+        return Response(
+            content="Internal server error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     return Response(content=music, media_type="application/xml")
@@ -152,11 +168,16 @@ async def get_note_game(
     """
     try:
         music, note_name = service.get_note_game(payload.scale, payload.octave)
-    except Exception as e:
-        e = str(e)
+    except (ValueError, KeyError, Music21Exception) as e:
         return JSONResponse(
             content=f"something is not right!{e}",
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception:
+        logger.exception("Unexpected error in /note-game")
+        return JSONResponse(
+            content="Internal server error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     response = {
