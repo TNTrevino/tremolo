@@ -31,6 +31,7 @@ func SetupTestDB(t *testing.T) {
 			setupErr = fmt.Errorf("DATABASE_URL environment variable not set")
 			return
 		}
+		initTestLogger()
 		database.InitializeDBConnection()
 	})
 
