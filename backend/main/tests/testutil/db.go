@@ -127,6 +127,12 @@ func DeleteTestUser(t *testing.T, userID int) {
 		t.Logf("Warning: Failed to delete note game entries for user %d: %v", userID, err)
 	}
 
+	// Delete keyboard bindings
+	err = database.Queries.DeleteKeyboardBindings(ctx, int32(userID))
+	if err != nil {
+		t.Logf("Warning: Failed to delete keyboard bindings for user %d: %v", userID, err)
+	}
+
 	// Delete teacher-student associations where user is teacher
 	err = database.Queries.DeleteAllTeacherStudentsByTeacher(ctx, int32(userID))
 	if err != nil {
