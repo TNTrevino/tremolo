@@ -16,6 +16,7 @@ export interface GameResultsProps {
 	gameStats: GameStats;
 	isAuthenticated: boolean;
 	onPlayAgain: () => void;
+	saveError?: boolean;
 }
 
 interface RecentGamePoint {
@@ -49,6 +50,7 @@ export function GameResults({
 	gameStats,
 	isAuthenticated,
 	onPlayAgain,
+	saveError,
 }: GameResultsProps) {
 	const { data: recentEntries, isError: recentEntriesError } =
 		useRecentGameEntries();
@@ -115,10 +117,19 @@ export function GameResults({
 			</div>
 
 			{/* Performance Chart */}
+			{isAuthenticated && saveError && (
+				<Card className="p-6 border-destructive/50">
+					<p className="text-sm text-destructive text-center">
+						Your result could not be saved. Please check your connection and try
+						again.
+					</p>
+				</Card>
+			)}
 			{isAuthenticated && recentEntriesError && (
 				<Card className="p-6">
 					<p className="text-sm text-muted-foreground text-center">
-						Could not load recent games. Your result was still saved.
+						Could not load recent games.
+						{!saveError && " Your result was still saved."}
 					</p>
 				</Card>
 			)}

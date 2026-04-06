@@ -187,6 +187,7 @@ export function NoteGamePage() {
 						gameStats={gameStats}
 						isAuthenticated={isAuthenticated}
 						onPlayAgain={resetGame}
+						saveError={saveResult.isError}
 					/>
 				) : isPhoneLandscape ? (
 					landscapeLayout
