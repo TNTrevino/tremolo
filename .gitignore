@@ -229,3 +229,4 @@ staticfiles/
 
 backend/main/tmp/
 tremolo.sh
+/.claude/worktrees
