@@ -23,14 +23,19 @@ import {
 } from "@/shared/components/charts";
 import type { MultiMetricChartData, ChartInterval } from "@/services/api/types";
 
-interface PerformanceChartProps {
+type PerformanceChartBaseProps = {
 	chartData: MultiMetricChartData;
 	interval: ChartInterval;
 	onIntervalChange: (interval: ChartInterval) => void;
-	isTeacher?: boolean;
-	viewMode?: "my" | "class";
-	onViewModeChange?: (mode: "my" | "class") => void;
-}
+};
+
+type PerformanceChartProps =
+	| (PerformanceChartBaseProps & { isTeacher?: false })
+	| (PerformanceChartBaseProps & {
+			isTeacher: true;
+			viewMode: "my" | "class";
+			onViewModeChange: (mode: "my" | "class") => void;
+	  });
 
 interface PerformancePoint {
 	time: string;
@@ -148,14 +153,12 @@ function formatTooltipHeader(
 	});
 }
 
-export function PerformanceChart({
-	chartData,
-	interval,
-	onIntervalChange,
-	isTeacher = false,
-	viewMode = "my",
-	onViewModeChange,
-}: PerformanceChartProps) {
+export function PerformanceChart(props: PerformanceChartProps) {
+	const { chartData, interval, onIntervalChange } = props;
+	const isTeacher = props.isTeacher === true;
+	const viewMode = props.isTeacher === true ? props.viewMode : "my";
+	const onViewModeChange =
+		props.isTeacher === true ? props.onViewModeChange : undefined;
 	const transformedData = useMemo(
 		() => transformChartData(chartData),
 		[chartData],
