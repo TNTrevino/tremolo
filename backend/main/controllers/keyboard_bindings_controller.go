@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	dtos "sight-reading/DTOs"
@@ -59,8 +60,13 @@ func UpdateKeyboardBindings(c *gin.Context) {
 	ctx := c.Request.Context()
 	result, err := services.UpsertKeyboardBindings(ctx, database.Queries, userID, &req)
 	if err != nil {
+		var validationErr *services.ValidationError
+		if errors.As(err, &validationErr) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid keyboard bindings"})
+			return
+		}
 		logger.Error("failed to update keyboard bindings", "error", err, "userID", userID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to update keyboard bindings"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update keyboard bindings"})
 		return
 	}
 

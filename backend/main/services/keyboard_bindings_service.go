@@ -3,15 +3,30 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
 )
 
-// DEFAULT_KEYBOARD_BINDINGS defines the standard QWERTY layout for the note game.
+// ValidationError wraps errors caused by invalid client input so controllers
+// can distinguish them from infrastructure failures.
+type ValidationError struct {
+	Err error
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("validation error: %v", e.Err)
+}
+
+func (e *ValidationError) Unwrap() error {
+	return e.Err
+}
+
+// DefaultKeyboardBindings defines the standard QWERTY layout for the note game.
 // Naturals (home row): a,s,d,f,g,h,j  Sharps (top row): q,w,e,r,t,y,u  Flats (bottom row): z,x,c,v,b,n,m
-var DEFAULT_KEYBOARD_BINDINGS = dtos.KeyBindings{
+var DefaultKeyboardBindings = dtos.KeyBindings{
 	KeyC: "a", KeyD: "s", KeyE: "d", KeyF: "f", KeyG: "g", KeyA: "h", KeyB: "j",
 	KeyCSharp: "q", KeyDSharp: "w", KeyESharp: "e", KeyFSharp: "r", KeyGSharp: "t", KeyASharp: "y", KeyBSharp: "u",
 	KeyCFlat: "z", KeyDFlat: "x", KeyEFlat: "c", KeyFFlat: "v", KeyGFlat: "b", KeyAFlat: "n", KeyBFlat: "m",
@@ -19,7 +34,7 @@ var DEFAULT_KEYBOARD_BINDINGS = dtos.KeyBindings{
 
 // CreateDefaultKeyboardBindings seeds a new user with the standard QWERTY key layout.
 func CreateDefaultKeyboardBindings(ctx context.Context, q generated.Querier, userID int) error {
-	req := &dtos.KeyboardBindingsRequest{KeyBindings: DEFAULT_KEYBOARD_BINDINGS}
+	req := &dtos.KeyboardBindingsRequest{KeyBindings: DefaultKeyboardBindings}
 	_, err := UpsertKeyboardBindings(ctx, q, userID, req)
 	return err
 }
@@ -45,7 +60,7 @@ func UpsertKeyboardBindings(ctx context.Context, q generated.Querier, userID int
 		logger.Error("Keyboard bindings validation failed",
 			"error", err.Error(),
 			"user_id", userID)
-		return nil, err
+		return nil, &ValidationError{Err: err}
 	}
 
 	kb := req.KeyBindings

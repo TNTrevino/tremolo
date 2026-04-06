@@ -52,7 +52,16 @@ func (r *KeyboardBindingsRequest) Validate() error {
 		}
 		var errorMessages []string
 		for _, fieldErr := range errs {
-			errorMessages = append(errorMessages, fmt.Sprintf("%s: is required and must be at most 20 characters", fieldErr.StructField()))
+			var msg string
+			switch fieldErr.Tag() {
+			case "required":
+				msg = fmt.Sprintf("%s: is required", fieldErr.StructField())
+			case "max":
+				msg = fmt.Sprintf("%s: must be at most %s characters", fieldErr.StructField(), fieldErr.Param())
+			default:
+				msg = fmt.Sprintf("%s: failed validation '%s'", fieldErr.StructField(), fieldErr.Tag())
+			}
+			errorMessages = append(errorMessages, msg)
 		}
 		if len(errorMessages) > 0 {
 			return errors.New(strings.Join(errorMessages, ",\n"))

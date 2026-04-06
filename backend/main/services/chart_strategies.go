@@ -41,7 +41,7 @@ type RangeBasedStrategy struct{}
 func (s *RangeBasedStrategy) FetchUserData(ctx context.Context, userID int32, days int) ([]generated.FetchChartDataAllRow, error) {
 	inRangeRows, err := database.Queries.FetchChartDataInRange(ctx, generated.FetchChartDataInRangeParams{
 		UserID:   userID,
-		DaysBack: days,
+		DaysBack: int32(days),
 	})
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (s *RangeBasedStrategy) FetchUserData(ctx context.Context, userID int32, da
 func (s *RangeBasedStrategy) FetchTeacherData(ctx context.Context, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error) {
 	teacherRows, err := database.Queries.FetchTeacherChartDataInRange(ctx, generated.FetchTeacherChartDataInRangeParams{
 		TeacherID: teacherID,
-		DaysBack:  days,
+		DaysBack:  int32(days),
 	})
 	if err != nil {
 		return nil, err

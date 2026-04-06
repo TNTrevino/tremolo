@@ -19,7 +19,7 @@ import (
 
 // TestKeyboardBindings_CreateDefault_SeedsAllKeys verifies that
 // CreateDefaultKeyboardBindings populates all 21 key bindings with the values
-// defined in DEFAULT_KEYBOARD_BINDINGS.
+// defined in DefaultKeyboardBindings.
 func TestKeyboardBindings_CreateDefault_SeedsAllKeys(t *testing.T) {
 	testutil.SetupTestDB(t)
 	t.Parallel()
@@ -36,7 +36,7 @@ func TestKeyboardBindings_CreateDefault_SeedsAllKeys(t *testing.T) {
 	assert.Equal(t, userID, resp.UserID)
 	assert.Greater(t, resp.ID, 0)
 
-	expected := services.DEFAULT_KEYBOARD_BINDINGS
+	expected := services.DefaultKeyboardBindings
 	kb := resp.KeyBindings
 
 	assert.Equal(t, expected.KeyC, kb.KeyC)
