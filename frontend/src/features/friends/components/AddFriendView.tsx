@@ -4,7 +4,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useSearchUsers, useAddFriend } from "@/shared/hooks/queries";
 import { useDebounce } from "@/shared/hooks/useDebounce";
-import { logger } from "@/lib/logger";
 import { FriendCard } from "./FriendCard";
 
 const DEBOUNCE_MS = 120;
@@ -32,9 +31,6 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 		addFriend.mutate(friendId, {
 			onSuccess: () => {
 				setAddedIds((prev) => new Set(prev).add(friendId));
-			},
-			onError: (err) => {
-				logger.error("Failed to add friend", err);
 			},
 		});
 	};

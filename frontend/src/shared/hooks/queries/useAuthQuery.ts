@@ -41,6 +41,7 @@ export function useLogin() {
 
 	return useMutation({
 		mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+		meta: { suppressErrorToast: true },
 		onSuccess: (response) => {
 			useAuthStore.getState().setAuthFromLoginResponse(response);
 			const user = mapApiUserToUser(response.user);
@@ -56,6 +57,7 @@ export function useLogin() {
 export function useRegister() {
 	return useMutation({
 		mutationFn: (userData: RegisterRequest) => authService.register(userData),
+		meta: { suppressErrorToast: true },
 	});
 }
 

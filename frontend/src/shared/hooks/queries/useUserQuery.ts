@@ -115,6 +115,7 @@ export function useSaveGameResult() {
 
 	return useMutation<CreateNoteGameEntryResponse, Error, SaveGameResultParams>({
 		mutationFn: (entry) => userService.saveGameResult(entry),
+		meta: { suppressErrorToast: true },
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: userKeys.recentGames() });
 			queryClient.invalidateQueries({ queryKey: userKeys.activity() });
