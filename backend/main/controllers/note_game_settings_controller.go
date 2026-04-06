@@ -5,6 +5,7 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
 
@@ -23,7 +24,7 @@ func SetupNoteGameSettingsRoutes(router *gin.Engine) {
 func GetNoteGameSettings(c *gin.Context) {
 	userID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -45,7 +46,7 @@ func GetNoteGameSettings(c *gin.Context) {
 func UpdateNoteGameSettings(c *gin.Context) {
 	userID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -58,7 +59,8 @@ func UpdateNoteGameSettings(c *gin.Context) {
 	ctx := c.Request.Context()
 	result, err := services.UpsertNoteGameSettings(ctx, database.Queries, userID, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		logger.Error("failed to update note game settings", "error", err, "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to update settings"})
 		return
 	}
 

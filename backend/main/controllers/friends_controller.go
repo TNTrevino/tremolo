@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"sight-reading/database"
+	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
 
@@ -22,7 +23,7 @@ func SetupFriendsRoutes(router *gin.Engine) {
 func GetFriends(c *gin.Context) {
 	userID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -39,7 +40,7 @@ func GetFriends(c *gin.Context) {
 func SearchUsers(c *gin.Context) {
 	userID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -66,7 +67,7 @@ type addFriendRequest struct {
 func AddFriend(c *gin.Context) {
 	userID, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -78,7 +79,8 @@ func AddFriend(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	if err := services.AddFriend(ctx, database.Queries, userID, req.FriendID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		logger.Error("failed to add friend", "error", err, "userID", userID, "friendID", req.FriendID)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to add friend"})
 		return
 	}
 
