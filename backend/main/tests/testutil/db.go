@@ -87,6 +87,10 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
+	if err := services.CreateDefaultKeyboardBindings(context.Background(), database.Queries, int(createdUser.ID)); err != nil {
+		t.Logf("Warning: failed to seed default keyboard bindings for test user %d: %v", createdUser.ID, err)
+	}
+
 	// Register cleanup to delete the user after the test
 	t.Cleanup(func() {
 		DeleteTestUser(t, int(createdUser.ID))

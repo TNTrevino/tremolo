@@ -143,6 +143,10 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 		log.Panicf("teacher was not added to the db: %v", err)
 	}
 
+	if err := services.CreateDefaultKeyboardBindings(ctx, database.Queries, int(teacherID)); err != nil {
+		log.Printf("Warning: failed to seed default keyboard bindings for teacher %d: %v", teacherID, err)
+	}
+
 	var studentIDs []int32
 
 	for i := range studentsPerTeacher {
@@ -160,6 +164,10 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 		studentID, err := database.Queries.CreateUserWithPassword(ctx, studentParams)
 		if err != nil {
 			log.Panicf("student was not added to the db (schoolID=%d): %v", student.SchoolID, err)
+		}
+
+		if err := services.CreateDefaultKeyboardBindings(ctx, database.Queries, int(studentID)); err != nil {
+			log.Printf("Warning: failed to seed default keyboard bindings for student %d: %v", studentID, err)
 		}
 
 		studentIDs = append(studentIDs, studentID)
@@ -220,6 +228,10 @@ func insertPersonalUser(schoolID int16) int32 {
 	userID, err := database.Queries.CreateUserWithPassword(ctx, params)
 	if err != nil {
 		log.Panicf("Failed to insert personal user: %v", err)
+	}
+
+	if err := services.CreateDefaultKeyboardBindings(ctx, database.Queries, int(userID)); err != nil {
+		log.Printf("Warning: failed to seed default keyboard bindings for personal user %d: %v", userID, err)
 	}
 
 	log.Printf("Personal user created: %s %s (ID: %d)", firstName, lastName, userID)
