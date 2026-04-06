@@ -1,9 +1,10 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response, JSONResponse
+from music21 import note as m21note
 
 from models import MaryInput, RandomInput, NoteGameInput
-from services.library import get_notes, note_game
-from services.dynamic_mary import DiatonicInformation
+from services.deps import get_music_service
+from services.music_service import MusicService
 
 router = APIRouter()
 
@@ -13,8 +14,6 @@ async def health_check():
     checks = {}
 
     try:
-        from music21 import note as m21note
-
         n = m21note.Note("C4")
         checks["music21"] = "operational"
     except Exception as e:
@@ -35,7 +34,10 @@ async def health_check():
     responses={200: {"description": "MusicXML for Mary Had a Little Lamb"}},
     tags=["Music Generation"],
 )
-async def get_mary_had(payload: MaryInput):
+async def get_mary_had(
+    payload: MaryInput,
+    service: MusicService = Depends(get_music_service),
+):
     """
     This endpoint generates sheet music for "Mary Had a Little Lamb",
     transposed to the specified tonic and octave.
@@ -49,9 +51,7 @@ async def get_mary_had(payload: MaryInput):
         Returns: MusicXML
     """
     try:
-        music = DiatonicInformation(
-            payload.tonic, payload.octave
-        ).get_mary_had()
+        music = service.get_mary_had(payload.tonic, payload.octave)
     except Exception as e:
         return Response(
             content=f"The note {e} is not currently supported, reconsider you root note",
@@ -67,7 +67,10 @@ async def get_mary_had(payload: MaryInput):
     responses={200: {"description": "MusicXML with random notes"}},
     tags=["Music Generation"],
 )
-async def get_random_notes(payload: RandomInput):
+async def get_random_notes(
+    payload: RandomInput,
+    service: MusicService = Depends(get_music_service),
+):
     """
     Creates a measure of music with randomly selected notes from the specified
     scale/tonic, arranged with the specified rhythm pattern.
@@ -96,7 +99,9 @@ async def get_random_notes(payload: RandomInput):
         Returns: MusicXML
     """
     try:
-        music = get_notes(payload.rhythmType, payload.rhythm, payload.tonic)
+        music = service.get_random_notes(
+            payload.rhythmType, payload.rhythm, payload.tonic
+        )
     except Exception as e:
         e = str(e)
         return Response(
@@ -115,7 +120,10 @@ async def get_random_notes(payload: RandomInput):
     },
     tags=["Music Generation"],
 )
-async def get_note_game(payload: NoteGameInput):
+async def get_note_game(
+    payload: NoteGameInput,
+    service: MusicService = Depends(get_music_service),
+):
     """
     Creates a measure with one randomly selected diatonic note from the specified
     scale. Returns both the MusicXML and the note name/octave for validation.
@@ -143,11 +151,11 @@ async def get_note_game(payload: NoteGameInput):
         }
     """
     try:
-        music, note_name = note_game(payload.scale, payload.octave)
+        music, note_name = service.get_note_game(payload.scale, payload.octave)
     except Exception as e:
         e = str(e)
         return JSONResponse(
-            content=f"something is not right\n error: {e} \n {payload.model_dump()}",
+            content=f"something is not right!{e}",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 

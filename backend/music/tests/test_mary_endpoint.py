@@ -14,20 +14,20 @@ class TestMaryEndpointHappyPath:
     def test_mary_valid_inputs_return_200(self, client, valid_mary_payloads):
         """All valid payloads should return 200 OK"""
         for payload in valid_mary_payloads:
-            response = client.post("/mary", json=payload)
+            response = client.post("/music/mary", json=payload)
             assert (
                 response.status_code == status.HTTP_200_OK
             ), f"Failed for payload {payload}: got {response.status_code}"
 
     def test_mary_returns_xml_content_type(self, client):
         """Response should have application/xml content type"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/xml"
 
     def test_mary_response_is_valid_xml(self, client):
         """Response should be parseable as valid XML"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code == 200
 
         # Try to parse as XML
@@ -39,7 +39,7 @@ class TestMaryEndpointHappyPath:
 
     def test_mary_xml_contains_musical_elements(self, client):
         """Response XML should contain expected musical elements"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code == 200
 
         # Check for key musical elements
@@ -58,7 +58,7 @@ class TestMaryEndpointHappyPath:
         # Note: E# is not supported by music21 (it's enharmonic to F)
         tonics = ["C", "G", "F", "D-", "A", "B-"]
         for tonic in tonics:
-            response = client.post("/mary", json={"tonic": tonic, "octave": 4})
+            response = client.post("/music/mary", json={"tonic": tonic, "octave": 4})
             assert response.status_code == 200, f"Failed for tonic {tonic}"
             assert response.headers["content-type"] == "application/xml"
             # Verify it's valid XML
@@ -69,7 +69,7 @@ class TestMaryEndpointHappyPath:
         octaves = [2, 3, 4, 5, 6]
         for octave in octaves:
             response = client.post(
-                "/mary", json={"tonic": "C", "octave": octave}
+                "/music/mary", json={"tonic": "C", "octave": octave}
             )
             assert response.status_code == 200, f"Failed for octave {octave}"
             assert response.headers["content-type"] == "application/xml"
@@ -83,7 +83,7 @@ class TestMaryEndpointErrorHandling:
         """Invalid note names should return 400"""
         invalid_notes = ["H", "Z", "X", "Q"]
         for note in invalid_notes:
-            response = client.post("/mary", json={"tonic": note, "octave": 4})
+            response = client.post("/music/mary", json={"tonic": note, "octave": 4})
             assert (
                 response.status_code == status.HTTP_400_BAD_REQUEST
             ), f"Expected 400 for note {note}, got {response.status_code}"
@@ -103,7 +103,7 @@ class TestMaryEndpointErrorHandling:
         ]
 
         for payload in invalid_payloads_missing:
-            response = client.post("/mary", json=payload)
+            response = client.post("/music/mary", json=payload)
             # Should be 422 (validation error) or 400
             assert response.status_code in [
                 400,
@@ -113,7 +113,7 @@ class TestMaryEndpointErrorHandling:
     def test_mary_invalid_octave_type(self, client):
         """Non-integer octave should fail validation"""
         response = client.post(
-            "/mary", json={"tonic": "C", "octave": "not_a_number"}
+            "/music/mary", json={"tonic": "C", "octave": "not_a_number"}
         )
         assert response.status_code in [
             400,
@@ -125,7 +125,7 @@ class TestMaryEndpointErrorHandling:
         octaves = [-10, 99, 100]
         for octave in octaves:
             response = client.post(
-                "/mary", json={"tonic": "C", "octave": octave}
+                "/music/mary", json={"tonic": "C", "octave": octave}
             )
             # Should return 200 or 400, not 500
             assert response.status_code in [
@@ -139,21 +139,21 @@ class TestMaryResponseStructure:
 
     def test_mary_response_is_bytes(self, client):
         """Response should be bytes (binary XML)"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code == 200
         assert isinstance(response.content, bytes), "Response is not bytes"
 
     def test_mary_response_not_empty(self, client):
         """Response should not be empty"""
-        response = client.post("/mary", json={"tonic": "C", "octave": 4})
+        response = client.post("/music/mary", json={"tonic": "C", "octave": 4})
         assert response.status_code == 200
         assert len(response.content) > 0, "Response is empty"
 
     def test_mary_response_consistent(self, client):
         """Same input should produce same output (deterministic)"""
         payload = {"tonic": "C", "octave": 4}
-        response1 = client.post("/mary", json=payload)
-        response2 = client.post("/mary", json=payload)
+        response1 = client.post("/music/mary", json=payload)
+        response2 = client.post("/music/mary", json=payload)
 
         assert response1.status_code == 200
         assert response2.status_code == 200
