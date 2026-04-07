@@ -1,21 +1,4 @@
 /**
- * Validates that a string matches the expected HSL format: "<H> <S>% <L>%"
- * where H is 0-360, S is 0-100, L is 0-100.
- */
-export function isValidHslString(hsl: string): boolean {
-	const match = hsl.match(
-		/^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/,
-	);
-	if (!match) return false;
-
-	const h = parseFloat(match[1]!);
-	const s = parseFloat(match[2]!);
-	const l = parseFloat(match[3]!);
-
-	return h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100;
-}
-
-/**
  * Converts a space-separated HSL string like "262 83% 58%" to a hex color
  * like "#7c3aed".
  */
