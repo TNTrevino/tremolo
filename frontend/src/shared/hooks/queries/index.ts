@@ -29,3 +29,16 @@ export {
 	useAddFriend,
 	friendsKeys,
 } from "./useFriendsQuery";
+
+// Color scheme queries
+export {
+	useColorSchemes,
+	useActiveColorScheme,
+	useCreateColorScheme,
+	useUpdateColorScheme,
+	useDeleteColorScheme,
+	useSetActiveScheme,
+	useToggleScheme,
+	useSetPreferredSchemes,
+	colorSchemeKeys,
+} from "./useColorSchemeQuery";
