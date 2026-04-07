@@ -49,3 +49,12 @@ export type {
 export type { ApiError, ApiResponse } from "./error.types";
 
 export type { FriendResponse } from "./friend.types";
+
+export type {
+	ColorSchemeColors,
+	ColorSchemeResponse,
+	CreateColorSchemeRequest,
+	UpdateColorSchemeRequest,
+	SetActiveSchemeRequest,
+	SetPreferredSchemesRequest,
+} from "./color-scheme.types";
