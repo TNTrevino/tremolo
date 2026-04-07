@@ -10,48 +10,52 @@ import (
 	"sight-reading/logger"
 )
 
-var DefaultLightColors = dtos.ColorSchemeColors{
-	Background:            "0 0% 100%",
-	Foreground:            "240 10% 3.9%",
-	Card:                  "0 0% 100%",
-	CardForeground:        "240 10% 3.9%",
-	Popover:               "0 0% 100%",
-	PopoverForeground:     "240 10% 3.9%",
-	PrimaryColor:          "262 83% 58%",
-	PrimaryForeground:     "0 0% 98%",
-	SecondaryColor:        "240 4.8% 95.9%",
-	SecondaryForeground:   "240 5.9% 10%",
-	Muted:                 "240 4.8% 95.9%",
-	MutedForeground:       "240 3.8% 46.1%",
-	Accent:                "45 93% 47%",
-	AccentForeground:      "240 5.9% 10%",
-	Destructive:           "0 84.2% 60.2%",
-	DestructiveForeground: "0 0% 98%",
-	BorderColor:           "240 5.9% 90%",
-	InputColor:            "240 5.9% 90%",
-	Ring:                  "262 83% 58%",
+func defaultLightColors() dtos.ColorSchemeColors {
+	return dtos.ColorSchemeColors{
+		Background:            "0 0% 100%",
+		Foreground:            "240 10% 3.9%",
+		Card:                  "0 0% 100%",
+		CardForeground:        "240 10% 3.9%",
+		Popover:               "0 0% 100%",
+		PopoverForeground:     "240 10% 3.9%",
+		PrimaryColor:          "262 83% 58%",
+		PrimaryForeground:     "0 0% 98%",
+		SecondaryColor:        "240 4.8% 95.9%",
+		SecondaryForeground:   "240 5.9% 10%",
+		Muted:                 "240 4.8% 95.9%",
+		MutedForeground:       "240 3.8% 46.1%",
+		Accent:                "45 93% 47%",
+		AccentForeground:      "240 5.9% 10%",
+		Destructive:           "0 84.2% 60.2%",
+		DestructiveForeground: "0 0% 98%",
+		BorderColor:           "240 5.9% 90%",
+		InputColor:            "240 5.9% 90%",
+		Ring:                  "262 83% 58%",
+	}
 }
 
-var DefaultDarkColors = dtos.ColorSchemeColors{
-	Background:            "240 10% 3.9%",
-	Foreground:            "0 0% 98%",
-	Card:                  "240 10% 8%",
-	CardForeground:        "0 0% 98%",
-	Popover:               "240 10% 8%",
-	PopoverForeground:     "0 0% 98%",
-	PrimaryColor:          "262 83% 58%",
-	PrimaryForeground:     "0 0% 98%",
-	SecondaryColor:        "240 3.7% 15.9%",
-	SecondaryForeground:   "0 0% 98%",
-	Muted:                 "240 3.7% 15.9%",
-	MutedForeground:       "240 5% 64.9%",
-	Accent:                "45 93% 47%",
-	AccentForeground:      "0 0% 98%",
-	Destructive:           "0 62.8% 30.6%",
-	DestructiveForeground: "0 0% 98%",
-	BorderColor:           "240 3.7% 15.9%",
-	InputColor:            "240 3.7% 15.9%",
-	Ring:                  "262 83% 58%",
+func defaultDarkColors() dtos.ColorSchemeColors {
+	return dtos.ColorSchemeColors{
+		Background:            "240 10% 3.9%",
+		Foreground:            "0 0% 98%",
+		Card:                  "240 10% 8%",
+		CardForeground:        "0 0% 98%",
+		Popover:               "240 10% 8%",
+		PopoverForeground:     "0 0% 98%",
+		PrimaryColor:          "262 83% 58%",
+		PrimaryForeground:     "0 0% 98%",
+		SecondaryColor:        "240 3.7% 15.9%",
+		SecondaryForeground:   "0 0% 98%",
+		Muted:                 "240 3.7% 15.9%",
+		MutedForeground:       "240 5% 64.9%",
+		Accent:                "45 93% 47%",
+		AccentForeground:      "0 0% 98%",
+		Destructive:           "0 62.8% 30.6%",
+		DestructiveForeground: "0 0% 98%",
+		BorderColor:           "240 3.7% 15.9%",
+		InputColor:            "240 3.7% 15.9%",
+		Ring:                  "262 83% 58%",
+	}
 }
 
 // CreateDefaultColorSchemes seeds a new user with the Default Light and Default Dark
@@ -63,7 +67,7 @@ func CreateDefaultColorSchemes(ctx context.Context, q generated.Querier, userID 
 		IsPreset: true,
 		IsDark:   false,
 	}
-	applyColorsToCreateParams(&lightParams, DefaultLightColors)
+	applyColorsToCreateParams(&lightParams, defaultLightColors())
 
 	lightScheme, err := q.CreateColorScheme(ctx, lightParams)
 	if err != nil {
@@ -79,7 +83,7 @@ func CreateDefaultColorSchemes(ctx context.Context, q generated.Querier, userID 
 		IsPreset: true,
 		IsDark:   true,
 	}
-	applyColorsToCreateParams(&darkParams, DefaultDarkColors)
+	applyColorsToCreateParams(&darkParams, defaultDarkColors())
 
 	darkScheme, err := q.CreateColorScheme(ctx, darkParams)
 	if err != nil {
