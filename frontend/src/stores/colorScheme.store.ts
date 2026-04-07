@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ColorSchemeResponse } from "@/services/api/types";
+import type {
+	ColorSchemeColors,
+	ColorSchemeResponse,
+} from "@/services/api/types";
 
 interface ColorSchemeState {
 	activeScheme: ColorSchemeResponse | null;
@@ -9,7 +12,7 @@ interface ColorSchemeState {
 	clearScheme: () => void;
 }
 
-const CSS_VAR_MAP: Record<string, string> = {
+const CSS_VAR_MAP: Record<keyof ColorSchemeColors, string> = {
 	background: "--background",
 	foreground: "--foreground",
 	card: "--card",

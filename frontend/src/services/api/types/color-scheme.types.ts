@@ -2,7 +2,7 @@
  * Color Scheme Type Definitions
  *
  * Types for user-configurable color schemes and theme preferences.
- * Used with the Go backend (port 5001).
+ * Corresponds to the Go user service API at /api/color-schemes.
  */
 
 export interface ColorSchemeColors {
