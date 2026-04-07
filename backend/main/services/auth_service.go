@@ -281,6 +281,12 @@ func Register(c *gin.Context) {
 			"user_id", createdUser.ID)
 	}
 
+	if err := CreateDefaultColorSchemes(ctx, database.Queries, int(createdUser.ID)); err != nil {
+		logger.Error("Failed to seed default color schemes for new user",
+			"error", err.Error(),
+			"user_id", createdUser.ID)
+	}
+
 	response := dtos.RegisterResponse{
 		Message: "User created successfully",
 		User:    convertCreateUserRowToUserResponse(createdUser, reqBody.Role),

@@ -65,6 +65,7 @@ func main() {
 	controllers.SetupNoteGameSettingsRoutes(router)
 	controllers.SetupKeyboardBindingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
+	controllers.SetupColorSchemeRoutes(router)
 
 	port := os.Getenv("USER_SERVICE_PORT")
 	if port == "" {
