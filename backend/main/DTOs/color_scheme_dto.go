@@ -3,31 +3,36 @@ package dtos
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
 
+const hslTag = "required,max=30,hsl"
+
+var hslPattern = regexp.MustCompile(`^\d{1,3}(?:\.\d+)?\s+[\d.]+%\s+[\d.]+%$`)
+
 type ColorSchemeColors struct {
-	Background            string `json:"background"              validate:"required,max=30"`
-	Foreground            string `json:"foreground"              validate:"required,max=30"`
-	Card                  string `json:"card"                    validate:"required,max=30"`
-	CardForeground        string `json:"card_foreground"         validate:"required,max=30"`
-	Popover               string `json:"popover"                 validate:"required,max=30"`
-	PopoverForeground     string `json:"popover_foreground"      validate:"required,max=30"`
-	PrimaryColor          string `json:"primary"                 validate:"required,max=30"`
-	PrimaryForeground     string `json:"primary_foreground"      validate:"required,max=30"`
-	SecondaryColor        string `json:"secondary"               validate:"required,max=30"`
-	SecondaryForeground   string `json:"secondary_foreground"    validate:"required,max=30"`
-	Muted                 string `json:"muted"                   validate:"required,max=30"`
-	MutedForeground       string `json:"muted_foreground"        validate:"required,max=30"`
-	Accent                string `json:"accent"                  validate:"required,max=30"`
-	AccentForeground      string `json:"accent_foreground"       validate:"required,max=30"`
-	Destructive           string `json:"destructive"             validate:"required,max=30"`
-	DestructiveForeground string `json:"destructive_foreground"  validate:"required,max=30"`
-	BorderColor           string `json:"border"                  validate:"required,max=30"`
-	InputColor            string `json:"input"                   validate:"required,max=30"`
-	Ring                  string `json:"ring"                    validate:"required,max=30"`
+	Background            string `json:"background"              validate:"required,max=30,hsl"`
+	Foreground            string `json:"foreground"              validate:"required,max=30,hsl"`
+	Card                  string `json:"card"                    validate:"required,max=30,hsl"`
+	CardForeground        string `json:"card_foreground"         validate:"required,max=30,hsl"`
+	Popover               string `json:"popover"                 validate:"required,max=30,hsl"`
+	PopoverForeground     string `json:"popover_foreground"      validate:"required,max=30,hsl"`
+	PrimaryColor          string `json:"primary"                 validate:"required,max=30,hsl"`
+	PrimaryForeground     string `json:"primary_foreground"      validate:"required,max=30,hsl"`
+	SecondaryColor        string `json:"secondary"               validate:"required,max=30,hsl"`
+	SecondaryForeground   string `json:"secondary_foreground"    validate:"required,max=30,hsl"`
+	Muted                 string `json:"muted"                   validate:"required,max=30,hsl"`
+	MutedForeground       string `json:"muted_foreground"        validate:"required,max=30,hsl"`
+	Accent                string `json:"accent"                  validate:"required,max=30,hsl"`
+	AccentForeground      string `json:"accent_foreground"       validate:"required,max=30,hsl"`
+	Destructive           string `json:"destructive"             validate:"required,max=30,hsl"`
+	DestructiveForeground string `json:"destructive_foreground"  validate:"required,max=30,hsl"`
+	BorderColor           string `json:"border"                  validate:"required,max=30,hsl"`
+	InputColor            string `json:"input"                   validate:"required,max=30,hsl"`
+	Ring                  string `json:"ring"                    validate:"required,max=30,hsl"`
 }
 
 type CreateColorSchemeRequest struct {
@@ -60,9 +65,13 @@ type SetPreferredSchemesRequest struct {
 	DarkSchemeID  int `json:"dark_scheme_id"  binding:"required,gt=0"`
 }
 
-func (r *CreateColorSchemeRequest) Validate() error {
+func validateColorSchemeRequest(s interface{}) error {
 	validate := validator.New()
-	err := validate.Struct(r)
+	validate.RegisterValidation("hsl", func(fl validator.FieldLevel) bool {
+		return hslPattern.MatchString(fl.Field().String())
+	})
+
+	err := validate.Struct(s)
 	if err != nil {
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
@@ -76,6 +85,8 @@ func (r *CreateColorSchemeRequest) Validate() error {
 				msg = fmt.Sprintf("%s: is required", fieldErr.StructField())
 			case "max":
 				msg = fmt.Sprintf("%s: must be at most %s characters", fieldErr.StructField(), fieldErr.Param())
+			case "hsl":
+				msg = fmt.Sprintf("%s: must be a valid HSL value (e.g. \"262 83%% 58%%\")", fieldErr.StructField())
 			default:
 				msg = fmt.Sprintf("%s: failed validation '%s'", fieldErr.StructField(), fieldErr.Tag())
 			}
@@ -89,31 +100,10 @@ func (r *CreateColorSchemeRequest) Validate() error {
 	return nil
 }
 
+func (r *CreateColorSchemeRequest) Validate() error {
+	return validateColorSchemeRequest(r)
+}
+
 func (r *UpdateColorSchemeRequest) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(r)
-	if err != nil {
-		errs, ok := err.(validator.ValidationErrors)
-		if !ok {
-			return err
-		}
-		var errorMessages []string
-		for _, fieldErr := range errs {
-			var msg string
-			switch fieldErr.Tag() {
-			case "required":
-				msg = fmt.Sprintf("%s: is required", fieldErr.StructField())
-			case "max":
-				msg = fmt.Sprintf("%s: must be at most %s characters", fieldErr.StructField(), fieldErr.Param())
-			default:
-				msg = fmt.Sprintf("%s: failed validation '%s'", fieldErr.StructField(), fieldErr.Tag())
-			}
-			errorMessages = append(errorMessages, msg)
-		}
-		if len(errorMessages) > 0 {
-			return errors.New(strings.Join(errorMessages, ",\n"))
-		}
-		return err
-	}
-	return nil
+	return validateColorSchemeRequest(r)
 }
