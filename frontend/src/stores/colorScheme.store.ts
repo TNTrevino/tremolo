@@ -69,7 +69,13 @@ export const useColorSchemeStore = create<ColorSchemeState>()(
 			name: "tremolo-color-scheme",
 			onRehydrateStorage: () => (state) => {
 				if (state?.activeScheme) {
-					applyScheme(state.activeScheme);
+					try {
+						applyScheme(state.activeScheme);
+					} catch (e) {
+						console.error("Failed to rehydrate color scheme from storage", e);
+						state.activeScheme = null;
+						state.isDark = false;
+					}
 				}
 			},
 		},
