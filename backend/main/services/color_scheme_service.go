@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -171,6 +172,9 @@ func CreateColorScheme(ctx context.Context, q generated.Querier, userID int, req
 
 	row, err := q.CreateColorScheme(ctx, params)
 	if err != nil {
+		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate key") {
+			return nil, &ValidationError{Err: fmt.Errorf("a color scheme with this name already exists")}
+		}
 		logger.Error("Failed to create color scheme",
 			"error", err.Error(),
 			"user_id", userID)
