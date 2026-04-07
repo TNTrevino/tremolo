@@ -86,7 +86,7 @@ export function useUpdateColorScheme() {
 
 /**
  * Delete a color scheme by id.
- * Invalidates the list cache on success.
+ * Invalidates both the list and active caches on success.
  */
 export function useDeleteColorScheme() {
 	const queryClient = useQueryClient();
@@ -96,12 +96,13 @@ export function useDeleteColorScheme() {
 		meta: { errorTitle: "Failed to delete color scheme" },
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: colorSchemeKeys.list() });
+			queryClient.invalidateQueries({ queryKey: colorSchemeKeys.active() });
 		},
 	});
 }
 
 /**
- * Set the active color scheme (light or dark slot).
+ * Set the user's active color scheme by id.
  * Invalidates active and list caches on success.
  */
 export function useSetActiveScheme() {
