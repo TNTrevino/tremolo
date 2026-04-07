@@ -16,6 +16,10 @@ export function ColorPickerField({
 	try {
 		hexValue = hslStringToHex(value);
 	} catch {
+		console.warn(
+			"ColorPickerField: invalid HSL value, falling back to #000000",
+			value,
+		);
 		hexValue = "#000000";
 	}
 
@@ -26,13 +30,18 @@ export function ColorPickerField({
 
 	const handlePickerChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
+			let hsl: string;
 			try {
-				const hsl = hexToHslString(e.target.value);
-				setTextValue(e.target.value);
-				onChange(hsl);
+				hsl = hexToHslString(e.target.value);
 			} catch {
-				// ignore invalid hex values
+				console.warn(
+					"ColorPickerField: failed to convert hex to HSL",
+					e.target.value,
+				);
+				return;
 			}
+			setTextValue(e.target.value);
+			onChange(hsl);
 		},
 		[onChange],
 	);
@@ -44,12 +53,17 @@ export function ColorPickerField({
 
 			const normalized = raw.startsWith("#") ? raw : `#${raw}`;
 			if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+				let hsl: string;
 				try {
-					const hsl = hexToHslString(normalized);
-					onChange(hsl);
+					hsl = hexToHslString(normalized);
 				} catch {
-					// ignore conversion errors
+					console.warn(
+						"ColorPickerField: failed to convert hex to HSL",
+						normalized,
+					);
+					return;
 				}
+				onChange(hsl);
 			}
 		},
 		[onChange],

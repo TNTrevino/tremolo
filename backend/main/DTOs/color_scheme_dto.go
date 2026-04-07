@@ -52,12 +52,12 @@ type ColorSchemeResponse struct {
 }
 
 type SetActiveSchemeRequest struct {
-	SchemeID int `json:"scheme_id" validate:"required"`
+	SchemeID int `json:"scheme_id" binding:"required,gt=0"`
 }
 
 type SetPreferredSchemesRequest struct {
-	LightSchemeID int `json:"light_scheme_id" validate:"required"`
-	DarkSchemeID  int `json:"dark_scheme_id"  validate:"required"`
+	LightSchemeID int `json:"light_scheme_id" binding:"required,gt=0"`
+	DarkSchemeID  int `json:"dark_scheme_id"  binding:"required,gt=0"`
 }
 
 func (r *CreateColorSchemeRequest) Validate() error {
