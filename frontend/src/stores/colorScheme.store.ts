@@ -62,7 +62,7 @@ export const useColorSchemeStore = create<ColorSchemeState>()(
 					root.style.removeProperty(cssVar);
 				}
 
-				set({ activeScheme: null });
+				set({ activeScheme: null, isDark: false });
 			},
 		}),
 		{
