@@ -9,8 +9,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-const hslTag = "required,max=30,hsl"
-
 var hslPattern = regexp.MustCompile(`^\d{1,3}(?:\.\d+)?\s+[\d.]+%\s+[\d.]+%$`)
 
 type ColorSchemeColors struct {
@@ -65,11 +63,13 @@ type SetPreferredSchemesRequest struct {
 	DarkSchemeID  int `json:"dark_scheme_id"  binding:"required,gt=0"`
 }
 
-func validateColorSchemeRequest(s interface{}) error {
+func validateColorSchemeRequest(s any) error {
 	validate := validator.New()
-	validate.RegisterValidation("hsl", func(fl validator.FieldLevel) bool {
+	if err := validate.RegisterValidation("hsl", func(fl validator.FieldLevel) bool {
 		return hslPattern.MatchString(fl.Field().String())
-	})
+	}); err != nil {
+		return err
+	}
 
 	err := validate.Struct(s)
 	if err != nil {
