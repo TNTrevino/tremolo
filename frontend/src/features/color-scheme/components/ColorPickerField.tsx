@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { hslStringToHex, hexToHslString } from "../utils/color-utils";
 
 interface ColorPickerFieldProps {
@@ -19,17 +19,50 @@ export function ColorPickerField({
 		hexValue = "#000000";
 	}
 
-	const handleChange = useCallback(
+	const [textValue, setTextValue] = useState(hexValue);
+	const [isFocused, setIsFocused] = useState(false);
+
+	const displayValue = isFocused ? textValue : hexValue;
+
+	const handlePickerChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			try {
 				const hsl = hexToHslString(e.target.value);
+				setTextValue(e.target.value);
 				onChange(hsl);
 			} catch {
-				// ignore invalid hex values from the picker
+				// ignore invalid hex values
 			}
 		},
 		[onChange],
 	);
+
+	const handleTextChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const raw = e.target.value;
+			setTextValue(raw);
+
+			const normalized = raw.startsWith("#") ? raw : `#${raw}`;
+			if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+				try {
+					const hsl = hexToHslString(normalized);
+					onChange(hsl);
+				} catch {
+					// ignore conversion errors
+				}
+			}
+		},
+		[onChange],
+	);
+
+	const handleFocus = useCallback(() => {
+		setTextValue(hexValue);
+		setIsFocused(true);
+	}, [hexValue]);
+
+	const handleBlur = useCallback(() => {
+		setIsFocused(false);
+	}, []);
 
 	return (
 		<div className="flex items-center justify-between gap-4">
@@ -40,12 +73,18 @@ export function ColorPickerField({
 				<input
 					type="color"
 					value={hexValue}
-					onChange={handleChange}
+					onChange={handlePickerChange}
 					className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0.5"
 				/>
-				<span className="text-xs text-muted-foreground font-mono w-16">
-					{hexValue}
-				</span>
+				<input
+					type="text"
+					value={displayValue}
+					onChange={handleTextChange}
+					onFocus={handleFocus}
+					onBlur={handleBlur}
+					className="w-20 text-xs font-mono bg-transparent border border-border rounded px-1.5 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+					spellCheck={false}
+				/>
 			</div>
 		</div>
 	);
