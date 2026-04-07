@@ -10,6 +10,8 @@ import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBounda
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
 import { useThemeStore } from "@/stores/theme.store";
+import { useColorSchemeStore } from "@/stores/colorScheme.store";
+import { useAuthStore } from "@/stores/auth.store";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 
 export interface GameBoardProps {
@@ -168,13 +170,15 @@ function useGameBoardCore({
 	octave: number;
 }) {
 	const theme = useThemeStore((s) => s.theme);
+	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const colorSchemeDark = useColorSchemeStore((s) => s.isDark);
 
 	const {
 		containerRef,
 		loadNote,
 		isReady: isDisplayReady,
 	} = useNoteGameDisplay({
-		darkMode: theme === "dark",
+		darkMode: isAuthenticated ? colorSchemeDark : theme === "dark",
 		zoom: 2.0,
 	});
 

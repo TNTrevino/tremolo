@@ -12,11 +12,14 @@ import {
 	UserCircle,
 	Settings,
 	Users,
+	Palette,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useFriendsStore } from "@/stores/friends.store";
 import { useThemeStore } from "@/stores/theme.store";
+import { useColorSchemeStore } from "@/stores/colorScheme.store";
 import { useLogout } from "@/shared/hooks/queries/useAuthQuery";
+import { useToggleScheme } from "@/shared/hooks/queries/useColorSchemeQuery";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +28,8 @@ export function Navigation() {
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
 	const { user, isAuthenticated } = useAuthStore();
 	const { theme, toggleTheme } = useThemeStore();
+	const toggleSchemeMutation = useToggleScheme();
+	const colorSchemeStore = useColorSchemeStore();
 	const logoutMutation = useLogout();
 	const togglePanel = useFriendsStore((state) => state.togglePanel);
 	const isPanelOpen = useFriendsStore((state) => state.isPanelOpen);
@@ -84,10 +89,18 @@ export function Navigation() {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={toggleTheme}
+							onClick={() => {
+								if (isAuthenticated) {
+									toggleSchemeMutation.mutate();
+								} else {
+									toggleTheme();
+								}
+							}}
 							className="rounded-full"
 						>
-							{theme === "dark" ? (
+							{(
+								isAuthenticated ? colorSchemeStore.isDark : theme === "dark"
+							) ? (
 								<Sun className="h-5 w-5" />
 							) : (
 								<Moon className="h-5 w-5" />
@@ -165,6 +178,14 @@ export function Navigation() {
 											>
 												<Settings className="h-4 w-4" />
 												<span>Account</span>
+											</Link>
+											<Link
+												to="/settings/theme"
+												onClick={() => setUserMenuOpen(false)}
+												className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent text-sm transition-colors"
+											>
+												<Palette className="h-4 w-4" />
+												<span>Theme</span>
 											</Link>
 											<div className="border-t-2 border-border my-2" />
 											<button
@@ -254,6 +275,13 @@ export function Navigation() {
 									className="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
 								>
 									Account
+								</Link>
+								<Link
+									to="/settings/theme"
+									onClick={() => setMobileMenuOpen(false)}
+									className="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+								>
+									Theme
 								</Link>
 								<button
 									onClick={handleLogout}

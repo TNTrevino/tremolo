@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
 	QueryClient,
@@ -14,6 +14,8 @@ import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
 import { useAuthStore } from "@/stores/auth.store";
+import { useColorSchemeStore } from "@/stores/colorScheme.store";
+import { useActiveColorScheme } from "@/shared/hooks/queries/useColorSchemeQuery";
 
 // Pages - Regular imports for fast-loading pages
 import { HomePage } from "@/pages/HomePage";
@@ -44,6 +46,11 @@ const ProfilePage = lazy(() =>
 );
 const AccountPage = lazy(() =>
 	import("@/pages/AccountPage").then((m) => ({ default: m.AccountPage })),
+);
+const ThemeSettingsPage = lazy(() =>
+	import("@/pages/ThemeSettingsPage").then((m) => ({
+		default: m.ThemeSettingsPage,
+	})),
 );
 
 /**
@@ -108,6 +115,19 @@ function QueryProviderWithToast({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const { data: activeScheme } = useActiveColorScheme();
+	const setActiveScheme = useColorSchemeStore((s) => s.setActiveScheme);
+	const clearScheme = useColorSchemeStore((s) => s.clearScheme);
+
+	useEffect(() => {
+		if (!isAuthenticated) {
+			clearScheme();
+			return;
+		}
+		if (activeScheme) {
+			setActiveScheme(activeScheme);
+		}
+	}, [activeScheme, isAuthenticated, setActiveScheme, clearScheme]);
 
 	return (
 		<div className="min-h-screen bg-background text-foreground">
@@ -147,6 +167,14 @@ function AppContent() {
 							element={
 								<ProtectedRoute>
 									<AccountPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/settings/theme"
+							element={
+								<ProtectedRoute>
+									<ThemeSettingsPage />
 								</ProtectedRoute>
 							}
 						/>

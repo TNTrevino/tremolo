@@ -17,6 +17,14 @@ vi.mock("@/shared/hooks/queries/useAuthQuery", () => ({
 	useLogout: () => ({ mutate: mockLogoutMutate }),
 }));
 
+vi.mock("@/shared/hooks/queries/useColorSchemeQuery", () => ({
+	useToggleScheme: () => ({ mutate: vi.fn() }),
+}));
+
+vi.mock("@/stores/colorScheme.store", () => ({
+	useColorSchemeStore: () => ({ isDark: true }),
+}));
+
 describe("Navigation", () => {
 	beforeEach(() => {
 		// Reset mock state before each test
