@@ -271,6 +271,25 @@ func DeleteColorScheme(ctx context.Context, q generated.Querier, userID, schemeI
 		return &ValidationError{Err: fmt.Errorf("preset color schemes cannot be deleted")}
 	}
 
+	prefs, err := q.GetPreferredSchemeIDs(ctx, int32(userID))
+	if err != nil {
+		logger.Error("Failed to fetch user preferences for deletion check",
+			"error", err.Error(),
+			"user_id", userID)
+		return err
+	}
+
+	sid := int32(schemeID)
+	if prefs.ActiveColorSchemeID.Valid && prefs.ActiveColorSchemeID.Int32 == sid {
+		return &ValidationError{Err: fmt.Errorf("cannot delete your active color scheme; please switch to another scheme first")}
+	}
+	if prefs.PreferredLightSchemeID.Valid && prefs.PreferredLightSchemeID.Int32 == sid {
+		return &ValidationError{Err: fmt.Errorf("cannot delete a scheme set as your preferred light scheme")}
+	}
+	if prefs.PreferredDarkSchemeID.Valid && prefs.PreferredDarkSchemeID.Int32 == sid {
+		return &ValidationError{Err: fmt.Errorf("cannot delete a scheme set as your preferred dark scheme")}
+	}
+
 	err = q.DeleteColorScheme(ctx, generated.DeleteColorSchemeParams{
 		ID:     int32(schemeID),
 		UserID: int32(userID),
