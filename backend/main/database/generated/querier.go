@@ -11,6 +11,7 @@ import (
 
 type Querier interface {
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	CreateColorScheme(ctx context.Context, arg CreateColorSchemeParams) (TremoloColorScheme, error)
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// Inserts both directions to create an instant mutual friendship.
 	// ON CONFLICT DO NOTHING makes this idempotent.
@@ -29,6 +30,7 @@ type Querier interface {
 	DeleteAllTeacherStudentsByStudent(ctx context.Context, studentID int32) error
 	DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacherID int32) error
 	DeleteAllTestData(ctx context.Context) error
+	DeleteColorScheme(ctx context.Context, arg DeleteColorSchemeParams) error
 	DeleteKeyboardBindings(ctx context.Context, userID int32) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
@@ -44,6 +46,9 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
+	GetActiveColorScheme(ctx context.Context, id int32) (TremoloColorScheme, error)
+	GetColorSchemeByID(ctx context.Context, arg GetColorSchemeByIDParams) (TremoloColorScheme, error)
+	GetColorSchemesByUserID(ctx context.Context, userID int32) ([]TremoloColorScheme, error)
 	GetDailyActivityCounts(ctx context.Context, arg GetDailyActivityCountsParams) ([]GetDailyActivityCountsRow, error)
 	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
@@ -52,6 +57,7 @@ type Querier interface {
 	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
 	GetKeyboardBindings(ctx context.Context, userID int32) (TremoloKeyboardBinding, error)
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
+	GetPreferredSchemeIDs(ctx context.Context, id int32) (GetPreferredSchemeIDsRow, error)
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
@@ -66,6 +72,9 @@ type Querier interface {
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	SetActiveColorScheme(ctx context.Context, arg SetActiveColorSchemeParams) error
+	SetPreferredSchemes(ctx context.Context, arg SetPreferredSchemesParams) error
+	UpdateColorScheme(ctx context.Context, arg UpdateColorSchemeParams) (TremoloColorScheme, error)
 	UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error)
 	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)
 }

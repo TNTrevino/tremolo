@@ -9,6 +9,33 @@ import (
 	"time"
 )
 
+type TremoloColorScheme struct {
+	ID                    int32  `json:"id"`
+	UserID                int32  `json:"user_id"`
+	Name                  string `json:"name"`
+	IsPreset              bool   `json:"is_preset"`
+	IsDark                bool   `json:"is_dark"`
+	Background            string `json:"background"`
+	Foreground            string `json:"foreground"`
+	Card                  string `json:"card"`
+	CardForeground        string `json:"card_foreground"`
+	Popover               string `json:"popover"`
+	PopoverForeground     string `json:"popover_foreground"`
+	PrimaryColor          string `json:"primary_color"`
+	PrimaryForeground     string `json:"primary_foreground"`
+	SecondaryColor        string `json:"secondary_color"`
+	SecondaryForeground   string `json:"secondary_foreground"`
+	Muted                 string `json:"muted"`
+	MutedForeground       string `json:"muted_foreground"`
+	Accent                string `json:"accent"`
+	AccentForeground      string `json:"accent_foreground"`
+	Destructive           string `json:"destructive"`
+	DestructiveForeground string `json:"destructive_foreground"`
+	BorderColor           string `json:"border_color"`
+	InputColor            string `json:"input_color"`
+	Ring                  string `json:"ring"`
+}
+
 type TremoloFriend struct {
 	UserID      int32        `json:"user_id"`
 	FriendID    int32        `json:"friend_id"`
@@ -95,16 +122,19 @@ type TremoloTeacherStudent struct {
 }
 
 type TremoloUser struct {
-	ID                  int32          `json:"id"`
-	FirstName           string         `json:"first_name"`
-	LastName            string         `json:"last_name"`
-	Email               sql.NullString `json:"email"`
-	Password            string         `json:"password"`
-	FailedLoginAttempts int32          `json:"failed_login_attempts"`
-	LockedUntil         sql.NullTime   `json:"locked_until"`
-	SchoolID            sql.NullInt32  `json:"school_id"`
-	CreatedDate         sql.NullTime   `json:"created_date"`
-	CreatedTime         sql.NullTime   `json:"created_time"`
-	Instrument          sql.NullString `json:"instrument"`
-	RoleID              int32          `json:"role_id"`
+	ID                     int32          `json:"id"`
+	FirstName              string         `json:"first_name"`
+	LastName               string         `json:"last_name"`
+	Email                  sql.NullString `json:"email"`
+	Password               string         `json:"password"`
+	FailedLoginAttempts    int32          `json:"failed_login_attempts"`
+	LockedUntil            sql.NullTime   `json:"locked_until"`
+	SchoolID               sql.NullInt32  `json:"school_id"`
+	CreatedDate            sql.NullTime   `json:"created_date"`
+	CreatedTime            sql.NullTime   `json:"created_time"`
+	Instrument             sql.NullString `json:"instrument"`
+	RoleID                 int32          `json:"role_id"`
+	ActiveColorSchemeID    sql.NullInt32  `json:"active_color_scheme_id"`
+	PreferredLightSchemeID sql.NullInt32  `json:"preferred_light_scheme_id"`
+	PreferredDarkSchemeID  sql.NullInt32  `json:"preferred_dark_scheme_id"`
 }
