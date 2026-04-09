@@ -33,6 +33,7 @@ func SetupTestDB(t *testing.T) {
 		}
 		initTestLogger()
 		database.InitializeDBConnection()
+		database.RunMigrations(database.DBConn)
 	})
 
 	if setupErr != nil {
