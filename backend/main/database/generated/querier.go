@@ -18,6 +18,7 @@ type Querier interface {
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
+	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
 	CreateTeacherStudentAssociation(ctx context.Context, arg CreateTeacherStudentAssociationParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
@@ -55,12 +56,15 @@ type Querier interface {
 	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
+	GetUserByEmailForOAuth(ctx context.Context, email sql.NullString) (GetUserByEmailForOAuthRow, error)
+	GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (GetUserByGoogleIDRow, error)
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByRoleAndID(ctx context.Context, arg GetUserByRoleAndIDParams) (GetUserByRoleAndIDRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
+	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
 	LockAccount(ctx context.Context, arg LockAccountParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
 	// Case-insensitive contains search on full name, excluding the current user
