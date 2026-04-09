@@ -30,6 +30,7 @@ export function LoginPage() {
 
 	const locationState = location.state as LoginLocationState | null;
 	const successMessage = locationState?.successMessage;
+	const errorMessage = locationState?.errorMessage;
 
 	const {
 		register,
@@ -76,6 +77,12 @@ export function LoginPage() {
 						{successMessage && (
 							<div className="p-3 rounded-md bg-primary/10 border-2 border-primary text-sm font-medium">
 								{successMessage}
+							</div>
+						)}
+
+						{errorMessage && (
+							<div className="p-3 rounded-md bg-destructive/10 border-2 border-destructive text-destructive text-sm font-medium">
+								{errorMessage}
 							</div>
 						)}
 
