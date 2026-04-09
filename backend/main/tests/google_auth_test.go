@@ -54,7 +54,6 @@ func googleReqBody() dtos.GoogleCallbackRequest {
 }
 
 func TestGoogleCallback_NewUser(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_new")
@@ -94,7 +93,6 @@ func TestGoogleCallback_NewUser(t *testing.T) {
 }
 
 func TestGoogleCallback_ReturningUser(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_returning")
@@ -126,7 +124,6 @@ func TestGoogleCallback_ReturningUser(t *testing.T) {
 }
 
 func TestGoogleCallback_AccountLinking(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_link")
@@ -172,7 +169,6 @@ func TestGoogleCallback_AccountLinking(t *testing.T) {
 }
 
 func TestGoogleCallback_InvalidCode(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	services.SetTokenVerifier(&testutil.MockGoogleTokenVerifier{
@@ -195,7 +191,6 @@ func TestGoogleCallback_InvalidCode(t *testing.T) {
 }
 
 func TestGoogleCallback_MissingCode(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	// POST with empty body
@@ -206,7 +201,6 @@ func TestGoogleCallback_MissingCode(t *testing.T) {
 }
 
 func TestGoogleCallback_UnverifiedEmail(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_unverified")
@@ -228,7 +222,6 @@ func TestGoogleCallback_UnverifiedEmail(t *testing.T) {
 }
 
 func TestGoogleCallback_ConflictGoogleID(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_conflict")
@@ -260,7 +253,6 @@ func TestGoogleCallback_ConflictGoogleID(t *testing.T) {
 }
 
 func TestLinkGoogle_Success(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "link_google")
@@ -306,7 +298,6 @@ func TestLinkGoogle_Success(t *testing.T) {
 }
 
 func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
-	t.Parallel()
 	testutil.SetupTestDB(t)
 
 	t.Run("new user has account_linked false", func(t *testing.T) {
