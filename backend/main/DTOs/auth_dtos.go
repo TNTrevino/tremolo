@@ -62,13 +62,15 @@ type UserResponse struct {
 	FirstName string `json:"first_name" db:"first_name"`
 	LastName  string `json:"last_name" db:"last_name"`
 	Role      string `json:"role" db:"role"`
+	HasGoogle bool   `json:"has_google,omitempty"`
 }
 
 // LoginResponse represents the response body for successful login
 type LoginResponse struct {
-	User         UserResponse `json:"user"`
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
+	User          UserResponse `json:"user"`
+	AccessToken   string       `json:"access_token"`
+	RefreshToken  string       `json:"refresh_token"`
+	AccountLinked bool         `json:"account_linked,omitempty"`
 }
 
 // RegisterRequest represents the request body for user registration
@@ -143,4 +145,36 @@ func (req *RegisterRequest) ValidateRegisterRequest() error {
 type RegisterResponse struct {
 	Message string       `json:"message"`
 	User    UserResponse `json:"user"`
+}
+
+// GoogleCallbackRequest represents the request from the frontend after Google OAuth redirect
+type GoogleCallbackRequest struct {
+	Code        string `json:"code" validate:"required"`
+	RedirectURI string `json:"redirect_uri" validate:"required,url"`
+}
+
+// ValidateGoogleCallbackRequest validates the Google OAuth callback request
+func (req *GoogleCallbackRequest) ValidateGoogleCallbackRequest() error {
+	validate := validator.New()
+	err := validate.Struct(req)
+	if err != nil {
+		var errorMessage []string
+		if errs, ok := err.(validator.ValidationErrors); ok {
+			for _, fieldErr := range errs {
+				switch fieldErr.StructField() {
+				case "Code":
+					errorMessage = append(errorMessage, "Authorization code is required")
+				case "RedirectURI":
+					switch fieldErr.Tag() {
+					case "required":
+						errorMessage = append(errorMessage, "Redirect URI is required")
+					case "url":
+						errorMessage = append(errorMessage, "Redirect URI must be a valid URL")
+					}
+				}
+			}
+		}
+		return errors.New(strings.Join(errorMessage, ", "))
+	}
+	return nil
 }
