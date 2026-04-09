@@ -21,6 +21,7 @@ import {
 import { useLogin } from "@/shared/hooks/queries/useAuthQuery";
 import type { LoginLocationState } from "@/shared/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
+import { GoogleSignInButton } from "@/features/auth/components/GoogleSignInButton";
 
 export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
@@ -146,6 +147,19 @@ export function LoginPage() {
 						>
 							Sign In
 						</Button>
+
+						<div className="relative w-full">
+							<div className="absolute inset-0 flex items-center">
+								<span className="w-full border-t" />
+							</div>
+							<div className="relative flex justify-center text-xs uppercase">
+								<span className="bg-card px-2 text-muted-foreground">
+									Or continue with
+								</span>
+							</div>
+						</div>
+
+						<GoogleSignInButton />
 
 						<p className="text-sm text-center text-muted-foreground">
 							Don&apos;t have an account?{" "}
