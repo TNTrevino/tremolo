@@ -13,6 +13,7 @@ func TestHappyEntryCheckValidation(t *testing.T) {
 		TotalQuestions:   12,
 		CorrectQuestions: 11,
 		UserID:           4,
+		NPM:              5,
 	}
 
 	err := entry.ValidateEntry()
