@@ -135,7 +135,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 		SchoolID:  sql.NullInt32{Int32: int32(teacher.SchoolID), Valid: true},
 		RoleID:    teacherRoleID,
 		Email:     sql.NullString{String: teacher.Email, Valid: true},
-		Password:  teacher.PasswordHash,
+		Password:  sql.NullString{String: teacher.PasswordHash, Valid: true},
 	}
 
 	teacherID, err := database.Queries.CreateUserWithPassword(ctx, teacherParams)
@@ -158,7 +158,7 @@ func insertFakeTeacherWithStudents(studentsPerTeacher int) (dtos.User, int32, []
 			SchoolID:  sql.NullInt32{Int32: int32(student.SchoolID), Valid: true},
 			RoleID:    studentRoleID,
 			Email:     sql.NullString{String: student.Email, Valid: true},
-			Password:  student.PasswordHash,
+			Password:  sql.NullString{String: student.PasswordHash, Valid: true},
 		}
 
 		studentID, err := database.Queries.CreateUserWithPassword(ctx, studentParams)
@@ -222,7 +222,7 @@ func insertPersonalUser(schoolID int16) int32 {
 		SchoolID:  sql.NullInt32{Int32: int32(schoolID), Valid: true},
 		RoleID:    teacherRoleID,
 		Email:     sql.NullString{String: email, Valid: true},
-		Password:  passwordHash,
+		Password:  sql.NullString{String: passwordHash, Valid: true},
 	}
 
 	userID, err := database.Queries.CreateUserWithPassword(ctx, params)

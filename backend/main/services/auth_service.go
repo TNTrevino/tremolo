@@ -261,7 +261,7 @@ func Register(c *gin.Context) {
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
 		Email:     emailNullStr,
-		Password:  passwordHash,
+		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
 		SchoolID:  sql.NullInt32{Valid: false},
 	}
