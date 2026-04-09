@@ -1,10 +1,7 @@
 package services
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +13,6 @@ import (
 	"sight-reading/middleware"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/idtoken"
 )
 
 var (
@@ -30,12 +26,10 @@ var (
 func InitGoogleOAuth() {
 	googleClientID = os.Getenv("GOOGLE_CLIENT_ID")
 	if googleClientID == "" {
-		logger.Error("GOOGLE_CLIENT_ID environment variable is required")
 		panic("GOOGLE_CLIENT_ID environment variable is required")
 	}
 	googleClientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
 	if googleClientSecret == "" {
-		logger.Error("GOOGLE_CLIENT_SECRET environment variable is required")
 		panic("GOOGLE_CLIENT_SECRET environment variable is required")
 	}
 	tokenVerifier = &googleTokenVerifierImpl{}
@@ -44,62 +38,6 @@ func InitGoogleOAuth() {
 // SetTokenVerifier allows replacing the token verifier for testing.
 func SetTokenVerifier(v GoogleTokenVerifier) {
 	tokenVerifier = v
-}
-
-// googleTokenVerifierImpl is the production implementation of GoogleTokenVerifier.
-type googleTokenVerifierImpl struct{}
-
-func (g *googleTokenVerifierImpl) ExchangeCode(code, redirectURI string) (string, error) {
-	resp, err := http.PostForm("https://oauth2.googleapis.com/token", map[string][]string{
-		"code":          {code},
-		"client_id":     {googleClientID},
-		"client_secret": {googleClientSecret},
-		"redirect_uri":  {redirectURI},
-		"grant_type":    {"authorization_code"},
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to exchange code: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("google token exchange failed with status %d", resp.StatusCode)
-	}
-
-	var tokenResp struct {
-		IDToken string `json:"id_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", fmt.Errorf("failed to decode token response: %w", err)
-	}
-	if tokenResp.IDToken == "" {
-		return "", fmt.Errorf("no id_token in response")
-	}
-	return tokenResp.IDToken, nil
-}
-
-func (g *googleTokenVerifierImpl) VerifyIDToken(idTokenStr string) (*GoogleClaims, error) {
-	payload, err := idtoken.Validate(context.Background(), idTokenStr, googleClientID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify id token: %w", err)
-	}
-
-	claims := &GoogleClaims{
-		Sub:   payload.Subject,
-		Email: fmt.Sprintf("%v", payload.Claims["email"]),
-	}
-
-	if v, ok := payload.Claims["email_verified"].(bool); ok {
-		claims.EmailVerified = v
-	}
-	if v, ok := payload.Claims["given_name"].(string); ok {
-		claims.GivenName = v
-	}
-	if v, ok := payload.Claims["family_name"].(string); ok {
-		claims.FamilyName = v
-	}
-
-	return claims, nil
 }
 
 // GoogleCallback handles the OAuth callback from the frontend.
@@ -141,14 +79,13 @@ func GoogleCallback(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	normalizedEmail := strings.ToLower(claims.Email)
-	accountLinked := false
+	normalizedEmail := normalizeEmail(claims.Email)
 
 	// Scenario 1: Check if user exists by Google ID
 	user, err := database.Queries.GetUserByGoogleID(ctx, sql.NullString{String: claims.Sub, Valid: true})
 	if err == nil {
 		// Returning Google user — issue tokens
-		issueTokensAndRespond(c, int(user.ID), user.Email, user.FirstName, user.LastName, user.Role, true, false)
+		issueTokensAndRespond(c, convertGetUserByGoogleIDRowToUserResponse(user), false)
 		return
 	}
 	if err != sql.ErrNoRows {
@@ -177,9 +114,10 @@ func GoogleCallback(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link Google account"})
 			return
 		}
-		accountLinked = true
 		logger.Info("Auto-linked Google account to existing user", "email", normalizedEmail)
-		issueTokensAndRespond(c, int(existingUser.ID), existingUser.Email, existingUser.FirstName, existingUser.LastName, existingUser.Role, true, accountLinked)
+		userResp := convertGetUserByEmailForOAuthRowToUserResponse(existingUser)
+		userResp.HasGoogle = true
+		issueTokensAndRespond(c, userResp, true)
 		return
 	}
 	if err != sql.ErrNoRows {
@@ -228,7 +166,15 @@ func GoogleCallback(c *gin.Context) {
 	}
 
 	logger.Info("Created new OAuth user", "email", normalizedEmail, "user_id", newUser.ID)
-	issueTokensAndRespond(c, int(newUser.ID), newUser.Email, newUser.FirstName, newUser.LastName, "BASIC", true, false)
+	userResp := dtos.UserResponse{
+		ID:        int(newUser.ID),
+		Email:     newUser.Email.String,
+		FirstName: newUser.FirstName,
+		LastName:  newUser.LastName,
+		Role:      "BASIC",
+		HasGoogle: true,
+	}
+	issueTokensAndRespond(c, userResp, false)
 }
 
 // LinkGoogleAccount allows an authenticated user to link their Google account.
@@ -274,11 +220,12 @@ func LinkGoogleAccount(c *gin.Context) {
 	// Verify the authenticated user's email matches the Google email
 	currentUser, err := database.Queries.GetUserByID(ctx, int32(uid))
 	if err != nil {
+		logger.Error("Failed to look up authenticated user for Google link", "error", err.Error(), "user_id", uid)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	if strings.ToLower(currentUser.Email.String) != strings.ToLower(claims.Email) {
+	if normalizeEmail(currentUser.Email.String) != normalizeEmail(claims.Email) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Google email does not match your account email"})
 		return
 	}
@@ -290,6 +237,7 @@ func LinkGoogleAccount(c *gin.Context) {
 		return
 	}
 	if err != sql.ErrNoRows {
+		logger.Error("Database error checking Google ID uniqueness", "error", err.Error(), "user_id", uid)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -308,28 +256,23 @@ func LinkGoogleAccount(c *gin.Context) {
 }
 
 // issueTokensAndRespond generates JWT tokens and sends the login response.
-func issueTokensAndRespond(c *gin.Context, userID int, email sql.NullString, firstName, lastName, role string, hasGoogle bool, accountLinked bool) {
-	accessToken, err := middleware.GenerateAccessToken(userID)
+func issueTokensAndRespond(c *gin.Context, user dtos.UserResponse, accountLinked bool) {
+	accessToken, err := middleware.GenerateAccessToken(user.ID)
 	if err != nil {
+		logger.Error("Failed to generate access token", "error", err.Error(), "user_id", user.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
-	refreshToken, err := middleware.GenerateRefreshToken(userID)
+	refreshToken, err := middleware.GenerateRefreshToken(user.ID)
 	if err != nil {
+		logger.Error("Failed to generate refresh token", "error", err.Error(), "user_id", user.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
 		return
 	}
 
 	response := dtos.LoginResponse{
-		User: dtos.UserResponse{
-			ID:        userID,
-			Email:     email.String,
-			FirstName: firstName,
-			LastName:  lastName,
-			Role:      role,
-			HasGoogle: hasGoogle,
-		},
+		User:          user,
 		AccessToken:   accessToken,
 		RefreshToken:  refreshToken,
 		AccountLinked: accountLinked,
