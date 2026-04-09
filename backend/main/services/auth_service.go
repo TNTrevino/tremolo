@@ -281,7 +281,7 @@ func Register(c *gin.Context) {
 			"user_id", createdUser.ID)
 	}
 
-	if err := CreateDefaultColorSchemes(ctx, database.DBConn, int(createdUser.ID)); err != nil {
+	if err := seedDefaultColorSchemes(ctx, int(createdUser.ID)); err != nil {
 		logger.Error("Failed to seed default color schemes for new user",
 			"error", err.Error(),
 			"user_id", createdUser.ID)
@@ -367,4 +367,18 @@ func RefreshToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": newAccessToken,
 	})
+}
+
+func seedDefaultColorSchemes(ctx context.Context, userID int) error {
+	tx, err := database.DBConn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck // rollback after commit is a no-op
+
+	qtx := generated.New(tx)
+	if err := CreateDefaultColorSchemes(ctx, qtx, userID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

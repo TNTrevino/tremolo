@@ -61,20 +61,9 @@ func defaultDarkColors() dtos.ColorSchemeColors {
 
 // CreateDefaultColorSchemes seeds a new user with the Default Light and Default Dark
 // preset color schemes, sets the active scheme to Dark, and configures the preferred
-// light/dark scheme preferences. All operations run in a single transaction so a
-// partial failure does not leave the user in an inconsistent state.
-func CreateDefaultColorSchemes(ctx context.Context, db *sql.DB, userID int) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		logger.Error("Failed to begin transaction for default color schemes",
-			"error", err.Error(),
-			"user_id", userID)
-		return err
-	}
-	defer tx.Rollback() //nolint:errcheck // rollback after commit is a no-op
-
-	q := generated.New(tx)
-
+// light/dark scheme preferences. The caller should pass a transaction-scoped Querier
+// so that a partial failure rolls back all operations.
+func CreateDefaultColorSchemes(ctx context.Context, q generated.Querier, userID int) error {
 	lightParams := generated.CreateColorSchemeParams{
 		UserID:   int32(userID),
 		Name:     "Default Light",
@@ -125,13 +114,6 @@ func CreateDefaultColorSchemes(ctx context.Context, db *sql.DB, userID int) erro
 	})
 	if err != nil {
 		logger.Error("Failed to set preferred color schemes",
-			"error", err.Error(),
-			"user_id", userID)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		logger.Error("Failed to commit default color schemes transaction",
 			"error", err.Error(),
 			"user_id", userID)
 		return err
