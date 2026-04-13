@@ -11,11 +11,11 @@ import { getErrorMessage } from "@/shared/utils/error.utils";
 export function GoogleCallbackPage() {
 	const navigate = useNavigate();
 	const googleCallback = useGoogleCallback();
-	const calledRef = useRef(false);
+	const startedRef = useRef(false);
 
 	useEffect(() => {
-		if (calledRef.current) return;
-		calledRef.current = true;
+		if (startedRef.current) return;
+		startedRef.current = true;
 
 		const params = new URLSearchParams(window.location.search);
 		const code = params.get("code");
@@ -54,34 +54,18 @@ export function GoogleCallbackPage() {
 			return;
 		}
 
-		googleCallback.mutate(
-			{ code, redirect_uri: getRedirectUri() },
-			{
-				onSuccess: (response) => {
-					if (response.account_linked) {
-						// Use a small delay so the toast shows after navigation
-						setTimeout(() => {
-							window.dispatchEvent(
-								new CustomEvent("toast:info", {
-									detail:
-										"Your Google account has been linked to your existing account.",
-								}),
-							);
-						}, 500);
-					}
-					navigate("/dashboard", { replace: true });
-				},
-				onError: (error) => {
-					navigate("/login", {
-						state: {
-							errorMessage: getErrorMessage(error),
-						} satisfies LoginLocationState,
-						replace: true,
-					});
-				},
-			},
-		);
+		googleCallback.mutate({ code, redirect_uri: getRedirectUri() });
 	}, [googleCallback, navigate]);
+
+	useEffect(() => {
+		if (!googleCallback.isError) return;
+		navigate("/login", {
+			state: {
+				errorMessage: getErrorMessage(googleCallback.error),
+			} satisfies LoginLocationState,
+			replace: true,
+		});
+	}, [googleCallback.isError, googleCallback.error, navigate]);
 
 	return (
 		<div className="min-h-screen flex items-center justify-center">
