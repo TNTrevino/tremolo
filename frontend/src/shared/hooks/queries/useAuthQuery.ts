@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store";
 import { authService } from "@/services/api";
 import type {
@@ -102,12 +103,26 @@ export function useLogout() {
  */
 export function useGoogleCallback() {
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
 	return useMutation({
 		mutationFn: (request: GoogleCallbackRequest) =>
 			authService.googleCallback(request),
 		meta: { suppressErrorToast: true },
-		onSuccess: (response) => handleLoginSuccess(response, queryClient),
+		onSuccess: (response) => {
+			handleLoginSuccess(response, queryClient);
+			if (response.account_linked) {
+				setTimeout(() => {
+					window.dispatchEvent(
+						new CustomEvent("toast:info", {
+							detail:
+								"Your Google account has been linked to your existing account.",
+						}),
+					);
+				}, 500);
+			}
+			navigate("/dashboard", { replace: true });
+		},
 	});
 }
 
