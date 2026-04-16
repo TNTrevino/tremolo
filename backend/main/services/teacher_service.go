@@ -52,7 +52,7 @@ func CreateUser(c *gin.Context) {
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
 		Email:     sql.NullString{String: reqBody.Email, Valid: reqBody.Email != ""},
-		Password:  reqBody.PasswordHash,
+		Password:  sql.NullString{String: reqBody.PasswordHash, Valid: reqBody.PasswordHash != ""},
 		RoleID:    roleID,
 	}
 

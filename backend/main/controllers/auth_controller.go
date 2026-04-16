@@ -15,5 +15,9 @@ func SetupAuthRoutes(router *gin.Engine) {
 		auth.POST("/refresh", services.RefreshToken)
 
 		auth.GET("/me", middleware.AuthMiddleware(), services.GetCurrentUser)
+
+		// Google OAuth
+		auth.POST("/google/callback", services.GoogleCallback)
+		auth.POST("/google/link", middleware.AuthMiddleware(), services.LinkGoogleAccount)
 	}
 }

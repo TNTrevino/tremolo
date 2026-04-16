@@ -13,7 +13,9 @@
  */
 
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store";
+import type { DashboardLocationState } from "@/shared/types";
 import { useDashboardData } from "@/features/dashboard/hooks";
 import { useActivityHeatmap } from "@/shared/hooks/queries";
 import {
@@ -49,6 +51,8 @@ function calculateTimeReading(totalSessions: number): string {
 }
 
 export function DashboardPage() {
+	const location = useLocation();
+	const locationState = location.state as DashboardLocationState | null;
 	const authUser = useAuthStore((state) => state.user);
 	const [interval, setInterval] = useState<ChartInterval>("day");
 	const [viewMode, setViewMode] = useState<"my" | "class">("my");
@@ -106,6 +110,12 @@ export function DashboardPage() {
 	return (
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl space-y-6">
+				{locationState?.infoMessage && (
+					<div className="p-3 rounded-md bg-primary/10 border-2 border-primary text-sm font-medium">
+						{locationState.infoMessage}
+					</div>
+				)}
+
 				{/* User Profile Card */}
 				<UserProfileCard
 					user={user}

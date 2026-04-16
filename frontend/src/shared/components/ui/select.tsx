@@ -22,9 +22,6 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 					{children}
 				</select>
 				<ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
-				{error && (
-					<p className="mt-1 text-sm text-destructive font-medium">{error}</p>
-				)}
 			</div>
 		);
 	},

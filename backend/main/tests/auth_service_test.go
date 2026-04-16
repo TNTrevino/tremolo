@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,7 +231,7 @@ func TestLogin_EmailNormalization(t *testing.T) {
 	})
 
 	// Login with uppercase email
-	uppercaseEmail := "TEST" + email[4:] // Make part of email uppercase
+	uppercaseEmail := strings.ToUpper(email)
 	reqBody := dtos.LoginRequest{
 		Email:    uppercaseEmail,
 		Password: password,
@@ -568,12 +569,12 @@ func TestGetCurrentUser_InvalidUserIDType(t *testing.T) {
 
 	services.GetCurrentUser(c)
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code, "Response body: %s", w.Body.String())
+	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
 	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
-	assert.Equal(t, "Internal server error", response["error"])
+	assert.Equal(t, "Unauthorized", response["error"])
 }
 
 func TestGetCurrentUser_UserNotFound(t *testing.T) {

@@ -133,3 +133,25 @@ func convertGetUserByEmailRowToUserResponse(user generated.GetUserByEmailRow) dt
 		Role:      user.Role,
 	}
 }
+
+func convertGetUserByGoogleIDRowToUserResponse(user generated.GetUserByGoogleIDRow) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:        int(user.ID),
+		Email:     user.Email.String,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role,
+		HasGoogle: user.GoogleID.Valid,
+	}
+}
+
+func convertGetUserByEmailForOAuthRowToUserResponse(user generated.GetUserByEmailForOAuthRow) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:        int(user.ID),
+		Email:     user.Email.String,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      user.Role,
+		HasGoogle: user.GoogleID.Valid,
+	}
+}

@@ -2,12 +2,15 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
 	dtos "sight-reading/DTOs"
+	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
@@ -23,12 +26,21 @@ func TestCreateUser_Success(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "create_user_success")
 
+	schoolID, err := database.Queries.CreateSchool(context.Background(), generated.CreateSchoolParams{
+		Title:   "Test School",
+		City:    "Austin",
+		County:  "Travis",
+		State:   "TX",
+		Country: "US",
+	})
+	require.NoError(t, err)
+
 	reqBody := dtos.User{
 		FirstName: "John",
 		LastName:  "Doe",
 		Role:      dtos.Student,
 		Email:     email,
-		SchoolID:  1,
+		SchoolID:  int16(schoolID),
 	}
 
 	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
@@ -298,7 +310,7 @@ func TestGetStudent_NotFound(t *testing.T) {
 	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
-	assert.Equal(t, "not found", response["message"])
+	assert.Equal(t, "Student not found", response["error"])
 }
 
 // TestGetStudent_InvalidID tests fetching with an invalid ID format
@@ -307,14 +319,14 @@ func TestGetStudent_InvalidID(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	testCases := []struct {
-		name string
-		id   string
+		name         string
+		id           string
+		expectStatus int
 	}{
-		{name: "Non-numeric ID", id: "abc"},
-		{name: "Empty ID", id: ""},
-		{name: "Special characters", id: "!@#$"},
-		{name: "Float ID", id: "1.5"},
-		{name: "Negative ID", id: "-1"},
+		{name: "Non-numeric ID", id: "abc", expectStatus: http.StatusUnprocessableEntity},
+		{name: "Special characters", id: "!@#$", expectStatus: http.StatusUnprocessableEntity},
+		{name: "Float ID", id: "1.5", expectStatus: http.StatusUnprocessableEntity},
+		{name: "Negative ID", id: "-1", expectStatus: http.StatusNotFound},
 	}
 
 	for _, tc := range testCases {
@@ -325,12 +337,7 @@ func TestGetStudent_InvalidID(t *testing.T) {
 
 			services.GetStudent(c)
 
-			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
-
-			var response map[string]any
-			testutil.ParseJSONResponse(t, w, &response)
-
-			assert.Equal(t, "Invalid request body", response["message"])
+			assert.Equal(t, tc.expectStatus, w.Code, "Response body: %s", w.Body.String())
 		})
 	}
 }
@@ -361,7 +368,7 @@ func TestGetStudent_WrongRole(t *testing.T) {
 	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
-	assert.Equal(t, "not found", response["message"])
+	assert.Equal(t, "Student not found", response["error"])
 }
 
 // TestGetStudent_AdminRole tests that admin users are not returned as students

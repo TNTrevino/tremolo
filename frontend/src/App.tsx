@@ -45,6 +45,11 @@ const ProfilePage = lazy(() =>
 const AccountPage = lazy(() =>
 	import("@/pages/AccountPage").then((m) => ({ default: m.AccountPage })),
 );
+const GoogleCallbackPage = lazy(() =>
+	import("@/pages/GoogleCallbackPage").then((m) => ({
+		default: m.GoogleCallbackPage,
+	})),
+);
 
 /**
  * Loading fallback component for lazy-loaded pages
@@ -124,6 +129,10 @@ function AppContent() {
 						<Route path="/note-game" element={<NoteGamePage />} />
 						<Route path="/sheet-music" element={<SheetMusicPage />} />
 						<Route path="/convert" element={<ConverterPage />} />
+						<Route
+							path="/auth/google/callback"
+							element={<GoogleCallbackPage />}
+						/>
 
 						{/* Protected Routes */}
 						<Route

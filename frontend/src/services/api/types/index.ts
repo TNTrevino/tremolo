@@ -15,6 +15,7 @@ export type {
 	RefreshTokenRequest,
 	RefreshTokenResponse,
 	PasswordRequirement,
+	GoogleCallbackRequest,
 } from "./auth.types";
 
 export type {
