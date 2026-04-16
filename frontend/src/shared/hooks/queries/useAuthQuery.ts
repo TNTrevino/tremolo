@@ -9,6 +9,7 @@ import type {
 	User,
 	GoogleCallbackRequest,
 } from "@/services/api/types";
+import type { DashboardLocationState } from "@/shared/types";
 import { mapApiUserToUser } from "@/services/api/mappers/user.mapper";
 
 export const authKeys = {
@@ -111,17 +112,13 @@ export function useGoogleCallback() {
 		meta: { suppressErrorToast: true },
 		onSuccess: (response) => {
 			handleLoginSuccess(response, queryClient);
-			if (response.account_linked) {
-				setTimeout(() => {
-					window.dispatchEvent(
-						new CustomEvent("toast:info", {
-							detail:
-								"Your Google account has been linked to your existing account.",
-						}),
-					);
-				}, 500);
-			}
-			navigate("/dashboard", { replace: true });
+			const state: DashboardLocationState | undefined = response.account_linked
+				? {
+						infoMessage:
+							"Your Google account has been linked to your existing account.",
+					}
+				: undefined;
+			navigate("/dashboard", { replace: true, state });
 		},
 	});
 }
