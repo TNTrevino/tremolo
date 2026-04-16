@@ -39,7 +39,9 @@ func (g *googleTokenVerifierImpl) ExchangeCode(code, redirectURI string) (string
 	if err != nil {
 		return "", fmt.Errorf("failed to exchange code: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
