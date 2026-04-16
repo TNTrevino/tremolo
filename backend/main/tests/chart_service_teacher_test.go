@@ -208,9 +208,9 @@ func TestGetTeacherClassChartData_WithStudents(t *testing.T) {
 	for i, point := range response.NPM {
 		npmValues[i] = point.Value
 	}
-	assert.Contains(t, npmValues, 3.5)
-	assert.Contains(t, npmValues, 4.0)
-	assert.Contains(t, npmValues, 5.0)
+	assert.Contains(t, npmValues, float64(3))
+	assert.Contains(t, npmValues, float64(4))
+	assert.Contains(t, npmValues, float64(5))
 }
 
 // TestGetTeacherClassChartData_AllIntervals tests that all interval values work for teachers

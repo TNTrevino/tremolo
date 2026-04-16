@@ -23,6 +23,67 @@ func (q *Queries) CheckAccountLocked(ctx context.Context, email sql.NullString) 
 	return locked_until, err
 }
 
+const createOAuthUser = `-- name: CreateOAuthUser :one
+insert into tremolo.users (
+    first_name,
+    last_name,
+    email,
+    google_id,
+    role_id,
+    school_id
+)
+values (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6
+)
+returning id, first_name, last_name, email, role_id, school_id, created_date
+`
+
+type CreateOAuthUserParams struct {
+	FirstName string         `json:"first_name"`
+	LastName  string         `json:"last_name"`
+	Email     sql.NullString `json:"email"`
+	GoogleID  sql.NullString `json:"google_id"`
+	RoleID    int32          `json:"role_id"`
+	SchoolID  sql.NullInt32  `json:"school_id"`
+}
+
+type CreateOAuthUserRow struct {
+	ID          int32          `json:"id"`
+	FirstName   string         `json:"first_name"`
+	LastName    string         `json:"last_name"`
+	Email       sql.NullString `json:"email"`
+	RoleID      int32          `json:"role_id"`
+	SchoolID    sql.NullInt32  `json:"school_id"`
+	CreatedDate sql.NullTime   `json:"created_date"`
+}
+
+func (q *Queries) CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error) {
+	row := q.db.QueryRowContext(ctx, createOAuthUser,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.GoogleID,
+		arg.RoleID,
+		arg.SchoolID,
+	)
+	var i CreateOAuthUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.RoleID,
+		&i.SchoolID,
+		&i.CreatedDate,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 insert into tremolo.users (
     first_name,
@@ -47,7 +108,7 @@ type CreateUserParams struct {
 	FirstName string         `json:"first_name"`
 	LastName  string         `json:"last_name"`
 	Email     sql.NullString `json:"email"`
-	Password  string         `json:"password"`
+	Password  sql.NullString `json:"password"`
 	RoleID    int32          `json:"role_id"`
 	SchoolID  sql.NullInt32  `json:"school_id"`
 }
@@ -119,7 +180,7 @@ func (q *Queries) GetRoleIDByName(ctx context.Context, name string) (int32, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-select u.id, u.email, u.first_name, u.last_name, r.name as role, u.password
+select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password
 from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.email = $1
@@ -144,6 +205,70 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (Get
 		&i.LastName,
 		&i.Role,
 		&i.Password,
+	)
+	return i, err
+}
+
+const getUserByEmailForOAuth = `-- name: GetUserByEmailForOAuth :one
+select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password, u.google_id
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where u.email = $1
+`
+
+type GetUserByEmailForOAuthRow struct {
+	ID        int32          `json:"id"`
+	Email     sql.NullString `json:"email"`
+	FirstName string         `json:"first_name"`
+	LastName  string         `json:"last_name"`
+	Role      string         `json:"role"`
+	Password  string         `json:"password"`
+	GoogleID  sql.NullString `json:"google_id"`
+}
+
+func (q *Queries) GetUserByEmailForOAuth(ctx context.Context, email sql.NullString) (GetUserByEmailForOAuthRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailForOAuth, email)
+	var i GetUserByEmailForOAuthRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.Password,
+		&i.GoogleID,
+	)
+	return i, err
+}
+
+const getUserByGoogleID = `-- name: GetUserByGoogleID :one
+select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password, u.google_id
+from tremolo.users u
+inner join tremolo.roles r on u.role_id = r.id
+where u.google_id = $1
+`
+
+type GetUserByGoogleIDRow struct {
+	ID        int32          `json:"id"`
+	Email     sql.NullString `json:"email"`
+	FirstName string         `json:"first_name"`
+	LastName  string         `json:"last_name"`
+	Role      string         `json:"role"`
+	Password  string         `json:"password"`
+	GoogleID  sql.NullString `json:"google_id"`
+}
+
+func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (GetUserByGoogleIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByGoogleID, googleID)
+	var i GetUserByGoogleIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.Password,
+		&i.GoogleID,
 	)
 	return i, err
 }
@@ -313,6 +438,22 @@ where email = $1
 
 func (q *Queries) IncrementFailedAttempts(ctx context.Context, email sql.NullString) error {
 	_, err := q.db.ExecContext(ctx, incrementFailedAttempts, email)
+	return err
+}
+
+const linkGoogleAccount = `-- name: LinkGoogleAccount :exec
+update tremolo.users
+set google_id = $1
+where id = $2
+`
+
+type LinkGoogleAccountParams struct {
+	GoogleID sql.NullString `json:"google_id"`
+	ID       int32          `json:"id"`
+}
+
+func (q *Queries) LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error {
+	_, err := q.db.ExecContext(ctx, linkGoogleAccount, arg.GoogleID, arg.ID)
 	return err
 }
 

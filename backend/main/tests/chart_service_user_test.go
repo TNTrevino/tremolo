@@ -325,10 +325,10 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 	for i, point := range response.NPM {
 		npmValues[i] = point.Value
 	}
-	// We expect NPM values 3.5, 4.0, and 5.0 (in some order based on timestamp)
-	assert.Contains(t, npmValues, 3.5)
-	assert.Contains(t, npmValues, 4.0)
-	assert.Contains(t, npmValues, 5.0)
+	// NPM is stored as int8, so 3.5 → 3, 4.0 → 4, 5.0 → 5
+	assert.Contains(t, npmValues, float64(3))
+	assert.Contains(t, npmValues, float64(4))
+	assert.Contains(t, npmValues, float64(5))
 
 	// Verify total questions values
 	totalQValues := make([]float64, len(response.TotalQuestions))

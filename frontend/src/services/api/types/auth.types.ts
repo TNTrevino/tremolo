@@ -8,7 +8,7 @@
  * User     – camelCase shape used throughout the frontend
  */
 
-export type UserRole = "STUDENT" | "TEACHER" | "PARENT";
+export type UserRole = "STUDENT" | "TEACHER" | "PARENT" | "BASIC";
 
 export interface ApiUser {
 	id: number;
@@ -16,6 +16,7 @@ export interface ApiUser {
 	first_name: string;
 	last_name: string;
 	role: UserRole;
+	has_google?: boolean;
 }
 
 export interface User {
@@ -24,6 +25,7 @@ export interface User {
 	firstName: string;
 	lastName: string;
 	role: UserRole;
+	hasGoogle?: boolean;
 }
 
 export interface LoginRequest {
@@ -35,6 +37,7 @@ export interface LoginResponse {
 	user: ApiUser;
 	access_token: string;
 	refresh_token: string;
+	account_linked?: boolean;
 }
 
 export interface RegisterRequest {
@@ -57,6 +60,11 @@ export interface RefreshTokenRequest {
 export interface RefreshTokenResponse {
 	access_token: string;
 	refresh_token: string;
+}
+
+export interface GoogleCallbackRequest {
+	code: string;
+	redirect_uri: string;
 }
 
 export interface PasswordRequirement {

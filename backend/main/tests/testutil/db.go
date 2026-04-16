@@ -33,6 +33,7 @@ func SetupTestDB(t *testing.T) {
 		}
 		initTestLogger()
 		database.InitializeDBConnection()
+		database.RunMigrations(database.DBConn)
 	})
 
 	if setupErr != nil {
@@ -75,7 +76,7 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
 		Email:     sql.NullString{String: params.Email, Valid: true},
-		Password:  hashedPassword,
+		Password:  sql.NullString{String: hashedPassword, Valid: true},
 		RoleID:    roleID,
 	}
 

@@ -7,6 +7,7 @@ import type {
 	RefreshTokenRequest,
 	RefreshTokenResponse,
 	ApiUser,
+	GoogleCallbackRequest,
 } from "./types";
 
 interface TokenManager {
@@ -75,5 +76,27 @@ export class AuthService {
 
 	isAuthenticated(): boolean {
 		return !!this.tokenManager.getAccessToken();
+	}
+
+	async googleCallback(request: GoogleCallbackRequest): Promise<LoginResponse> {
+		const response = await this.client.post<LoginResponse>(
+			"/api/auth/google/callback",
+			request,
+		);
+		this.tokenManager.setTokens(
+			response.data.access_token,
+			response.data.refresh_token,
+		);
+		return response.data;
+	}
+
+	async linkGoogle(
+		request: GoogleCallbackRequest,
+	): Promise<{ message: string }> {
+		const response = await this.client.post<{ message: string }>(
+			"/api/auth/google/link",
+			request,
+		);
+		return response.data;
 	}
 }

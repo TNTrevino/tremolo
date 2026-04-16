@@ -62,7 +62,7 @@ func UpdateKeyboardBindings(c *gin.Context) {
 	if err != nil {
 		var validationErr *services.ValidationError
 		if errors.As(err, &validationErr) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid keyboard bindings"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Unwrap().Error()})
 			return
 		}
 		logger.Error("failed to update keyboard bindings", "error", err, "userID", userID)

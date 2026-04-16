@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store";
 import { authService } from "@/services/api";
-import type { LoginRequest, RegisterRequest, User } from "@/services/api/types";
+import type {
+	LoginRequest,
+	LoginResponse,
+	RegisterRequest,
+	User,
+	GoogleCallbackRequest,
+} from "@/services/api/types";
+import type { DashboardLocationState } from "@/shared/types";
 import { mapApiUserToUser } from "@/services/api/mappers/user.mapper";
 
 export const authKeys = {
@@ -10,6 +18,19 @@ export const authKeys = {
 	login: () => [...authKeys.all, "login"] as const,
 	register: () => [...authKeys.all, "register"] as const,
 };
+
+/**
+ * Shared handler for successful login responses (used by both useLogin and useGoogleCallback).
+ * Updates auth store and query cache with the authenticated user.
+ */
+function handleLoginSuccess(
+	response: LoginResponse,
+	queryClient: ReturnType<typeof useQueryClient>,
+): void {
+	useAuthStore.getState().setAuthFromLoginResponse(response);
+	const user = mapApiUserToUser(response.user);
+	queryClient.setQueryData(authKeys.currentUser(), user);
+}
 
 /**
  * Hook to get current user information.
@@ -43,11 +64,7 @@ export function useLogin() {
 	return useMutation({
 		mutationFn: (credentials: LoginRequest) => authService.login(credentials),
 		meta: { suppressErrorToast: true },
-		onSuccess: (response) => {
-			useAuthStore.getState().setAuthFromLoginResponse(response);
-			const user = mapApiUserToUser(response.user);
-			queryClient.setQueryData(authKeys.currentUser(), user);
-		},
+		onSuccess: (response) => handleLoginSuccess(response, queryClient),
 	});
 }
 
@@ -78,5 +95,41 @@ export function useLogout() {
 			useAuthStore.getState().clearAuth();
 			queryClient.clear();
 		},
+	});
+}
+
+/**
+ * Hook to handle Google OAuth callback.
+ * Exchanges the authorization code for tokens and logs the user in.
+ */
+export function useGoogleCallback() {
+	const queryClient = useQueryClient();
+	const navigate = useNavigate();
+
+	return useMutation({
+		mutationFn: (request: GoogleCallbackRequest) =>
+			authService.googleCallback(request),
+		meta: { suppressErrorToast: true },
+		onSuccess: (response) => {
+			handleLoginSuccess(response, queryClient);
+			const state: DashboardLocationState | undefined = response.account_linked
+				? {
+						infoMessage:
+							"Your Google account has been linked to your existing account.",
+					}
+				: undefined;
+			navigate("/dashboard", { replace: true, state });
+		},
+	});
+}
+
+/**
+ * Hook to link a Google account to the current authenticated user.
+ */
+export function useLinkGoogle() {
+	return useMutation({
+		mutationFn: (request: GoogleCallbackRequest) =>
+			authService.linkGoogle(request),
+		meta: { errorTitle: "Failed to link Google account" },
 	});
 }

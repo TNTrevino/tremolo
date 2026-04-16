@@ -99,7 +99,7 @@ type TremoloUser struct {
 	FirstName           string         `json:"first_name"`
 	LastName            string         `json:"last_name"`
 	Email               sql.NullString `json:"email"`
-	Password            string         `json:"password"`
+	Password            sql.NullString `json:"password"`
 	FailedLoginAttempts int32          `json:"failed_login_attempts"`
 	LockedUntil         sql.NullTime   `json:"locked_until"`
 	SchoolID            sql.NullInt32  `json:"school_id"`
@@ -107,4 +107,5 @@ type TremoloUser struct {
 	CreatedTime         sql.NullTime   `json:"created_time"`
 	Instrument          sql.NullString `json:"instrument"`
 	RoleID              int32          `json:"role_id"`
+	GoogleID            sql.NullString `json:"google_id"`
 }

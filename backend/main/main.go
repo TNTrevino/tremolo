@@ -10,6 +10,7 @@ import (
 	"sight-reading/generation"
 	"sight-reading/logger"
 	"sight-reading/middleware"
+	"sight-reading/services"
 	"strings"
 
 	"github.com/gin-contrib/cors"
@@ -22,6 +23,7 @@ func main() {
 	database.InitializeDBConnection()
 	database.RunMigrations(database.DBConn)
 	middleware.InitJWTSecret()
+	services.InitGoogleOAuth()
 
 	// faker flag
 	runPackage := flag.Bool("fake-it", false, "use this flag to generate data")

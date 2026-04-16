@@ -48,14 +48,15 @@ func (entry *Entry) ValidateEntry() error {
 		return err
 	}
 
+	var errorMessage []string
+
+	// Business rule checks (independent of struct validation)
+	if entry.CorrectQuestions > entry.TotalQuestions {
+		errorMessage = append(errorMessage, "CorrectQuestions: Correct questions cannot be more than total questions")
+	}
+
 	err = validate.Struct(entry)
 	if err != nil {
-		var errorMessage []string
-
-		if entry.CorrectQuestions > entry.TotalQuestions {
-			errorMessage = append(errorMessage, "CorrectQuestions: Correct questions cannot be more than total questions")
-		}
-
 		// NOTE: type asserstion
 		if errs, ok := err.(validator.ValidationErrors); ok {
 			for _, fieldErr := range errs {
@@ -92,12 +93,20 @@ func (entry *Entry) ValidateEntry() error {
 					case "number":
 						errorMessage = append(errorMessage, "CorrectQuestions: must be a number")
 					}
+
+				case "NPM":
+					switch fieldErr.Tag() {
+					case "required":
+						errorMessage = append(errorMessage, "NPM: notes per minute is required")
+					case "number":
+						errorMessage = append(errorMessage, "NPM: must be a number")
+					}
 				}
 			}
 		}
-		if len(errorMessage) > 0 {
-			return errors.New(strings.Join(errorMessage, ",\n"))
-		}
+	}
+	if len(errorMessage) > 0 {
+		return errors.New(strings.Join(errorMessage, ",\n"))
 	}
 	return nil
 }

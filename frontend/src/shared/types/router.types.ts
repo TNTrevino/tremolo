@@ -7,9 +7,17 @@
  */
 export interface LoginLocationState {
 	successMessage?: string;
+	errorMessage?: string;
 	from?: {
 		pathname: string;
 	};
+}
+
+/**
+ * Location state passed to dashboard after OAuth account linking
+ */
+export interface DashboardLocationState {
+	infoMessage?: string;
 }
 
 /**
