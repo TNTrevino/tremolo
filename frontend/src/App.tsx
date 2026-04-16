@@ -10,6 +10,7 @@ import { getErrorMessage } from "@/shared/utils/error.utils";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
+import { GuestRoute } from "@/shared/components/layout/GuestRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
@@ -124,8 +125,22 @@ function AppContent() {
 						<Route path="/" element={<Navigate to="/note-game" replace />} />
 						<Route path="/home" element={<HomePage />} />
 						<Route path="/about" element={<AboutPage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/signup" element={<SignupPage />} />
+						<Route
+							path="/login"
+							element={
+								<GuestRoute>
+									<LoginPage />
+								</GuestRoute>
+							}
+						/>
+						<Route
+							path="/signup"
+							element={
+								<GuestRoute>
+									<SignupPage />
+								</GuestRoute>
+							}
+						/>
 						<Route path="/note-game" element={<NoteGamePage />} />
 						<Route path="/sheet-music" element={<SheetMusicPage />} />
 						<Route path="/convert" element={<ConverterPage />} />
