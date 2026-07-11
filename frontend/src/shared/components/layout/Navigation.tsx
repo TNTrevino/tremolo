@@ -21,6 +21,32 @@ import { useLogout } from "@/shared/hooks/queries/useAuthQuery";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Selected = ink fill, otherwise quiet hover wash (DESIGN.md rule 3). */
+const navLinkClass = (active: boolean, className?: string) =>
+	cn(
+		"px-4 py-2 rounded-md text-sm font-medium transition-all",
+		active
+			? "bg-primary text-primary-foreground"
+			: "text-foreground hover:bg-accent hover:text-accent-foreground",
+		className,
+	);
+
+interface NavItemProps {
+	to: string;
+	label: string;
+	active: boolean;
+	onClick?: () => void;
+	className?: string;
+}
+
+function NavItem({ to, label, active, onClick, className }: NavItemProps) {
+	return (
+		<Link to={to} onClick={onClick} className={navLinkClass(active, className)}>
+			{label}
+		</Link>
+	);
+}
+
 export function Navigation() {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -74,13 +100,16 @@ export function Navigation() {
 	const isGameActive = gameLinks.some((link) => isActive(link.to));
 
 	useEffect(() => {
-		if (!gamesMenuOpen) return;
+		if (!gamesMenuOpen && !userMenuOpen) return;
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setGamesMenuOpen(false);
+			if (e.key === "Escape") {
+				setGamesMenuOpen(false);
+				setUserMenuOpen(false);
+			}
 		};
 		document.addEventListener("keydown", onKeyDown);
 		return () => document.removeEventListener("keydown", onKeyDown);
-	}, [gamesMenuOpen]);
+	}, [gamesMenuOpen, userMenuOpen]);
 
 	const handleLogout = () => {
 		logoutMutation.mutate();
@@ -105,18 +134,7 @@ export function Navigation() {
 					{/* Desktop Navigation */}
 					<div className="hidden md:flex items-center space-x-1">
 						{primaryLinks.map((link) => (
-							<Link
-								key={link.to}
-								to={link.to}
-								className={cn(
-									"px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isActive(link.to)
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent hover:text-accent-foreground",
-								)}
-							>
-								{link.label}
-							</Link>
+							<NavItem key={link.to} {...link} active={isActive(link.to)} />
 						))}
 
 						{/* Games Menu */}
@@ -125,11 +143,9 @@ export function Navigation() {
 								onClick={() => setGamesMenuOpen(!gamesMenuOpen)}
 								aria-haspopup="menu"
 								aria-expanded={gamesMenuOpen}
-								className={cn(
-									"flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isGameActive
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent hover:text-accent-foreground",
+								className={navLinkClass(
+									isGameActive,
+									"flex items-center gap-1",
 								)}
 							>
 								Games
@@ -188,18 +204,7 @@ export function Navigation() {
 						</div>
 
 						{secondaryLinks.map((link) => (
-							<Link
-								key={link.to}
-								to={link.to}
-								className={cn(
-									"px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isActive(link.to)
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent hover:text-accent-foreground",
-								)}
-							>
-								{link.label}
-							</Link>
+							<NavItem key={link.to} {...link} active={isActive(link.to)} />
 						))}
 					</div>
 
@@ -332,55 +337,38 @@ export function Navigation() {
 				{mobileMenuOpen && (
 					<div className="md:hidden py-4 space-y-2 border-t-2 border-border animate-slide-in">
 						{primaryLinks.map((link) => (
-							<Link
+							<NavItem
 								key={link.to}
-								to={link.to}
+								{...link}
+								active={isActive(link.to)}
 								onClick={() => setMobileMenuOpen(false)}
-								className={cn(
-									"block px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isActive(link.to)
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent",
-								)}
-							>
-								{link.label}
-							</Link>
+								className="block"
+							/>
 						))}
 
 						<p className="px-4 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 							Games
 						</p>
 						{gameLinks.map((link) => (
-							<Link
+							<NavItem
 								key={link.to}
 								to={link.to}
+								label={link.label}
+								active={isActive(link.to)}
 								onClick={() => setMobileMenuOpen(false)}
-								className={cn(
-									"block px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isActive(link.to)
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent",
-								)}
-							>
-								{link.label}
-							</Link>
+								className="block"
+							/>
 						))}
 
 						<div className="border-t-2 border-border my-2" />
 						{secondaryLinks.map((link) => (
-							<Link
+							<NavItem
 								key={link.to}
-								to={link.to}
+								{...link}
+								active={isActive(link.to)}
 								onClick={() => setMobileMenuOpen(false)}
-								className={cn(
-									"block px-4 py-2 rounded-md text-sm font-medium transition-all",
-									isActive(link.to)
-										? "bg-primary text-primary-foreground"
-										: "text-foreground hover:bg-accent",
-								)}
-							>
-								{link.label}
-							</Link>
+								className="block"
+							/>
 						))}
 
 						{isAuthenticated ? (
