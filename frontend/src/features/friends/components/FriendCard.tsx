@@ -11,7 +11,7 @@ export function FriendCard({ user, action, className }: FriendCardProps) {
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-accent/50",
+				"flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-brass/50",
 				className,
 			)}
 		>

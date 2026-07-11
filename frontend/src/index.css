@@ -3,49 +3,62 @@
 @tailwind utilities;
 
 @layer base {
+	/* "Ink, paper & brass" — see DESIGN.md. Ink navy does the everyday
+	   work; brass is the one scarce accent; --accent is a quiet hover
+	   wash (its shadcn meaning), never an emphasis color. */
 	:root {
-		--background: 0 0% 100%;
-		--foreground: 240 10% 3.9%;
+		--background: 40 20% 98%;
+		--foreground: 222 39% 16%;
 		--card: 0 0% 100%;
-		--card-foreground: 240 10% 3.9%;
+		--card-foreground: 222 39% 16%;
 		--popover: 0 0% 100%;
-		--popover-foreground: 240 10% 3.9%;
-		--primary: 262 83% 58%;
-		--primary-foreground: 0 0% 98%;
-		--secondary: 240 4.8% 95.9%;
-		--secondary-foreground: 240 5.9% 10%;
-		--muted: 240 4.8% 95.9%;
-		--muted-foreground: 240 3.8% 46.1%;
-		--accent: 45 93% 47%;
-		--accent-foreground: 240 5.9% 10%;
-		--destructive: 0 84.2% 60.2%;
+		--popover-foreground: 222 39% 16%;
+		--primary: 222 39% 20%;
+		--primary-foreground: 40 20% 98%;
+		--secondary: 222 15% 93%;
+		--secondary-foreground: 222 39% 16%;
+		--muted: 40 12% 93%;
+		--muted-foreground: 222 12% 42%;
+		--accent: 222 18% 92%;
+		--accent-foreground: 222 39% 16%;
+		--brass: 36 68% 46%;
+		--brass-foreground: 40 20% 98%;
+		--correct: 152 55% 32%;
+		--correct-foreground: 40 20% 98%;
+		--destructive: 0 72% 45%;
 		--destructive-foreground: 0 0% 98%;
-		--border: 240 5.9% 90%;
-		--input: 240 5.9% 90%;
-		--ring: 262 83% 58%;
+		--border: 222 15% 86%;
+		--input: 222 15% 86%;
+		--ring: 36 68% 42%;
 		--radius: 0.5rem;
 	}
 
+	/* Charcoal, not purple-tinted: primary flips to a light fill so
+	   selected states read like musictheory.net's keyboard highlight. */
 	.dark {
-		--background: 240 10% 3.9%;
-		--foreground: 0 0% 98%;
-		--card: 240 10% 8%;
-		--card-foreground: 0 0% 98%;
-		--popover: 240 10% 8%;
-		--popover-foreground: 0 0% 98%;
-		--primary: 262 83% 58%;
-		--primary-foreground: 0 0% 98%;
-		--secondary: 240 3.7% 15.9%;
-		--secondary-foreground: 0 0% 98%;
-		--muted: 240 3.7% 15.9%;
-		--muted-foreground: 240 5% 64.9%;
-		--accent: 45 93% 47%;
-		--accent-foreground: 0 0% 98%;
-		--destructive: 0 62.8% 30.6%;
+		--background: 220 8% 10%;
+		--foreground: 40 15% 92%;
+		--card: 220 8% 14%;
+		--card-foreground: 40 15% 92%;
+		--popover: 220 8% 14%;
+		--popover-foreground: 40 15% 92%;
+		--primary: 40 15% 92%;
+		--primary-foreground: 220 8% 12%;
+		--secondary: 220 6% 18%;
+		--secondary-foreground: 40 15% 92%;
+		--muted: 220 6% 18%;
+		--muted-foreground: 220 5% 64%;
+		--accent: 220 6% 20%;
+		--accent-foreground: 40 15% 92%;
+		--brass: 36 70% 55%;
+		--brass-foreground: 220 8% 10%;
+		--correct: 152 45% 45%;
+		--correct-foreground: 220 8% 10%;
+		--destructive: 0 60% 50%;
 		--destructive-foreground: 0 0% 98%;
-		--border: 240 3.7% 15.9%;
-		--input: 240 3.7% 15.9%;
-		--ring: 262 83% 58%;
+		--border: 220 6% 22%;
+		--input: 220 6% 22%;
+		--ring: 36 70% 55%;
 	}
 }
 

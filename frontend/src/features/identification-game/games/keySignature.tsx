@@ -117,6 +117,7 @@ export const keySignatureGame = defineGame<
 		...NATURAL_NOTES.map((letter) => ({
 			value: letter as string,
 			label: noteLabel(letter, "", settings.noteNames),
+			variant: "secondary" as const,
 		})),
 		...NATURAL_NOTES.map((letter) => ({
 			value: `${letter}b`,

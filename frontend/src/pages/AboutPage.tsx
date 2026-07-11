@@ -66,8 +66,8 @@ export function AboutPage() {
 						</div>
 
 						<div className="flex gap-4 items-start">
-							<div className="flex-shrink-0 w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-								<Trophy className="h-6 w-6 text-accent" />
+							<div className="flex-shrink-0 w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center">
+								<Trophy className="h-6 w-6 text-brass" />
 							</div>
 							<div className="flex-1">
 								<h3 className="text-2xl font-bold mb-2">
@@ -123,8 +123,8 @@ export function AboutPage() {
 						</div>
 
 						<div className="flex gap-4 items-start">
-							<div className="flex-shrink-0 w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-								<TrendingUp className="h-6 w-6 text-accent" />
+							<div className="flex-shrink-0 w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center">
+								<TrendingUp className="h-6 w-6 text-brass" />
 							</div>
 							<div className="flex-1">
 								<h3 className="text-2xl font-bold mb-2">
@@ -143,7 +143,7 @@ export function AboutPage() {
 
 				{/* Vision Statement */}
 				<section className="space-y-6">
-					<Card className="border-primary/50 shadow-lg bg-gradient-to-br from-primary/5 to-accent/5">
+					<Card className="border-primary/50 shadow-lg bg-gradient-to-br from-primary/5 to-brass/5">
 						<CardHeader>
 							<CardTitle className="text-3xl">The Vision</CardTitle>
 						</CardHeader>

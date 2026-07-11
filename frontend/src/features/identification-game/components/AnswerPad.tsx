@@ -6,8 +6,8 @@ export interface AnswerOption {
 	value: string;
 	/** Text shown on the button (defaults to value) */
 	label?: string;
-	/** Button style (defaults to "default"; use "outline" for accidentals) */
-	variant?: "default" | "outline";
+	/** Button style (defaults to "outline"; "secondary" marks naturals) */
+	variant?: "default" | "outline" | "secondary";
 }
 
 export interface AnswerPadProps {
@@ -33,7 +33,7 @@ export function AnswerPad({
 				{options.map((option) => (
 					<Button
 						key={option.value}
-						variant={option.variant ?? "default"}
+						variant={option.variant ?? "outline"}
 						onClick={() => onAnswer(option.value)}
 						className="h-11 sm:h-16 text-xs sm:text-lg font-bold px-0 sm:px-2"
 					>

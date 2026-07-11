@@ -29,8 +29,8 @@ export function GameOverCard({ gameStats, onPlayAgain }: GameOverCardProps) {
 						Answers Per Minute
 					</div>
 				</Card>
-				<Card className="p-8 text-center bg-gradient-to-br from-accent/10 to-transparent">
-					<div className="text-6xl font-bold text-accent">
+				<Card className="p-8 text-center bg-gradient-to-br from-brass/10 to-transparent">
+					<div className="text-6xl font-bold text-brass">
 						{gameStats.accuracy}%
 					</div>
 					<div className="text-sm text-muted-foreground mt-2">Accuracy</div>

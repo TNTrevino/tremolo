@@ -114,7 +114,7 @@ export function NoteButtonGrid({
 					return (
 						<Button
 							key={note}
-							variant="default"
+							variant="secondary"
 							onClick={() => onAnswer(note)}
 							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
 						>

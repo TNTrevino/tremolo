@@ -211,7 +211,7 @@ export function ConverterPage() {
 						</div>
 					</Card>
 
-					<Card className="p-6 bg-accent/5 border-accent/20">
+					<Card className="p-6 bg-brass/5 border-brass/20">
 						<div className="space-y-2">
 							<h3 className="font-bold text-lg">Use Cases</h3>
 							<ul className="space-y-1 text-sm text-muted-foreground">

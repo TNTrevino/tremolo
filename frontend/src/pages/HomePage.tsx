@@ -13,7 +13,7 @@ export function HomePage() {
 	return (
 		<div className="min-h-screen">
 			{/* Hero Section */}
-			<section className="relative py-20 px-4 bg-gradient-to-br from-primary/20 via-background to-accent/20">
+			<section className="relative py-20 px-4 bg-gradient-to-br from-primary/20 via-background to-brass/20">
 				<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMwLTkuOTQgOC4wNi0xOCAxOC0xOCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-40" />
 				<div className="container mx-auto max-w-6xl relative z-10">
 					<div className="text-center space-y-6 animate-fade-in">
@@ -57,8 +57,8 @@ export function HomePage() {
 
 						<Card className="group hover:border-primary hover:shadow-lg transition-all">
 							<CardHeader>
-								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-									<Target className="h-6 w-6 text-accent" />
+								<div className="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+									<Target className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Rhythm Practice</CardTitle>
 							</CardHeader>
@@ -154,8 +154,8 @@ export function HomePage() {
 
 						<Card className="hover:shadow-lg transition-all">
 							<CardHeader>
-								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-									<User className="h-6 w-6 text-accent" />
+								<div className="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4">
+									<User className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Students</CardTitle>
 							</CardHeader>
@@ -188,7 +188,7 @@ export function HomePage() {
 			</section>
 
 			{/* Final CTA Section */}
-			<section className="py-20 px-4 bg-gradient-to-br from-primary/10 to-accent/10">
+			<section className="py-20 px-4 bg-gradient-to-br from-primary/10 to-brass/10">
 				<div className="container mx-auto max-w-4xl text-center space-y-6">
 					<h2 className="text-4xl font-bold">
 						Ready to Improve Your Sight Reading?
