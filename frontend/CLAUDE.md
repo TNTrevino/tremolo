@@ -2,6 +2,8 @@
 
 React + Vite SPA. **Read `ARCHITECTURE.md` here before structural changes** —
 it documents the game engine, API conventions, and rendering layer in full.
+For any visual/styling work, `DESIGN.md` is the source of truth (ink/paper/
+brass tokens; brass is scarce; `--accent` is a hover wash, never emphasis).
 
 Invariants:
 
