@@ -19,6 +19,7 @@ type Entry struct {
 	CorrectQuestions int16          `db:"correct_questions" json:"correct_questions" validate:"required,number"`
 	UserID           int16          `db:"user_id"           json:"user_id"           validate:"required,number"`
 	NPM              int8           `db:"notes_per_minute"  json:"notes_per_minute"  validate:"required,number"`
+	GameType         string         `db:"game_type"         json:"game_type"`
 }
 
 // NoteGameEntryResponse represents a note game entry returned from API responses

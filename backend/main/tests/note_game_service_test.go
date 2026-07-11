@@ -222,7 +222,7 @@ func TestGetRecentNoteGameEntries_Success(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
 	require.NoError(t, err)
 	require.Len(t, entries, numEntries)
 
@@ -241,7 +241,7 @@ func TestGetRecentNoteGameEntries_NoEntries(t *testing.T) {
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Fetch entries for user with no entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
 	require.NoError(t, err)
 	require.NotNil(t, entries, "Expected empty slice, got nil")
 	assert.Empty(t, entries)
@@ -268,7 +268,7 @@ func TestGetRecentNoteGameEntries_Limit30(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
 	require.NoError(t, err)
 
 	// Should only return 30 entries
@@ -297,7 +297,7 @@ func TestGetRecentNoteGameEntries_OrderByDate(t *testing.T) {
 	}
 
 	// Fetch entries
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
 	require.NoError(t, err)
 	require.Len(t, entries, 3)
 
@@ -333,7 +333,7 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	}
 
 	// Fetch entries for user 1
-	entries1, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID1)
+	entries1, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID1, "note")
 	require.NoError(t, err)
 	require.Len(t, entries1, 3)
 
@@ -343,7 +343,7 @@ func TestGetRecentNoteGameEntries_OnlyUserEntries(t *testing.T) {
 	}
 
 	// Fetch entries for user 2
-	entries2, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID2)
+	entries2, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID2, "note")
 	require.NoError(t, err)
 	require.Len(t, entries2, 2)
 
@@ -449,7 +449,7 @@ func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 	})
 
 	// Retrieve entries and verify data
-	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID)
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
 	require.NoError(t, err)
 	require.NotEmpty(t, entries, "Expected at least one entry")
 
