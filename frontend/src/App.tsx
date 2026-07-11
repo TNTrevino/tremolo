@@ -31,6 +31,22 @@ const SignupPage = lazy(() =>
 const NoteGamePage = lazy(() =>
 	import("@/pages/NoteGamePage").then((m) => ({ default: m.NoteGamePage })),
 );
+const KeySignatureGamePage = lazy(() =>
+	import("@/pages/KeySignatureGamePage").then((m) => ({
+		default: m.KeySignatureGamePage,
+	})),
+);
+const IntervalGamePage = lazy(() =>
+	import("@/pages/IntervalGamePage").then((m) => ({
+		default: m.IntervalGamePage,
+	})),
+);
+const ScaleGamePage = lazy(() =>
+	import("@/pages/ScaleGamePage").then((m) => ({ default: m.ScaleGamePage })),
+);
+const ChordGamePage = lazy(() =>
+	import("@/pages/ChordGamePage").then((m) => ({ default: m.ChordGamePage })),
+);
 const SheetMusicPage = lazy(() =>
 	import("@/pages/SheetMusicPage").then((m) => ({ default: m.SheetMusicPage })),
 );
@@ -142,6 +158,13 @@ function AppContent() {
 							}
 						/>
 						<Route path="/note-game" element={<NoteGamePage />} />
+						<Route
+							path="/key-signature-game"
+							element={<KeySignatureGamePage />}
+						/>
+						<Route path="/interval-game" element={<IntervalGamePage />} />
+						<Route path="/scale-game" element={<ScaleGamePage />} />
+						<Route path="/chord-game" element={<ChordGamePage />} />
 						<Route path="/sheet-music" element={<SheetMusicPage />} />
 						<Route path="/convert" element={<ConverterPage />} />
 						<Route

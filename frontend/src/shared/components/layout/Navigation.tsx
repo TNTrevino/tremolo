@@ -34,6 +34,10 @@ export function Navigation() {
 		{ to: "/home", label: "Tremolo" },
 		{ to: "/sheet-music", label: "Practice" },
 		{ to: "/note-game", label: "Note Game" },
+		{ to: "/key-signature-game", label: "Key Signatures" },
+		{ to: "/interval-game", label: "Intervals" },
+		{ to: "/scale-game", label: "Scales" },
+		{ to: "/chord-game", label: "Chords" },
 		{ to: "/about", label: "About" },
 		{ to: "/convert", label: "Convert" },
 	];
