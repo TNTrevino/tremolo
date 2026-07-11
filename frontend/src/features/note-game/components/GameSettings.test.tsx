@@ -11,6 +11,9 @@ const defaultSettings: GameSettingsType = {
 	noteLimit: 25,
 	scale: "C Major",
 	octave: 4,
+	lowNote: "C4",
+	highNote: "C6",
+	clef: "treble",
 };
 
 describe("GameSettings", () => {
@@ -73,7 +76,7 @@ describe("GameSettings", () => {
 			expect(screen.getByLabelText("Scale")).toBeInTheDocument();
 		});
 
-		it("renders octave selector", () => {
+		it("renders note range picker", () => {
 			render(
 				<GameSettings
 					settings={defaultSettings}
@@ -82,7 +85,10 @@ describe("GameSettings", () => {
 				/>,
 			);
 
-			expect(screen.getByLabelText("Octave")).toBeInTheDocument();
+			expect(screen.getByText("Note Range")).toBeInTheDocument();
+			expect(
+				screen.getByRole("img", { name: /note range from C4 to C6/i }),
+			).toBeInTheDocument();
 		});
 	});
 
@@ -246,21 +252,20 @@ describe("GameSettings", () => {
 		});
 	});
 
-	describe("octave selection", () => {
-		it("displays current octave value", () => {
+	describe("note range selection", () => {
+		it("displays the current range", () => {
 			render(
 				<GameSettings
-					settings={{ ...defaultSettings, octave: 5 }}
+					settings={{ ...defaultSettings, lowNote: "E4", highNote: "F5" }}
 					onSettingsChange={vi.fn()}
 					onStartGame={vi.fn()}
 				/>,
 			);
 
-			const select = screen.getByLabelText("Octave");
-			expect(select).toHaveValue("5");
+			expect(screen.getByText("E4 – F5")).toBeInTheDocument();
 		});
 
-		it("calls onSettingsChange when octave changes", async () => {
+		it("steps the low endpoint up via the chevron", async () => {
 			const handleChange = vi.fn();
 			const user = userEvent.setup();
 
@@ -272,9 +277,33 @@ describe("GameSettings", () => {
 				/>,
 			);
 
-			await user.selectOptions(screen.getByLabelText("Octave"), "6");
+			await user.click(screen.getByRole("button", { name: "Lowest note up" }));
 
-			expect(handleChange).toHaveBeenCalledWith({ octave: 6 });
+			expect(handleChange).toHaveBeenCalledWith({
+				lowNote: "D4",
+				highNote: "C6",
+			});
+		});
+
+		it("switching clef resets the range to the clef default", async () => {
+			const handleChange = vi.fn();
+			const user = userEvent.setup();
+
+			render(
+				<GameSettings
+					settings={defaultSettings}
+					onSettingsChange={handleChange}
+					onStartGame={vi.fn()}
+				/>,
+			);
+
+			await user.click(screen.getByRole("button", { name: "Bass" }));
+
+			expect(handleChange).toHaveBeenCalledWith({
+				clef: "bass",
+				lowNote: "E2",
+				highNote: "E4",
+			});
 		});
 	});
 

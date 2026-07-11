@@ -4,6 +4,7 @@ import { Select } from "@/shared/components/ui/select";
 import { Card } from "@/shared/components/ui/card";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
+import { NoteRangeSetting } from "./NoteRangeSetting";
 
 export interface GameSettingsProps {
 	settings: GameSettingsType;
@@ -117,24 +118,17 @@ export function GameSettings({
 						</Select>
 					</div>
 
-					{/* Octave */}
+					{/* Note Range */}
 					<div className="space-y-2">
-						<label htmlFor="octave" className="text-sm font-medium">
-							Octave
-						</label>
-						<Select
-							id="octave"
-							value={settings.octave.toString()}
-							onChange={(e) =>
-								onSettingsChange({ octave: Number(e.target.value) })
-							}
-						>
-							{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((o) => (
-								<option key={o} value={o}>
-									Octave {o}
-								</option>
-							))}
-						</Select>
+						<span className="text-sm font-medium" id="note-range-label">
+							Note Range
+						</span>
+						<div aria-labelledby="note-range-label">
+							<NoteRangeSetting
+								settings={settings}
+								onSettingsChange={onSettingsChange}
+							/>
+						</div>
 					</div>
 				</div>
 

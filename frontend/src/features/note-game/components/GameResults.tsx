@@ -166,10 +166,18 @@ export function GameResults({
 						Limit: {gameStats.limit}{" "}
 						{gameStats.gameMode === GameMode.Time ? "seconds" : "notes"}
 					</span>
-					<span>•</span>
-					<span>Scale: {gameStats.scale}</span>
-					<span>•</span>
-					<span>Octave: {gameStats.octave}</span>
+					{gameStats.scale !== undefined && (
+						<>
+							<span>•</span>
+							<span>Scale: {gameStats.scale}</span>
+						</>
+					)}
+					{gameStats.octave !== undefined && (
+						<>
+							<span>•</span>
+							<span>Octave: {gameStats.octave}</span>
+						</>
+					)}
 				</div>
 			</Card>
 

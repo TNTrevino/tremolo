@@ -18,7 +18,9 @@ import {
 } from "@/shared/hooks/queries";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
+import { TIME_LIMITS, NOTE_LIMITS } from "@/features/identification-game";
 import { MobileSettingsDrawer } from "./MobileSettingsDrawer";
+import { NoteRangeSetting } from "./NoteRangeSetting";
 import { KeyboardBindingsDialog } from "./KeyboardBindingsDialog";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 import { keyBindingsToNoteMap } from "../utils";
@@ -29,10 +31,6 @@ export interface SettingsBarProps {
 	onSettingsChange: (settings: Partial<GameSettingsType>) => void;
 	onDialogOpenChange?: (open: boolean) => void;
 }
-
-const TIME_LIMITS = [15, 30, 60, 120] as const;
-const NOTE_LIMITS = [10, 25, 50, 100] as const;
-const OCTAVES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 interface KeyboardUpsellDialogProps {
 	open: boolean;
@@ -79,7 +77,7 @@ function buildSummaryParts(settings: GameSettingsType): string[] {
 		isTimeMode ? "time" : "notes",
 		isTimeMode ? `${activeLimit}s` : `${activeLimit}`,
 		settings.scale,
-		`Oct ${settings.octave}`,
+		`${settings.lowNote}\u2013${settings.highNote}`,
 	];
 }
 
@@ -149,6 +147,7 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
 	const isTimeMode = settings.gameMode === GameMode.Time;
 	const limits = isTimeMode ? TIME_LIMITS : NOTE_LIMITS;
 	const activeLimit = isTimeMode ? settings.timeLimit : settings.noteLimit;
+	const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
 
 	return (
 		<div className="flex flex-wrap items-center gap-2 md:gap-3 bg-card border-2 border-border rounded-lg px-3 md:px-4 py-2">
@@ -203,17 +202,36 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
 					))}
 				</Select>
 
-				<Select
-					className="w-28 h-9"
-					value={settings.octave.toString()}
-					onChange={(e) => onSettingsChange({ octave: Number(e.target.value) })}
+				<Button
+					size="sm"
+					variant="outline"
+					className="h-9"
+					onClick={() => setRangeDialogOpen(true)}
 				>
-					{OCTAVES.map((octave) => (
-						<option key={octave} value={octave}>
-							Octave {octave}
-						</option>
-					))}
-				</Select>
+					{settings.lowNote}–{settings.highNote}
+				</Button>
+
+				<Dialog open={rangeDialogOpen} onOpenChange={setRangeDialogOpen}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Note Range</DialogTitle>
+						</DialogHeader>
+						<div className="px-6 py-4">
+							<NoteRangeSetting
+								settings={settings}
+								onSettingsChange={onSettingsChange}
+							/>
+						</div>
+						<DialogFooter>
+							<Button
+								variant="default"
+								onClick={() => setRangeDialogOpen(false)}
+							>
+								Done
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 			</div>
 		</div>
 	);

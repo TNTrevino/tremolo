@@ -8,6 +8,8 @@ export {
 	useRecentGameEntries,
 	useActivityHeatmap,
 	useSaveGameResult,
+	useGameSettings,
+	useSaveGameSettings,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
 	useKeyboardBindings,

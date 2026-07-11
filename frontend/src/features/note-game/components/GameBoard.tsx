@@ -3,7 +3,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { useBreakpoint } from "@/shared/hooks";
 import { useNoteGameDisplay } from "@/features/note-game-display";
-import { useNoteQueue } from "../hooks";
+import { useNoteQueue, type NoteRange } from "../hooks";
 import type { NoteAnswer } from "../types";
 import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
@@ -19,18 +19,13 @@ export interface GameBoardProps {
 	onNoteGenerated: (noteName: string) => void;
 	scale: string;
 	octave: number;
+	range: NoteRange;
 	keyBindings?: Record<string, string>;
 }
 
-const extractTonic = (scaleStr: string): string => {
-	const tonic = scaleStr.split(" ")[0] ?? "C";
-	// The UI uses "b" for flats (e.g. "Bb"), but music21 expects "-" (e.g. "B-").
-	// Convert before sending to the backend.
-	return tonic.replace("b", "-");
-};
-
-/** Convert music21 flat notation ("-") back to UI notation ("b"). */
-const fromMusic21NoteName = (name: string): string => name.replace("-", "b");
+// "C Major" -> "C"; notation conversion happens in the API service.
+const extractTonic = (scaleStr: string): string =>
+	scaleStr.split(" ")[0] ?? "C";
 
 interface NoteDisplayProps {
 	currentNote: string;
@@ -161,11 +156,13 @@ function useGameBoardCore({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
 }: {
 	answers: NoteAnswer[];
 	onNoteGenerated: (noteName: string) => void;
 	scale: string;
 	octave: number;
+	range: NoteRange;
 }) {
 	const theme = useThemeStore((s) => s.theme);
 
@@ -182,6 +179,7 @@ function useGameBoardCore({
 		extractTonic(scale),
 		octave.toString(),
 		isDisplayReady,
+		range,
 	);
 
 	const [loadError, setLoadError] = useState(false);
@@ -202,13 +200,13 @@ function useGameBoardCore({
 				await loadNote(note.generatedXml);
 				if (!cancelled) {
 					setLoadError(false);
-					onNoteGenerated(fromMusic21NoteName(note.noteName));
+					onNoteGenerated(note.noteName);
 				}
 			} catch (err) {
 				if (!cancelled) {
 					logger.error("Failed to render note in OSMD", err);
 					setLoadError(true);
-					onNoteGenerated(fromMusic21NoteName(note.noteName));
+					onNoteGenerated(note.noteName);
 				}
 			}
 		};
@@ -246,6 +244,7 @@ const GameBoardLandscapeInternal = ({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
 	statusBar,
 	keyBindings,
 }: GameBoardLandscapeProps) => {
@@ -254,6 +253,7 @@ const GameBoardLandscapeInternal = ({
 		onNoteGenerated,
 		scale,
 		octave,
+		range,
 	});
 
 	return (
@@ -308,6 +308,7 @@ const GameBoardInternal = ({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
 	keyBindings,
 }: GameBoardProps) => {
 	const { isMobile } = useBreakpoint();
@@ -317,6 +318,7 @@ const GameBoardInternal = ({
 		onNoteGenerated,
 		scale,
 		octave,
+		range,
 	});
 
 	const noteDisplayClassName = isMobile
