@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { RotateCcw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import {
@@ -9,11 +8,11 @@ import {
 	type TremoloReferenceLine,
 } from "@/shared/components/charts";
 import { useRecentGameEntries } from "@/shared/hooks/queries";
-import type { GameStats } from "../types";
-import { GameMode } from "../types";
+import { GameOverCard } from "@/features/identification-game";
+import type { NoteGameStats } from "../types";
 
 export interface GameResultsProps {
-	gameStats: GameStats;
+	gameStats: NoteGameStats;
 	isAuthenticated: boolean;
 	onPlayAgain: () => void;
 	saveError?: boolean;
@@ -96,31 +95,29 @@ export function GameResults({
 	const showChart = isAuthenticated && chartData.length >= 2;
 
 	return (
-		<div className="space-y-6 animate-fade-in">
-			<div className="text-center space-y-2">
-				<h1 className="font-display text-4xl font-bold">Game Over!</h1>
-				<p className="text-muted-foreground text-lg">Here&apos;s how you did</p>
-			</div>
-
-			{/* Primary Stats */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<Card className="p-8 text-center bg-gradient-to-br from-primary/10 to-transparent">
-					<div className="font-display text-6xl font-bold tabular-nums text-primary">
-						{gameStats.npm}
-					</div>
-					<div className="text-sm text-muted-foreground mt-2">
-						Notes Per Minute
-					</div>
-				</Card>
-				<Card className="p-8 text-center bg-gradient-to-br from-brass/10 to-transparent">
-					<div className="font-display text-6xl font-bold tabular-nums text-brass">
-						{gameStats.accuracy}%
-					</div>
-					<div className="text-sm text-muted-foreground mt-2">Accuracy</div>
-				</Card>
-			</div>
-
-			{/* Performance Chart */}
+		<GameOverCard
+			gameStats={gameStats}
+			onPlayAgain={onPlayAgain}
+			rateLabel="Notes Per Minute"
+			unit="notes"
+			summaryExtras={
+				gameStats.scale !== undefined && (
+					<>
+						<span>•</span>
+						<span>Scale: {gameStats.scale}</span>
+					</>
+				)
+			}
+			actions={
+				!isAuthenticated && (
+					<Link to="/signup">
+						<Button size="lg" variant="outline">
+							Sign Up to Save Progress
+						</Button>
+					</Link>
+				)
+			}
+		>
 			{isAuthenticated && saveError && (
 				<Card className="p-6 border-destructive/50">
 					<p className="text-sm text-destructive text-center">
@@ -156,47 +153,6 @@ export function GameResults({
 					/>
 				</Card>
 			)}
-
-			{/* Settings Summary */}
-			<Card className="p-4">
-				<div className="flex flex-wrap gap-4 justify-center text-sm text-muted-foreground">
-					<span>
-						Mode: {gameStats.gameMode === GameMode.Time ? "Time" : "Notes"}
-					</span>
-					<span>•</span>
-					<span>
-						Limit: {gameStats.limit}{" "}
-						{gameStats.gameMode === GameMode.Time ? "seconds" : "notes"}
-					</span>
-					{gameStats.scale !== undefined && (
-						<>
-							<span>•</span>
-							<span>Scale: {gameStats.scale}</span>
-						</>
-					)}
-					{gameStats.octave !== undefined && (
-						<>
-							<span>•</span>
-							<span>Octave: {gameStats.octave}</span>
-						</>
-					)}
-				</div>
-			</Card>
-
-			{/* Actions */}
-			<div className="flex flex-col sm:flex-row gap-4 justify-center">
-				<Button size="lg" onClick={onPlayAgain}>
-					<RotateCcw className="mr-2 h-5 w-5" />
-					Play Again
-				</Button>
-				{!isAuthenticated && (
-					<Link to="/signup">
-						<Button size="lg" variant="outline">
-							Sign Up to Save Progress
-						</Button>
-					</Link>
-				)}
-			</div>
-		</div>
+		</GameOverCard>
 	);
 }

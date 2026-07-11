@@ -7,14 +7,37 @@ import { GameMode } from "../types";
 export interface GameOverCardProps {
 	gameStats: GameStats;
 	onPlayAgain: () => void;
+	/** Label under the per-minute stat */
+	rateLabel?: string;
+	/** Unit word for question-count mode ("questions", "notes") */
+	unit?: string;
+	/** Extra entries appended to the summary row */
+	summaryExtras?: React.ReactNode;
+	/** Extra actions rendered beside Play Again */
+	actions?: React.ReactNode;
+	/** Sections rendered between the stat cards and the summary */
+	children?: React.ReactNode;
 }
 
 /**
- * Lightweight results screen for the new identification games.
- * The note game keeps its richer GameResults (recent-games chart, save
- * status); this card can grow those once per-game persistence lands.
+ * Results screen shared by every identification game. Games with more
+ * to show (the note game's recent-games chart and save status) pass
+ * those sections through the slots instead of forking the layout.
  */
-export function GameOverCard({ gameStats, onPlayAgain }: GameOverCardProps) {
+export function GameOverCard({
+	gameStats,
+	onPlayAgain,
+	rateLabel = "Answers Per Minute",
+	unit = "questions",
+	summaryExtras,
+	actions,
+	children,
+}: GameOverCardProps) {
+	const isTimeMode = gameStats.gameMode === GameMode.Time;
+	const modeLabel = isTimeMode
+		? "Time"
+		: unit.charAt(0).toUpperCase() + unit.slice(1);
+
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
@@ -27,9 +50,7 @@ export function GameOverCard({ gameStats, onPlayAgain }: GameOverCardProps) {
 					<div className="font-display text-6xl font-bold tabular-nums text-primary">
 						{gameStats.npm}
 					</div>
-					<div className="text-sm text-muted-foreground mt-2">
-						Answers Per Minute
-					</div>
+					<div className="text-sm text-muted-foreground mt-2">{rateLabel}</div>
 				</Card>
 				<Card className="p-8 text-center bg-gradient-to-br from-brass/10 to-transparent">
 					<div className="font-display text-6xl font-bold tabular-nums text-brass">
@@ -39,28 +60,29 @@ export function GameOverCard({ gameStats, onPlayAgain }: GameOverCardProps) {
 				</Card>
 			</div>
 
+			{children}
+
 			<Card className="p-4">
 				<div className="flex flex-wrap gap-4 justify-center text-sm text-muted-foreground">
-					<span>
-						Mode: {gameStats.gameMode === GameMode.Time ? "Time" : "Questions"}
-					</span>
+					<span>Mode: {modeLabel}</span>
 					<span>•</span>
 					<span>
-						Limit: {gameStats.limit}{" "}
-						{gameStats.gameMode === GameMode.Time ? "seconds" : "questions"}
+						Limit: {gameStats.limit} {isTimeMode ? "seconds" : unit}
 					</span>
 					<span>•</span>
 					<span>
 						Score: {gameStats.correct}/{gameStats.total}
 					</span>
+					{summaryExtras}
 				</div>
 			</Card>
 
-			<div className="flex justify-center">
+			<div className="flex flex-col sm:flex-row gap-4 justify-center">
 				<Button size="lg" onClick={onPlayAgain}>
 					<RotateCcw className="mr-2 h-5 w-5" />
 					Play Again
 				</Button>
+				{actions}
 			</div>
 		</div>
 	);

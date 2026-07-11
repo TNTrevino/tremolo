@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useBreakpoint } from "@/shared/hooks";
 import {
@@ -6,21 +6,19 @@ import {
 	useSaveNoteGameSettings,
 	useKeyboardBindings,
 } from "@/shared/hooks/queries";
-import { useSaveGameOnEnd } from "@/features/identification-game";
-import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
 import {
-	useNoteGame,
-	useGameTimer,
-	GameState,
-	GameMode,
-} from "@/features/note-game";
+	useSaveGameOnEnd,
+	useGameLifecycle,
+	ScoreBar,
+} from "@/features/identification-game";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
+import { useNoteGame, GameState, GameMode } from "@/features/note-game";
 import { keyBindingsToNoteMap } from "@/features/note-game/utils";
 import {
 	GameBoard,
 	GameBoardLandscape,
 } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
-import { ScoreBar } from "@/features/note-game/components/ScoreBar";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 
 /**
@@ -45,12 +43,8 @@ export function NoteGamePage() {
 		[savedKeyboardBindings],
 	);
 
-	const endGameRef = useRef<() => void>();
-	const gameStartRef = useRef<() => void>();
-
-	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
-		endGameRef.current?.();
-	});
+	const { timeRemaining, startTimer, formatTime, endGameRef } =
+		useGameLifecycle();
 
 	const {
 		gameState,
@@ -65,17 +59,9 @@ export function NoteGamePage() {
 		syncCurrentNote,
 	} = useNoteGame({
 		onGameEnd: handleGameEnd,
-		onGameStart: () => gameStartRef.current?.(),
-		keyBindings,
-		inputDisabled: bindingsDialogOpen,
-	});
-
-	useEffect(() => {
-		endGameRef.current = endGame;
-	}, [endGame]);
-
-	useEffect(() => {
-		gameStartRef.current = () => {
+		// The engine reads callbacks through a ref, so this closure sees
+		// the latest settings when the first answer starts the game.
+		onGameStart: () => {
 			if (settings.gameMode === GameMode.Time) {
 				startTimer(settings.timeLimit);
 			}
@@ -91,8 +77,14 @@ export function NoteGamePage() {
 					clef: settings.clef,
 				});
 			}
-		};
-	}, [settings, startTimer, isAuthenticated, saveSettings]);
+		},
+		keyBindings,
+		inputDisabled: bindingsDialogOpen,
+	});
+
+	useEffect(() => {
+		endGameRef.current = endGame;
+	}, [endGame, endGameRef]);
 
 	useEffect(() => {
 		if (savedSettings) {

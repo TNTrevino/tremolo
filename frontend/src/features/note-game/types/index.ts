@@ -4,11 +4,17 @@
  */
 
 import { GameMode, GameState } from "@/shared/types";
+import type { GameStats } from "@/shared/types";
 import type { RangeClef } from "@/services/api/types";
 import type { BaseGameSettings } from "@/features/identification-game";
 import { NATURAL_NOTES } from "@/features/identification-game";
 export { GameMode, GameState };
 export type { NoteAnswer, GameStats } from "@/shared/types";
+
+/** GameStats plus the note game's extra summary fields (statsExtras). */
+export interface NoteGameStats extends GameStats {
+	scale?: string;
+}
 
 /**
  * Game settings configuration

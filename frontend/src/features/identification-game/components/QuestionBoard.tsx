@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Card } from "@/shared/components/ui/card";
 import { useBreakpoint } from "@/shared/hooks";
 import { useNoteGameDisplay } from "@/features/note-game-display";
@@ -7,6 +6,7 @@ import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
 import { useThemeStore } from "@/stores/theme.store";
 import { useQuestionQueue } from "../hooks/useQuestionQueue";
+import { useQuestionLoader } from "../hooks/useQuestionLoader";
 import type { NoteAnswer, GeneratedQuestion } from "../types";
 
 export interface QuestionBoardProps<T extends GeneratedQuestion> {
@@ -26,20 +26,28 @@ export interface QuestionBoardProps<T extends GeneratedQuestion> {
 	zoom?: number;
 }
 
-interface QuestionDisplayProps {
+export interface QuestionDisplayProps {
 	fallbackLabel: string;
 	containerRef: React.RefObject<HTMLDivElement>;
 	isInitializing: boolean;
 	loadError: boolean;
 	className?: string;
+	/** Size of the text fallback (the note game shows one huge letter) */
+	fallbackTextClassName?: string;
 }
 
-function QuestionDisplay({
+/**
+ * The OSMD staff card: loading overlay while the display initializes,
+ * text fallback when MusicXML fails to render. Shared by QuestionBoard
+ * and the note game's GameBoard layouts.
+ */
+export function QuestionDisplay({
 	fallbackLabel,
 	containerRef,
 	isInitializing,
 	loadError,
 	className = "",
+	fallbackTextClassName = "text-5xl",
 }: QuestionDisplayProps) {
 	return (
 		<div className={className}>
@@ -52,7 +60,9 @@ function QuestionDisplay({
 						<div className="text-sm text-muted-foreground">
 							Falling back to text display
 						</div>
-						<div className="text-5xl font-bold text-primary animate-fade-in">
+						<div
+							className={`${fallbackTextClassName} font-bold text-primary animate-fade-in`}
+						>
 							{fallbackLabel}
 						</div>
 					</div>
@@ -96,49 +106,15 @@ function QuestionBoardInternal<T extends GeneratedQuestion>({
 
 	const { pop, isInitializing } = useQuestionQueue(fetcher, isDisplayReady);
 
-	const [loadError, setLoadError] = useState(false);
-
-	useEffect(() => {
-		if (!isDisplayReady || isInitializing) return;
-
-		let cancelled = false;
-
-		const loadNext = async () => {
-			const question = pop();
-			if (!question) {
-				logger.warn("useQuestionQueue: pop() returned null -- queue was empty");
-				return;
-			}
-
-			try {
-				await loadNote(question.generatedXml);
-				if (!cancelled) {
-					setLoadError(false);
-					onQuestionLoaded(getAnswer(question));
-				}
-			} catch (err) {
-				if (!cancelled) {
-					logger.error("Failed to render question in OSMD", err);
-					setLoadError(true);
-					onQuestionLoaded(getAnswer(question));
-				}
-			}
-		};
-
-		void loadNext();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		answers.length,
+	const { loadError } = useQuestionLoader({
+		answersLength: answers.length,
 		isDisplayReady,
 		isInitializing,
 		pop,
 		loadNote,
 		getAnswer,
 		onQuestionLoaded,
-	]);
+	});
 
 	const displayClassName = isMobile
 		? "flex-1 min-h-0 max-h-[45vh]"

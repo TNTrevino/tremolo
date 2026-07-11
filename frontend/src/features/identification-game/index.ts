@@ -13,19 +13,24 @@ export { IdentificationGamePage } from "./components/IdentificationGamePage";
 export * from "./games";
 
 export { useQuestionQueue } from "./hooks/useQuestionQueue";
+export { useQuestionLoader } from "./hooks/useQuestionLoader";
+export {
+	QuestionDisplay,
+	type QuestionDisplayProps,
+} from "./components/QuestionBoard";
 export { useIdentificationGame } from "./hooks/useIdentificationGame";
 export { useGameTimer } from "./hooks/useGameTimer";
+export { useGameLifecycle } from "./hooks/useGameLifecycle";
 export { useSaveGameOnEnd } from "./hooks/useSaveGameOnEnd";
 export { ScoreBar, type ScoreBarProps } from "./components/ScoreBar";
+export {
+	GameOverCard,
+	type GameOverCardProps,
+} from "./components/GameOverCard";
 
 export { GameMode, GameState, TIME_LIMITS, NOTE_LIMITS } from "./types";
 export type { BaseGameSettings, GeneratedQuestion } from "./types";
 
-export {
-	NATURAL_NOTES,
-	fromMusic21NoteName,
-	toMusic21NoteName,
-	formatTimeLength,
-} from "./utils";
+export { NATURAL_NOTES } from "./utils";
 export { CLEF_UNICODE } from "./components/ClefGlyph";
 export { clefsSetting } from "./settings/presets";

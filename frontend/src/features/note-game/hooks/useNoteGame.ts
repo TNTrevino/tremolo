@@ -1,5 +1,10 @@
 import { useCallback } from "react";
-import type { NoteAnswer, GameStats, GameSettings } from "../types";
+import type {
+	NoteAnswer,
+	GameStats,
+	NoteGameStats,
+	GameSettings,
+} from "../types";
 import { GameState, GameMode } from "../types";
 import { useIdentificationGame } from "@/features/identification-game";
 import { useNoteAudio } from "./useNoteAudio";
@@ -11,7 +16,7 @@ interface UseNoteGameReturn {
 	gameState: GameState;
 	currentNote: string;
 	answers: NoteAnswer[];
-	gameStats: GameStats | null;
+	gameStats: NoteGameStats | null;
 	settings: GameSettings;
 
 	// Timing
@@ -99,7 +104,9 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 		gameState: game.gameState,
 		currentNote: game.currentAnswer,
 		answers: game.answers,
-		gameStats: game.gameStats,
+		// statsExtras above adds the note-game fields; the engine types
+		// its stats generically.
+		gameStats: game.gameStats as NoteGameStats | null,
 		settings: game.settings,
 		questionStartTime: game.questionStartTime,
 		gameStartTime: game.gameStartTime,

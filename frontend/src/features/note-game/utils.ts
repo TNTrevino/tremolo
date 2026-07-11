@@ -26,8 +26,6 @@ export function keyBindingsToNoteMap(kb: KeyBindings): Record<string, string> {
 	};
 }
 
-export { formatTimeLength } from "@/features/identification-game";
-
 export function calculateNPM(
 	correctQuestions: number,
 	timeInSeconds: number,

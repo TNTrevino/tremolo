@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { NoteAnswer, GameStats, BaseGameSettings } from "../types";
 import { GameState, GameMode } from "../types";
 
@@ -32,8 +32,12 @@ export interface UseIdentificationGameOptions<
 	onGameStart?: () => void;
 	/** Called with the answer when the player gets a question right */
 	onCorrectAnswer?: (answer: string) => void;
-	/** Extra fields merged into GameStats (e.g. scale/octave) */
-	statsExtras?: (settings: TSettings) => Partial<GameStats>;
+	/**
+	 * Game-specific fields merged into GameStats (e.g. the note game's
+	 * scale). Declare their types on the game's own stats extension —
+	 * the shared GameStats stays game-agnostic.
+	 */
+	statsExtras?: (settings: TSettings) => Record<string, unknown>;
 }
 
 /**
@@ -48,7 +52,15 @@ export interface UseIdentificationGameOptions<
 export function useIdentificationGame<TSettings extends BaseGameSettings>(
 	options: UseIdentificationGameOptions<TSettings>,
 ): UseIdentificationGameReturn<TSettings> {
-	const { defaultSettings, onGameEnd, onGameStart, onCorrectAnswer } = options;
+	const { defaultSettings } = options;
+
+	// Callbacks are read through a ref so their identity never
+	// invalidates handleAnswer/endGame — callers can pass inline
+	// closures without ref plumbing on their side.
+	const optionsRef = useRef(options);
+	useEffect(() => {
+		optionsRef.current = options;
+	});
 
 	const [settings, setSettings] = useState<TSettings>(defaultSettings);
 
@@ -62,8 +74,6 @@ export function useIdentificationGame<TSettings extends BaseGameSettings>(
 	const updateSettings = useCallback((newSettings: Partial<TSettings>) => {
 		setSettings((prev) => ({ ...prev, ...newSettings }));
 	}, []);
-
-	const { statsExtras } = options;
 
 	const endGame = useCallback(
 		(finalAnswers?: NoteAnswer[]) => {
@@ -84,15 +94,15 @@ export function useIdentificationGame<TSettings extends BaseGameSettings>(
 					settings.gameMode === GameMode.Time
 						? settings.timeLimit
 						: settings.noteLimit,
-				...statsExtras?.(settings),
+				...optionsRef.current.statsExtras?.(settings),
 			};
 
 			setGameStats(stats);
 			setGameState(GameState.GameOver);
 
-			onGameEnd?.(stats);
+			optionsRef.current.onGameEnd?.(stats);
 		},
-		[answers, gameStartTime, settings, onGameEnd, statsExtras],
+		[answers, gameStartTime, settings],
 	);
 
 	/**
@@ -104,7 +114,7 @@ export function useIdentificationGame<TSettings extends BaseGameSettings>(
 			if (gameState === GameState.Ready) {
 				setGameState(GameState.Playing);
 				setGameStartTime(Date.now());
-				onGameStart?.();
+				optionsRef.current.onGameStart?.();
 			}
 
 			const effectiveQuestionStart =
@@ -122,7 +132,7 @@ export function useIdentificationGame<TSettings extends BaseGameSettings>(
 			setAnswers(newAnswers);
 
 			if (correct) {
-				onCorrectAnswer?.(currentAnswer);
+				optionsRef.current.onCorrectAnswer?.(currentAnswer);
 			}
 
 			// Check if game should end (notes mode). No new question is
@@ -143,8 +153,6 @@ export function useIdentificationGame<TSettings extends BaseGameSettings>(
 			settings.gameMode,
 			settings.noteLimit,
 			endGame,
-			onCorrectAnswer,
-			onGameStart,
 		],
 	);
 
