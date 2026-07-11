@@ -54,7 +54,9 @@ function ScoreBarHorizontal(props: ScoreBarProps) {
 			<div className="text-sm sm:text-lg font-medium">
 				Score: {correctAnswers}/{totalAnswers}
 			</div>
-			<div className="text-sm sm:text-lg font-bold">{timerDisplay}</div>
+			<div className="text-sm sm:text-lg font-bold tabular-nums">
+				{timerDisplay}
+			</div>
 			<div className="text-sm sm:text-lg font-medium">
 				Accuracy: {accuracy}%
 			</div>
@@ -71,7 +73,7 @@ function ScoreBarSidebar(props: ScoreBarProps) {
 			<div className="text-xs font-medium text-center">
 				{correctAnswers}/{totalAnswers}
 			</div>
-			<div className="text-sm font-bold text-center text-primary">
+			<div className="text-sm font-bold text-center text-primary tabular-nums">
 				{timerDisplay}
 			</div>
 			<div className="text-xs font-medium text-center">{accuracy}%</div>

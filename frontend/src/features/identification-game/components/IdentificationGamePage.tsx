@@ -270,7 +270,7 @@ export function IdentificationGamePage<
 		/>
 	) : (
 		<div className="flex items-center justify-between gap-2">
-			<h1 className="text-lg sm:text-xl font-bold">{title}</h1>
+			<h1 className="font-display text-lg sm:text-xl font-bold">{title}</h1>
 			<Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
 				<SettingsIcon className="mr-1.5 h-4 w-4" />
 				Settings

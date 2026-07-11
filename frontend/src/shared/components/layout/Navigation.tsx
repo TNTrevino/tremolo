@@ -97,7 +97,7 @@ export function Navigation() {
 						<div className="rounded-lg bg-primary p-2 group-hover:scale-110 transition-transform">
 							<Music className="h-6 w-6 text-primary-foreground" />
 						</div>
-						<span className="text-xl font-bold hidden sm:inline-block">
+						<span className="font-display text-xl font-bold hidden sm:inline-block">
 							Tremolo
 						</span>
 					</Link>

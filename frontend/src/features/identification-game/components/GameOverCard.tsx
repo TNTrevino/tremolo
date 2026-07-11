@@ -18,19 +18,21 @@ export function GameOverCard({ gameStats, onPlayAgain }: GameOverCardProps) {
 	return (
 		<div className="space-y-6 animate-fade-in">
 			<div className="text-center space-y-2">
-				<h1 className="text-4xl font-bold">Game Over!</h1>
+				<h1 className="font-display text-4xl font-bold">Game Over!</h1>
 				<p className="text-muted-foreground text-lg">Here&apos;s how you did</p>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<Card className="p-8 text-center bg-gradient-to-br from-primary/10 to-transparent">
-					<div className="text-6xl font-bold text-primary">{gameStats.npm}</div>
+					<div className="font-display text-6xl font-bold tabular-nums text-primary">
+						{gameStats.npm}
+					</div>
 					<div className="text-sm text-muted-foreground mt-2">
 						Answers Per Minute
 					</div>
 				</Card>
 				<Card className="p-8 text-center bg-gradient-to-br from-brass/10 to-transparent">
-					<div className="text-6xl font-bold text-brass">
+					<div className="font-display text-6xl font-bold tabular-nums text-brass">
 						{gameStats.accuracy}%
 					</div>
 					<div className="text-sm text-muted-foreground mt-2">Accuracy</div>
