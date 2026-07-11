@@ -83,5 +83,5 @@ export const chordGame = defineGame<
 			label: QUALITY_LABELS[quality],
 		})),
 	columnsClassName: "grid-cols-2 sm:grid-cols-3",
-	zoom: 1.6,
+	zoom: 2.0,
 });

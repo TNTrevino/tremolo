@@ -112,5 +112,5 @@ export const intervalGame = defineGame<
 		}));
 	},
 	columnsClassName: "grid-cols-4 sm:grid-cols-7",
-	zoom: 1.6,
+	zoom: 2.0,
 });

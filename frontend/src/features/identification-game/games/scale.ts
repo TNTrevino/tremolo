@@ -80,5 +80,5 @@ export const scaleGame = defineGame<
 			label: SCALE_TYPE_LABELS[type],
 		})),
 	columnsClassName: "grid-cols-2",
-	zoom: 1.0,
+	zoom: 1.2,
 });

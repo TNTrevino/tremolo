@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Card } from "@/shared/components/ui/card";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Settings as SettingsIcon } from "lucide-react";
 import { Select } from "@/shared/components/ui/select";
 import { Button } from "@/shared/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/shared/components/ui/dialog";
 import { useAuthStore } from "@/stores/auth.store";
 import { useGameSettings, useSaveGameSettings } from "@/shared/hooks/queries";
 import { useGameTimer } from "../hooks/useGameTimer";
@@ -53,6 +60,7 @@ export function IdentificationGamePage<
 	} = definition;
 
 	const { isAuthenticated } = useAuthStore();
+	const [settingsOpen, setSettingsOpen] = useState(false);
 	const { data: savedSettings } = useGameSettings(gameType);
 	const saveSettings = useSaveGameSettings();
 	const saveSettingsMutate = saveSettings.mutate;
@@ -142,88 +150,98 @@ export function IdentificationGamePage<
 	const isPlaying = gameState === GameState.Playing;
 	const isConfigurable = gameState === GameState.Ready;
 
-	// Only built while visible: during play the ScoreBar replaces it.
-	const settingsBar = isPlaying ? null : (
-		<Card className="p-3 sm:p-4">
-			<div className="flex flex-wrap items-end gap-3 sm:gap-4">
-				<div className="space-y-1">
-					<label htmlFor="game-mode" className="text-xs font-medium">
-						Mode
-					</label>
-					<div className="flex gap-1.5" id="game-mode" role="group">
-						<Button
-							size="sm"
-							variant={
-								settings.gameMode === GameMode.Time ? "default" : "outline"
-							}
-							onClick={() =>
-								updateSettings({ gameMode: GameMode.Time } as Partial<S>)
-							}
-						>
-							Time
-						</Button>
-						<Button
-							size="sm"
-							variant={
-								settings.gameMode === GameMode.Notes ? "default" : "outline"
-							}
-							onClick={() =>
-								updateSettings({ gameMode: GameMode.Notes } as Partial<S>)
-							}
-						>
-							Questions
-						</Button>
+	// Settings live in a dialog so the staff gets the page. Changes
+	// apply immediately; "Done" just closes.
+	const settingsDialog = (
+		<Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+			<DialogContent onOpenChange={setSettingsOpen} className="max-w-lg">
+				<DialogHeader>
+					<DialogTitle>Settings</DialogTitle>
+					<p className="text-sm text-muted-foreground">{description}</p>
+				</DialogHeader>
+				<div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+					<div className="space-y-1">
+						<label htmlFor="game-mode" className="text-xs font-medium">
+							Mode
+						</label>
+						<div className="flex gap-1.5" id="game-mode" role="group">
+							<Button
+								size="sm"
+								variant={
+									settings.gameMode === GameMode.Time ? "default" : "outline"
+								}
+								onClick={() =>
+									updateSettings({ gameMode: GameMode.Time } as Partial<S>)
+								}
+							>
+								Time
+							</Button>
+							<Button
+								size="sm"
+								variant={
+									settings.gameMode === GameMode.Notes ? "default" : "outline"
+								}
+								onClick={() =>
+									updateSettings({ gameMode: GameMode.Notes } as Partial<S>)
+								}
+							>
+								Questions
+							</Button>
+						</div>
 					</div>
-				</div>
 
-				<div className="space-y-1">
-					<label htmlFor="limit-selector" className="text-xs font-medium">
-						{settings.gameMode === GameMode.Time ? "Time Limit" : "Questions"}
-					</label>
-					{settings.gameMode === GameMode.Time ? (
-						<Select
-							id="limit-selector"
-							value={settings.timeLimit.toString()}
-							onChange={(e) =>
-								updateSettings({
-									timeLimit: Number(e.target.value),
-								} as Partial<S>)
-							}
-						>
-							{TIME_LIMITS.map((limit) => (
-								<option key={limit} value={limit}>
-									{limit >= 60
-										? `${limit / 60} minute${limit > 60 ? "s" : ""}`
-										: `${limit} seconds`}
-								</option>
-							))}
-						</Select>
-					) : (
-						<Select
-							id="limit-selector"
-							value={settings.noteLimit.toString()}
-							onChange={(e) =>
-								updateSettings({
-									noteLimit: Number(e.target.value),
-								} as Partial<S>)
-							}
-						>
-							{NOTE_LIMITS.map((limit) => (
-								<option key={limit} value={limit}>
-									{limit} questions
-								</option>
-							))}
-						</Select>
-					)}
-				</div>
+					<div className="space-y-1">
+						<label htmlFor="limit-selector" className="text-xs font-medium">
+							{settings.gameMode === GameMode.Time ? "Time Limit" : "Questions"}
+						</label>
+						{settings.gameMode === GameMode.Time ? (
+							<Select
+								id="limit-selector"
+								value={settings.timeLimit.toString()}
+								onChange={(e) =>
+									updateSettings({
+										timeLimit: Number(e.target.value),
+									} as Partial<S>)
+								}
+							>
+								{TIME_LIMITS.map((limit) => (
+									<option key={limit} value={limit}>
+										{limit >= 60
+											? `${limit / 60} minute${limit > 60 ? "s" : ""}`
+											: `${limit} seconds`}
+									</option>
+								))}
+							</Select>
+						) : (
+							<Select
+								id="limit-selector"
+								value={settings.noteLimit.toString()}
+								onChange={(e) =>
+									updateSettings({
+										noteLimit: Number(e.target.value),
+									} as Partial<S>)
+								}
+							>
+								{NOTE_LIMITS.map((limit) => (
+									<option key={limit} value={limit}>
+										{limit} questions
+									</option>
+								))}
+							</Select>
+						)}
+					</div>
 
-				<SettingsControls<S>
-					schema={settingsSchema}
-					settings={settings}
-					onChange={updateSettings}
-				/>
-			</div>
-		</Card>
+					<SettingsControls<S>
+						schema={settingsSchema}
+						settings={settings}
+						onChange={updateSettings}
+					/>
+				</div>
+				<DialogFooter>
+					<Button onClick={() => setSettingsOpen(false)}>Done</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 
 	// Rebuilt only when the answer surface actually changes — not on
@@ -251,7 +269,13 @@ export function IdentificationGamePage<
 			formatTime={formatTime}
 		/>
 	) : (
-		settingsBar
+		<div className="flex items-center justify-between gap-2">
+			<h1 className="text-lg sm:text-xl font-bold">{title}</h1>
+			<Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+				<SettingsIcon className="mr-1.5 h-4 w-4" />
+				Settings
+			</Button>
+		</div>
 	);
 
 	return (
@@ -261,15 +285,8 @@ export function IdentificationGamePage<
 					<GameOverCard gameStats={gameStats} onPlayAgain={resetGame} />
 				) : (
 					<div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-4">
-						<div className="flex-shrink-0 space-y-1">
-							{isConfigurable && (
-								<div className="text-center">
-									<h1 className="text-2xl font-bold">{title}</h1>
-									<p className="text-sm text-muted-foreground">{description}</p>
-								</div>
-							)}
-							{statusBar}
-						</div>
+						<div className="flex-shrink-0">{statusBar}</div>
+						{isConfigurable && settingsDialog}
 						<QuestionBoard<T>
 							answers={answers}
 							fetcher={fetcher}

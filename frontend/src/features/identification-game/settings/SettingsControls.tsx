@@ -1,11 +1,49 @@
-import { Button } from "@/shared/components/ui/button";
 import { Select } from "@/shared/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { SettingDescriptor, MultiChoiceSetting } from "./types";
 
 export interface SettingsControlsProps<S> {
 	schema: SettingDescriptor<S>[];
 	settings: S;
 	onChange: (patch: Partial<S>) => void;
+}
+
+/**
+ * Toggle chip with a constant box: the border is present in both
+ * states (only its color changes), so selecting a chip never resizes
+ * it and reflows the row. Height grows with content — glyph chips
+ * (clefs, key signatures) are taller than text chips.
+ */
+function Chip({
+	selected,
+	onClick,
+	ariaLabel,
+	ariaPressed,
+	children,
+}: {
+	selected: boolean;
+	onClick: () => void;
+	ariaLabel?: string;
+	ariaPressed?: boolean;
+	children: React.ReactNode;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label={ariaLabel}
+			aria-pressed={ariaPressed}
+			className={cn(
+				"inline-flex min-h-7 items-center justify-center rounded-md border-2 px-2 py-0.5 text-xs font-medium transition-colors",
+				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+				selected
+					? "border-primary bg-primary text-primary-foreground"
+					: "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+			)}
+		>
+			{children}
+		</button>
+	);
 }
 
 function MultiChoiceChips<S>({
@@ -35,17 +73,14 @@ function MultiChoiceChips<S>({
 	return (
 		<div className="flex flex-wrap gap-1">
 			{descriptor.options.map((option) => (
-				<Button
+				<Chip
 					key={String(option.value)}
-					type="button"
-					size="sm"
-					className="h-7 px-2 text-xs"
-					variant={values.includes(option.value) ? "default" : "outline"}
+					selected={values.includes(option.value)}
 					onClick={() => toggle(option.value)}
-					aria-label={option.label}
+					ariaLabel={option.label}
 				>
 					{option.render ?? option.label}
-				</Button>
+				</Chip>
 			))}
 		</div>
 	);
@@ -102,18 +137,15 @@ export function SettingsControls<S>({
 							/>
 						)}
 						{descriptor.kind === "toggle" && (
-							<Button
-								type="button"
-								size="sm"
-								className="h-7 px-2 text-xs"
-								variant={raw ? "default" : "outline"}
-								aria-pressed={Boolean(raw)}
+							<Chip
+								selected={Boolean(raw)}
+								ariaPressed={Boolean(raw)}
 								onClick={() =>
 									onChange({ [descriptor.key]: !raw } as Partial<S>)
 								}
 							>
 								{raw ? "On" : "Off"}
-							</Button>
+							</Chip>
 						)}
 					</div>
 				);

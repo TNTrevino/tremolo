@@ -34,9 +34,11 @@ const GLYPHS: Record<StaffClef, { line: number; fontSize: number }> = {
 };
 
 const LINE_SPACING = 6;
-const STAFF_TOP = 10;
+// Enough headroom above and below the staff that every clef glyph
+// (the treble clef especially) stays inside the viewBox.
+const STAFF_TOP = 16;
 const WIDTH = 46;
-const HEIGHT = 48;
+const HEIGHT = 56;
 
 export interface ClefGlyphProps {
 	clef: StaffClef;
@@ -45,9 +47,11 @@ export interface ClefGlyphProps {
 
 /**
  * A clef on a mini five-line staff, for settings chips and pickers.
- * Reusable by any game with a clef setting.
+ * Reusable by any game with a clef setting. Sized with CSS (defaults
+ * to `h-10`), so containers can scale it without clipping — the SVG
+ * keeps its aspect ratio from the viewBox.
  */
-export function ClefGlyph({ clef, className = "" }: ClefGlyphProps) {
+export function ClefGlyph({ clef, className = "h-10 w-auto" }: ClefGlyphProps) {
 	const { line, fontSize } = GLYPHS[clef];
 	const glyph = CLEF_UNICODE[clef];
 	const lineY = (index: number) => STAFF_TOP + (4 - index) * LINE_SPACING;
@@ -55,8 +59,6 @@ export function ClefGlyph({ clef, className = "" }: ClefGlyphProps) {
 	return (
 		<svg
 			viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-			width={WIDTH}
-			height={HEIGHT}
 			className={className}
 			role="img"
 			aria-label={CLEF_LABELS[clef]}

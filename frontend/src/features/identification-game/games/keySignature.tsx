@@ -75,7 +75,9 @@ export const keySignatureGame = defineGame<
 			options: ALL_KEY_SIGNATURES.map((fifths) => ({
 				value: fifths,
 				label: keySignatureName(fifths),
-				render: <KeySignatureGlyph fifths={fifths} />,
+				render: (
+					<KeySignatureGlyph fifths={fifths} className="px-0.5 text-lg" />
+				),
 			})),
 		},
 		{
@@ -123,7 +125,7 @@ export const keySignatureGame = defineGame<
 		})),
 	],
 	columnsClassName: "grid-cols-7",
-	zoom: 1.6,
+	zoom: 2.2,
 	prompt: (settings) => (
 		<div className="text-center text-lg font-medium text-muted-foreground">
 			__ {settings.answerMode === "minor" ? "Minor" : "Major"}
