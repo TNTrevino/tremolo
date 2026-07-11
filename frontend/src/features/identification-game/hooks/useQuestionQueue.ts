@@ -3,6 +3,11 @@ import { useToast } from "@/shared/hooks/useToast";
 
 const QUEUE_LOW_WATER = 2;
 const HYDRATE_BATCH = 2;
+/**
+ * Fetcher-change resets (settings clicks, range drags) are debounced so
+ * a burst of changes costs one refetch instead of one per click.
+ */
+const RESET_DEBOUNCE_MS = 300;
 
 /**
  * Prefetch queue for identification game questions.
@@ -29,6 +34,7 @@ export function useQuestionQueue<T>(
 	const queueRef = useRef<T[]>([]);
 	const inflightRef = useRef(false);
 	const generationRef = useRef(0);
+	const hasHydratedRef = useRef(false);
 	const [isInitializing, setIsInitializing] = useState(true);
 	// showError is referentially stable: it's wrapped in useCallback inside
 	// ToastProvider and only depends on showToast (which itself has zero deps).
@@ -79,20 +85,35 @@ export function useQuestionQueue<T>(
 
 		let cancelled = false;
 
-		hydrate(HYDRATE_BATCH, generation)
-			.then(() => {
-				if (!cancelled) setIsInitializing(false);
-			})
-			.catch((err) => {
-				if (!cancelled) {
-					setIsInitializing(false);
-					showError("Failed to load questions. Please refresh.");
-					console.error("[useQuestionQueue] Initial hydration failed", err);
-				}
-			});
+		const run = () => {
+			hydrate(HYDRATE_BATCH, generation)
+				.then(() => {
+					if (!cancelled) setIsInitializing(false);
+				})
+				.catch((err) => {
+					if (!cancelled) {
+						setIsInitializing(false);
+						showError("Failed to load questions. Please refresh.");
+						console.error("[useQuestionQueue] Initial hydration failed", err);
+					}
+				});
+		};
 
+		// First hydration fires immediately; later fetcher changes are
+		// debounced (the queue is already cleared above, so no stale
+		// question can be served in the meantime).
+		if (!hasHydratedRef.current) {
+			hasHydratedRef.current = true;
+			run();
+			return () => {
+				cancelled = true;
+			};
+		}
+
+		const timer = setTimeout(run, RESET_DEBOUNCE_MS);
 		return () => {
 			cancelled = true;
+			clearTimeout(timer);
 		};
 	}, [isReady, hydrate, showError]);
 
