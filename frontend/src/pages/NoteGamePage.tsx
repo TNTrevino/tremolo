@@ -27,6 +27,30 @@ import { GameResults } from "@/features/note-game/components/GameResults";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 import type { NoteGameSettingsRequest } from "@/services/api/types";
 
+/**
+ * Maps a snake_case note-game config (the assignment's frozen config, or
+ * the student's saved settings response — both shaped like
+ * NoteGameSettingsRequest) to the camelCase GameSettingsType the engine
+ * uses. Per-field undefined guards let a partial config (e.g. a stale or
+ * hand-edited assignment blob) degrade gracefully instead of clobbering
+ * fields with `undefined`.
+ */
+function mapNoteConfigToSettings(
+	config: Partial<NoteGameSettingsRequest>,
+): Partial<GameSettingsType> {
+	const patch: Partial<GameSettingsType> = {};
+	if (config.game_mode !== undefined)
+		patch.gameMode = config.game_mode as GameMode;
+	if (config.time_limit !== undefined) patch.timeLimit = config.time_limit;
+	if (config.note_limit !== undefined) patch.noteLimit = config.note_limit;
+	if (config.scale !== undefined) patch.scale = config.scale;
+	if (config.octave !== undefined) patch.octave = config.octave;
+	if (config.low_note !== undefined) patch.lowNote = config.low_note;
+	if (config.high_note !== undefined) patch.highNote = config.high_note;
+	if (config.clef !== undefined) patch.clef = config.clef;
+	return patch;
+}
+
 export interface NoteGamePageProps {
 	/**
 	 * When set, the note game runs in "assignment mode": settings are
@@ -48,7 +72,7 @@ export function NoteGamePage({ assignment }: NoteGamePageProps = {}) {
 	const { isPhoneLandscape } = useBreakpoint();
 	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
 	const { handleGameEnd, saveError } = useSaveGameOnEnd("note", assignment?.id);
-	const { data: savedSettings } = useNoteGameSettings();
+	const { data: savedSettings } = useNoteGameSettings(!assignment);
 	const saveSettings = useSaveNoteGameSettings();
 	const { data: savedKeyboardBindings } = useKeyboardBindings();
 
@@ -115,30 +139,11 @@ export function NoteGamePage({ assignment }: NoteGamePageProps = {}) {
 			if (appliedAssignmentRef.current) return;
 			appliedAssignmentRef.current = true;
 			const config = assignment.config as Partial<NoteGameSettingsRequest>;
-			const patch: Partial<GameSettingsType> = {};
-			if (config.game_mode !== undefined)
-				patch.gameMode = config.game_mode as GameMode;
-			if (config.time_limit !== undefined) patch.timeLimit = config.time_limit;
-			if (config.note_limit !== undefined) patch.noteLimit = config.note_limit;
-			if (config.scale !== undefined) patch.scale = config.scale;
-			if (config.octave !== undefined) patch.octave = config.octave;
-			if (config.low_note !== undefined) patch.lowNote = config.low_note;
-			if (config.high_note !== undefined) patch.highNote = config.high_note;
-			if (config.clef !== undefined) patch.clef = config.clef;
-			updateSettings(patch);
+			updateSettings(mapNoteConfigToSettings(config));
 			return;
 		}
 		if (savedSettings) {
-			updateSettings({
-				gameMode: savedSettings.game_mode as GameMode,
-				timeLimit: savedSettings.time_limit,
-				noteLimit: savedSettings.note_limit,
-				scale: savedSettings.scale,
-				octave: savedSettings.octave,
-				lowNote: savedSettings.low_note,
-				highNote: savedSettings.high_note,
-				clef: savedSettings.clef,
-			});
+			updateSettings(mapNoteConfigToSettings(savedSettings));
 		}
 	}, [assignment, savedSettings, updateSettings]);
 

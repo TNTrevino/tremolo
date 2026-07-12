@@ -1,39 +1,13 @@
 import { ArrowLeft } from "lucide-react";
+import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-	IdentificationGamePage,
-	keySignatureGame,
-	scaleGame,
-	chordGame,
-	intervalGame,
-	type BaseGameSettings,
-	type GeneratedQuestion,
-} from "@/features/identification-game";
-import type { GameDefinition } from "@/features/identification-game/games/types";
+import { IdentificationGamePage } from "@/features/identification-game";
 import { NoteGamePage } from "@/pages/NoteGamePage";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { Button } from "@/shared/components/ui/button";
 import { useStudentAssignments } from "@/shared/hooks/queries";
 import type { StudentAssignment } from "@/features/classes/types";
-
-/** A game definition with its specifics erased for uniform storage/rendering. */
-type AnyGameDefinition = GameDefinition<
-	GeneratedQuestion,
-	BaseGameSettings,
-	unknown
->;
-
-/**
- * Lookup from a generic game type to its declarative definition. The
- * note game is intentionally absent — it renders through NoteGamePage,
- * not the identification shell.
- */
-export const GENERIC_GAME_DEFINITIONS: Record<string, AnyGameDefinition> = {
-	key_signature: keySignatureGame as unknown as AnyGameDefinition,
-	scale: scaleGame as unknown as AnyGameDefinition,
-	chord: chordGame as unknown as AnyGameDefinition,
-	interval: intervalGame as unknown as AnyGameDefinition,
-};
+import { GENERIC_GAME_DEFINITIONS } from "@/features/classes/gameDefinitions";
 
 function BackLink() {
 	return (
@@ -79,6 +53,23 @@ export function AssignmentPlayPage() {
 	const assignmentId = Number(id);
 	const { data: assignments, isLoading } = useStudentAssignments();
 
+	const assignment: StudentAssignment | undefined = assignments?.find(
+		(a) => a.id === assignmentId,
+	);
+
+	// Memoized so the object identity is stable across re-renders (it's
+	// passed as a prop into game pages whose effects key off it) and only
+	// changes when the underlying assignment actually does.
+	const assignmentIdForConfig = assignment?.id;
+	const assignmentConfig = assignment?.config;
+	const gameConfig = useMemo(
+		() =>
+			assignmentIdForConfig !== undefined && assignmentConfig !== undefined
+				? { id: assignmentIdForConfig, config: assignmentConfig }
+				: undefined,
+		[assignmentIdForConfig, assignmentConfig],
+	);
+
 	if (isLoading) {
 		return (
 			<div className="min-h-screen px-4 py-8">
@@ -90,15 +81,9 @@ export function AssignmentPlayPage() {
 		);
 	}
 
-	const assignment: StudentAssignment | undefined = assignments?.find(
-		(a) => a.id === assignmentId,
-	);
-
-	if (!assignment) {
+	if (!assignment || !gameConfig) {
 		return <NotFound />;
 	}
-
-	const gameConfig = { id: assignment.id, config: assignment.config };
 
 	if (assignment.gameType === "note") {
 		return (

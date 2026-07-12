@@ -16,58 +16,23 @@ import {
 	CLEF_LABELS,
 	TIME_LIMITS,
 	NOTE_LIMITS,
-	keySignatureGame,
-	scaleGame,
-	chordGame,
-	intervalGame,
 	type BaseGameSettings,
-	type GeneratedQuestion,
 	type SettingDescriptor,
-	type GameDefinition,
 } from "@/features/identification-game";
 import { SCALES } from "@/features/note-game";
 import { StaffRangePicker } from "@/features/note-game/components/StaffRangePicker";
 import { DEFAULT_RANGE } from "@/features/note-game/rangeUtils";
 import { useCreateAssignment } from "@/shared/hooks/queries";
+import {
+	GENERIC_GAME_DEFINITIONS as GENERIC_GAMES,
+	GAME_TYPE_OPTIONS,
+	type GenericGameType,
+} from "@/features/classes/gameDefinitions";
 import type {
 	CreateAssignmentRequest,
 	GameType,
 	NoteGameSettingsRequest,
 } from "@/services/api/types";
-
-type GenericGameType = Exclude<GameType, "note">;
-
-// The generic games each expose a `defaults` object that IS their config
-// shape and a declarative settings schema rendered by SettingsControls.
-const GENERIC_GAMES: Record<
-	GenericGameType,
-	GameDefinition<GeneratedQuestion, BaseGameSettings>
-> = {
-	key_signature: keySignatureGame as unknown as GameDefinition<
-		GeneratedQuestion,
-		BaseGameSettings
-	>,
-	scale: scaleGame as unknown as GameDefinition<
-		GeneratedQuestion,
-		BaseGameSettings
-	>,
-	chord: chordGame as unknown as GameDefinition<
-		GeneratedQuestion,
-		BaseGameSettings
-	>,
-	interval: intervalGame as unknown as GameDefinition<
-		GeneratedQuestion,
-		BaseGameSettings
-	>,
-};
-
-const GAME_TYPE_OPTIONS: { value: GameType; label: string }[] = [
-	{ value: "note", label: "Note Identification" },
-	{ value: "key_signature", label: "Key Signature Identification" },
-	{ value: "scale", label: "Scale Identification" },
-	{ value: "chord", label: "Chord Identification" },
-	{ value: "interval", label: "Interval Identification" },
-];
 
 // Mirrors the note game's own default settings (see useNoteGame).
 const NOTE_DEFAULTS: NoteGameSettingsRequest = {

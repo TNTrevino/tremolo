@@ -5,7 +5,7 @@ import {
 	chordGame,
 	intervalGame,
 } from "@/features/identification-game";
-import { GENERIC_GAME_DEFINITIONS } from "./AssignmentPlayPage";
+import { GENERIC_GAME_DEFINITIONS } from "@/features/classes/gameDefinitions";
 
 describe("GENERIC_GAME_DEFINITIONS", () => {
 	it("maps each generic game type to its definition", () => {
@@ -16,7 +16,9 @@ describe("GENERIC_GAME_DEFINITIONS", () => {
 	});
 
 	it("does not include the note game (it renders via NoteGamePage)", () => {
-		expect(GENERIC_GAME_DEFINITIONS.note).toBeUndefined();
+		expect(
+			(GENERIC_GAME_DEFINITIONS as Record<string, unknown>).note,
+		).toBeUndefined();
 	});
 
 	it("exposes each definition's gameType matching its key", () => {

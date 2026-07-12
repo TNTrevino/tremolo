@@ -139,14 +139,14 @@ export function useSaveGameResult() {
 	});
 }
 
-export function useNoteGameSettings() {
+export function useNoteGameSettings(enabled = true) {
 	const authUser = useAuthStore((state) => state.user);
 
 	return useQuery<NoteGameSettingsResponse | null>({
 		queryKey: userKeys.noteGameSettings(),
 		meta: { errorTitle: "Failed to load game settings" },
 		queryFn: () => userService.getNoteGameSettings(),
-		enabled: !!authUser?.id,
+		enabled: !!authUser?.id && enabled,
 		staleTime: 10 * 60 * 1000,
 	});
 }
@@ -179,14 +179,17 @@ export function useSaveNoteGameSettings() {
  * (key_signature / scale / chord). Errors are suppressed: the game
  * falls back to its default settings and stays playable.
  */
-export function useGameSettings(gameType: GameSettingsRequest["game_type"]) {
+export function useGameSettings(
+	gameType: GameSettingsRequest["game_type"],
+	enabled = true,
+) {
 	const authUser = useAuthStore((state) => state.user);
 
 	return useQuery<GameSettingsResponse | null>({
 		queryKey: userKeys.gameSettings(gameType),
 		meta: { suppressErrorToast: true },
 		queryFn: () => userService.getGameSettings(gameType),
-		enabled: !!authUser?.id,
+		enabled: !!authUser?.id && enabled,
 		staleTime: 10 * 60 * 1000,
 	});
 }

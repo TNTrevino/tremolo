@@ -5,6 +5,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/shared/components/ui/card";
+import { QueryState } from "@/shared/components/QueryState";
 import { cn } from "@/lib/utils";
 import { useAssignmentResults } from "@/shared/hooks/queries";
 import type { Assignment, AssignmentResult } from "@/features/classes/types";
@@ -88,17 +89,24 @@ export function AssignmentResultsGrid({
 				</p>
 			</CardHeader>
 			<CardContent className="p-4 pt-0">
-				{isLoading ? (
-					<div className="flex items-center justify-center h-24">
-						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					</div>
-				) : isError ? (
-					<div className="flex items-center justify-center h-24">
-						<p className="text-sm text-destructive">
-							{error?.message ?? "Failed to load results"}
-						</p>
-					</div>
-				) : results.length > 0 ? (
+				<QueryState
+					isLoading={isLoading}
+					isError={isError}
+					error={error}
+					loading={
+						<div className="flex items-center justify-center h-24">
+							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+						</div>
+					}
+					isEmpty={results.length === 0}
+					empty={
+						<div className="flex flex-col items-center justify-center h-24 gap-1 text-center">
+							<p className="text-sm font-medium text-muted-foreground">
+								No students enrolled yet.
+							</p>
+						</div>
+					}
+				>
 					<div className="overflow-x-auto">
 						<div className="min-w-[32rem] space-y-1">
 							<div
@@ -118,13 +126,7 @@ export function AssignmentResultsGrid({
 							))}
 						</div>
 					</div>
-				) : (
-					<div className="flex flex-col items-center justify-center h-24 gap-1 text-center">
-						<p className="text-sm font-medium text-muted-foreground">
-							No students enrolled yet.
-						</p>
-					</div>
-				)}
+				</QueryState>
 			</CardContent>
 		</Card>
 	);

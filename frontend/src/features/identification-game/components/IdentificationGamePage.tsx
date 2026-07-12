@@ -68,7 +68,7 @@ export function IdentificationGamePage<
 
 	const { isAuthenticated } = useAuthStore();
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const { data: savedSettings } = useGameSettings(gameType);
+	const { data: savedSettings } = useGameSettings(gameType, !assignment);
 	const saveSettings = useSaveGameSettings();
 	const { handleGameEnd } = useSaveGameOnEnd(gameType, assignment?.id);
 

@@ -12,3 +12,5 @@ export {
 	isValidationError,
 	hasStatusCode,
 } from "./error.utils";
+
+export { formatDate } from "./date.utils";

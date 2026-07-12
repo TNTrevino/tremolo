@@ -3,14 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Copy, Check, Users } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-} from "@/shared/components/ui/dialog";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { useArchiveClass } from "@/shared/hooks/queries";
+import { useCopyToClipboard } from "@/shared/hooks";
 import type { Class } from "@/features/classes/types";
 
 interface ClassHeaderProps {
@@ -19,19 +14,12 @@ interface ClassHeaderProps {
 
 export function ClassHeader({ classItem }: ClassHeaderProps) {
 	const navigate = useNavigate();
-	const [copied, setCopied] = useState(false);
+	const { copied, copy } = useCopyToClipboard();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const archiveClass = useArchiveClass();
 
-	async function handleCopy() {
-		try {
-			await navigator.clipboard.writeText(classItem.joinCode);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
-		} catch {
-			// Clipboard access can fail (permissions, insecure context); silently
-			// no-op — the code is still visible for the teacher to read aloud.
-		}
+	function handleCopy() {
+		void copy(classItem.joinCode);
 	}
 
 	function handleArchive() {
@@ -91,41 +79,24 @@ export function ClassHeader({ classItem }: ClassHeaderProps) {
 				</div>
 			</CardContent>
 
-			<Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-				<DialogContent onOpenChange={setConfirmOpen} className="max-w-md">
-					<DialogHeader>
-						<DialogTitle className="font-display">Archive class?</DialogTitle>
-					</DialogHeader>
-					<div className="p-6">
-						<p className="text-sm text-muted-foreground">
-							This hides{" "}
-							<span className="font-medium text-foreground">
-								{classItem.name}
-							</span>{" "}
-							from everyone — students lose access and it can&rsquo;t be undone
-							from here. Existing data is kept.
-						</p>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setConfirmOpen(false)}
-							disabled={archiveClass.isPending}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							variant="destructive"
-							loading={archiveClass.isPending}
-							onClick={handleArchive}
-						>
-							Archive class
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<ConfirmDialog
+				open={confirmOpen}
+				onOpenChange={setConfirmOpen}
+				title="Archive class?"
+				description={
+					<>
+						This hides{" "}
+						<span className="font-medium text-foreground">
+							{classItem.name}
+						</span>{" "}
+						from everyone — students lose access and it can&rsquo;t be undone
+						from here. Existing data is kept.
+					</>
+				}
+				confirmLabel="Archive class"
+				pending={archiveClass.isPending}
+				onConfirm={handleArchive}
+			/>
 		</Card>
 	);
 }

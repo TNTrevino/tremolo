@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { QueryState } from "@/shared/components/QueryState";
 import { useTeacherClasses } from "@/shared/hooks/queries";
 import { ClassCard } from "./ClassCard";
 import { CreateClassDialog } from "./CreateClassDialog";
@@ -26,36 +27,37 @@ export function MyClassesView() {
 				</Button>
 			</div>
 
-			{isLoading ? (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-					{Array.from({ length: 3 }, (_, i) => (
-						<Card key={i}>
-							<CardContent className="p-4 space-y-4">
-								<Skeleton className="h-6 w-2/3" />
-								<Skeleton className="h-16 w-full" />
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			) : isError ? (
-				<div className="flex items-center justify-center h-32">
-					<p className="text-sm text-destructive">
-						{error?.message ?? "Failed to load classes"}
-					</p>
-				</div>
-			) : classes.length > 0 ? (
+			<QueryState
+				isLoading={isLoading}
+				isError={isError}
+				error={error}
+				loading={
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+						{Array.from({ length: 3 }, (_, i) => (
+							<Card key={i}>
+								<CardContent className="p-4 space-y-4">
+									<Skeleton className="h-6 w-2/3" />
+									<Skeleton className="h-16 w-full" />
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				}
+				isEmpty={classes.length === 0}
+				empty={
+					<div className="flex flex-col items-center justify-center h-40 gap-1 text-center">
+						<p className="text-sm font-medium text-muted-foreground">
+							No classes yet — create one to get started.
+						</p>
+					</div>
+				}
+			>
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{classes.map((classItem) => (
 						<ClassCard key={classItem.id} classItem={classItem} />
 					))}
 				</div>
-			) : (
-				<div className="flex flex-col items-center justify-center h-40 gap-1 text-center">
-					<p className="text-sm font-medium text-muted-foreground">
-						No classes yet — create one to get started.
-					</p>
-				</div>
-			)}
+			</QueryState>
 
 			<CreateClassDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 		</div>

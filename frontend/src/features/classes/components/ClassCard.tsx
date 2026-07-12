@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Check, Users } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
+import { useCopyToClipboard } from "@/shared/hooks";
 import type { Class } from "@/features/classes/types";
 
 interface ClassCardProps {
@@ -10,19 +10,12 @@ interface ClassCardProps {
 }
 
 export function ClassCard({ classItem }: ClassCardProps) {
-	const [copied, setCopied] = useState(false);
+	const { copied, copy } = useCopyToClipboard();
 
-	async function handleCopy(e: React.MouseEvent) {
+	function handleCopy(e: React.MouseEvent) {
 		e.preventDefault();
 		e.stopPropagation();
-		try {
-			await navigator.clipboard.writeText(classItem.joinCode);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
-		} catch {
-			// Clipboard access can fail (permissions, insecure context); silently
-			// no-op — the code is still visible for the teacher to read aloud.
-		}
+		void copy(classItem.joinCode);
 	}
 
 	return (
