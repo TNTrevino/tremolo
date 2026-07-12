@@ -5,13 +5,30 @@ on:
     branches: [main, prod]
     paths:
       - "backend/music/**"
+      # A broken edit to this workflow or the Makefile must not merge unvalidated
+      - ".github/workflows/music-microservice.yml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "backend/music/**"
+      - ".github/workflows/music-microservice.yml"
+      - "Makefile"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: music-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-build:
+  lint-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/music
 
     steps:
       - name: Checkout repository
@@ -20,24 +37,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: backend/music/requirements.txt
 
       - name: Install dependencies
+        working-directory: backend/music
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint with flake8
-        run: |
-          echo "🧪 Running flake8..."
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  # catch syntax errors
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=80 --extend-ignore=E741 --statistics
-
-      - name: Check code formatting with Black
-        run: |
-          echo "🧹 Checking code format..."
-          black --check .
-
-      # TODO: we really need to make some basic tests!
-      # - name: Run tests
-      #   run: pytest
+      # The checks themselves live in the Makefile so CI and local dev
+      # can't drift: black --check + flake8 + pytest.
+      - name: Check (format + lint + test)
+        run: make check-music

@@ -7,21 +7,31 @@ on:
       - prod
     paths:
       - "backend/main/**"
+      # A broken edit to this workflow or the Makefile must not merge unvalidated
+      - ".github/workflows/backend-go.yml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "backend/main/**"
+      - ".github/workflows/backend-go.yml"
+      - "Makefile"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: go-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   go-checks:
     name: lint-and-test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/main
 
     services:
       postgres:
@@ -59,21 +69,14 @@ jobs:
           cache: true
           cache-dependency-path: backend/main/go.sum
 
+      # gofmt/vet/tests live in the Makefile so CI and local dev can't
+      # drift; golangci-lint stays an action because it installs and
+      # caches its own binary.
       - name: Check formatting
-        run: |
-          echo "🧹 Checking Go code formatting..."
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "The following files are not formatted:"
-            gofmt -s -l .
-            exit 1
-          fi
-          echo "✅ All files are properly formatted"
+        run: make format-check-go
 
       - name: Run go vet
-        run: |
-          echo "🔍 Running go vet..."
-          go vet ./...
-          echo "✅ go vet passed"
+        run: make vet-go
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
@@ -82,12 +85,4 @@ jobs:
           working-directory: backend/main
 
       - name: Run tests
-        run: |
-          echo "🧪 Running tests..."
-          go test -v -race -coverprofile=coverage.out ./...
-          echo "✅ Tests passed"
-
-      - name: Check test coverage
-        run: |
-          echo "📊 Test coverage:"
-          go tool cover -func=coverage.out
+        run: make test-go

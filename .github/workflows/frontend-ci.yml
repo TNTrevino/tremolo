@@ -5,13 +5,30 @@ on:
     branches: [main, prod]
     paths:
       - "frontend/**"
+      # A broken edit to this workflow or the Makefile must not merge unvalidated
+      - ".github/workflows/frontend-ci.yml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+      - "Makefile"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: frontend-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -25,24 +42,15 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        working-directory: frontend
         run: |
           echo "📦 Installing dependencies..."
           npm ci
 
-      - name: Check formatting with Prettier
-        run: |
-          echo "🎨 Checking code formatting..."
-          npx prettier --check .
-
-      - name: Lint with ESLint
-        run: |
-          echo "🔍 Running linter..."
-          npm run lint
-
-      - name: Build
-        run: |
-          echo "🚀 Building application..."
-          npm run build
+      # The checks themselves live in the Makefile so CI and local dev
+      # can't drift: format-check + lint + test + build.
+      - name: Check (format + lint + test + build)
+        run: make check-frontend
         env:
           VITE_BACKEND_MAIN: ${{ secrets.VITE_BACKEND_MAIN }}
           VITE_BACKEND_MUSIC: ${{ secrets.VITE_BACKEND_MUSIC }}

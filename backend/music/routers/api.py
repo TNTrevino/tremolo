@@ -51,7 +51,7 @@ async def health_check():
     checks = {}
 
     try:
-        n = m21note.Note("C4")
+        m21note.Note("C4")
         checks["music21"] = "operational"
     except Exception as e:
         return JSONResponse(
