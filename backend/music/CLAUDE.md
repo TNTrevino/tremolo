@@ -22,4 +22,4 @@ Invariants (violating these breaks rendering or the frontend contract):
   endpoint. `/scale-game` is the template.
 
 Workflow: `source env/bin/activate`; `python -m pytest --no-cov -q`;
-`black .` (80 cols) + flake8 are CI-enforced, pytest is not (run it anyway).
+`black .` (80 cols), flake8, and pytest are all CI-enforced.

@@ -6,6 +6,13 @@ on:
     paths:
       - "backend/music/**"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
@@ -30,14 +37,16 @@ jobs:
       - name: Lint with flake8
         run: |
           echo "🧪 Running flake8..."
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  # catch syntax errors
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=80 --extend-ignore=E741 --statistics
+          # Rules come from the committed .flake8 config; no --exit-zero,
+          # findings fail the build.
+          flake8 . --count --statistics
 
       - name: Check code formatting with Black
         run: |
           echo "🧹 Checking code format..."
           black --check .
 
-      # TODO: we really need to make some basic tests!
-      # - name: Run tests
-      #   run: pytest
+      - name: Run tests
+        run: |
+          echo "🧪 Running pytest..."
+          pytest

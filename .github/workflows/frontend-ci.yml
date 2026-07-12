@@ -6,6 +6,13 @@ on:
     paths:
       - "frontend/**"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
@@ -38,6 +45,11 @@ jobs:
         run: |
           echo "🔍 Running linter..."
           npm run lint
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          npm run test:run
 
       - name: Build
         run: |
