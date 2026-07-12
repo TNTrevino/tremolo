@@ -323,11 +323,11 @@ the games read, so an assignment stores one of them verbatim:
 - **generic games** (`key_signature`/`scale`/`chord`/`interval`): the game's
   settings object, e.g. scale →
   `{ gameMode: "time", timeLimit: 60, noteLimit: 25, clefs: ["treble"],
-   scaleTypes: ["major","natural_minor",...], questionMode: "accidentals" }`.
+scaleTypes: ["major","natural_minor",...], questionMode: "accidentals" }`.
   Each game's `defaults` (in `features/identification-game/games/*.ts`) is the
   template.
 - **note** game: `{ low_note, high_note, clef, game_mode, time_limit,
-   note_limit, scale, octave }` (the `NoteGameSettingsRequest` shape in
+note_limit, scale, octave }` (the `NoteGameSettingsRequest` shape in
   `services/api/types/game.types.ts`).
 
 MVP shortcut if the settings-reuse is too much for a first pass: snapshot the
