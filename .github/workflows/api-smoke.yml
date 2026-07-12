@@ -1,0 +1,113 @@
+name: API Smoke Tests
+
+# End-to-end HTTP tests (kulala) against the real running Go service.
+# These cover the seam the Go unit tests can't: routing, JWT middleware,
+# JSON binding, and controller -> HTTP status mapping.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - prod
+    paths:
+      - "backend/main/**"
+      # A broken edit to this workflow or the Makefile must not merge unvalidated
+      - ".github/workflows/api-smoke.yml"
+      - "Makefile"
+  push:
+    branches: [main]
+    paths:
+      - "backend/main/**"
+      - ".github/workflows/api-smoke.yml"
+      - "Makefile"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: api-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: api-smoke
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tremolo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tremolo?sslmode=disable
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      ACCESS_TOKEN_EXPIRY_MINUTES: "15"
+      REFRESH_TOKEN_EXPIRY_HOURS: "168"
+      MAX_LOGIN_ATTEMPTS: "5"
+      ACCOUNT_LOCKOUT_DURATION_MINUTES: "15"
+      GOOGLE_CLIENT_ID: ci-test-client-id
+      GOOGLE_CLIENT_SECRET: ci-test-client-secret
+      USER_SERVICE_PORT: "5001"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.0"
+          cache: true
+          cache-dependency-path: backend/main/go.sum
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Build separately so a compile failure reads as a build error, not
+      # a mysterious "service never came up".
+      - name: Build service
+        working-directory: backend/main
+        run: go build -o /tmp/tremolo-main .
+
+      - name: Start service (migrations run on startup)
+        working-directory: backend/main
+        run: |
+          /tmp/tremolo-main > /tmp/tremolo-main.log 2>&1 &
+          echo "SERVICE_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5001/health >/dev/null 2>&1; then
+              echo "service is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "service did not become healthy in time; last logs:" >&2
+          cat /tmp/tremolo-main.log >&2 || true
+          exit 1
+
+      # kulala is pinned via the Makefile's KULALA var so CI and local
+      # dev run the exact same command.
+      - name: Run API smoke tests
+        run: make test-api
+
+      - name: Service logs on failure
+        if: failure()
+        run: cat /tmp/tremolo-main.log || true

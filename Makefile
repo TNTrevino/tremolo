@@ -1,5 +1,5 @@
 .PHONY: help \
-	test test-frontend test-music test-go \
+	test test-frontend test-music test-go test-api \
 	lint lint-frontend lint-music lint-go vet-go \
 	format format-frontend format-music format-go \
 	format-check format-check-frontend format-check-music format-check-go \
@@ -18,6 +18,7 @@ help:
 	@echo "  test-frontend          vitest single run"
 	@echo "  test-music             pytest (backend/music)"
 	@echo "  test-go                go test ./... -race (backend/main)"
+	@echo "  test-api               kulala HTTP smoke tests (needs the service running)"
 	@echo ""
 	@echo "  lint                   run all linters"
 	@echo "  lint-frontend          eslint --max-warnings 0"
@@ -114,6 +115,19 @@ format-check-go:
 	fi
 
 check-go: format-check-go lint-go test-go
+
+# ---- API smoke tests (kulala) ----
+# End-to-end HTTP tests against a RUNNING service (default :5001). Unlike
+# the other targets these need the service up and a reachable database,
+# so they're deliberately kept out of the aggregate `check`/`test`; the
+# api-smoke workflow (and local devs) boot the service, then call this.
+# KULALA is pinned so CI is reproducible; override with `make test-api
+# KULALA=kulala` to use a globally installed CLI.
+KULALA ?= npx --yes @mistweaverco/kulala-cli@0.13.1
+
+test-api:
+	@$(call banner,Testing API (kulala smoke tests)...)
+	cd backend/main/apitests && $(KULALA) run --tests --halt --env local .
 
 # ---- aggregate ----
 # Each leaf runs via a recursive make so we can number the steps ([ 1/3 ] ...).
