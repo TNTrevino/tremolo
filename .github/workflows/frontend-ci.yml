@@ -5,10 +5,13 @@ on:
     branches: [main, prod]
     paths:
       - "frontend/**"
+      # A broken edit to this workflow must not merge unvalidated
+      - ".github/workflows/frontend-ci.yml"
   push:
     branches: [main]
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
   # Reusable: the deploy workflows run this as a gate before deploying.
   workflow_call:
 

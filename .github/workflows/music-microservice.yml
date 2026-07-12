@@ -5,10 +5,13 @@ on:
     branches: [main, prod]
     paths:
       - "backend/music/**"
+      # A broken edit to this workflow must not merge unvalidated
+      - ".github/workflows/music-microservice.yml"
   push:
     branches: [main]
     paths:
       - "backend/music/**"
+      - ".github/workflows/music-microservice.yml"
   # Reusable: the deploy workflows run this as a gate before deploying.
   workflow_call:
 

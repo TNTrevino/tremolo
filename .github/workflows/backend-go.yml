@@ -7,10 +7,13 @@ on:
       - prod
     paths:
       - "backend/main/**"
+      # A broken edit to this workflow must not merge unvalidated
+      - ".github/workflows/backend-go.yml"
   push:
     branches: [main]
     paths:
       - "backend/main/**"
+      - ".github/workflows/backend-go.yml"
   # Reusable: the deploy workflows run this as a gate before deploying.
   workflow_call:
 
