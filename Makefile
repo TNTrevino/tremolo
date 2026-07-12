@@ -1,31 +1,35 @@
 .PHONY: help \
 	test test-frontend test-music test-go \
-	lint lint-frontend lint-music lint-go \
+	lint lint-frontend lint-music lint-go vet-go \
 	format format-frontend format-music format-go \
+	format-check format-check-frontend format-check-music format-check-go \
 	check check-frontend check-music check-go \
 	build-frontend
 
 help:
 	@echo "Targets:"
-	@echo "  test              run all test suites (frontend, music, go)"
-	@echo "  test-frontend     vitest single run"
-	@echo "  test-music        pytest (backend/music)"
-	@echo "  test-go           go test ./... (backend/main)"
+	@echo "  test                   run all test suites (frontend, music, go)"
+	@echo "  test-frontend          vitest single run"
+	@echo "  test-music             pytest (backend/music)"
+	@echo "  test-go                go test ./... -race (backend/main)"
 	@echo ""
-	@echo "  lint              run all linters"
-	@echo "  lint-frontend     eslint --max-warnings 0"
-	@echo "  lint-music        flake8"
-	@echo "  lint-go           go vet + golangci-lint"
+	@echo "  lint                   run all linters"
+	@echo "  lint-frontend          eslint --max-warnings 0"
+	@echo "  lint-music             flake8"
+	@echo "  lint-go                go vet + golangci-lint"
 	@echo ""
-	@echo "  format            apply all formatters"
-	@echo "  format-frontend   prettier --write"
-	@echo "  format-music      black ."
-	@echo "  format-go         gofmt -s -w ."
+	@echo "  format                 apply all formatters (mutates files)"
+	@echo "  format-frontend        prettier --write"
+	@echo "  format-music           black ."
+	@echo "  format-go              gofmt -s -w ."
 	@echo ""
-	@echo "  check             lint + test everything (CI equivalent)"
-	@echo "  check-frontend    build + lint + test (frontend)"
-	@echo "  check-music       lint + test (music)"
-	@echo "  check-go          fmt-check + vet + lint + test (go)"
+	@echo "  format-check           verify formatting without changing files"
+	@echo ""
+	@echo "  check                  format-check + lint + test everything;"
+	@echo "                         never mutates -- this is what CI runs"
+	@echo "  check-frontend         format-check + lint + test + build"
+	@echo "  check-music            format-check + lint + test"
+	@echo "  check-go               format-check + vet + golangci-lint + test"
 
 # ---- frontend ----
 
@@ -38,36 +42,56 @@ lint-frontend:
 format-frontend:
 	cd frontend && npm run format
 
+format-check-frontend:
+	cd frontend && npm run format:check
+
 build-frontend:
 	cd frontend && npm run build
 
-check-frontend: build-frontend lint-frontend test-frontend
+check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
 
 # ---- backend/music ----
 
+# Activate the venv when present (local dev); CI installs deps into the
+# system environment, where there is no venv to activate.
+MUSIC_RUN = cd backend/music && { [ -f env/bin/activate ] && . env/bin/activate || true; } &&
+
 test-music:
-	cd backend/music && . env/bin/activate && pytest
+	$(MUSIC_RUN) pytest
 
 lint-music:
-	cd backend/music && . env/bin/activate && flake8
+	$(MUSIC_RUN) flake8 . --count --statistics
 
 format-music:
-	cd backend/music && . env/bin/activate && black .
+	$(MUSIC_RUN) black .
 
-check-music: format-music lint-music test-music
+format-check-music:
+	$(MUSIC_RUN) black --check .
+
+check-music: format-check-music lint-music test-music
 
 # ---- backend/main ----
 
 test-go:
 	cd backend/main && go test ./... -race
 
-lint-go:
-	cd backend/main && go vet ./... && golangci-lint run
+vet-go:
+	cd backend/main && go vet ./...
+
+lint-go: vet-go
+	cd backend/main && golangci-lint run
 
 format-go:
 	cd backend/main && gofmt -s -w .
 
-check-go: format-go lint-go test-go
+format-check-go:
+	@cd backend/main && \
+	files="$$(gofmt -s -l .)" && \
+	if [ -n "$$files" ]; then \
+		echo "gofmt needed on:"; echo "$$files"; exit 1; \
+	fi
+
+check-go: format-check-go lint-go test-go
 
 # ---- aggregate ----
 
@@ -76,5 +100,7 @@ test: test-frontend test-music test-go
 lint: lint-frontend lint-music lint-go
 
 format: format-frontend format-music format-go
+
+format-check: format-check-frontend format-check-music format-check-go
 
 check: check-frontend check-music check-go

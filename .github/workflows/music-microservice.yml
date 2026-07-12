@@ -5,13 +5,15 @@ on:
     branches: [main, prod]
     paths:
       - "backend/music/**"
-      # A broken edit to this workflow must not merge unvalidated
+      # A broken edit to this workflow or the Makefile must not merge unvalidated
       - ".github/workflows/music-microservice.yml"
+      - "Makefile"
   push:
     branches: [main]
     paths:
       - "backend/music/**"
       - ".github/workflows/music-microservice.yml"
+      - "Makefile"
   # Reusable: the deploy workflows run this as a gate before deploying.
   workflow_call:
 
@@ -25,11 +27,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-build:
+  lint-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/music
 
     steps:
       - name: Checkout repository
@@ -38,26 +37,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       - name: Install dependencies
+        working-directory: backend/music
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint with flake8
-        run: |
-          echo "🧪 Running flake8..."
-          # Rules come from the committed .flake8 config; no --exit-zero,
-          # findings fail the build.
-          flake8 . --count --statistics
-
-      - name: Check code formatting with Black
-        run: |
-          echo "🧹 Checking code format..."
-          black --check .
-
-      - name: Run tests
-        run: |
-          echo "🧪 Running pytest..."
-          pytest
+      # The checks themselves live in the Makefile so CI and local dev
+      # can't drift: black --check + flake8 + pytest.
+      - name: Check (format + lint + test)
+        run: make check-music
