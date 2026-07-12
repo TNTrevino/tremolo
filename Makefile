@@ -6,6 +6,12 @@
 	check check-frontend check-music check-go \
 	build-frontend
 
+# ---- pretty output ----
+# $(call banner,MESSAGE) prints "[ STEP ] MESSAGE". STEP is passed down by the
+# aggregate targets (e.g. STEP=1/3); it defaults to a bullet for lone runs.
+STEP ?= •
+banner = printf '\033[1m\033[36m[ %s ]\033[0m %s\n' '$(STEP)' '$(1)'
+
 help:
 	@echo "Targets:"
 	@echo "  test                   run all test suites (frontend, music, go)"
@@ -34,18 +40,23 @@ help:
 # ---- frontend ----
 
 test-frontend:
+	@$(call banner,Testing frontend (vitest)...)
 	cd frontend && npm run test:run
 
 lint-frontend:
+	@$(call banner,Linting frontend (eslint)...)
 	cd frontend && npm run lint
 
 format-frontend:
+	@$(call banner,Formatting frontend (prettier)...)
 	cd frontend && npm run format
 
 format-check-frontend:
+	@$(call banner,Checking frontend formatting (prettier)...)
 	cd frontend && npm run format:check
 
 build-frontend:
+	@$(call banner,Building frontend (tsc + vite)...)
 	cd frontend && npm run build
 
 check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
@@ -57,15 +68,19 @@ check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
 MUSIC_RUN = cd backend/music && { [ -f env/bin/activate ] && . env/bin/activate || true; } &&
 
 test-music:
+	@$(call banner,Testing music service (pytest)...)
 	$(MUSIC_RUN) pytest
 
 lint-music:
+	@$(call banner,Linting music service (flake8)...)
 	$(MUSIC_RUN) flake8 . --count --statistics
 
 format-music:
+	@$(call banner,Formatting music service (black)...)
 	$(MUSIC_RUN) black .
 
 format-check-music:
+	@$(call banner,Checking music service formatting (black)...)
 	$(MUSIC_RUN) black --check .
 
 check-music: format-check-music lint-music test-music
@@ -73,19 +88,23 @@ check-music: format-check-music lint-music test-music
 # ---- backend/main ----
 
 test-go:
+	@$(call banner,Testing go service (go test -race)...)
 	cd backend/main && go test ./... -race
 
 vet-go:
+	@$(call banner,Vetting go service (go vet)...)
 	cd backend/main && go vet ./...
 
 lint-go: vet-go
+	@$(call banner,Linting go service (golangci-lint)...)
 	cd backend/main && golangci-lint run
 
 format-go:
+	@$(call banner,Formatting go service (gofmt)...)
 	cd backend/main && gofmt -s -w .
 
 format-check-go:
-	@echo "cd backend/main && gofmt -s -l ."
+	@$(call banner,Checking go service formatting (gofmt)...)
 	@cd backend/main && \
 	files="$$(gofmt -s -l .)" && \
 	if [ -n "$$files" ]; then \
@@ -97,13 +116,29 @@ format-check-go:
 check-go: format-check-go lint-go test-go
 
 # ---- aggregate ----
+# Each leaf runs via a recursive make so we can number the steps ([ 1/3 ] ...).
 
-test: test-frontend test-music test-go
+test:
+	@$(MAKE) --no-print-directory test-frontend STEP=1/3
+	@$(MAKE) --no-print-directory test-music    STEP=2/3
+	@$(MAKE) --no-print-directory test-go        STEP=3/3
 
-lint: lint-frontend lint-music lint-go
+lint:
+	@$(MAKE) --no-print-directory lint-frontend STEP=1/3
+	@$(MAKE) --no-print-directory lint-music    STEP=2/3
+	@$(MAKE) --no-print-directory lint-go        STEP=3/3
 
-format: format-frontend format-music format-go
+format:
+	@$(MAKE) --no-print-directory format-frontend STEP=1/3
+	@$(MAKE) --no-print-directory format-music    STEP=2/3
+	@$(MAKE) --no-print-directory format-go        STEP=3/3
 
-format-check: format-check-frontend format-check-music format-check-go
+format-check:
+	@$(MAKE) --no-print-directory format-check-frontend STEP=1/3
+	@$(MAKE) --no-print-directory format-check-music    STEP=2/3
+	@$(MAKE) --no-print-directory format-check-go        STEP=3/3
 
-check: check-frontend check-music check-go
+check:
+	@$(MAKE) --no-print-directory check-frontend STEP=1/3
+	@$(MAKE) --no-print-directory check-music    STEP=2/3
+	@$(MAKE) --no-print-directory check-go        STEP=3/3
