@@ -29,4 +29,4 @@ Invariants:
 - Hard tabs (Prettier), `@/` → `src/`, ESLint runs with `--max-warnings 0`.
 
 Workflow: `npm run test:run`, `npm run lint`, `npm run build` (tsc runs in
-build). One pre-existing failure in `auth.store.test.ts` is known.
+build). The suite is green — treat any failure as real.
