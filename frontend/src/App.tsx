@@ -71,6 +71,11 @@ const GoogleCallbackPage = lazy(() =>
 const ClassesPage = lazy(() =>
 	import("@/pages/ClassesPage").then((m) => ({ default: m.ClassesPage })),
 );
+const ClassDetailPage = lazy(() =>
+	import("@/pages/ClassDetailPage").then((m) => ({
+		default: m.ClassDetailPage,
+	})),
+);
 
 /**
  * Loading fallback component for lazy-loaded pages
@@ -206,6 +211,14 @@ function AppContent() {
 							element={
 								<TeacherRoute>
 									<ClassesPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/classes/:id"
+							element={
+								<TeacherRoute>
+									<ClassDetailPage />
 								</TeacherRoute>
 							}
 						/>
