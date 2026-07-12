@@ -21,5 +21,9 @@ Invariants (violating these breaks rendering or the frontend contract):
   `services/music_service.py` → route via `run_game_endpoint` → test file per
   endpoint. `/scale-game` is the template.
 
+Python 3.14 — matches CI (`music-microservice.yml`) and the deploy runner
+(`deploy.yml`); build the venv with a 3.14 interpreter so local dev doesn't
+drift from prod.
+
 Workflow: `source env/bin/activate`; `python -m pytest --no-cov -q`;
 `black .` (80 cols), flake8, and pytest are all CI-enforced.

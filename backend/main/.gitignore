@@ -1,0 +1,5 @@
+# Compiled binary produced by `go build` / deploy
+tremolo-api
+
+# Test coverage profile from `make test-go`
+coverage.out

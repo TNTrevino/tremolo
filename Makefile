@@ -88,8 +88,10 @@ check-music: format-check-music lint-music test-music
 # ---- backend/main ----
 
 test-go:
-	@$(call banner,Testing go service (go test -race)...)
-	cd backend/main && go test ./... -race
+	@$(call banner,Testing go service (go test -race + coverage)...)
+	cd backend/main && go test ./... -race -coverprofile=coverage.out
+	@$(call banner,Go coverage by function...)
+	cd backend/main && go tool cover -func=coverage.out
 
 vet-go:
 	@$(call banner,Vetting go service (go vet)...)
