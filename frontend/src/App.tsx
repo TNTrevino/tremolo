@@ -76,6 +76,16 @@ const ClassDetailPage = lazy(() =>
 		default: m.ClassDetailPage,
 	})),
 );
+const AssignmentsPage = lazy(() =>
+	import("@/pages/AssignmentsPage").then((m) => ({
+		default: m.AssignmentsPage,
+	})),
+);
+const AssignmentPlayPage = lazy(() =>
+	import("@/pages/AssignmentPlayPage").then((m) => ({
+		default: m.AssignmentPlayPage,
+	})),
+);
 
 /**
  * Loading fallback component for lazy-loaded pages
@@ -220,6 +230,22 @@ function AppContent() {
 								<TeacherRoute>
 									<ClassDetailPage />
 								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/assignments"
+							element={
+								<ProtectedRoute>
+									<AssignmentsPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/assignments/:id/play"
+							element={
+								<ProtectedRoute>
+									<AssignmentPlayPage />
+								</ProtectedRoute>
 							}
 						/>
 					</Routes>
