@@ -85,10 +85,13 @@ format-go:
 	cd backend/main && gofmt -s -w .
 
 format-check-go:
+	@echo "cd backend/main && gofmt -s -l ."
 	@cd backend/main && \
 	files="$$(gofmt -s -l .)" && \
 	if [ -n "$$files" ]; then \
 		echo "gofmt needed on:"; echo "$$files"; exit 1; \
+	else \
+		echo "gofmt: all files formatted"; \
 	fi
 
 check-go: format-check-go lint-go test-go
