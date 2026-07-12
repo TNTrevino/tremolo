@@ -19,7 +19,10 @@ export type {
 } from "./auth.types";
 
 export type {
+	GameType,
 	CreateNoteGameEntryRequest,
+	GameSettingsRequest,
+	GameSettingsResponse,
 	SaveGameResultParams,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
@@ -45,6 +48,20 @@ export type {
 	RandomNotesRequest,
 	NoteGameRequest,
 	NoteGameResponse,
+	StaffClef,
+	RangeClef,
+	KeySignatureGameRequest,
+	KeySignatureGameResponse,
+	ScaleType,
+	ScaleGameRequest,
+	ScaleGameResponse,
+	ChordQuality,
+	ChordGameRequest,
+	ChordGameResponse,
+	ScaleQuestionMode,
+	IntervalDisplayMode,
+	IntervalGameRequest,
+	IntervalGameResponse,
 } from "./music.types";
 
 export type { ApiError, ApiResponse } from "./error.types";

@@ -1,31 +1,24 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/stores/auth.store";
-import { useToast } from "@/shared/hooks/useToast";
 import { useBreakpoint } from "@/shared/hooks";
 import {
-	useSaveGameResult,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
 	useKeyboardBindings,
 } from "@/shared/hooks/queries";
+import {
+	useSaveGameOnEnd,
+	useGameLifecycle,
+	ScoreBar,
+} from "@/features/identification-game";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
-import type { GameStats } from "@/shared/types";
-import {
-	useNoteGame,
-	useGameTimer,
-	GameState,
-	GameMode,
-} from "@/features/note-game";
-import {
-	formatTimeLength,
-	keyBindingsToNoteMap,
-} from "@/features/note-game/utils";
+import { useNoteGame, GameState, GameMode } from "@/features/note-game";
+import { keyBindingsToNoteMap } from "@/features/note-game/utils";
 import {
 	GameBoard,
 	GameBoardLandscape,
 } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
-import { ScoreBar } from "@/features/note-game/components/ScoreBar";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
 
 /**
@@ -34,11 +27,10 @@ import { SettingsBar } from "@/features/note-game/components/SettingsBar";
  * ready, playing, and results screens
  */
 export function NoteGamePage() {
-	const { isAuthenticated, user } = useAuthStore();
-	const { showSuccess, showError } = useToast();
+	const { isAuthenticated } = useAuthStore();
 	const { isPhoneLandscape } = useBreakpoint();
 	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
-	const saveResult = useSaveGameResult();
+	const { handleGameEnd, saveError } = useSaveGameOnEnd("note");
 	const { data: savedSettings } = useNoteGameSettings();
 	const saveSettings = useSaveNoteGameSettings();
 	const { data: savedKeyboardBindings } = useKeyboardBindings();
@@ -51,44 +43,8 @@ export function NoteGamePage() {
 		[savedKeyboardBindings],
 	);
 
-	const handleGameEnd = useCallback(
-		(stats: GameStats) => {
-			if (isAuthenticated && user) {
-				const timeInSeconds =
-					stats.gameMode === GameMode.Time
-						? stats.limit
-						: Math.round((stats.total / stats.npm) * 60);
-
-				saveResult.mutate(
-					{
-						timeLength: formatTimeLength(timeInSeconds),
-						totalQuestions: stats.total,
-						correctQuestions: stats.correct,
-						userId: user.id,
-						notesPerMinute: stats.npm,
-					},
-					{
-						onSuccess: () => {
-							showSuccess("Game results saved successfully!");
-						},
-						onError: () => {
-							showError(
-								"Failed to save game results. Your score was not recorded.",
-							);
-						},
-					},
-				);
-			}
-		},
-		[isAuthenticated, user, showSuccess, showError, saveResult],
-	);
-
-	const endGameRef = useRef<() => void>();
-	const gameStartRef = useRef<() => void>();
-
-	const { timeRemaining, startTimer, formatTime } = useGameTimer(() => {
-		endGameRef.current?.();
-	});
+	const { timeRemaining, startTimer, formatTime, endGameRef } =
+		useGameLifecycle();
 
 	const {
 		gameState,
@@ -103,17 +59,9 @@ export function NoteGamePage() {
 		syncCurrentNote,
 	} = useNoteGame({
 		onGameEnd: handleGameEnd,
-		onGameStart: () => gameStartRef.current?.(),
-		keyBindings,
-		inputDisabled: bindingsDialogOpen,
-	});
-
-	useEffect(() => {
-		endGameRef.current = endGame;
-	}, [endGame]);
-
-	useEffect(() => {
-		gameStartRef.current = () => {
+		// The engine reads callbacks through a ref, so this closure sees
+		// the latest settings when the first answer starts the game.
+		onGameStart: () => {
 			if (settings.gameMode === GameMode.Time) {
 				startTimer(settings.timeLimit);
 			}
@@ -124,10 +72,19 @@ export function NoteGamePage() {
 					note_limit: settings.noteLimit,
 					scale: settings.scale,
 					octave: settings.octave,
+					low_note: settings.lowNote,
+					high_note: settings.highNote,
+					clef: settings.clef,
 				});
 			}
-		};
-	}, [settings, startTimer, isAuthenticated, saveSettings]);
+		},
+		keyBindings,
+		inputDisabled: bindingsDialogOpen,
+	});
+
+	useEffect(() => {
+		endGameRef.current = endGame;
+	}, [endGame, endGameRef]);
 
 	useEffect(() => {
 		if (savedSettings) {
@@ -137,6 +94,9 @@ export function NoteGamePage() {
 				noteLimit: savedSettings.note_limit,
 				scale: savedSettings.scale,
 				octave: savedSettings.octave,
+				lowNote: savedSettings.low_note,
+				highNote: savedSettings.high_note,
+				clef: savedSettings.clef,
 			});
 		}
 	}, [savedSettings, updateSettings]);
@@ -165,6 +125,11 @@ export function NoteGamePage() {
 		onNoteGenerated: syncCurrentNote,
 		scale: settings.scale,
 		octave: settings.octave,
+		range: {
+			lowNote: settings.lowNote,
+			highNote: settings.highNote,
+			clef: settings.clef,
+		},
 		keyBindings: keyBindings ?? DEFAULT_NOTE_TO_KEY_MAP,
 	};
 
@@ -187,7 +152,7 @@ export function NoteGamePage() {
 						gameStats={gameStats}
 						isAuthenticated={isAuthenticated}
 						onPlayAgain={resetGame}
-						saveError={saveResult.isError}
+						saveError={saveError}
 					/>
 				) : isPhoneLandscape ? (
 					landscapeLayout

@@ -4,15 +4,13 @@
  */
 
 // Hooks
-export { useNoteGame, useGameTimer } from "./hooks";
+export { useNoteGame } from "./hooks";
 
 // Components
 export type {
-	GameSettingsProps,
 	GameBoardProps,
 	GameResultsProps,
 	SettingsBarProps,
-	ScoreBarProps,
 } from "./components";
 
 // Types

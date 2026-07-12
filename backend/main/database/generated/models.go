@@ -6,6 +6,7 @@ package generated
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -14,6 +15,13 @@ type TremoloFriend struct {
 	FriendID    int32        `json:"friend_id"`
 	CreatedDate sql.NullTime `json:"created_date"`
 	CreatedTime sql.NullTime `json:"created_time"`
+}
+
+type TremoloGameSetting struct {
+	ID       int32           `json:"id"`
+	UserID   int32           `json:"user_id"`
+	GameType string          `json:"game_type"`
+	Config   json.RawMessage `json:"config"`
 }
 
 type TremoloKeyboardBinding struct {
@@ -51,6 +59,7 @@ type TremoloNoteGameEntry struct {
 	NotesPerMinute   int32        `json:"notes_per_minute"`
 	CreatedDate      sql.NullTime `json:"created_date"`
 	CreatedTime      sql.NullTime `json:"created_time"`
+	GameType         string       `json:"game_type"`
 }
 
 type TremoloNoteGameSetting struct {
@@ -61,6 +70,9 @@ type TremoloNoteGameSetting struct {
 	NoteLimit int32  `json:"note_limit"`
 	Scale     string `json:"scale"`
 	Octave    int32  `json:"octave"`
+	LowNote   string `json:"low_note"`
+	HighNote  string `json:"high_note"`
+	Clef      string `json:"clef"`
 }
 
 type TremoloParentChild struct {

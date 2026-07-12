@@ -65,6 +65,7 @@ func main() {
 	controllers.SetupUserInfoRoutes(router)
 	controllers.SetupNoteGameRoutes(router)
 	controllers.SetupNoteGameSettingsRoutes(router)
+	controllers.SetupGameSettingsRoutes(router)
 	controllers.SetupKeyboardBindingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
 

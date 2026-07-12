@@ -15,6 +15,18 @@ var (
 	ErrValidation   = errors.New("validation failed")
 )
 
+// normalizeGameType defaults an empty game type to "note" (legacy
+// clients) and rejects unknown values (per dtos.ValidGameTypes).
+func normalizeGameType(gameType string) (string, error) {
+	if gameType == "" {
+		return "note", nil
+	}
+	if !dtos.ValidGameTypes[gameType] {
+		return "", ErrValidation
+	}
+	return gameType, nil
+}
+
 const (
 	// RecentEntriesLimit is the maximum number of recent entries returned by GetRecentEntriesByUserID
 	// This should match the LIMIT clause in the SQL query
@@ -49,12 +61,21 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		return 0, err
 	}
 
+	gameType, err := normalizeGameType(entry.GameType)
+	if err != nil {
+		logger.Error("Invalid game type",
+			"game_type", entry.GameType,
+			"user_id", entry.UserID)
+		return 0, err
+	}
+
 	params := generated.CreateNoteGameEntryParams{
 		UserID:           int32(entry.UserID),
 		TimeLength:       timeLength,
 		TotalQuestions:   int32(entry.TotalQuestions),
 		CorrectQuestions: int32(entry.CorrectQuestions),
 		NotesPerMinute:   int32(entry.NPM),
+		GameType:         gameType,
 	}
 
 	entryID, err := q.CreateNoteGameEntry(ctx, params)
@@ -106,9 +127,18 @@ func GetDailyActivityCounts(ctx context.Context, q generated.Querier, authentica
 	return counts, nil
 }
 
-// GetRecentNoteGameEntries retrieves the last 30 note game entries for a user
-func GetRecentNoteGameEntries(ctx context.Context, q generated.Querier, authenticatedUserID int) ([]dtos.NoteGameEntryResponse, error) {
-	rows, err := q.GetRecentEntriesByUserID(ctx, int32(authenticatedUserID))
+// GetRecentNoteGameEntries retrieves the last 30 game entries for a user
+// for the given game type ("note", "key_signature", "scale", "chord").
+func GetRecentNoteGameEntries(ctx context.Context, q generated.Querier, authenticatedUserID int, gameType string) ([]dtos.NoteGameEntryResponse, error) {
+	normalizedType, err := normalizeGameType(gameType)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := q.GetRecentEntriesByUserID(ctx, generated.GetRecentEntriesByUserIDParams{
+		UserID:   int32(authenticatedUserID),
+		GameType: normalizedType,
+	})
 	if err != nil {
 		logger.Error("Failed to fetch recent note game entries",
 			"error", err.Error(),

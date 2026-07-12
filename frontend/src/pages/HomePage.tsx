@@ -12,23 +12,30 @@ import {
 export function HomePage() {
 	return (
 		<div className="min-h-screen">
-			{/* Hero Section */}
-			<section className="relative py-20 px-4 bg-gradient-to-br from-primary/20 via-background to-accent/20">
-				<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMwLTkuOTQgOC4wNi0xOCAxOC0xOCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-40" />
-				<div className="container mx-auto max-w-6xl relative z-10">
+			{/* Hero: ink headline set on faint engraved staff lines */}
+			<section className="relative overflow-hidden py-24 px-4">
+				<div
+					aria-hidden="true"
+					className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-7"
+				>
+					{[0, 1, 2, 3, 4].map((line) => (
+						<div key={line} className="h-px w-full bg-foreground/10" />
+					))}
+				</div>
+				<div className="container mx-auto max-w-6xl relative">
 					<div className="text-center space-y-6 animate-fade-in">
-						<h1 className="text-5xl md:text-7xl font-bold leading-tight text-balance">
-							Master Music <span className="text-primary">Sight Reading</span>
+						<h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-balance">
+							Master music sight reading
 						</h1>
 						<p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-							The customizable platform for music students, teachers, and
-							performers to practice sight reading and note recognition
+							Practice reading notes, key signatures, intervals, scales, and
+							chords — built for music students, teachers, and performers
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
 							<Link to="/note-game">
-								<Button size="xl" className="w-full sm:w-auto">
+								<Button size="xl" variant="brass" className="w-full sm:w-auto">
 									<Music2 className="mr-2 h-5 w-5" />
-									Start Practicing Now
+									Start practicing
 								</Button>
 							</Link>
 						</div>
@@ -57,8 +64,8 @@ export function HomePage() {
 
 						<Card className="group hover:border-primary hover:shadow-lg transition-all">
 							<CardHeader>
-								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-									<Target className="h-6 w-6 text-accent" />
+								<div className="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+									<Target className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Rhythm Practice</CardTitle>
 							</CardHeader>
@@ -91,7 +98,9 @@ export function HomePage() {
 			{/* How It Works Section */}
 			<section className="py-20 px-4 bg-muted/30">
 				<div className="container mx-auto max-w-4xl">
-					<h2 className="text-4xl font-bold text-center mb-12">How It Works</h2>
+					<h2 className="font-display text-4xl font-bold text-center mb-12">
+						How It Works
+					</h2>
 					<div className="space-y-8">
 						{[
 							{
@@ -132,7 +141,7 @@ export function HomePage() {
 			{/* Built For Everyone Section */}
 			<section className="py-20 px-4">
 				<div className="container mx-auto max-w-6xl">
-					<h2 className="text-4xl font-bold text-center mb-12">
+					<h2 className="font-display text-4xl font-bold text-center mb-12">
 						Built For Everyone
 					</h2>
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -154,8 +163,8 @@ export function HomePage() {
 
 						<Card className="hover:shadow-lg transition-all">
 							<CardHeader>
-								<div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-									<User className="h-6 w-6 text-accent" />
+								<div className="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4">
+									<User className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Students</CardTitle>
 							</CardHeader>
@@ -188,9 +197,9 @@ export function HomePage() {
 			</section>
 
 			{/* Final CTA Section */}
-			<section className="py-20 px-4 bg-gradient-to-br from-primary/10 to-accent/10">
+			<section className="py-20 px-4 bg-muted/30">
 				<div className="container mx-auto max-w-4xl text-center space-y-6">
-					<h2 className="text-4xl font-bold">
+					<h2 className="font-display text-4xl font-bold">
 						Ready to Improve Your Sight Reading?
 					</h2>
 					<p className="text-xl text-muted-foreground">

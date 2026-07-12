@@ -70,7 +70,7 @@ export function UserProfileCard({ user, quickStats }: UserProfileCardProps) {
 							</div>
 						</div>
 						<div className="text-center">
-							<div className="text-3xl font-bold text-accent">
+							<div className="text-3xl font-bold text-brass">
 								{quickStats.timeReading}
 							</div>
 							<div className="text-xs text-muted-foreground">time reading</div>

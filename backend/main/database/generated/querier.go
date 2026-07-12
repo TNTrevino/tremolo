@@ -30,6 +30,7 @@ type Querier interface {
 	DeleteAllTeacherStudentsByStudent(ctx context.Context, studentID int32) error
 	DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacherID int32) error
 	DeleteAllTestData(ctx context.Context) error
+	DeleteGameSettings(ctx context.Context, arg DeleteGameSettingsParams) error
 	DeleteKeyboardBindings(ctx context.Context, userID int32) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
@@ -51,9 +52,13 @@ type Querier interface {
 	// Returns users who have a mutual follow relationship with the given user
 	// (both directions exist in the friends table = they are friends)
 	GetFriendsByUserID(ctx context.Context, userID int32) ([]GetFriendsByUserIDRow, error)
+	// Per-game settings stored as JSONB, one row per (user, game type).
+	// Used by the key signature / scale / chord identification games; the
+	// note game keeps its dedicated note_game_settings table.
+	GetGameSettings(ctx context.Context, arg GetGameSettingsParams) (TremoloGameSetting, error)
 	GetKeyboardBindings(ctx context.Context, userID int32) (TremoloKeyboardBinding, error)
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
-	GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error)
+	GetRecentEntriesByUserID(ctx context.Context, arg GetRecentEntriesByUserIDParams) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
 	GetUserByEmailForOAuth(ctx context.Context, email sql.NullString) (GetUserByEmailForOAuthRow, error)
@@ -70,6 +75,7 @@ type Querier interface {
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	UpsertGameSettings(ctx context.Context, arg UpsertGameSettingsParams) (TremoloGameSetting, error)
 	UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error)
 	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)
 }

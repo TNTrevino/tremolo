@@ -47,6 +47,14 @@ export default {
 					DEFAULT: "hsl(var(--accent))",
 					foreground: "hsl(var(--accent-foreground))",
 				},
+				brass: {
+					DEFAULT: "hsl(var(--brass))",
+					foreground: "hsl(var(--brass-foreground))",
+				},
+				correct: {
+					DEFAULT: "hsl(var(--correct))",
+					foreground: "hsl(var(--correct-foreground))",
+				},
 				popover: {
 					DEFAULT: "hsl(var(--popover))",
 					foreground: "hsl(var(--popover-foreground))",
@@ -88,12 +96,12 @@ export default {
 			fontFamily: {
 				sans: ["Inter Variable", "system-ui", "sans-serif"],
 				display: [
-					"Cabinet Grotesk Variable",
+					"Bricolage Grotesque Variable",
 					"Inter Variable",
 					"system-ui",
 					"sans-serif",
 				],
-				mono: ["JetBrains Mono Variable", "monospace"],
+				mono: ["ui-monospace", "monospace"],
 			},
 		},
 	},

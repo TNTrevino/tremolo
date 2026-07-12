@@ -160,6 +160,7 @@ type CreateTestNoteGameEntryParams struct {
 	TotalQuestions   int
 	CorrectQuestions int
 	NotesPerMinute   float64
+	GameType         string // defaults to "note"
 }
 
 // parseTimeLength parses a time string like "00:05:00" into a time.Time
@@ -186,12 +187,18 @@ func CreateTestNoteGameEntry(t *testing.T, params CreateTestNoteGameEntryParams)
 		t.Fatalf("Failed to parse time length %q: %v", params.TimeLength, err)
 	}
 
+	gameType := params.GameType
+	if gameType == "" {
+		gameType = "note"
+	}
+
 	createParams := generated.CreateNoteGameEntryParams{
 		UserID:           int32(params.UserID),
 		TimeLength:       timeLength,
 		TotalQuestions:   int32(params.TotalQuestions),
 		CorrectQuestions: int32(params.CorrectQuestions),
 		NotesPerMinute:   int32(params.NotesPerMinute),
+		GameType:         gameType,
 	}
 
 	entryID, err := database.Queries.CreateNoteGameEntry(context.Background(), createParams)
