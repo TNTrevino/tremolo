@@ -24,8 +24,11 @@ func ConfigBlobErrors(config json.RawMessage) []string {
 	case !json.Valid(config):
 		return []string{"Config: must be valid JSON"}
 	}
+	// json.Unmarshal accepts the literal `null` into a map (leaving probe
+	// nil) without error, so guard it explicitly: a JSON object unmarshals
+	// to a non-nil map, `null`/arrays/scalars do not.
 	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(config, &probe); err != nil {
+	if err := json.Unmarshal(config, &probe); err != nil || probe == nil {
 		return []string{"Config: must be a JSON object"}
 	}
 	return nil
