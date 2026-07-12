@@ -410,7 +410,6 @@ func TestGetAssignmentAttempts_OrderedAndAuthorized(t *testing.T) {
 	assert.Equal(t, 90, attempts[0].Accuracy)
 	assert.Equal(t, 12, attempts[0].NotesPerMinute)
 	assert.NotEmpty(t, attempts[0].AttemptedDate)
-	assert.NotEmpty(t, attempts[0].AttemptedTime)
 	assert.Equal(t, 15, attempts[1].CorrectQuestions)
 	assert.Equal(t, 75, attempts[1].Accuracy)
 

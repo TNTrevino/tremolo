@@ -90,5 +90,4 @@ type AssignmentAttempt struct {
 	Accuracy         int    `json:"accuracy"`
 	NotesPerMinute   int    `json:"notes_per_minute"`
 	AttemptedDate    string `json:"attempted_date"`
-	AttemptedTime    string `json:"attempted_time"`
 }

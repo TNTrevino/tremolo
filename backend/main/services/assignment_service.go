@@ -230,7 +230,6 @@ func GetAssignmentAttempts(ctx context.Context, q generated.Querier, callerID, a
 			Accuracy:         int(row.Accuracy),
 			NotesPerMinute:   int(row.NotesPerMinute),
 			AttemptedDate:    row.AttemptedDate,
-			AttemptedTime:    row.AttemptedTime,
 		})
 	}
 	return attempts, nil

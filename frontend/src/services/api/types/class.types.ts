@@ -84,5 +84,4 @@ export interface AttemptResponse {
 	accuracy: number;
 	notes_per_minute: number;
 	attempted_date: string;
-	attempted_time: string;
 }

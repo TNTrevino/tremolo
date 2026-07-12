@@ -99,7 +99,6 @@ export class ClassesService {
 			accuracy: response.accuracy,
 			notesPerMinute: response.notes_per_minute,
 			attemptedDate: response.attempted_date,
-			attemptedTime: response.attempted_time,
 		};
 	}
 

@@ -84,8 +84,7 @@ select e.correct_questions,
            else 0
        end as accuracy,
        e.notes_per_minute,
-       coalesce(e.created_date, current_date)::text as attempted_date,
-       coalesce(e.created_time, '00:00:00'::time)::text as attempted_time
+       coalesce(e.created_date, current_date)::text as attempted_date
 from tremolo.note_game_entries e
 where e.assignment_id = $1
   and e.user_id = $2
@@ -103,7 +102,6 @@ type GetAssignmentAttemptsRow struct {
 	Accuracy         int32  `json:"accuracy"`
 	NotesPerMinute   int32  `json:"notes_per_minute"`
 	AttemptedDate    string `json:"attempted_date"`
-	AttemptedTime    string `json:"attempted_time"`
 }
 
 // Every attempt (score entry) tagged with the assignment for one
@@ -123,7 +121,6 @@ func (q *Queries) GetAssignmentAttempts(ctx context.Context, arg GetAssignmentAt
 			&i.Accuracy,
 			&i.NotesPerMinute,
 			&i.AttemptedDate,
-			&i.AttemptedTime,
 		); err != nil {
 			return nil, err
 		}

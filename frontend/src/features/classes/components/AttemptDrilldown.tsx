@@ -5,6 +5,7 @@ import {
 	type TremoloSeries,
 } from "@/shared/components/charts";
 import { useAssignmentAttempts } from "@/shared/hooks/queries";
+import { formatShortDate } from "@/shared/utils/date.utils";
 import type { Attempt } from "@/features/classes/types";
 
 interface AttemptDrilldownProps {
@@ -26,18 +27,11 @@ const ACCURACY_SERIES: Array<TremoloSeries & { key: "accuracy" }> = [
 	},
 ];
 
-function formatAttemptDate(dateStr: string): string {
-	if (!dateStr) return "";
-	const date = new Date(`${dateStr}T00:00:00`);
-	if (Number.isNaN(date.getTime())) return dateStr;
-	return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 function AttemptRow({ attempt }: { attempt: Attempt }) {
 	return (
 		<div className="grid grid-cols-[1fr_repeat(3,auto)] gap-4 items-center px-3 py-1.5 text-sm">
 			<span className="tabular-nums text-muted-foreground">
-				{formatAttemptDate(attempt.attemptedDate)}
+				{formatShortDate(attempt.attemptedDate)}
 			</span>
 			<span className="tabular-nums text-right">
 				{attempt.correctQuestions}
@@ -73,7 +67,7 @@ export function AttemptDrilldown({
 	} = useAssignmentAttempts(assignmentId, studentId, true);
 
 	const chartData: AttemptChartPoint[] = attempts.map((a) => ({
-		label: formatAttemptDate(a.attemptedDate),
+		label: formatShortDate(a.attemptedDate),
 		accuracy: a.accuracy,
 	}));
 

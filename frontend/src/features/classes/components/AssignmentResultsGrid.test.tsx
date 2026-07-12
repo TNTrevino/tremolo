@@ -58,7 +58,6 @@ const attempts: Attempt[] = [
 		accuracy: 92,
 		notesPerMinute: 80,
 		attemptedDate: "2026-07-12",
-		attemptedTime: "15:04:05",
 	},
 ];
 

@@ -55,8 +55,7 @@ select e.correct_questions,
            else 0
        end as accuracy,
        e.notes_per_minute,
-       coalesce(e.created_date, current_date)::text as attempted_date,
-       coalesce(e.created_time, '00:00:00'::time)::text as attempted_time
+       coalesce(e.created_date, current_date)::text as attempted_date
 from tremolo.note_game_entries e
 where e.assignment_id = $1
   and e.user_id = $2

@@ -342,7 +342,6 @@ describe("ClassesService", () => {
 				accuracy: 92,
 				notes_per_minute: 80,
 				attempted_date: "2026-07-12",
-				attempted_time: "15:04:05",
 			},
 		];
 		client.get.mockResolvedValue({ data: response });
@@ -357,7 +356,6 @@ describe("ClassesService", () => {
 				accuracy: 92,
 				notesPerMinute: 80,
 				attemptedDate: "2026-07-12",
-				attemptedTime: "15:04:05",
 			},
 		]);
 	});

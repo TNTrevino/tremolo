@@ -58,5 +58,4 @@ export interface Attempt {
 	accuracy: number;
 	notesPerMinute: number;
 	attemptedDate: string;
-	attemptedTime: string;
 }
