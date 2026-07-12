@@ -31,16 +31,7 @@ func (r *CreateAssignmentRequest) Validate() error {
 	}
 
 	// Same shape rules as game_settings: the config is a snapshot of one.
-	if len(r.Config) == 0 {
-		errorMessages = append(errorMessages, "Config: is required")
-	} else if len(r.Config) > MaxGameSettingsConfigBytes {
-		errorMessages = append(errorMessages, "Config: too large")
-	} else {
-		var probe map[string]json.RawMessage
-		if err := json.Unmarshal(r.Config, &probe); err != nil {
-			errorMessages = append(errorMessages, "Config: must be a JSON object")
-		}
-	}
+	errorMessages = append(errorMessages, ConfigBlobErrors(r.Config)...)
 
 	if r.TargetQuestions != nil && *r.TargetQuestions <= 0 {
 		errorMessages = append(errorMessages, "TargetQuestions: must be positive")
