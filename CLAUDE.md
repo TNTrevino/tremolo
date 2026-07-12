@@ -16,6 +16,8 @@ Deep per-service docs (read before structural changes in a service): `frontend/A
 
 ## Commands
 
+A root `Makefile` wraps the commands below per service — prefer these over the raw commands (no `cd`/venv-activation needed): `make test|lint|format|check` (all services) or `make {test,lint,format,check}-{frontend,music,go}` (single service, e.g. `make test-music`). Run `make help` for the full list.
+
 Frontend (`cd frontend`):
 - `npm run dev` — Vite dev server (port 5173)
 - `npm run test` / `npm run test:run` — vitest (watch / single run); single file: `npx vitest run src/path/to/file.test.ts`
