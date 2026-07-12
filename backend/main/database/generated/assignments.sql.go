@@ -98,6 +98,38 @@ func (q *Queries) GetAssignmentByID(ctx context.Context, id int32) (TremoloAssig
 	return i, err
 }
 
+const getAssignmentEnrollment = `-- name: GetAssignmentEnrollment :one
+select a.game_type,
+       exists (
+           select 1
+           from tremolo.class_students cs
+           where cs.class_id = a.class_id
+             and cs.student_id = $2
+       ) as enrolled
+from tremolo.assignments a
+where a.id = $1
+`
+
+type GetAssignmentEnrollmentParams struct {
+	ID        int32 `json:"id"`
+	StudentID int32 `json:"student_id"`
+}
+
+type GetAssignmentEnrollmentRow struct {
+	GameType string `json:"game_type"`
+	Enrolled bool   `json:"enrolled"`
+}
+
+// One round-trip for tagging a score entry: the assignment's game type
+// plus whether the student is enrolled in its class. Used on the entry
+// write path, so it replaces a GetAssignmentByID + IsStudentInClass pair.
+func (q *Queries) GetAssignmentEnrollment(ctx context.Context, arg GetAssignmentEnrollmentParams) (GetAssignmentEnrollmentRow, error) {
+	row := q.db.QueryRowContext(ctx, getAssignmentEnrollment, arg.ID, arg.StudentID)
+	var i GetAssignmentEnrollmentRow
+	err := row.Scan(&i.GameType, &i.Enrolled)
+	return i, err
+}
+
 const getAssignmentResults = `-- name: GetAssignmentResults :many
 select u.id as student_id,
        u.first_name,

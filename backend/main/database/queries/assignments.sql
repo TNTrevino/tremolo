@@ -20,6 +20,20 @@ select *
 from tremolo.assignments
 where id = $1;
 
+-- name: GetAssignmentEnrollment :one
+-- One round-trip for tagging a score entry: the assignment's game type
+-- plus whether the student is enrolled in its class. Used on the entry
+-- write path, so it replaces a GetAssignmentByID + IsStudentInClass pair.
+select a.game_type,
+       exists (
+           select 1
+           from tremolo.class_students cs
+           where cs.class_id = a.class_id
+             and cs.student_id = $2
+       ) as enrolled
+from tremolo.assignments a
+where a.id = $1;
+
 -- name: ListAssignmentsByClass :many
 select *
 from tremolo.assignments

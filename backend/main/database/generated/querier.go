@@ -57,6 +57,10 @@ type Querier interface {
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
 	GetAssignmentByID(ctx context.Context, id int32) (TremoloAssignment, error)
+	// One round-trip for tagging a score entry: the assignment's game type
+	// plus whether the student is enrolled in its class. Used on the entry
+	// write path, so it replaces a GetAssignmentByID + IsStudentInClass pair.
+	GetAssignmentEnrollment(ctx context.Context, arg GetAssignmentEnrollmentParams) (GetAssignmentEnrollmentRow, error)
 	// Teacher's results grid: one row per student in the class, with their
 	// aggregate over attempts on this assignment. Students with no attempts
 	// still appear (left join) so the teacher sees who hasn't started.
