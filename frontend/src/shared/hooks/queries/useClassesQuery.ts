@@ -9,6 +9,7 @@ import type {
 	Assignment,
 	StudentAssignment,
 	AssignmentResult,
+	Attempt,
 } from "@/features/classes/types";
 
 export const classesKeys = {
@@ -22,6 +23,14 @@ export const classesKeys = {
 		[...classesKeys.all, "student-assignments"] as const,
 	assignmentResults: (assignmentId: number) =>
 		[...classesKeys.all, "assignment", assignmentId, "results"] as const,
+	attempts: (assignmentId: number, studentId: number) =>
+		[
+			...classesKeys.all,
+			"assignment",
+			assignmentId,
+			"attempts",
+			studentId,
+		] as const,
 };
 
 /**
@@ -111,6 +120,27 @@ export function useAssignmentResults(assignmentId: number) {
 		meta: { errorTitle: "Failed to load results" },
 		queryFn: () => classesService.getAssignmentResults(assignmentId),
 		enabled: isAuthenticated,
+	});
+}
+
+/**
+ * Fetch the attempt history for a student on an assignment (teacher drill-down).
+ * Only runs when the user is authenticated and `enabled` is true (e.g. the
+ * row is expanded) — avoids fetching for every row up front.
+ */
+export function useAssignmentAttempts(
+	assignmentId: number,
+	studentId: number,
+	enabled = true,
+) {
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+	return useQuery<Attempt[]>({
+		queryKey: classesKeys.attempts(assignmentId, studentId),
+		meta: { errorTitle: "Failed to load attempts" },
+		queryFn: () =>
+			classesService.getAssignmentAttempts(assignmentId, studentId),
+		enabled: isAuthenticated && enabled,
 	});
 }
 

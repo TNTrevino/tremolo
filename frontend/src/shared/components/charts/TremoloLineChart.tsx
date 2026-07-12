@@ -66,6 +66,8 @@ export interface TremoloLineChartProps<T extends object> {
 	showLegend?: boolean;
 	/** Series keys that start hidden (user can click legend to enable) */
 	initialHiddenSeries?: Array<keyof T & string>;
+	/** Fixed Y axis domain (e.g. [0, 100] for a percentage series); defaults to recharts' auto range */
+	yDomain?: [number, number];
 }
 
 /**
@@ -165,6 +167,7 @@ export function TremoloLineChart<T extends object>({
 	referenceLines,
 	showLegend = true,
 	initialHiddenSeries,
+	yDomain,
 }: TremoloLineChartProps<T>) {
 	const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(
 		() => new Set(initialHiddenSeries ?? []),
@@ -249,6 +252,7 @@ export function TremoloLineChart<T extends object>({
 					axisLine={false}
 					tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
 					width={40}
+					domain={yDomain}
 				/>
 				<Tooltip
 					cursor={{

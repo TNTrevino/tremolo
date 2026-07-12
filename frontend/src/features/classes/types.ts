@@ -50,3 +50,13 @@ export interface AssignmentResult {
 	bestAccuracy: number;
 	lastAttemptDate: string;
 }
+
+// One attempt at an assignment, ordered oldest->newest.
+export interface Attempt {
+	correctQuestions: number;
+	totalQuestions: number;
+	accuracy: number;
+	notesPerMinute: number;
+	attemptedDate: string;
+	attemptedTime: string;
+}

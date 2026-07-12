@@ -40,6 +40,7 @@ export {
 	useClassAssignments,
 	useStudentAssignments,
 	useAssignmentResults,
+	useAssignmentAttempts,
 	useCreateClass,
 	useJoinClass,
 	useArchiveClass,

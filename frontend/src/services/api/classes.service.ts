@@ -9,6 +9,7 @@ import type {
 	CreateClassRequest,
 	JoinClassRequest,
 	CreateAssignmentRequest,
+	AttemptResponse,
 } from "./types";
 import type {
 	Class,
@@ -17,6 +18,7 @@ import type {
 	Assignment,
 	StudentAssignment,
 	AssignmentResult,
+	Attempt,
 } from "@/features/classes/types";
 
 export class ClassesService {
@@ -87,6 +89,17 @@ export class ClassesService {
 			mostQuestions: row.most_questions,
 			bestAccuracy: row.best_accuracy,
 			lastAttemptDate: row.last_attempt_date,
+		};
+	}
+
+	private mapAttemptResponse(response: AttemptResponse): Attempt {
+		return {
+			correctQuestions: response.correct_questions,
+			totalQuestions: response.total_questions,
+			accuracy: response.accuracy,
+			notesPerMinute: response.notes_per_minute,
+			attemptedDate: response.attempted_date,
+			attemptedTime: response.attempted_time,
 		};
 	}
 
@@ -182,5 +195,15 @@ export class ClassesService {
 			`/api/assignments/${assignmentId}`,
 		);
 		return response.data;
+	}
+
+	async getAssignmentAttempts(
+		assignmentId: number,
+		studentId: number,
+	): Promise<Attempt[]> {
+		const response = await this.client.get<AttemptResponse[]>(
+			`/api/assignments/${assignmentId}/attempts/${studentId}`,
+		);
+		return response.data.map((a) => this.mapAttemptResponse(a));
 	}
 }
