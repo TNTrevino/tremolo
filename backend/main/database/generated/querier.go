@@ -61,9 +61,11 @@ type Querier interface {
 	// plus whether the student is enrolled in its class. Used on the entry
 	// write path, so it replaces a GetAssignmentByID + IsStudentInClass pair.
 	GetAssignmentEnrollment(ctx context.Context, arg GetAssignmentEnrollmentParams) (GetAssignmentEnrollmentRow, error)
-	// Teacher's results grid: one row per student in the class, with their
-	// aggregate over attempts on this assignment. Students with no attempts
-	// still appear (left join) so the teacher sees who hasn't started.
+	// Teacher's results grid: one row per student in the class. Students
+	// with no attempts still appear (attempt_count 0) so the teacher sees
+	// who hasn't started. best_correct / most_questions / best_accuracy all
+	// describe the SAME best attempt (highest accuracy, ties broken by most
+	// correct), not columns maxed independently across different attempts.
 	GetAssignmentResults(ctx context.Context, arg GetAssignmentResultsParams) ([]GetAssignmentResultsRow, error)
 	GetClassByID(ctx context.Context, id int32) (TremoloClass, error)
 	GetClassByJoinCode(ctx context.Context, joinCode string) (TremoloClass, error)
@@ -94,7 +96,10 @@ type Querier interface {
 	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
 	ListAssignmentsByClass(ctx context.Context, classID int32) ([]TremoloAssignment, error)
 	// Every assignment in the student's classes, with the student's own
-	// best-attempt aggregate so the frontend can show progress.
+	// best attempt so the frontend can show progress. "Best" is one real
+	// attempt (highest accuracy, ties broken by most correct), not each
+	// column maxed independently -- otherwise best_correct and best_accuracy
+	// could come from different attempts.
 	ListAssignmentsForStudent(ctx context.Context, studentID int32) ([]ListAssignmentsForStudentRow, error)
 	ListClassRoster(ctx context.Context, classID int32) ([]ListClassRosterRow, error)
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)

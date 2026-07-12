@@ -134,27 +134,40 @@ const getAssignmentResults = `-- name: GetAssignmentResults :many
 select u.id as student_id,
        u.first_name,
        u.last_name,
-       count(e.id)::int                           as attempt_count,
-       coalesce(max(e.correct_questions), 0)::int  as best_correct,
-       coalesce(max(e.total_questions), 0)::int    as most_questions,
-       coalesce(
-           max(
-               case
-                   when e.total_questions > 0
-                   then e.correct_questions * 100 / e.total_questions
-                   else 0
-               end
-           ),
-           0
-       )::int as best_accuracy,
-       coalesce(max(e.created_date)::text, '')::text as last_attempt_date
+       coalesce(agg.attempt_count, 0)::int as attempt_count,
+       coalesce(best.correct_questions, 0)::int as best_correct,
+       coalesce(best.total_questions, 0)::int as most_questions,
+       coalesce(best.accuracy, 0)::int as best_accuracy,
+       coalesce(agg.last_attempt_date, '')::text as last_attempt_date
 from tremolo.class_students cs
 join tremolo.users u on u.id = cs.student_id
-left join tremolo.note_game_entries e
-    on e.assignment_id = $1
-   and e.user_id = cs.student_id
+left join lateral (
+    select count(*)::int as attempt_count,
+           max(e.created_date)::text as last_attempt_date
+    from tremolo.note_game_entries e
+    where e.assignment_id = $1
+      and e.user_id = cs.student_id
+) agg on true
+left join lateral (
+    select e.correct_questions,
+           e.total_questions,
+           case
+               when e.total_questions > 0
+               then e.correct_questions * 100 / e.total_questions
+               else 0
+           end as accuracy
+    from tremolo.note_game_entries e
+    where e.assignment_id = $1
+      and e.user_id = cs.student_id
+    order by (case
+                  when e.total_questions > 0
+                  then e.correct_questions * 100 / e.total_questions
+                  else 0
+              end) desc,
+             e.correct_questions desc
+    limit 1
+) best on true
 where cs.class_id = $2
-group by u.id, u.first_name, u.last_name
 order by u.last_name, u.first_name
 `
 
@@ -174,9 +187,11 @@ type GetAssignmentResultsRow struct {
 	LastAttemptDate string `json:"last_attempt_date"`
 }
 
-// Teacher's results grid: one row per student in the class, with their
-// aggregate over attempts on this assignment. Students with no attempts
-// still appear (left join) so the teacher sees who hasn't started.
+// Teacher's results grid: one row per student in the class. Students
+// with no attempts still appear (attempt_count 0) so the teacher sees
+// who hasn't started. best_correct / most_questions / best_accuracy all
+// describe the SAME best attempt (highest accuracy, ties broken by most
+// correct), not columns maxed independently across different attempts.
 func (q *Queries) GetAssignmentResults(ctx context.Context, arg GetAssignmentResultsParams) ([]GetAssignmentResultsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAssignmentResults, arg.AssignmentID, arg.ClassID)
 	if err != nil {
@@ -252,26 +267,37 @@ func (q *Queries) ListAssignmentsByClass(ctx context.Context, classID int32) ([]
 const listAssignmentsForStudent = `-- name: ListAssignmentsForStudent :many
 select a.id, a.class_id, a.title, a.game_type, a.config, a.due_at, a.target_questions, a.target_accuracy, a.created_at,
        c.name as class_name,
-       count(e.id)::int                          as attempt_count,
-       coalesce(max(e.correct_questions), 0)::int as best_correct,
-       coalesce(
-           max(
-               case
-                   when e.total_questions > 0
-                   then e.correct_questions * 100 / e.total_questions
-                   else 0
-               end
-           ),
-           0
-       )::int as best_accuracy
+       coalesce(agg.attempt_count, 0)::int as attempt_count,
+       coalesce(best.correct_questions, 0)::int as best_correct,
+       coalesce(best.accuracy, 0)::int as best_accuracy
 from tremolo.class_students cs
 join tremolo.classes c on c.id = cs.class_id and c.archived_at is null
 join tremolo.assignments a on a.class_id = c.id
-left join tremolo.note_game_entries e
-    on e.assignment_id = a.id
-   and e.user_id = cs.student_id
+left join lateral (
+    select count(*)::int as attempt_count
+    from tremolo.note_game_entries e
+    where e.assignment_id = a.id
+      and e.user_id = cs.student_id
+) agg on true
+left join lateral (
+    select e.correct_questions,
+           case
+               when e.total_questions > 0
+               then e.correct_questions * 100 / e.total_questions
+               else 0
+           end as accuracy
+    from tremolo.note_game_entries e
+    where e.assignment_id = a.id
+      and e.user_id = cs.student_id
+    order by (case
+                  when e.total_questions > 0
+                  then e.correct_questions * 100 / e.total_questions
+                  else 0
+              end) desc,
+             e.correct_questions desc
+    limit 1
+) best on true
 where cs.student_id = $1
-group by a.id, c.name
 order by a.due_at asc nulls last, a.created_at desc
 `
 
@@ -292,7 +318,10 @@ type ListAssignmentsForStudentRow struct {
 }
 
 // Every assignment in the student's classes, with the student's own
-// best-attempt aggregate so the frontend can show progress.
+// best attempt so the frontend can show progress. "Best" is one real
+// attempt (highest accuracy, ties broken by most correct), not each
+// column maxed independently -- otherwise best_correct and best_accuracy
+// could come from different attempts.
 func (q *Queries) ListAssignmentsForStudent(ctx context.Context, studentID int32) ([]ListAssignmentsForStudentRow, error) {
 	rows, err := q.db.QueryContext(ctx, listAssignmentsForStudent, studentID)
 	if err != nil {
