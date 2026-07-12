@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/shared/utils/error.utils";
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
 import { GuestRoute } from "@/shared/components/layout/GuestRoute";
+import { TeacherRoute } from "@/shared/components/layout/TeacherRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
@@ -66,6 +67,9 @@ const GoogleCallbackPage = lazy(() =>
 	import("@/pages/GoogleCallbackPage").then((m) => ({
 		default: m.GoogleCallbackPage,
 	})),
+);
+const ClassesPage = lazy(() =>
+	import("@/pages/ClassesPage").then((m) => ({ default: m.ClassesPage })),
 );
 
 /**
@@ -195,6 +199,14 @@ function AppContent() {
 								<ProtectedRoute>
 									<AccountPage />
 								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/classes"
+							element={
+								<TeacherRoute>
+									<ClassesPage />
+								</TeacherRoute>
 							}
 						/>
 					</Routes>
