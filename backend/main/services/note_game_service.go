@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -69,6 +70,18 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		return 0, err
 	}
 
+	assignmentID := sql.NullInt32{}
+	if entry.AssignmentID != nil {
+		if err := ValidateEntryAssignment(ctx, q, authenticatedUserID, *entry.AssignmentID, gameType); err != nil {
+			logger.Warn("Rejected assignment tag on entry",
+				"error", err.Error(),
+				"assignment_id", *entry.AssignmentID,
+				"user_id", entry.UserID)
+			return 0, err
+		}
+		assignmentID = sql.NullInt32{Int32: int32(*entry.AssignmentID), Valid: true}
+	}
+
 	params := generated.CreateNoteGameEntryParams{
 		UserID:           int32(entry.UserID),
 		TimeLength:       timeLength,
@@ -76,6 +89,7 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		CorrectQuestions: int32(entry.CorrectQuestions),
 		NotesPerMinute:   int32(entry.NPM),
 		GameType:         gameType,
+		AssignmentID:     assignmentID,
 	}
 
 	entryID, err := q.CreateNoteGameEntry(ctx, params)
