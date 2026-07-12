@@ -10,6 +10,33 @@ import (
 	"time"
 )
 
+type TremoloAssignment struct {
+	ID              int32           `json:"id"`
+	ClassID         int32           `json:"class_id"`
+	Title           string          `json:"title"`
+	GameType        string          `json:"game_type"`
+	Config          json.RawMessage `json:"config"`
+	DueAt           sql.NullTime    `json:"due_at"`
+	TargetQuestions sql.NullInt32   `json:"target_questions"`
+	TargetAccuracy  sql.NullInt32   `json:"target_accuracy"`
+	CreatedAt       time.Time       `json:"created_at"`
+}
+
+type TremoloClass struct {
+	ID         int32        `json:"id"`
+	TeacherID  int32        `json:"teacher_id"`
+	Name       string       `json:"name"`
+	JoinCode   string       `json:"join_code"`
+	ArchivedAt sql.NullTime `json:"archived_at"`
+	CreatedAt  time.Time    `json:"created_at"`
+}
+
+type TremoloClassStudent struct {
+	ClassID   int32     `json:"class_id"`
+	StudentID int32     `json:"student_id"`
+	JoinedAt  time.Time `json:"joined_at"`
+}
+
 type TremoloFriend struct {
 	UserID      int32        `json:"user_id"`
 	FriendID    int32        `json:"friend_id"`
@@ -51,15 +78,16 @@ type TremoloKeyboardBinding struct {
 }
 
 type TremoloNoteGameEntry struct {
-	ID               int32        `json:"id"`
-	UserID           int32        `json:"user_id"`
-	TimeLength       time.Time    `json:"time_length"`
-	TotalQuestions   int32        `json:"total_questions"`
-	CorrectQuestions int32        `json:"correct_questions"`
-	NotesPerMinute   int32        `json:"notes_per_minute"`
-	CreatedDate      sql.NullTime `json:"created_date"`
-	CreatedTime      sql.NullTime `json:"created_time"`
-	GameType         string       `json:"game_type"`
+	ID               int32         `json:"id"`
+	UserID           int32         `json:"user_id"`
+	TimeLength       time.Time     `json:"time_length"`
+	TotalQuestions   int32         `json:"total_questions"`
+	CorrectQuestions int32         `json:"correct_questions"`
+	NotesPerMinute   int32         `json:"notes_per_minute"`
+	CreatedDate      sql.NullTime  `json:"created_date"`
+	CreatedTime      sql.NullTime  `json:"created_time"`
+	GameType         string        `json:"game_type"`
+	AssignmentID     sql.NullInt32 `json:"assignment_id"`
 }
 
 type TremoloNoteGameSetting struct {

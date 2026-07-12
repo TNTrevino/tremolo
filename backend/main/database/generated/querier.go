@@ -10,7 +10,16 @@ import (
 )
 
 type Querier interface {
+	AddStudentToClass(ctx context.Context, arg AddStudentToClassParams) error
+	ArchiveClass(ctx context.Context, id int32) error
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	// Assignment queries. The results grid is derived from
+	// note_game_entries tagged with assignment_id -- there is no separate
+	// submissions table to keep in sync.
+	CreateAssignment(ctx context.Context, arg CreateAssignmentParams) (TremoloAssignment, error)
+	// Class + roster queries. Ownership checks (teacher_id = caller) happen
+	// in the service layer by comparing against the fetched row.
+	CreateClass(ctx context.Context, arg CreateClassParams) (TremoloClass, error)
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// Inserts both directions to create an instant mutual friendship.
 	// ON CONFLICT DO NOTHING makes this idempotent.
@@ -30,6 +39,7 @@ type Querier interface {
 	DeleteAllTeacherStudentsByStudent(ctx context.Context, studentID int32) error
 	DeleteAllTeacherStudentsByTeacher(ctx context.Context, teacherID int32) error
 	DeleteAllTestData(ctx context.Context) error
+	DeleteAssignment(ctx context.Context, id int32) error
 	DeleteGameSettings(ctx context.Context, arg DeleteGameSettingsParams) error
 	DeleteKeyboardBindings(ctx context.Context, userID int32) error
 	DeleteNoteGameEntriesByUserID(ctx context.Context, userID int32) error
@@ -46,6 +56,13 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
+	GetAssignmentByID(ctx context.Context, id int32) (TremoloAssignment, error)
+	// Teacher's results grid: one row per student in the class, with their
+	// aggregate over attempts on this assignment. Students with no attempts
+	// still appear (left join) so the teacher sees who hasn't started.
+	GetAssignmentResults(ctx context.Context, arg GetAssignmentResultsParams) ([]GetAssignmentResultsRow, error)
+	GetClassByID(ctx context.Context, id int32) (TremoloClass, error)
+	GetClassByJoinCode(ctx context.Context, joinCode string) (TremoloClass, error)
 	GetDailyActivityCounts(ctx context.Context, arg GetDailyActivityCountsParams) ([]GetDailyActivityCountsRow, error)
 	GetEntriesByUserID(ctx context.Context, userID int32) ([]TremoloNoteGameEntry, error)
 	GetFailedAttempts(ctx context.Context, email sql.NullString) (int32, error)
@@ -69,8 +86,17 @@ type Querier interface {
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
+	IsStudentInClass(ctx context.Context, arg IsStudentInClassParams) (bool, error)
 	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
+	ListAssignmentsByClass(ctx context.Context, classID int32) ([]TremoloAssignment, error)
+	// Every assignment in the student's classes, with the student's own
+	// best-attempt aggregate so the frontend can show progress.
+	ListAssignmentsForStudent(ctx context.Context, studentID int32) ([]ListAssignmentsForStudentRow, error)
+	ListClassRoster(ctx context.Context, classID int32) ([]ListClassRosterRow, error)
+	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
+	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
+	RemoveStudentFromClass(ctx context.Context, arg RemoveStudentFromClassParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with

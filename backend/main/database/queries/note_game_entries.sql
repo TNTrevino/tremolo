@@ -7,9 +7,10 @@ insert into tremolo.note_game_entries (
     total_questions,
     correct_questions,
     notes_per_minute,
-    game_type
+    game_type,
+    assignment_id
 )
-values ($1, $2, $3, $4, $5, $6)
+values ($1, $2, $3, $4, $5, $6, $7)
 returning id;
 
 -- name: GetEntriesByUserID :many
