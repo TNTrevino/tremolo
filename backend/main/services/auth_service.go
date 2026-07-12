@@ -258,8 +258,8 @@ func Register(c *gin.Context) {
 	}
 
 	createParams := generated.CreateUserParams{
-		FirstName: reqBody.FirstName,
-		LastName:  reqBody.LastName,
+		FirstName: strings.TrimSpace(reqBody.FirstName),
+		LastName:  strings.TrimSpace(reqBody.LastName),
 		Email:     emailNullStr,
 		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
@@ -301,7 +301,7 @@ func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullS
 }
 
 func normalizeEmail(email string) string {
-	return strings.ToLower(email)
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 func getLockoutDuration() time.Duration {
