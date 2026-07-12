@@ -21,6 +21,10 @@ func GenerateData() {
 	teacherIDs, studentIDs := insertMultipleTeachersWithStudents(20, 20)
 	fmt.Printf("Created %d total users\n", len(teacherIDs)+len(studentIDs))
 
+	// Known-credential teacher/student + classes/assignments for manually
+	// testing the classes frontend.
+	insertClassesAndAssignments(studentIDs)
+
 	// If TREMOLO_ env vars are set, create a personal user and wire up friends + students
 	schoolID := int16(rand.IntN(1000) + 1)
 	personalUserID := insertPersonalUser(schoolID)
