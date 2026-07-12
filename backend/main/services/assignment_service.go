@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+	"strings"
 	"time"
 
 	dtos "sight-reading/DTOs"
@@ -41,26 +41,21 @@ func ptrFromNullTime(v sql.NullTime) *time.Time {
 	return &t
 }
 
-// assignmentDTO builds the response DTO from an assignment's columns.
-// Both the typed generated.TremoloAssignment and the student-list row
-// carry the same columns, so callers pass them field-by-field rather
-// than reconstructing an intermediate struct.
-func assignmentDTO(id, classID int32, title, gameType string, config json.RawMessage, dueAt sql.NullTime, targetQuestions, targetAccuracy sql.NullInt32, createdAt time.Time) dtos.AssignmentResponse {
-	return dtos.AssignmentResponse{
-		ID:              int(id),
-		ClassID:         int(classID),
-		Title:           title,
-		GameType:        gameType,
-		Config:          config,
-		DueAt:           ptrFromNullTime(dueAt),
-		TargetQuestions: ptrFromNullInt32(targetQuestions),
-		TargetAccuracy:  ptrFromNullInt32(targetAccuracy),
-		CreatedAt:       createdAt,
-	}
-}
-
+// assignmentToDTO maps an assignment row to its response DTO. Callers
+// pass a named struct (not a positional argument list) so a transposed
+// pair of same-typed columns is a compile error, not silent bad data.
 func assignmentToDTO(a generated.TremoloAssignment) dtos.AssignmentResponse {
-	return assignmentDTO(a.ID, a.ClassID, a.Title, a.GameType, a.Config, a.DueAt, a.TargetQuestions, a.TargetAccuracy, a.CreatedAt)
+	return dtos.AssignmentResponse{
+		ID:              int(a.ID),
+		ClassID:         int(a.ClassID),
+		Title:           a.Title,
+		GameType:        a.GameType,
+		Config:          a.Config,
+		DueAt:           ptrFromNullTime(a.DueAt),
+		TargetQuestions: ptrFromNullInt32(a.TargetQuestions),
+		TargetAccuracy:  ptrFromNullInt32(a.TargetAccuracy),
+		CreatedAt:       a.CreatedAt,
+	}
 }
 
 // CreateAssignment creates an assignment on a class the caller owns.
@@ -76,7 +71,7 @@ func CreateAssignment(ctx context.Context, q generated.Querier, teacherID, class
 
 	assignment, err := q.CreateAssignment(ctx, generated.CreateAssignmentParams{
 		ClassID:         int32(classID),
-		Title:           req.Title,
+		Title:           strings.TrimSpace(req.Title),
 		GameType:        req.GameType,
 		Config:          req.Config,
 		DueAt:           nullTimeFromPtr(req.DueAt),
@@ -132,12 +127,24 @@ func ListStudentAssignments(ctx context.Context, q generated.Querier, studentID 
 
 	assignments := make([]dtos.StudentAssignmentResponse, 0, len(rows))
 	for _, row := range rows {
+		// The student-list row carries the same assignment columns as the
+		// typed row; map it through the same named-field helper.
 		item := dtos.StudentAssignmentResponse{
-			AssignmentResponse: assignmentDTO(row.ID, row.ClassID, row.Title, row.GameType, row.Config, row.DueAt, row.TargetQuestions, row.TargetAccuracy, row.CreatedAt),
-			ClassName:          row.ClassName,
-			AttemptCount:       int(row.AttemptCount),
-			BestCorrect:        int(row.BestCorrect),
-			BestAccuracy:       int(row.BestAccuracy),
+			AssignmentResponse: assignmentToDTO(generated.TremoloAssignment{
+				ID:              row.ID,
+				ClassID:         row.ClassID,
+				Title:           row.Title,
+				GameType:        row.GameType,
+				Config:          row.Config,
+				DueAt:           row.DueAt,
+				TargetQuestions: row.TargetQuestions,
+				TargetAccuracy:  row.TargetAccuracy,
+				CreatedAt:       row.CreatedAt,
+			}),
+			ClassName:    row.ClassName,
+			AttemptCount: int(row.AttemptCount),
+			BestCorrect:  int(row.BestCorrect),
+			BestAccuracy: int(row.BestAccuracy),
 		}
 		assignments = append(assignments, item)
 	}

@@ -264,6 +264,87 @@ func TestAssignmentAttempts_FlowThroughEntries(t *testing.T) {
 	assert.ErrorIs(t, err, services.ErrForbidden)
 }
 
+func TestCreateClass_TrimsName(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	teacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "trim_t"), "TEACHER")
+
+	class, err := services.CreateClass(
+		context.Background(),
+		database.Queries,
+		teacherID,
+		&dtos.CreateClassRequest{Name: "  Symphonic Band  "},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "Symphonic Band", class.Name, "surrounding whitespace must be trimmed before persisting")
+}
+
+func TestCreateAssignment_TrimsTitle(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	teacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "trim_at"), "TEACHER")
+	class := createTestClass(t, teacherID, "Band")
+
+	req := testAssignmentRequest()
+	req.Title = "  Week 1: Treble Notes  "
+	created, err := services.CreateAssignment(context.Background(), database.Queries, teacherID, class.ID, req)
+	require.NoError(t, err)
+	assert.Equal(t, "Week 1: Treble Notes", created.Title, "title whitespace must be trimmed before persisting")
+}
+
+// A student's "best" fields must describe one real attempt, not a
+// composite maxed column-by-column across different attempts.
+func TestAssignmentResults_BestReflectsASingleAttempt(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	teacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "best_t"), "TEACHER")
+	studentID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "best_s"), "STUDENT")
+	class := createTestClass(t, teacherID, "Theory")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	assignment, err := services.CreateAssignment(context.Background(), database.Queries, teacherID, class.ID, testAssignmentRequest())
+	require.NoError(t, err)
+
+	// Attempt A: 9/10 = 90% — the highest-accuracy attempt.
+	// Attempt B: 15/20 = 75% — more correct and more questions, lower accuracy.
+	// "Best" must be attempt A as a whole (9, 10, 90%), never a Frankenstein
+	// row of best_correct=15 / most_questions=20 / best_accuracy=90.
+	for _, a := range []struct{ correct, total int16 }{{9, 10}, {15, 20}} {
+		entry := &dtos.Entry{
+			TimeLength:       "00:01:00",
+			TotalQuestions:   a.total,
+			CorrectQuestions: a.correct,
+			UserID:           int16(studentID),
+			NPM:              10,
+			GameType:         "note",
+			AssignmentID:     &assignment.ID,
+		}
+		id, err := services.CreateNoteGameEntry(context.Background(), database.Queries, studentID, entry)
+		require.NoError(t, err)
+		t.Cleanup(func() { testutil.DeleteTestNoteGameEntry(t, id) })
+	}
+
+	// Student progress view.
+	studentAssignments, err := services.ListStudentAssignments(context.Background(), database.Queries, studentID)
+	require.NoError(t, err)
+	require.Len(t, studentAssignments, 1)
+	assert.Equal(t, 2, studentAssignments[0].AttemptCount)
+	assert.Equal(t, 90, studentAssignments[0].BestAccuracy)
+	assert.Equal(t, 9, studentAssignments[0].BestCorrect, "best_correct must come from the 90% attempt, not maxed independently")
+
+	// Teacher results grid.
+	results, err := services.GetAssignmentResults(context.Background(), database.Queries, teacherID, assignment.ID)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, 2, results[0].AttemptCount)
+	assert.Equal(t, 90, results[0].BestAccuracy)
+	assert.Equal(t, 9, results[0].BestCorrect, "best_correct must come from the 90% attempt")
+	assert.Equal(t, 10, results[0].MostQuestions, "questions must come from the same attempt as best_correct/accuracy")
+}
+
 func TestAssignmentResults_StudentWithNoAttemptsAppears(t *testing.T) {
 	testutil.SetupTestDB(t)
 	t.Parallel()

@@ -85,7 +85,7 @@ func CreateClass(ctx context.Context, q generated.Querier, teacherID int, req *d
 
 		class, err := q.CreateClass(ctx, generated.CreateClassParams{
 			TeacherID: int32(teacherID),
-			Name:      req.Name,
+			Name:      strings.TrimSpace(req.Name),
 			JoinCode:  code,
 		})
 		if err != nil {
