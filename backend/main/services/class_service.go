@@ -5,20 +5,13 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
 
 	"github.com/lib/pq"
-)
-
-var (
-	// ErrForbidden means the authenticated user is not allowed to act on
-	// the resource (wrong role, or not the owning teacher).
-	ErrForbidden = errors.New("forbidden")
-	// ErrNotFound means the class/assignment/join code does not exist.
-	ErrNotFound = errors.New("not found")
 )
 
 // joinCodeAlphabet omits ambiguous characters (0/O, 1/I/L) so codes
@@ -53,7 +46,7 @@ func requireTeacher(ctx context.Context, q generated.Querier, userID int) error 
 		}
 		return err
 	}
-	if role != "TEACHER" && role != "ADMIN" {
+	if role != string(dtos.Teacher) && role != string(dtos.Admin) {
 		return ErrForbidden
 	}
 	return nil
@@ -78,7 +71,7 @@ func requireClassOwner(ctx context.Context, q generated.Querier, userID, classID
 // a freshly generated join code (retrying on the rare collision).
 func CreateClass(ctx context.Context, q generated.Querier, teacherID int, req *dtos.CreateClassRequest) (*dtos.ClassResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, validationErr(err)
 	}
 	if err := requireTeacher(ctx, q, teacherID); err != nil {
 		return nil, err
@@ -169,7 +162,7 @@ func ListStudentClasses(ctx context.Context, q generated.Querier, studentID int)
 // code. Joining twice is a no-op, so students can safely re-enter a code.
 func JoinClass(ctx context.Context, q generated.Querier, studentID int, req *dtos.JoinClassRequest) (*dtos.StudentClassResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, validationErr(err)
 	}
 
 	class, err := q.GetClassByJoinCode(ctx, normalizeJoinCode(req.JoinCode))
@@ -207,21 +200,10 @@ func JoinClass(ctx context.Context, q generated.Querier, studentID int, req *dto
 	}, nil
 }
 
-// normalizeJoinCode uppercases and trims so codes are case-insensitive
-// for students typing them in.
+// normalizeJoinCode uppercases and strips spaces so codes are
+// case-insensitive for students typing them in.
 func normalizeJoinCode(code string) string {
-	out := make([]byte, 0, len(code))
-	for i := 0; i < len(code); i++ {
-		c := code[i]
-		if c == ' ' {
-			continue
-		}
-		if c >= 'a' && c <= 'z' {
-			c -= 'a' - 'A'
-		}
-		out = append(out, c)
-	}
-	return string(out)
+	return strings.ToUpper(strings.ReplaceAll(code, " ", ""))
 }
 
 // GetClassRoster returns the students in a class the caller owns.

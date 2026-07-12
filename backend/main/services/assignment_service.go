@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"time"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -24,22 +26,41 @@ func ptrFromNullInt32(v sql.NullInt32) *int {
 	return &i
 }
 
+func nullTimeFromPtr(v *time.Time) sql.NullTime {
+	if v == nil {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: *v, Valid: true}
+}
+
+func ptrFromNullTime(v sql.NullTime) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	t := v.Time
+	return &t
+}
+
+// assignmentDTO builds the response DTO from an assignment's columns.
+// Both the typed generated.TremoloAssignment and the student-list row
+// carry the same columns, so callers pass them field-by-field rather
+// than reconstructing an intermediate struct.
+func assignmentDTO(id, classID int32, title, gameType string, config json.RawMessage, dueAt sql.NullTime, targetQuestions, targetAccuracy sql.NullInt32, createdAt time.Time) dtos.AssignmentResponse {
+	return dtos.AssignmentResponse{
+		ID:              int(id),
+		ClassID:         int(classID),
+		Title:           title,
+		GameType:        gameType,
+		Config:          config,
+		DueAt:           ptrFromNullTime(dueAt),
+		TargetQuestions: ptrFromNullInt32(targetQuestions),
+		TargetAccuracy:  ptrFromNullInt32(targetAccuracy),
+		CreatedAt:       createdAt,
+	}
+}
+
 func assignmentToDTO(a generated.TremoloAssignment) dtos.AssignmentResponse {
-	resp := dtos.AssignmentResponse{
-		ID:              int(a.ID),
-		ClassID:         int(a.ClassID),
-		Title:           a.Title,
-		GameType:        a.GameType,
-		Config:          a.Config,
-		TargetQuestions: ptrFromNullInt32(a.TargetQuestions),
-		TargetAccuracy:  ptrFromNullInt32(a.TargetAccuracy),
-		CreatedAt:       a.CreatedAt,
-	}
-	if a.DueAt.Valid {
-		due := a.DueAt.Time
-		resp.DueAt = &due
-	}
-	return resp
+	return assignmentDTO(a.ID, a.ClassID, a.Title, a.GameType, a.Config, a.DueAt, a.TargetQuestions, a.TargetAccuracy, a.CreatedAt)
 }
 
 // CreateAssignment creates an assignment on a class the caller owns.
@@ -47,15 +68,10 @@ func assignmentToDTO(a generated.TremoloAssignment) dtos.AssignmentResponse {
 // settings later must not change what was assigned.
 func CreateAssignment(ctx context.Context, q generated.Querier, teacherID, classID int, req *dtos.CreateAssignmentRequest) (*dtos.AssignmentResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, validationErr(err)
 	}
 	if _, err := requireClassOwner(ctx, q, teacherID, classID); err != nil {
 		return nil, err
-	}
-
-	dueAt := sql.NullTime{}
-	if req.DueAt != nil {
-		dueAt = sql.NullTime{Time: *req.DueAt, Valid: true}
 	}
 
 	assignment, err := q.CreateAssignment(ctx, generated.CreateAssignmentParams{
@@ -63,7 +79,7 @@ func CreateAssignment(ctx context.Context, q generated.Querier, teacherID, class
 		Title:           req.Title,
 		GameType:        req.GameType,
 		Config:          req.Config,
-		DueAt:           dueAt,
+		DueAt:           nullTimeFromPtr(req.DueAt),
 		TargetQuestions: nullInt32FromPtr(req.TargetQuestions),
 		TargetAccuracy:  nullInt32FromPtr(req.TargetAccuracy),
 	})
@@ -117,21 +133,11 @@ func ListStudentAssignments(ctx context.Context, q generated.Querier, studentID 
 	assignments := make([]dtos.StudentAssignmentResponse, 0, len(rows))
 	for _, row := range rows {
 		item := dtos.StudentAssignmentResponse{
-			AssignmentResponse: assignmentToDTO(generated.TremoloAssignment{
-				ID:              row.ID,
-				ClassID:         row.ClassID,
-				Title:           row.Title,
-				GameType:        row.GameType,
-				Config:          row.Config,
-				DueAt:           row.DueAt,
-				TargetQuestions: row.TargetQuestions,
-				TargetAccuracy:  row.TargetAccuracy,
-				CreatedAt:       row.CreatedAt,
-			}),
-			ClassName:    row.ClassName,
-			AttemptCount: int(row.AttemptCount),
-			BestCorrect:  int(row.BestCorrect),
-			BestAccuracy: int(row.BestAccuracy),
+			AssignmentResponse: assignmentDTO(row.ID, row.ClassID, row.Title, row.GameType, row.Config, row.DueAt, row.TargetQuestions, row.TargetAccuracy, row.CreatedAt),
+			ClassName:          row.ClassName,
+			AttemptCount:       int(row.AttemptCount),
+			BestCorrect:        int(row.BestCorrect),
+			BestAccuracy:       int(row.BestAccuracy),
 		}
 		assignments = append(assignments, item)
 	}
@@ -209,7 +215,10 @@ func DeleteAssignment(ctx context.Context, q generated.Querier, teacherID, assig
 // an assignment: it must exist, belong to a class the student is in,
 // and be for the same game the entry records.
 func ValidateEntryAssignment(ctx context.Context, q generated.Querier, studentID, assignmentID int, gameType string) error {
-	assignment, err := q.GetAssignmentByID(ctx, int32(assignmentID))
+	row, err := q.GetAssignmentEnrollment(ctx, generated.GetAssignmentEnrollmentParams{
+		ID:        int32(assignmentID),
+		StudentID: int32(studentID),
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrValidation
@@ -217,18 +226,10 @@ func ValidateEntryAssignment(ctx context.Context, q generated.Querier, studentID
 		return err
 	}
 
-	if assignment.GameType != gameType {
+	if row.GameType != gameType {
 		return ErrValidation
 	}
-
-	enrolled, err := q.IsStudentInClass(ctx, generated.IsStudentInClassParams{
-		ClassID:   assignment.ClassID,
-		StudentID: int32(studentID),
-	})
-	if err != nil {
-		return err
-	}
-	if !enrolled {
+	if !row.Enrolled {
 		return ErrForbidden
 	}
 	return nil
