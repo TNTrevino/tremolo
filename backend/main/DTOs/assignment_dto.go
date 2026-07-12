@@ -81,3 +81,14 @@ type AssignmentResultRow struct {
 	// Empty until the student has at least one attempt ("2006-01-02").
 	LastAttemptDate string `json:"last_attempt_date"`
 }
+
+// AssignmentAttempt is one score entry tagged with the assignment, as
+// shown in the teacher's per-student drill-down.
+type AssignmentAttempt struct {
+	CorrectQuestions int    `json:"correct_questions"`
+	TotalQuestions   int    `json:"total_questions"`
+	Accuracy         int    `json:"accuracy"`
+	NotesPerMinute   int    `json:"notes_per_minute"`
+	AttemptedDate    string `json:"attempted_date"`
+	AttemptedTime    string `json:"attempted_time"`
+}

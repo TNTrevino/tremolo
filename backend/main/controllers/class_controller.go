@@ -36,6 +36,7 @@ func SetupClassRoutes(router *gin.Engine) {
 	{
 		assignments.GET("", ListStudentAssignments)
 		assignments.GET("/:id/results", GetAssignmentResults)
+		assignments.GET("/:id/attempts/:studentId", GetAssignmentAttempts)
 		assignments.DELETE("/:id", DeleteAssignment)
 	}
 }
@@ -291,6 +292,32 @@ func GetAssignmentResults(c *gin.Context) {
 	}
 
 	result, err := services.GetAssignmentResults(c.Request.Context(), database.Queries, userID, assignmentID)
+	if err != nil {
+		respondClassError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// GetAssignmentAttempts returns one student's attempt history on an
+// assignment, oldest to newest.
+// Protected: Requires JWT authentication (owning teacher/admin or the
+// student themself)
+func GetAssignmentAttempts(c *gin.Context) {
+	userID, ok := authedUserID(c)
+	if !ok {
+		return
+	}
+	assignmentID, ok := pathID(c, "id")
+	if !ok {
+		return
+	}
+	studentID, ok := pathID(c, "studentId")
+	if !ok {
+		return
+	}
+
+	result, err := services.GetAssignmentAttempts(c.Request.Context(), database.Queries, userID, assignmentID, studentID)
 	if err != nil {
 		respondClassError(c, err)
 		return

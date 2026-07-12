@@ -44,6 +44,24 @@ order by created_at desc;
 delete from tremolo.assignments
 where id = $1;
 
+-- name: GetAssignmentAttempts :many
+-- Every attempt (score entry) tagged with the assignment for one
+-- student, oldest to newest -- the drill-down behind the results grid.
+select e.correct_questions,
+       e.total_questions,
+       case
+           when e.total_questions > 0
+           then e.correct_questions * 100 / e.total_questions
+           else 0
+       end as accuracy,
+       e.notes_per_minute,
+       coalesce(e.created_date, current_date)::text as attempted_date,
+       coalesce(e.created_time, '00:00:00'::time)::text as attempted_time
+from tremolo.note_game_entries e
+where e.assignment_id = $1
+  and e.user_id = $2
+order by e.created_date asc, e.created_time asc, e.id asc;
+
 -- name: ListAssignmentsForStudent :many
 -- Every assignment in the student's classes, with the student's own
 -- best attempt so the frontend can show progress. "Best" is one real

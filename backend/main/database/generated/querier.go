@@ -56,6 +56,9 @@ type Querier interface {
 	// Teacher aggregate queries (joining with teacher_student table)
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
+	// Every attempt (score entry) tagged with the assignment for one
+	// student, oldest to newest -- the drill-down behind the results grid.
+	GetAssignmentAttempts(ctx context.Context, arg GetAssignmentAttemptsParams) ([]GetAssignmentAttemptsRow, error)
 	GetAssignmentByID(ctx context.Context, id int32) (TremoloAssignment, error)
 	// One round-trip for tagging a score entry: the assignment's game type
 	// plus whether the student is enrolled in its class. Used on the entry
