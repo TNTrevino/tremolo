@@ -20,6 +20,8 @@ type Entry struct {
 	UserID           int16          `db:"user_id"           json:"user_id"           validate:"required,number"`
 	NPM              int8           `db:"notes_per_minute"  json:"notes_per_minute"  validate:"required,number"`
 	GameType         string         `db:"game_type"         json:"game_type"`
+	// Optional: tags this entry as an attempt at a class assignment.
+	AssignmentID *int `db:"assignment_id" json:"assignment_id"`
 }
 
 // NoteGameEntryResponse represents a note game entry returned from API responses

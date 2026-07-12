@@ -2,17 +2,11 @@ package services
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
-)
-
-var (
-	ErrUnauthorized = errors.New("access denied: user cannot create entry for another user")
-	ErrValidation   = errors.New("validation failed")
 )
 
 // normalizeGameType defaults an empty game type to "note" (legacy
@@ -69,6 +63,17 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		return 0, err
 	}
 
+	if entry.AssignmentID != nil {
+		if err := ValidateEntryAssignment(ctx, q, authenticatedUserID, *entry.AssignmentID, gameType); err != nil {
+			logger.Warn("Rejected assignment tag on entry",
+				"error", err.Error(),
+				"assignment_id", *entry.AssignmentID,
+				"user_id", entry.UserID)
+			return 0, err
+		}
+	}
+	assignmentID := nullInt32FromPtr(entry.AssignmentID)
+
 	params := generated.CreateNoteGameEntryParams{
 		UserID:           int32(entry.UserID),
 		TimeLength:       timeLength,
@@ -76,6 +81,7 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		CorrectQuestions: int32(entry.CorrectQuestions),
 		NotesPerMinute:   int32(entry.NPM),
 		GameType:         gameType,
+		AssignmentID:     assignmentID,
 	}
 
 	entryID, err := q.CreateNoteGameEntry(ctx, params)

@@ -179,6 +179,9 @@ Registered in `main.go` via one `controllers.Setup*Routes` call per domain.
 | GET | `/api/charts/teacher/class-metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/users/:userId/general-info` | JWT (own data only) | `user_info_controller.go` |
 | GET / POST | `/api/friends`, GET `/api/friends/search?q=` | JWT | `friends_controller.go` |
+| GET / POST | `/api/classes` (teacher's classes / create), POST `/api/classes/join`, GET `/api/classes/joined` | JWT | `class_controller.go` |
+| GET / DELETE | `/api/classes/:id/roster`, DELETE `/api/classes/:id` (archive), `/api/classes/:id/students/:studentId` | JWT (role/ownership in service) | `class_controller.go` |
+| GET / POST | `/api/classes/:id/assignments`; GET `/api/assignments` (student view), `/api/assignments/:id/results` (teacher grid); DELETE `/api/assignments/:id` | JWT | `class_controller.go` |
 | * | game endpoints (table above) | JWT | `note_game_*`, `game_settings_`, `keyboard_bindings_controller.go` |
 
 Chart endpoints accept `interval` = `day`/`week`/`month`/`year` (strategy
