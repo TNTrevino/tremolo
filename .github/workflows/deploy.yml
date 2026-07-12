@@ -10,6 +10,11 @@ on:
         required: true
         type: string
 
+# One deploy at a time per target; never cancel one mid-restart.
+concurrency:
+  group: deploy-${{ inputs.runner }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ${{ inputs.runner }}

@@ -5,12 +5,20 @@ on:
     branches: [main, prod]
     paths:
       - "backend/music/**"
+  push:
+    branches: [main]
+    paths:
+      - "backend/music/**"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: music-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

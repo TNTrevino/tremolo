@@ -7,12 +7,20 @@ on:
       - prod
     paths:
       - "backend/main/**"
+  push:
+    branches: [main]
+    paths:
+      - "backend/main/**"
+  # Reusable: the deploy workflows run this as a gate before deploying.
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Hardcoded prefix: when called via workflow_call, github.workflow is
+  # the caller's name, which the other CI workflows would share.
+  group: go-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

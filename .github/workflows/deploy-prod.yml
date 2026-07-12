@@ -6,7 +6,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  # All three suites must be green before anything touches the server.
+  frontend-ci:
+    uses: ./.github/workflows/frontend-ci.yml
+    secrets: inherit
+  go-ci:
+    uses: ./.github/workflows/backend-go.yml
+  music-ci:
+    uses: ./.github/workflows/music-microservice.yml
+
   deploy:
+    needs: [frontend-ci, go-ci, music-ci]
     uses: ./.github/workflows/deploy.yml
     with:
       runner: geekom
