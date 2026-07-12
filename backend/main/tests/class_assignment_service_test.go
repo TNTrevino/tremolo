@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	dtos "sight-reading/DTOs"
@@ -73,7 +74,7 @@ func TestJoinClass_ByCode(t *testing.T) {
 		context.Background(),
 		database.Queries,
 		studentID,
-		&dtos.JoinClassRequest{JoinCode: " " + toLower(class.JoinCode) + " "},
+		&dtos.JoinClassRequest{JoinCode: " " + strings.ToLower(class.JoinCode) + " "},
 	)
 	require.NoError(t, err)
 	assert.Equal(t, class.ID, joined.ID)
@@ -103,16 +104,6 @@ func TestJoinClass_ByCode(t *testing.T) {
 		&dtos.JoinClassRequest{JoinCode: "ZZZZZZ"},
 	)
 	assert.ErrorIs(t, err, services.ErrNotFound)
-}
-
-func toLower(s string) string {
-	out := []byte(s)
-	for i, c := range out {
-		if c >= 'A' && c <= 'Z' {
-			out[i] = c + ('a' - 'A')
-		}
-	}
-	return string(out)
 }
 
 func TestClassRoster_OwnershipEnforced(t *testing.T) {
