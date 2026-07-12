@@ -19,6 +19,7 @@ export interface CreateNoteGameEntryRequest {
 	user_id: number;
 	notes_per_minute: number;
 	game_type?: GameType; // Defaults to "note" on the backend
+	assignment_id?: number; // Optional: tags this entry as an assignment attempt
 }
 
 export interface NoteGameEntry {
@@ -38,6 +39,7 @@ export interface SaveGameResultParams {
 	userId: number;
 	notesPerMinute: number;
 	gameType?: GameType; // Defaults to "note"
+	assignmentId?: number; // Optional: tags this entry as an assignment attempt
 }
 
 /**

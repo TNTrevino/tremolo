@@ -30,6 +30,13 @@ export interface IdentificationGamePageProps<
 	Req,
 > {
 	definition: GameDefinition<T, S, Req>;
+	/**
+	 * When set, the game runs in "assignment mode": settings are
+	 * hydrated from the assignment's frozen config (not the student's
+	 * personal saved settings), the settings save-back is suppressed,
+	 * and the finished attempt is tagged with the assignment id.
+	 */
+	assignment?: { id: number; config: Record<string, unknown> };
 }
 
 /**
@@ -43,7 +50,7 @@ export function IdentificationGamePage<
 	T extends GeneratedQuestion,
 	S extends BaseGameSettings,
 	Req,
->({ definition }: IdentificationGamePageProps<T, S, Req>) {
+>({ definition, assignment }: IdentificationGamePageProps<T, S, Req>) {
 	const {
 		gameType,
 		title,
@@ -61,9 +68,9 @@ export function IdentificationGamePage<
 
 	const { isAuthenticated } = useAuthStore();
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const { data: savedSettings } = useGameSettings(gameType);
+	const { data: savedSettings } = useGameSettings(gameType, !assignment);
 	const saveSettings = useSaveGameSettings();
-	const { handleGameEnd } = useSaveGameOnEnd(gameType);
+	const { handleGameEnd } = useSaveGameOnEnd(gameType, assignment?.id);
 
 	// Latest settings for callbacks whose identity must stay stable
 	// across settings clicks (onGameStart, getAnswer below) — they read
@@ -92,7 +99,9 @@ export function IdentificationGamePage<
 			if (current.gameMode === GameMode.Time) {
 				startTimer(current.timeLimit);
 			}
-			if (isAuthenticated) {
+			// In assignment mode, never persist back — playing an
+			// assignment must not overwrite the student's own settings.
+			if (isAuthenticated && !assignment) {
 				// Persist exactly the fields the game owns (defaults keys),
 				// so stray state never leaks into the saved config.
 				const config = Object.fromEntries(
@@ -111,16 +120,21 @@ export function IdentificationGamePage<
 		settingsRef.current = settings;
 	}, [settings]);
 
-	// Apply saved settings once, validated against the schema so stale
-	// or renamed fields fall back to defaults instead of breaking the
-	// fetcher.
+	// Hydrate settings once, validated against the schema so stale or
+	// renamed fields fall back to defaults instead of breaking the
+	// fetcher. In assignment mode the source is the assignment's frozen
+	// config; otherwise it's the student's saved settings. Both flow
+	// through the normal settings state so toRequest (and thus the
+	// question queue key) sees them.
 	const appliedSavedRef = useRef(false);
 	useEffect(() => {
-		if (savedSettings?.config && !appliedSavedRef.current) {
+		if (appliedSavedRef.current) return;
+		const config = assignment ? assignment.config : savedSettings?.config;
+		if (config) {
 			appliedSavedRef.current = true;
-			updateSettings(sanitizeConfig<S>(settingsSchema, savedSettings.config));
+			updateSettings(sanitizeConfig<S>(settingsSchema, config));
 		}
-	}, [savedSettings, updateSettings, settingsSchema]);
+	}, [assignment, savedSettings, updateSettings, settingsSchema]);
 
 	// The queue keys on the serialized request payload, so it only
 	// resets when a setting that actually changes the payload changes.

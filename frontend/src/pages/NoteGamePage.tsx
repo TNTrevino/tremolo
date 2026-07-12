@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useBreakpoint } from "@/shared/hooks";
 import {
@@ -12,7 +12,12 @@ import {
 	ScoreBar,
 } from "@/features/identification-game";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "@/features/note-game/hooks/useKeyboardInput";
-import { useNoteGame, GameState, GameMode } from "@/features/note-game";
+import {
+	useNoteGame,
+	GameState,
+	GameMode,
+	type GameSettingsType,
+} from "@/features/note-game";
 import { keyBindingsToNoteMap } from "@/features/note-game/utils";
 import {
 	GameBoard,
@@ -20,18 +25,54 @@ import {
 } from "@/features/note-game/components/GameBoard";
 import { GameResults } from "@/features/note-game/components/GameResults";
 import { SettingsBar } from "@/features/note-game/components/SettingsBar";
+import type { NoteGameSettingsRequest } from "@/services/api/types";
+
+/**
+ * Maps a snake_case note-game config (the assignment's frozen config, or
+ * the student's saved settings response — both shaped like
+ * NoteGameSettingsRequest) to the camelCase GameSettingsType the engine
+ * uses. Per-field undefined guards let a partial config (e.g. a stale or
+ * hand-edited assignment blob) degrade gracefully instead of clobbering
+ * fields with `undefined`.
+ */
+function mapNoteConfigToSettings(
+	config: Partial<NoteGameSettingsRequest>,
+): Partial<GameSettingsType> {
+	const patch: Partial<GameSettingsType> = {};
+	if (config.game_mode !== undefined)
+		patch.gameMode = config.game_mode as GameMode;
+	if (config.time_limit !== undefined) patch.timeLimit = config.time_limit;
+	if (config.note_limit !== undefined) patch.noteLimit = config.note_limit;
+	if (config.scale !== undefined) patch.scale = config.scale;
+	if (config.octave !== undefined) patch.octave = config.octave;
+	if (config.low_note !== undefined) patch.lowNote = config.low_note;
+	if (config.high_note !== undefined) patch.highNote = config.high_note;
+	if (config.clef !== undefined) patch.clef = config.clef;
+	return patch;
+}
+
+export interface NoteGamePageProps {
+	/**
+	 * When set, the note game runs in "assignment mode": settings are
+	 * hydrated from the assignment's frozen config (snake_case
+	 * NoteGameSettingsRequest) instead of the student's saved settings,
+	 * the settings save-back is suppressed, and the finished attempt is
+	 * tagged with the assignment id.
+	 */
+	assignment?: { id: number; config: Record<string, unknown> };
+}
 
 /**
  * Note Recognition Game Page
  * Main orchestrator for the note game feature - manages state flow between
  * ready, playing, and results screens
  */
-export function NoteGamePage() {
+export function NoteGamePage({ assignment }: NoteGamePageProps = {}) {
 	const { isAuthenticated } = useAuthStore();
 	const { isPhoneLandscape } = useBreakpoint();
 	const [bindingsDialogOpen, setBindingsDialogOpen] = useState(false);
-	const { handleGameEnd, saveError } = useSaveGameOnEnd("note");
-	const { data: savedSettings } = useNoteGameSettings();
+	const { handleGameEnd, saveError } = useSaveGameOnEnd("note", assignment?.id);
+	const { data: savedSettings } = useNoteGameSettings(!assignment);
 	const saveSettings = useSaveNoteGameSettings();
 	const { data: savedKeyboardBindings } = useKeyboardBindings();
 
@@ -65,7 +106,9 @@ export function NoteGamePage() {
 			if (settings.gameMode === GameMode.Time) {
 				startTimer(settings.timeLimit);
 			}
-			if (isAuthenticated) {
+			// In assignment mode, never persist back — playing an
+			// assignment must not overwrite the student's own settings.
+			if (isAuthenticated && !assignment) {
 				saveSettings.mutate({
 					game_mode: settings.gameMode,
 					time_limit: settings.timeLimit,
@@ -86,20 +129,23 @@ export function NoteGamePage() {
 		endGameRef.current = endGame;
 	}, [endGame, endGameRef]);
 
+	// Hydrate settings from the assignment's frozen config (assignment
+	// mode) or the student's saved settings (normal play). The note
+	// config is snake_case (NoteGameSettingsRequest); map it to the
+	// game's camelCase settings so it flows through the normal state.
+	const appliedAssignmentRef = useRef(false);
 	useEffect(() => {
-		if (savedSettings) {
-			updateSettings({
-				gameMode: savedSettings.game_mode as GameMode,
-				timeLimit: savedSettings.time_limit,
-				noteLimit: savedSettings.note_limit,
-				scale: savedSettings.scale,
-				octave: savedSettings.octave,
-				lowNote: savedSettings.low_note,
-				highNote: savedSettings.high_note,
-				clef: savedSettings.clef,
-			});
+		if (assignment) {
+			if (appliedAssignmentRef.current) return;
+			appliedAssignmentRef.current = true;
+			const config = assignment.config as Partial<NoteGameSettingsRequest>;
+			updateSettings(mapNoteConfigToSettings(config));
+			return;
 		}
-	}, [savedSettings, updateSettings]);
+		if (savedSettings) {
+			updateSettings(mapNoteConfigToSettings(savedSettings));
+		}
+	}, [assignment, savedSettings, updateSettings]);
 
 	const statusBar =
 		gameState === GameState.Playing ? (

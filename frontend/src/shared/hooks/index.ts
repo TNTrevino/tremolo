@@ -7,3 +7,5 @@ export { useToast } from "./useToast";
 export { useDebounce } from "./useDebounce";
 
 export { useBreakpoint } from "./useBreakpoint";
+
+export { useCopyToClipboard } from "./useCopyToClipboard";

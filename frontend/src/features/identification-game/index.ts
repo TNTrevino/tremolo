@@ -32,5 +32,14 @@ export { GameMode, GameState, TIME_LIMITS, NOTE_LIMITS } from "./types";
 export type { BaseGameSettings, GeneratedQuestion } from "./types";
 
 export { NATURAL_NOTES } from "./utils";
-export { CLEF_UNICODE } from "./components/ClefGlyph";
+export { CLEF_UNICODE, CLEF_LABELS } from "./components/ClefGlyph";
 export { clefsSetting } from "./settings/presets";
+
+// Declarative settings UI — reused by the teacher's create-assignment flow
+// to configure a game and snapshot the result as an assignment config.
+export {
+	SettingsControls,
+	type SettingsControlsProps,
+} from "./settings/SettingsControls";
+export { GameModeLimitControls } from "./settings/GameModeLimitControls";
+export type { SettingDescriptor } from "./settings/types";

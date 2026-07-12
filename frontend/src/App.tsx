@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/shared/utils/error.utils";
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
 import { GuestRoute } from "@/shared/components/layout/GuestRoute";
+import { TeacherRoute } from "@/shared/components/layout/TeacherRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
@@ -65,6 +66,24 @@ const AccountPage = lazy(() =>
 const GoogleCallbackPage = lazy(() =>
 	import("@/pages/GoogleCallbackPage").then((m) => ({
 		default: m.GoogleCallbackPage,
+	})),
+);
+const ClassesPage = lazy(() =>
+	import("@/pages/ClassesPage").then((m) => ({ default: m.ClassesPage })),
+);
+const ClassDetailPage = lazy(() =>
+	import("@/pages/ClassDetailPage").then((m) => ({
+		default: m.ClassDetailPage,
+	})),
+);
+const AssignmentsPage = lazy(() =>
+	import("@/pages/AssignmentsPage").then((m) => ({
+		default: m.AssignmentsPage,
+	})),
+);
+const AssignmentPlayPage = lazy(() =>
+	import("@/pages/AssignmentPlayPage").then((m) => ({
+		default: m.AssignmentPlayPage,
 	})),
 );
 
@@ -194,6 +213,38 @@ function AppContent() {
 							element={
 								<ProtectedRoute>
 									<AccountPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/classes"
+							element={
+								<TeacherRoute>
+									<ClassesPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/classes/:id"
+							element={
+								<TeacherRoute>
+									<ClassDetailPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/assignments"
+							element={
+								<ProtectedRoute>
+									<AssignmentsPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/assignments/:id/play"
+							element={
+								<ProtectedRoute>
+									<AssignmentPlayPage />
 								</ProtectedRoute>
 							}
 						/>

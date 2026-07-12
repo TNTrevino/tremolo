@@ -96,6 +96,15 @@ export function Navigation() {
 		{ to: "/convert", label: "Convert" },
 	];
 
+	const roleLinks = [
+		...(isAuthenticated && user?.role === "TEACHER"
+			? [{ to: "/classes", label: "Classes" }]
+			: []),
+		...(isAuthenticated && user?.role === "STUDENT"
+			? [{ to: "/assignments", label: "Assignments" }]
+			: []),
+	];
+
 	const isActive = (path: string) => location.pathname === path;
 	const isGameActive = gameLinks.some((link) => isActive(link.to));
 
@@ -202,6 +211,10 @@ export function Navigation() {
 								</>
 							)}
 						</div>
+
+						{roleLinks.map((link) => (
+							<NavItem key={link.to} {...link} active={isActive(link.to)} />
+						))}
 
 						{secondaryLinks.map((link) => (
 							<NavItem key={link.to} {...link} active={isActive(link.to)} />
@@ -362,6 +375,16 @@ export function Navigation() {
 
 						<div className="border-t-2 border-border my-2" />
 						{secondaryLinks.map((link) => (
+							<NavItem
+								key={link.to}
+								{...link}
+								active={isActive(link.to)}
+								onClick={() => setMobileMenuOpen(false)}
+								className="block"
+							/>
+						))}
+
+						{roleLinks.map((link) => (
 							<NavItem
 								key={link.to}
 								{...link}
