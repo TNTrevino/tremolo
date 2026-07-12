@@ -1,34 +1,32 @@
 name: FastAPI Checks
 
+# No pull_request trigger: on a PR this runs once, via the CI gate
+# (.github/workflows/ci.yml) as a workflow_call. The gate path-filters to
+# backend/music, this workflow, and the Makefile -- the same paths this used
+# to filter on directly -- so PR coverage is unchanged with no double-run.
 on:
-  pull_request:
-    branches: [main, prod]
-    paths:
-      - "backend/music/**"
-      # A broken edit to this workflow or the Makefile must not merge unvalidated
-      - ".github/workflows/music-microservice.yml"
-      - "Makefile"
   push:
     branches: [main]
     paths:
       - "backend/music/**"
       - ".github/workflows/music-microservice.yml"
       - "Makefile"
-  # Reusable: the deploy workflows run this as a gate before deploying.
+  # Reusable: the CI gate and the deploy workflows run this via workflow_call.
   workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # Hardcoded prefix: when called via workflow_call, github.workflow is
-  # the caller's name, which the other CI workflows would share.
-  group: music-ci-${{ github.event.pull_request.number || github.ref }}
+  # Prefix with the caller's workflow name so a gate-invoked run and any
+  # other caller of this reusable workflow never share a group.
+  group: ${{ github.workflow }}-music-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
