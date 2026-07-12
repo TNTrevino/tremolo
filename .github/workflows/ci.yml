@@ -6,10 +6,11 @@ name: CI
 # PR that touches only one service isn't left waiting on checks for the
 # others that never run.
 #
-# The per-service workflows keep their own pull_request triggers, so on a
-# PR they also run standalone -- the affected ones therefore run twice
-# (once standalone, once via this gate). That duplication is deliberate:
-# it keeps those workflow files untouched. Only "gate" is required.
+# This gate is the ONLY thing that runs the per-service workflows on a PR:
+# they have no pull_request trigger of their own (only push-to-main and
+# workflow_call), so each affected service runs exactly once per PR. The
+# path filters below mirror each service workflow's old pull_request paths,
+# so PR coverage is unchanged.
 
 on:
   pull_request:
@@ -26,6 +27,7 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       go: ${{ steps.filter.outputs.go }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -85,6 +87,7 @@ jobs:
     if: always()
     needs: [changes, go, api-smoke, frontend, music]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Require all triggered checks to pass
         run: |

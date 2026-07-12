@@ -4,38 +4,34 @@ name: API Smoke Tests
 # These cover the seam the Go unit tests can't: routing, JWT middleware,
 # JSON binding, and controller -> HTTP status mapping.
 
+# No pull_request trigger: on a PR this runs once, via the CI gate
+# (.github/workflows/ci.yml) as a workflow_call. The gate path-filters to
+# backend/main, this workflow, and the Makefile -- the same paths this used
+# to filter on directly -- so PR coverage is unchanged with no double-run.
 on:
-  pull_request:
-    branches:
-      - main
-      - prod
-    paths:
-      - "backend/main/**"
-      # A broken edit to this workflow or the Makefile must not merge unvalidated
-      - ".github/workflows/api-smoke.yml"
-      - "Makefile"
   push:
     branches: [main]
     paths:
       - "backend/main/**"
       - ".github/workflows/api-smoke.yml"
       - "Makefile"
-  # Reusable: the deploy workflows run this as a gate before deploying.
+  # Reusable: the CI gate and the deploy workflows run this via workflow_call.
   workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # Hardcoded prefix: when called via workflow_call, github.workflow is
-  # the caller's name, which the other CI workflows would share.
-  group: api-smoke-${{ github.event.pull_request.number || github.ref }}
+  # Prefix with the caller's workflow name so a gate-invoked run and any
+  # other caller of this reusable workflow never share a group.
+  group: ${{ github.workflow }}-api-smoke-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   smoke:
     name: api-smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     services:
       postgres:
