@@ -68,6 +68,7 @@ export class UserService {
 			user_id: params.userId,
 			notes_per_minute: params.notesPerMinute,
 			game_type: params.gameType ?? "note",
+			assignment_id: params.assignmentId,
 		};
 		const response = await this.client.post<CreateNoteGameEntryResponse>(
 			"/api/note-game/entry",
