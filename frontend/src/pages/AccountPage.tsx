@@ -186,8 +186,8 @@ export function AccountPage() {
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
-							<div className="rounded-lg bg-accent/10 p-2">
-								<Mail className="h-6 w-6 text-accent" />
+							<div className="rounded-lg bg-brass/10 p-2">
+								<Mail className="h-6 w-6 text-brass" />
 							</div>
 							<div>
 								<CardTitle>Email Management</CardTitle>
@@ -236,8 +236,8 @@ export function AccountPage() {
 				<Card className="shadow-lg">
 					<CardHeader>
 						<div className="flex items-center gap-3">
-							<div className="rounded-lg bg-accent/10 p-2">
-								<Download className="h-6 w-6 text-accent" />
+							<div className="rounded-lg bg-brass/10 p-2">
+								<Download className="h-6 w-6 text-brass" />
 							</div>
 							<div>
 								<CardTitle>Data & Privacy</CardTitle>

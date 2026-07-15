@@ -6,9 +6,11 @@ insert into tremolo.note_game_entries (
     time_length,
     total_questions,
     correct_questions,
-    notes_per_minute
+    notes_per_minute,
+    game_type,
+    assignment_id
 )
-values ($1, $2, $3, $4, $5)
+values ($1, $2, $3, $4, $5, $6, $7)
 returning id;
 
 -- name: GetEntriesByUserID :many
@@ -28,6 +30,7 @@ select
     created_date
 from tremolo.note_game_entries
 where user_id = $1
+  and game_type = $2
 order by created_date desc, id desc
 limit 30;
 

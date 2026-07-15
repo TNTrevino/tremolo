@@ -54,8 +54,4 @@ export interface GameStats {
 	gameMode: GameMode;
 	/** Time limit (seconds) or note limit based on mode */
 	limit: number;
-	/** Musical scale used for the game */
-	scale: string;
-	/** Octave range used for the game */
-	octave: number;
 }

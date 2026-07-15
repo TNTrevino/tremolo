@@ -4,6 +4,8 @@ import { Button } from "@/shared/components/ui/button";
 import { Select } from "@/shared/components/ui/select";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
+import { TIME_LIMITS, NOTE_LIMITS } from "@/features/identification-game";
+import { NoteRangeSetting } from "./NoteRangeSetting";
 
 export interface MobileSettingsDrawerProps {
 	settings: GameSettingsType;
@@ -11,10 +13,6 @@ export interface MobileSettingsDrawerProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
-
-const TIME_LIMITS = [15, 30, 60, 120] as const;
-const NOTE_LIMITS = [10, 25, 50, 100] as const;
-const OCTAVES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 /**
  * Full-screen bottom drawer for mobile game settings.
@@ -149,28 +147,15 @@ export function MobileSettingsDrawer({
 						</Select>
 					</div>
 
-					{/* Octave */}
+					{/* Note Range */}
 					<div className="space-y-2">
-						<label
-							htmlFor="mobile-octave-select"
-							className="text-sm font-medium text-muted-foreground"
-						>
-							Octave
-						</label>
-						<Select
-							id="mobile-octave-select"
-							className="h-11"
-							value={settings.octave.toString()}
-							onChange={(e) =>
-								onSettingsChange({ octave: Number(e.target.value) })
-							}
-						>
-							{OCTAVES.map((octave) => (
-								<option key={octave} value={octave}>
-									Octave {octave}
-								</option>
-							))}
-						</Select>
+						<span className="text-sm font-medium text-muted-foreground">
+							Note Range
+						</span>
+						<NoteRangeSetting
+							settings={settings}
+							onSettingsChange={onSettingsChange}
+						/>
 					</div>
 				</div>
 			</div>

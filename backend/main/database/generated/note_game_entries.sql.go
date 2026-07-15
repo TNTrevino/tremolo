@@ -18,18 +18,22 @@ insert into tremolo.note_game_entries (
     time_length,
     total_questions,
     correct_questions,
-    notes_per_minute
+    notes_per_minute,
+    game_type,
+    assignment_id
 )
-values ($1, $2, $3, $4, $5)
+values ($1, $2, $3, $4, $5, $6, $7)
 returning id
 `
 
 type CreateNoteGameEntryParams struct {
-	UserID           int32     `json:"user_id"`
-	TimeLength       time.Time `json:"time_length"`
-	TotalQuestions   int32     `json:"total_questions"`
-	CorrectQuestions int32     `json:"correct_questions"`
-	NotesPerMinute   int32     `json:"notes_per_minute"`
+	UserID           int32         `json:"user_id"`
+	TimeLength       time.Time     `json:"time_length"`
+	TotalQuestions   int32         `json:"total_questions"`
+	CorrectQuestions int32         `json:"correct_questions"`
+	NotesPerMinute   int32         `json:"notes_per_minute"`
+	GameType         string        `json:"game_type"`
+	AssignmentID     sql.NullInt32 `json:"assignment_id"`
 }
 
 // note_game_entries queries
@@ -40,6 +44,8 @@ func (q *Queries) CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEnt
 		arg.TotalQuestions,
 		arg.CorrectQuestions,
 		arg.NotesPerMinute,
+		arg.GameType,
+		arg.AssignmentID,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -325,7 +331,7 @@ func (q *Queries) GetDailyActivityCounts(ctx context.Context, arg GetDailyActivi
 }
 
 const getEntriesByUserID = `-- name: GetEntriesByUserID :many
-select id, user_id, time_length, total_questions, correct_questions, notes_per_minute, created_date, created_time
+select id, user_id, time_length, total_questions, correct_questions, notes_per_minute, created_date, created_time, game_type, assignment_id
 from tremolo.note_game_entries
 where user_id = $1
 order by created_date desc
@@ -349,6 +355,8 @@ func (q *Queries) GetEntriesByUserID(ctx context.Context, userID int32) ([]Tremo
 			&i.NotesPerMinute,
 			&i.CreatedDate,
 			&i.CreatedTime,
+			&i.GameType,
+			&i.AssignmentID,
 		); err != nil {
 			return nil, err
 		}
@@ -374,9 +382,15 @@ select
     created_date
 from tremolo.note_game_entries
 where user_id = $1
+  and game_type = $2
 order by created_date desc, id desc
 limit 30
 `
+
+type GetRecentEntriesByUserIDParams struct {
+	UserID   int32  `json:"user_id"`
+	GameType string `json:"game_type"`
+}
 
 type GetRecentEntriesByUserIDRow struct {
 	ID               int32        `json:"id"`
@@ -388,8 +402,8 @@ type GetRecentEntriesByUserIDRow struct {
 	CreatedDate      sql.NullTime `json:"created_date"`
 }
 
-func (q *Queries) GetRecentEntriesByUserID(ctx context.Context, userID int32) ([]GetRecentEntriesByUserIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getRecentEntriesByUserID, userID)
+func (q *Queries) GetRecentEntriesByUserID(ctx context.Context, arg GetRecentEntriesByUserIDParams) ([]GetRecentEntriesByUserIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentEntriesByUserID, arg.UserID, arg.GameType)
 	if err != nil {
 		return nil, err
 	}

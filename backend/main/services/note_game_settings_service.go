@@ -40,6 +40,9 @@ func UpsertNoteGameSettings(ctx context.Context, q generated.Querier, userID int
 		NoteLimit: int32(req.NoteLimit),
 		Scale:     req.Scale,
 		Octave:    int32(req.Octave),
+		LowNote:   req.LowNote,
+		HighNote:  req.HighNote,
+		Clef:      req.Clef,
 	}
 
 	row, err := q.UpsertNoteGameSettings(ctx, params)
@@ -66,5 +69,8 @@ func convertSettingsRowToDTO(row generated.TremoloNoteGameSetting) dtos.NoteGame
 		NoteLimit: int(row.NoteLimit),
 		Scale:     row.Scale,
 		Octave:    int(row.Octave),
+		LowNote:   row.LowNote,
+		HighNote:  row.HighNote,
+		Clef:      row.Clef,
 	}
 }

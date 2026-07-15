@@ -127,11 +127,11 @@ func GoogleCallback(c *gin.Context) {
 	}
 
 	// Scenario 3: New user — auto-register with BASIC role
-	firstName := claims.GivenName
+	firstName := strings.TrimSpace(claims.GivenName)
 	if firstName == "" {
 		firstName = "User"
 	}
-	lastName := claims.FamilyName
+	lastName := strings.TrimSpace(claims.FamilyName)
 	if lastName == "" {
 		parts := strings.Split(normalizedEmail, "@")
 		lastName = parts[0]

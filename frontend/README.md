@@ -2,6 +2,8 @@
 
 A modern, responsive music education platform designed for students in grades 6-12 to practice sight reading, note recognition, and musical skills.
 
+> **How this app works:** see [ARCHITECTURE.md](./ARCHITECTURE.md) — the definitive guide to the frontend (identification-game engine, API layer, OSMD rendering, adding a new game). Visual design decisions live in [DESIGN.md](./DESIGN.md).
+
 ## Features
 
 - **Note Recognition Game**: Interactive game to test and improve note identification skills

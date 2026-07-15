@@ -1,0 +1,99 @@
+name: CI
+
+# Single required check for pull requests. Detects which services a PR
+# touches and runs each affected service's checks via workflow_call,
+# exposing ONE pass/fail ("gate"). A branch ruleset requires "gate", so a
+# PR that touches only one service isn't left waiting on checks for the
+# others that never run.
+#
+# The per-service workflows keep their own pull_request triggers, so on a
+# PR they also run standalone -- the affected ones therefore run twice
+# (once standalone, once via this gate). That duplication is deliberate:
+# it keeps those workflow files untouched. Only "gate" is required.
+
+on:
+  pull_request:
+    branches: [main, prod]
+
+permissions:
+  contents: read
+  pull-requests: read # dorny/paths-filter lists the PR's changed files via the API
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      music: ${{ steps.filter.outputs.music }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - 'backend/main/**'
+              - 'Makefile'
+              - '.github/workflows/backend-go.yml'
+              - '.github/workflows/api-smoke.yml'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'frontend/**'
+              - 'Makefile'
+              - '.github/workflows/frontend-ci.yml'
+              - '.github/workflows/ci.yml'
+            music:
+              - 'backend/music/**'
+              - 'Makefile'
+              - '.github/workflows/music-microservice.yml'
+              - '.github/workflows/ci.yml'
+
+  go:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    uses: ./.github/workflows/backend-go.yml
+    secrets: inherit
+
+  api-smoke:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    uses: ./.github/workflows/api-smoke.yml
+    secrets: inherit
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    uses: ./.github/workflows/frontend-ci.yml
+    secrets: inherit
+
+  music:
+    needs: changes
+    if: needs.changes.outputs.music == 'true'
+    uses: ./.github/workflows/music-microservice.yml
+    secrets: inherit
+
+  # The single required check. Passes when every triggered job succeeded;
+  # a job that was skipped (its service wasn't touched) counts as passing,
+  # so a docs-only or single-service PR is never blocked on an irrelevant
+  # check. Fails if any triggered job failed or was cancelled.
+  gate:
+    if: always()
+    needs: [changes, go, api-smoke, frontend, music]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all triggered checks to pass
+        run: |
+          results='${{ join(needs.*.result, ',') }}'
+          echo "job results: $results"
+          case "$results" in
+            *failure* | *cancelled*)
+              echo "::error::A required CI check failed or was cancelled."
+              exit 1 ;;
+            *)
+              echo "All required checks passed (skipped = service not touched)." ;;
+          esac

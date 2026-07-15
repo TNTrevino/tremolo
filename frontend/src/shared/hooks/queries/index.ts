@@ -8,6 +8,8 @@ export {
 	useRecentGameEntries,
 	useActivityHeatmap,
 	useSaveGameResult,
+	useGameSettings,
+	useSaveGameSettings,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
 	useKeyboardBindings,
@@ -29,3 +31,20 @@ export {
 	useAddFriend,
 	friendsKeys,
 } from "./useFriendsQuery";
+
+// Classes queries
+export {
+	useTeacherClasses,
+	useStudentClasses,
+	useClassRoster,
+	useClassAssignments,
+	useStudentAssignments,
+	useAssignmentResults,
+	useCreateClass,
+	useJoinClass,
+	useArchiveClass,
+	useRemoveStudent,
+	useCreateAssignment,
+	useDeleteAssignment,
+	classesKeys,
+} from "./useClassesQuery";

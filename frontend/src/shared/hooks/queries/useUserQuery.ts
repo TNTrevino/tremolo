@@ -3,6 +3,8 @@ import { useAuthStore } from "@/stores/auth.store";
 import { userService } from "@/services/api";
 import { mapGeneralUserInfo } from "@/services/api/mappers/user.mapper";
 import type {
+	GameSettingsRequest,
+	GameSettingsResponse,
 	UserProfile,
 	MultiMetricChartData,
 	ChartQueryParams,
@@ -26,6 +28,8 @@ export const userKeys = {
 		[...userKeys.all, "class-metrics", params] as const,
 	activity: () => [...userKeys.all, "activity"] as const,
 	noteGameSettings: () => [...userKeys.all, "note-game-settings"] as const,
+	gameSettings: (gameType: string) =>
+		[...userKeys.all, "game-settings", gameType] as const,
 	keyboardBindings: () => [...userKeys.all, "keyboard-bindings"] as const,
 };
 
@@ -135,14 +139,14 @@ export function useSaveGameResult() {
 	});
 }
 
-export function useNoteGameSettings() {
+export function useNoteGameSettings(enabled = true) {
 	const authUser = useAuthStore((state) => state.user);
 
 	return useQuery<NoteGameSettingsResponse | null>({
 		queryKey: userKeys.noteGameSettings(),
 		meta: { errorTitle: "Failed to load game settings" },
 		queryFn: () => userService.getNoteGameSettings(),
-		enabled: !!authUser?.id,
+		enabled: !!authUser?.id && enabled,
 		staleTime: 10 * 60 * 1000,
 	});
 }
@@ -170,6 +174,41 @@ export function useSaveNoteGameSettings() {
  * service layer. Showing a toast on every non-404 failure would be disruptive
  * (fires on page load) and the user can still play with default bindings.
  */
+/**
+ * Fetch saved settings for a generic identification game
+ * (key_signature / scale / chord). Errors are suppressed: the game
+ * falls back to its default settings and stays playable.
+ */
+export function useGameSettings(
+	gameType: GameSettingsRequest["game_type"],
+	enabled = true,
+) {
+	const authUser = useAuthStore((state) => state.user);
+
+	return useQuery<GameSettingsResponse | null>({
+		queryKey: userKeys.gameSettings(gameType),
+		meta: { suppressErrorToast: true },
+		queryFn: () => userService.getGameSettings(gameType),
+		enabled: !!authUser?.id && enabled,
+		staleTime: 10 * 60 * 1000,
+	});
+}
+
+export function useSaveGameSettings() {
+	const queryClient = useQueryClient();
+
+	return useMutation<GameSettingsResponse, Error, GameSettingsRequest>({
+		mutationFn: (settings) => userService.saveGameSettings(settings),
+		meta: { suppressErrorToast: true },
+		// The PUT returns the full row; write it into the cache directly
+		// instead of invalidating, which would refetch and churn the
+		// settings identity mid-game.
+		onSuccess: (data) => {
+			queryClient.setQueryData(userKeys.gameSettings(data.game_type), data);
+		},
+	});
+}
+
 export function useKeyboardBindings() {
 	const authUser = useAuthStore((state) => state.user);
 

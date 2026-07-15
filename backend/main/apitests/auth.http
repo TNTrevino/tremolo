@@ -1,0 +1,76 @@
+# Tremolo — auth smoke test
+#
+# Registers a fresh user and logs in, asserting the shape of both
+# responses. Standalone — run with:
+#   kulala run --tests --env local auth.http
+#
+# Post-response scripts (> {% ... %}) are JavaScript. `response.status`
+# is the numeric code; `response.body` is the parsed JSON.
+#
+# $randomInt keeps the email unique so the file is repeatable against a
+# persistent database (registration rejects a duplicate email). REGISTER
+# stashes the stored email in a global so LOGIN reuses the exact same
+# value — $randomInt re-evaluates on every reference, so we can't just
+# repeat {{email}}.
+
+@email = kulala_auth_{{$randomInt}}@qa.test
+
+### REGISTER
+# Clear kulala's persisted globals so each run starts hermetic (see the
+# note in classes.http).
+< {%
+	client.global.clear();
+%}
+POST {{base_url}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("register creates the user", function () {
+		client.assert(response.status === 201, "expected 201 Created, got " + response.status);
+		client.assert(response.body.user.id > 0, "response carries the new user id");
+		client.assert(response.body.user.role === "STUDENT", "role is echoed back");
+	});
+	client.global.set("auth_email", response.body.user.email);
+%}
+
+### LOGIN
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{auth_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.test("login returns a token pair", function () {
+		client.assert(response.status === 200, "expected 200 OK, got " + response.status);
+		client.assert(!!response.body.access_token, "login returns an access token");
+		client.assert(!!response.body.refresh_token, "login returns a refresh token");
+		client.assert(response.body.user.role === "STUDENT", "login echoes the role");
+	});
+%}
+
+### LOGIN_BAD_PASSWORD
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{auth_email}}",
+	"password": "wrong-password"
+}
+
+> {%
+	client.test("wrong password is rejected", function () {
+		client.assert(response.status >= 400, "bad credentials are rejected, not accepted");
+		client.assert(response.status !== 200, "wrong password never returns 200");
+	});
+%}

@@ -10,6 +10,8 @@ import { getErrorMessage } from "@/shared/utils/error.utils";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
+import { GuestRoute } from "@/shared/components/layout/GuestRoute";
+import { TeacherRoute } from "@/shared/components/layout/TeacherRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
@@ -30,6 +32,22 @@ const SignupPage = lazy(() =>
 const NoteGamePage = lazy(() =>
 	import("@/pages/NoteGamePage").then((m) => ({ default: m.NoteGamePage })),
 );
+const KeySignatureGamePage = lazy(() =>
+	import("@/pages/KeySignatureGamePage").then((m) => ({
+		default: m.KeySignatureGamePage,
+	})),
+);
+const IntervalGamePage = lazy(() =>
+	import("@/pages/IntervalGamePage").then((m) => ({
+		default: m.IntervalGamePage,
+	})),
+);
+const ScaleGamePage = lazy(() =>
+	import("@/pages/ScaleGamePage").then((m) => ({ default: m.ScaleGamePage })),
+);
+const ChordGamePage = lazy(() =>
+	import("@/pages/ChordGamePage").then((m) => ({ default: m.ChordGamePage })),
+);
 const SheetMusicPage = lazy(() =>
 	import("@/pages/SheetMusicPage").then((m) => ({ default: m.SheetMusicPage })),
 );
@@ -48,6 +66,24 @@ const AccountPage = lazy(() =>
 const GoogleCallbackPage = lazy(() =>
 	import("@/pages/GoogleCallbackPage").then((m) => ({
 		default: m.GoogleCallbackPage,
+	})),
+);
+const ClassesPage = lazy(() =>
+	import("@/pages/ClassesPage").then((m) => ({ default: m.ClassesPage })),
+);
+const ClassDetailPage = lazy(() =>
+	import("@/pages/ClassDetailPage").then((m) => ({
+		default: m.ClassDetailPage,
+	})),
+);
+const AssignmentsPage = lazy(() =>
+	import("@/pages/AssignmentsPage").then((m) => ({
+		default: m.AssignmentsPage,
+	})),
+);
+const AssignmentPlayPage = lazy(() =>
+	import("@/pages/AssignmentPlayPage").then((m) => ({
+		default: m.AssignmentPlayPage,
 	})),
 );
 
@@ -124,9 +160,30 @@ function AppContent() {
 						<Route path="/" element={<Navigate to="/note-game" replace />} />
 						<Route path="/home" element={<HomePage />} />
 						<Route path="/about" element={<AboutPage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/signup" element={<SignupPage />} />
+						<Route
+							path="/login"
+							element={
+								<GuestRoute>
+									<LoginPage />
+								</GuestRoute>
+							}
+						/>
+						<Route
+							path="/signup"
+							element={
+								<GuestRoute>
+									<SignupPage />
+								</GuestRoute>
+							}
+						/>
 						<Route path="/note-game" element={<NoteGamePage />} />
+						<Route
+							path="/key-signature-game"
+							element={<KeySignatureGamePage />}
+						/>
+						<Route path="/interval-game" element={<IntervalGamePage />} />
+						<Route path="/scale-game" element={<ScaleGamePage />} />
+						<Route path="/chord-game" element={<ChordGamePage />} />
 						<Route path="/sheet-music" element={<SheetMusicPage />} />
 						<Route path="/convert" element={<ConverterPage />} />
 						<Route
@@ -156,6 +213,38 @@ function AppContent() {
 							element={
 								<ProtectedRoute>
 									<AccountPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/classes"
+							element={
+								<TeacherRoute>
+									<ClassesPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/classes/:id"
+							element={
+								<TeacherRoute>
+									<ClassDetailPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/assignments"
+							element={
+								<ProtectedRoute>
+									<AssignmentsPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/assignments/:id/play"
+							element={
+								<ProtectedRoute>
+									<AssignmentPlayPage />
 								</ProtectedRoute>
 							}
 						/>

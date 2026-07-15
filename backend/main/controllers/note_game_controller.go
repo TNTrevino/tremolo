@@ -65,9 +65,15 @@ func GetRecentNoteGameEntries(c *gin.Context) {
 		return
 	}
 
+	gameType := c.Query("game_type")
+
 	ctx := c.Request.Context()
-	entries, err := services.GetRecentNoteGameEntries(ctx, database.Queries, authenticatedUserID)
+	entries, err := services.GetRecentNoteGameEntries(ctx, database.Queries, authenticatedUserID, gameType)
 	if err != nil {
+		if errors.Is(err, services.ErrValidation) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game_type"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recent entries"})
 		return
 	}

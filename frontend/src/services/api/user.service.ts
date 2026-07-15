@@ -7,6 +7,8 @@ import type {
 	NoteGameEntry,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	GameSettingsRequest,
+	GameSettingsResponse,
 	KeyboardBindingsResponse,
 	KeyboardBindingsRequest,
 	MultiMetricChartData,
@@ -65,6 +67,8 @@ export class UserService {
 			correct_questions: params.correctQuestions,
 			user_id: params.userId,
 			notes_per_minute: params.notesPerMinute,
+			game_type: params.gameType ?? "note",
+			assignment_id: params.assignmentId,
 		};
 		const response = await this.client.post<CreateNoteGameEntryResponse>(
 			"/api/note-game/entry",
@@ -130,13 +134,15 @@ export class UserService {
 		return response.data;
 	}
 
-	async getNoteGameSettings(): Promise<NoteGameSettingsResponse | null> {
+	/**
+	 * GET an optional resource: both the {"settings": null} sentinel
+	 * (200) and a 404 map to null.
+	 */
+	private async getOrNull<T>(url: string): Promise<T | null> {
 		try {
-			const response = await this.client.get<NoteGameSettingsResponse>(
-				"/api/note-game/settings",
-			);
+			const response = await this.client.get<T>(url);
 			const data = response.data as unknown as Record<string, unknown>;
-			if ("settings" in data && data.settings === null) {
+			if (data && "settings" in data && data.settings === null) {
 				return null;
 			}
 			return response.data;
@@ -146,6 +152,10 @@ export class UserService {
 			}
 			throw error;
 		}
+	}
+
+	async getNoteGameSettings(): Promise<NoteGameSettingsResponse | null> {
+		return this.getOrNull<NoteGameSettingsResponse>("/api/note-game/settings");
 	}
 
 	async saveNoteGameSettings(
@@ -158,18 +168,32 @@ export class UserService {
 		return response.data;
 	}
 
+	/**
+	 * Fetch saved settings for one of the generic identification games
+	 * (key_signature / scale / chord). Returns null when none saved.
+	 */
+	async getGameSettings(
+		gameType: GameSettingsRequest["game_type"],
+	): Promise<GameSettingsResponse | null> {
+		return this.getOrNull<GameSettingsResponse>(
+			`/api/game-settings?game_type=${gameType}`,
+		);
+	}
+
+	async saveGameSettings(
+		settings: GameSettingsRequest,
+	): Promise<GameSettingsResponse> {
+		const response = await this.client.put<GameSettingsResponse>(
+			"/api/game-settings",
+			settings,
+		);
+		return response.data;
+	}
+
 	async getKeyboardBindings(): Promise<KeyboardBindingsResponse | null> {
-		try {
-			const response = await this.client.get<KeyboardBindingsResponse>(
-				"/api/note-game/keyboard-bindings",
-			);
-			return response.data;
-		} catch (error) {
-			if (error instanceof AxiosError && error.response?.status === 404) {
-				return null;
-			}
-			throw error;
-		}
+		return this.getOrNull<KeyboardBindingsResponse>(
+			"/api/note-game/keyboard-bindings",
+		);
 	}
 
 	async saveKeyboardBindings(

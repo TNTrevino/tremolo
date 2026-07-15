@@ -5,12 +5,21 @@
  * Used with the Go backend (port 5001).
  */
 
+export type GameType =
+	| "note"
+	| "key_signature"
+	| "scale"
+	| "chord"
+	| "interval";
+
 export interface CreateNoteGameEntryRequest {
 	time_length: string; // Format: "HH:MM:SS"
 	total_questions: number;
 	correct_questions: number;
 	user_id: number;
 	notes_per_minute: number;
+	game_type?: GameType; // Defaults to "note" on the backend
+	assignment_id?: number; // Optional: tags this entry as an assignment attempt
 }
 
 export interface NoteGameEntry {
@@ -29,6 +38,24 @@ export interface SaveGameResultParams {
 	correctQuestions: number;
 	userId: number;
 	notesPerMinute: number;
+	gameType?: GameType; // Defaults to "note"
+	assignmentId?: number; // Optional: tags this entry as an assignment attempt
+}
+
+/**
+ * Generic per-game settings (key signature / scale / chord games).
+ * The config shape is owned by each game's frontend.
+ */
+export interface GameSettingsRequest {
+	game_type: Exclude<GameType, "note">;
+	config: Record<string, unknown>;
+}
+
+export interface GameSettingsResponse {
+	id: number;
+	user_id: number;
+	game_type: Exclude<GameType, "note">;
+	config: Record<string, unknown>;
 }
 
 export interface CreateNoteGameEntryResponse {
@@ -37,6 +64,9 @@ export interface CreateNoteGameEntryResponse {
 }
 
 export interface NoteGameSettingsResponse {
+	low_note: string;
+	high_note: string;
+	clef: "treble" | "bass";
 	id: number;
 	user_id: number;
 	game_mode: string;
@@ -47,6 +77,9 @@ export interface NoteGameSettingsResponse {
 }
 
 export interface NoteGameSettingsRequest {
+	low_note: string;
+	high_note: string;
+	clef: "treble" | "bass";
 	game_mode: string;
 	time_limit: number;
 	note_limit: number;

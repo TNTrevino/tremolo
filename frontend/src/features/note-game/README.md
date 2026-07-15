@@ -1,83 +1,55 @@
 # Note Game Feature
 
-This feature handles the note identification game functionality where students practice recognizing musical notes.
+The note identification game: students name the note shown on the
+staff. This feature **composes the shared identification-game engine**
+(`@/features/identification-game`) and layers the note game's extras on
+top — audio feedback, physical keyboard input, and a pitch-range picker.
 
-## Directory Structure
+## Structure
 
-### Components (323 lines total)
+### Components
 
-- **GameSettings.tsx** (115 lines) - Game configuration UI (mode, limits, scale, octave)
-- **GameBoard.tsx** (100 lines) - Active gameplay UI (score bar, note display, answer buttons)
-- **GameResults.tsx** (108 lines) - Post-game statistics and charts
-- **index.ts** (11 lines) - Component exports
+- **GameBoard.tsx** - Active gameplay layouts (portrait + phone
+  landscape). Uses the engine's `QuestionDisplay` and
+  `useQuestionLoader`; adds the 21-note answer grid with key hints.
+- **GameResults.tsx** - Post-game screen. Composes the engine's
+  `GameOverCard` and adds the recent-games chart and save status.
+- **SettingsBar.tsx** / **MobileSettingsDrawer.tsx** - Ready-state
+  settings surfaces (mode, limit, scale, note range, key bindings).
+- **StaffRangePicker.tsx** / **NoteRangeSetting.tsx** - Drag-to-select
+  pitch range on a rendered staff.
+- **KeyboardBindingsDialog.tsx** / **KeyboardBindingsEditor.tsx** -
+  Custom key bindings for answering with a physical keyboard.
 
-### Hooks (225 lines total)
+### Hooks
 
-- **useNoteGame.ts** (159 lines) - Core game logic (state management, note generation, scoring)
-- **useGameTimer.ts** (60 lines) - Timer management for time mode
-- **index.ts** (6 lines) - Hook exports
+- **useNoteGame.ts** - Delegates to the engine's
+  `useIdentificationGame`; adds audio on correct answers and keyboard
+  input.
+- **useNoteQueue.ts** - Prefetch queue: the engine's
+  `useQuestionQueue` bound to the note-game fetcher (scale + range).
+- **useKeyboardInput.ts** / **useNoteAudio.ts** - Input and audio.
 
-### Types (46 lines)
+Timer (`useGameTimer`, `useGameLifecycle`) and the in-game `ScoreBar`
+live in the engine — import them from `@/features/identification-game`.
 
-- **index.ts** (46 lines) - Game types, constants (GameSettings, SCALES, NOTES, ACCIDENTALS)
+### Types
 
-### Main Files
+- **types/index.ts** - `GameSettings` (extends the engine's
+  `BaseGameSettings`), `NoteGameStats`, `SCALES`, `NOTES`,
+  `ACCIDENTALS`.
 
-- **index.ts** (15 lines) - Feature module exports
-- **README.md** - Feature documentation
+## Key Behaviors
 
-## Architecture
-
-### Separation of Concerns
-
-- **Hooks**: All game logic (state, note generation, scoring, timing)
-- **Components**: Pure presentational UI (settings, board, results)
-- **Types**: Shared type definitions and constants
-- **Page**: Thin orchestrator layer (~91 lines, down from 388 lines)
-
-### Key Features
-
-- Two game modes: Time mode (countdown) and Notes mode (fixed count)
-- Configurable settings: Scale, octave, time/note limits
-- Real-time scoring and accuracy tracking
-- Statistics calculation (NPM - Notes Per Minute)
-- Performance charts for authenticated users
-- Backend integration ready (useGenerateNoteGame hook from @/shared/hooks/queries/useMusicQuery)
+- Two modes: time (countdown) and notes (fixed count); starts on the
+  first answer.
+- `octave` in settings is legacy persistence only — the note range
+  (lowNote/highNote/clef) is what drives generation.
+- Results persist via the engine's `useSaveGameOnEnd("note")`;
+  authenticated users see recent-game charts.
 
 ## Related Files
 
-- Pages: `src/pages/NoteGamePage.tsx` (91 lines)
-- Backend Integration: `src/shared/hooks/queries/useMusicQuery.ts` (useGenerateNoteGame)
-- Shared Types: `src/shared/types/game.types.ts`
-
-## Usage Example
-
-```tsx
-import {
-	useNoteGame,
-	useGameTimer,
-	GameSettings,
-	GameBoard,
-	GameResults,
-} from "@/features/note-game";
-
-function MyGamePage() {
-	const {
-		gameState,
-		currentNote,
-		answers,
-		settings,
-		updateSettings,
-		startGame,
-		handleAnswer,
-		endGame,
-		resetGame,
-	} = useNoteGame();
-
-	const { timeRemaining, startTimer, formatTime } = useGameTimer(() =>
-		endGame(),
-	);
-
-	// Render appropriate component based on gameState
-}
-```
+- Page orchestrator: `src/pages/NoteGamePage.tsx`
+- Engine: `src/features/identification-game/`
+- Shared types: `src/shared/types/game.types.ts`

@@ -47,10 +47,10 @@ export function DashboardStats({
 					<div className="flex items-start justify-between">
 						<div className="space-y-2">
 							<p className="text-sm text-muted-foreground">Avg Accuracy</p>
-							<p className="text-3xl font-bold text-accent">{avgAccuracy}%</p>
+							<p className="text-3xl font-bold text-brass">{avgAccuracy}%</p>
 						</div>
-						<div className="rounded-lg bg-accent/10 p-2">
-							<Target className="h-6 w-6 text-accent" />
+						<div className="rounded-lg bg-brass/10 p-2">
+							<Target className="h-6 w-6 text-brass" />
 						</div>
 					</div>
 				</CardContent>
@@ -79,8 +79,8 @@ export function DashboardStats({
 							<p className="text-sm text-muted-foreground">Total Sessions</p>
 							<p className="text-3xl font-bold">{totalSessions}</p>
 						</div>
-						<div className="rounded-lg bg-accent/10 p-2">
-							<Calendar className="h-6 w-6 text-accent" />
+						<div className="rounded-lg bg-brass/10 p-2">
+							<Calendar className="h-6 w-6 text-brass" />
 						</div>
 					</div>
 				</CardContent>

@@ -85,7 +85,7 @@ const ALL_SERIES: Array<
 	{
 		key: "accuracy",
 		name: "Accuracy",
-		color: "hsl(var(--accent))",
+		color: "hsl(var(--brass))",
 		format: (v) => `${v.toFixed(1)}%`,
 	},
 	{

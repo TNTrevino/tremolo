@@ -1,15 +1,22 @@
-import { useState, useCallback } from "react";
-import type { NoteAnswer, GameStats, GameSettings } from "../types";
+import { useCallback } from "react";
+import type {
+	NoteAnswer,
+	GameStats,
+	NoteGameStats,
+	GameSettings,
+} from "../types";
 import { GameState, GameMode } from "../types";
+import { useIdentificationGame } from "@/features/identification-game";
 import { useNoteAudio } from "./useNoteAudio";
 import { useKeyboardInput } from "./useKeyboardInput";
+import { DEFAULT_RANGE } from "../rangeUtils";
 
 interface UseNoteGameReturn {
 	// Game state
 	gameState: GameState;
 	currentNote: string;
 	answers: NoteAnswer[];
-	gameStats: GameStats | null;
+	gameStats: NoteGameStats | null;
 	settings: GameSettings;
 
 	// Timing
@@ -33,8 +40,10 @@ interface UseNoteGameOptions {
 }
 
 /**
- * Custom hook for managing note game logic
- * Handles game state, note generation, answer validation, and statistics
+ * Custom hook for managing note game logic.
+ *
+ * Composes the generic identification game engine with the note game's
+ * extras: audio feedback on correct answers and physical keyboard input.
  */
 export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	const {
@@ -48,164 +57,65 @@ export function useNoteGame(options?: UseNoteGameOptions): UseNoteGameReturn {
 	// Audio playback hook
 	const { playNoteSound } = useNoteAudio();
 
-	// Game settings
-	const [settings, setSettings] = useState<GameSettings>({
-		gameMode: GameMode.Time,
-		timeLimit: 30,
-		noteLimit: 25,
-		scale: "C Major",
-		octave: 4,
-		...initialSettings,
+	const onCorrectAnswer = useCallback(
+		(note: string) => {
+			playNoteSound(note);
+		},
+		[playNoteSound],
+	);
+
+	// octave is legacy persistence-only; the range is what the game
+	// actually uses, so stats report the scale alone.
+	const statsExtras = useCallback(
+		(settings: GameSettings) => ({ scale: settings.scale }),
+		[],
+	);
+
+	const game = useIdentificationGame<GameSettings>({
+		defaultSettings: {
+			gameMode: GameMode.Time,
+			timeLimit: 30,
+			noteLimit: 25,
+			scale: "C Major",
+			octave: 4,
+			clef: "treble",
+			lowNote: DEFAULT_RANGE.treble.low,
+			highNote: DEFAULT_RANGE.treble.high,
+			...initialSettings,
+		},
+		onGameEnd,
+		onGameStart,
+		onCorrectAnswer,
+		statsExtras,
 	});
-
-	// Game state
-	const [gameState, setGameState] = useState<GameState>(GameState.Ready);
-	const [currentNote, setCurrentNote] = useState("C");
-	const [answers, setAnswers] = useState<NoteAnswer[]>([]);
-	const [gameStartTime, setGameStartTime] = useState(0);
-	const [questionStartTime, setQuestionStartTime] = useState(0);
-	const [gameStats, setGameStats] = useState<GameStats | null>(null);
-
-	/**
-	 * Update game settings (only allowed in settings state)
-	 */
-	const updateSettings = useCallback((newSettings: Partial<GameSettings>) => {
-		setSettings((prev) => ({ ...prev, ...newSettings }));
-	}, []);
-
-	/**
-	 * End the game and calculate statistics
-	 */
-	const endGame = useCallback(
-		(finalAnswers?: NoteAnswer[]) => {
-			const gameAnswers = finalAnswers || answers;
-			const correct = gameAnswers.filter((a) => a.correct).length;
-			const total = gameAnswers.length;
-			const accuracy = total > 0 ? (correct / total) * 100 : 0;
-			const timeElapsed = (Date.now() - gameStartTime) / 1000 / 60; // in minutes
-			const npm = total > 0 && timeElapsed > 0 ? total / timeElapsed : 0;
-
-			const stats: GameStats = {
-				npm: Math.round(npm),
-				accuracy: Math.round(accuracy),
-				correct,
-				total,
-				gameMode: settings.gameMode,
-				limit:
-					settings.gameMode === GameMode.Time
-						? settings.timeLimit
-						: settings.noteLimit,
-				scale: settings.scale,
-				octave: settings.octave,
-			};
-
-			setGameStats(stats);
-			setGameState(GameState.GameOver);
-
-			// Notify parent component of game end
-			onGameEnd?.(stats);
-		},
-		[answers, gameStartTime, settings, onGameEnd],
-	);
-
-	/**
-	 * Handle a note answer.
-	 * When the game is in Ready state, the first answer transitions to Playing.
-	 */
-	const handleAnswer = useCallback(
-		(answer: string) => {
-			// First answer transitions from Ready to Playing
-			if (gameState === GameState.Ready) {
-				setGameState(GameState.Playing);
-				setGameStartTime(Date.now());
-				onGameStart?.();
-			}
-
-			const effectiveQuestionStart =
-				questionStartTime === 0 ? Date.now() : questionStartTime;
-			const timeToAnswer = Date.now() - effectiveQuestionStart;
-			const correct = answer === currentNote;
-
-			const newAnswer: NoteAnswer = {
-				note: currentNote,
-				correct,
-				timeToAnswer,
-			};
-
-			const newAnswers = [...answers, newAnswer];
-			setAnswers(newAnswers);
-
-			// Play audio feedback on correct answer
-			if (correct) {
-				playNoteSound(currentNote);
-			}
-
-			// Check if game should end (notes mode).
-			// No need to generate a new note here — the GameBoard will
-			// fetch the next note from the backend when answers.length changes.
-			if (
-				settings.gameMode === GameMode.Notes &&
-				newAnswers.length >= settings.noteLimit
-			) {
-				endGame(newAnswers);
-			}
-		},
-		[
-			gameState,
-			currentNote,
-			questionStartTime,
-			answers,
-			settings.gameMode,
-			settings.noteLimit,
-			endGame,
-			playNoteSound,
-			onGameStart,
-		],
-	);
-
-	/**
-	 * Sync the current note with the backend-generated note.
-	 * Called when GameBoard receives a note from the API so
-	 * answer validation compares against the displayed note.
-	 */
-	const syncCurrentNote = useCallback((noteName: string) => {
-		setCurrentNote(noteName);
-		setQuestionStartTime(Date.now());
-	}, []);
-
-	/**
-	 * Reset game to settings screen
-	 */
-	const resetGame = useCallback(() => {
-		setGameState(GameState.Ready);
-		setGameStats(null);
-		setAnswers([]);
-	}, []);
 
 	// Set up keyboard input - only enabled when game is playing
 	useKeyboardInput({
-		onNoteInput: handleAnswer,
+		onNoteInput: game.handleAnswer,
 		enabled:
 			!inputDisabled &&
-			(gameState === GameState.Playing || gameState === GameState.Ready),
+			(game.gameState === GameState.Playing ||
+				game.gameState === GameState.Ready),
 		keyBindings,
 	});
 
 	return {
 		// State
-		gameState,
-		currentNote,
-		answers,
-		gameStats,
-		settings,
-		questionStartTime,
-		gameStartTime,
+		gameState: game.gameState,
+		currentNote: game.currentAnswer,
+		answers: game.answers,
+		// statsExtras above adds the note-game fields; the engine types
+		// its stats generically.
+		gameStats: game.gameStats as NoteGameStats | null,
+		settings: game.settings,
+		questionStartTime: game.questionStartTime,
+		gameStartTime: game.gameStartTime,
 
 		// Actions
-		updateSettings,
-		handleAnswer,
-		endGame,
-		resetGame,
-		syncCurrentNote,
+		updateSettings: game.updateSettings,
+		handleAnswer: game.handleAnswer,
+		endGame: game.endGame,
+		resetGame: game.resetGame,
+		syncCurrentNote: game.syncCurrentAnswer,
 	};
 }
