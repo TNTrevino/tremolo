@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Music2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import {
+	RhythmGlyph,
+	describeRhythm,
+} from "@/shared/components/music/RhythmGlyph";
 import { Select } from "@/shared/components/ui/select";
 import { Card } from "@/shared/components/ui/card";
 import { useGenerateMary, useGenerateRandom } from "@/shared/hooks/queries";
@@ -25,19 +29,9 @@ const scales = [
 
 const octaves = [3, 4, 5];
 
-const sixteenthRhythms = [
-	{ label: "1111", value: "1111" },
-	{ label: "112", value: "112" },
-	{ label: "121", value: "121" },
-	{ label: "211", value: "211" },
-	{ label: "0111", value: "0111" },
-];
+const sixteenthRhythms = ["1111", "112", "121", "211", "0111"];
 
-const eighthRhythms = [
-	{ label: "11", value: "11" },
-	{ label: "01", value: "01" },
-	{ label: "10", value: "10" },
-];
+const eighthRhythms = ["11", "01", "10"];
 
 export function SheetMusicPage() {
 	const [scaleIndex, setScaleIndex] = useState(0);
@@ -196,17 +190,18 @@ export function SheetMusicPage() {
 							<div className="space-y-2">
 								{sixteenthRhythms.map((rhythm) => (
 									<Button
-										key={rhythm.value}
+										key={rhythm}
 										variant={
-											selectedRhythm === rhythm.value && rhythmType === 16
+											selectedRhythm === rhythm && rhythmType === 16
 												? "default"
 												: "outline"
 										}
-										onClick={() => handleGenerateRhythm(rhythm.value, 16)}
+										onClick={() => handleGenerateRhythm(rhythm, 16)}
 										disabled={isGenerating}
-										className="w-full justify-start font-mono"
+										aria-label={describeRhythm(rhythm, 16)}
+										className="w-full justify-start h-12"
 									>
-										{rhythm.label}
+										<RhythmGlyph rhythm={rhythm} rhythmType={16} />
 									</Button>
 								))}
 							</div>
@@ -218,17 +213,18 @@ export function SheetMusicPage() {
 							<div className="space-y-2">
 								{eighthRhythms.map((rhythm) => (
 									<Button
-										key={rhythm.value}
+										key={rhythm}
 										variant={
-											selectedRhythm === rhythm.value && rhythmType === 8
+											selectedRhythm === rhythm && rhythmType === 8
 												? "default"
 												: "outline"
 										}
-										onClick={() => handleGenerateRhythm(rhythm.value, 8)}
+										onClick={() => handleGenerateRhythm(rhythm, 8)}
 										disabled={isGenerating}
-										className="w-full justify-start font-mono"
+										aria-label={describeRhythm(rhythm, 8)}
+										className="w-full justify-start h-12"
 									>
-										{rhythm.label}
+										<RhythmGlyph rhythm={rhythm} rhythmType={8} />
 									</Button>
 								))}
 							</div>

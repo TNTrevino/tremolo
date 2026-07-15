@@ -6,6 +6,7 @@ export const mapApiUserToUser = (apiUser: ApiUser): User => ({
 	firstName: apiUser.first_name,
 	lastName: apiUser.last_name,
 	role: apiUser.role,
+	hasGoogle: apiUser.has_google ?? false,
 });
 
 export const mapGeneralUserInfo = (info: GeneralUserInfo): UserProfile => ({

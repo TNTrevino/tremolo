@@ -87,6 +87,7 @@ describe("auth.store", () => {
 				firstName: "John",
 				lastName: "Doe",
 				role: "STUDENT",
+				hasGoogle: false,
 			});
 			expect(state.token).toBe("access-token");
 			expect(state.isAuthenticated).toBe(true);

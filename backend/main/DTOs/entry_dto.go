@@ -19,6 +19,9 @@ type Entry struct {
 	CorrectQuestions int16          `db:"correct_questions" json:"correct_questions" validate:"required,number"`
 	UserID           int16          `db:"user_id"           json:"user_id"           validate:"required,number"`
 	NPM              int8           `db:"notes_per_minute"  json:"notes_per_minute"  validate:"required,number"`
+	GameType         string         `db:"game_type"         json:"game_type"`
+	// Optional: tags this entry as an attempt at a class assignment.
+	AssignmentID *int `db:"assignment_id" json:"assignment_id"`
 }
 
 // NoteGameEntryResponse represents a note game entry returned from API responses
@@ -32,6 +35,12 @@ type NoteGameEntryResponse struct {
 	CreatedDate      string  `json:"created_date"`
 }
 
+// DailyActivityCount represents a single day's game count for the activity heatmap.
+type DailyActivityCount struct {
+	Date      string `json:"date"`
+	GameCount int    `json:"game_count"`
+}
+
 // add an or to the hours to ensure the miliary time and nothing else
 
 func (entry *Entry) ValidateEntry() error {
@@ -42,14 +51,15 @@ func (entry *Entry) ValidateEntry() error {
 		return err
 	}
 
+	var errorMessage []string
+
+	// Business rule checks (independent of struct validation)
+	if entry.CorrectQuestions > entry.TotalQuestions {
+		errorMessage = append(errorMessage, "CorrectQuestions: Correct questions cannot be more than total questions")
+	}
+
 	err = validate.Struct(entry)
 	if err != nil {
-		var errorMessage []string
-
-		if entry.CorrectQuestions > entry.TotalQuestions {
-			errorMessage = append(errorMessage, "CorrectQuestions: Correct questions cannot be more than total questions")
-		}
-
 		// NOTE: type asserstion
 		if errs, ok := err.(validator.ValidationErrors); ok {
 			for _, fieldErr := range errs {
@@ -86,12 +96,20 @@ func (entry *Entry) ValidateEntry() error {
 					case "number":
 						errorMessage = append(errorMessage, "CorrectQuestions: must be a number")
 					}
+
+				case "NPM":
+					switch fieldErr.Tag() {
+					case "required":
+						errorMessage = append(errorMessage, "NPM: notes per minute is required")
+					case "number":
+						errorMessage = append(errorMessage, "NPM: must be a number")
+					}
 				}
 			}
 		}
-		if len(errorMessage) > 0 {
-			return errors.New(strings.Join(errorMessage, ",\n"))
-		}
+	}
+	if len(errorMessage) > 0 {
+		return errors.New(strings.Join(errorMessage, ",\n"))
 	}
 	return nil
 }

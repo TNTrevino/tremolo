@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useNoteQueue } from "./useNoteQueue";
+import { useNoteQueue, type NoteRange } from "./useNoteQueue";
 import { musicService } from "@/services/api";
 import type { NoteGameResponse } from "@/services/api/types";
 
@@ -10,7 +10,14 @@ vi.mock("@/services/api", () => ({
 	},
 }));
 
+const mockShowError = vi.fn();
+vi.mock("@/shared/hooks/useToast", () => ({
+	useToast: () => ({ showError: mockShowError }),
+}));
+
 const mockGenerate = musicService.generateNoteGame as Mock;
+
+const RANGE: NoteRange = { lowNote: "C4", highNote: "C6", clef: "treble" };
 
 function fakeNote(name: string): NoteGameResponse {
 	return {
@@ -22,6 +29,7 @@ function fakeNote(name: string): NoteGameResponse {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockShowError.mockClear();
 });
 
 describe("useNoteQueue", () => {
@@ -30,7 +38,7 @@ describe("useNoteQueue", () => {
 			.mockResolvedValueOnce(fakeNote("C"))
 			.mockResolvedValueOnce(fakeNote("D"));
 
-		const { result } = renderHook(() => useNoteQueue("C", "4", true));
+		const { result } = renderHook(() => useNoteQueue("C", "4", true, RANGE));
 
 		expect(result.current.isInitializing).toBe(true);
 
@@ -39,7 +47,11 @@ describe("useNoteQueue", () => {
 		});
 
 		expect(mockGenerate).toHaveBeenCalledTimes(2);
-		expect(mockGenerate).toHaveBeenCalledWith({ scale: "C", octave: "4" });
+		expect(mockGenerate).toHaveBeenCalledWith({
+			scale: "C",
+			octave: "4",
+			...RANGE,
+		});
 	});
 
 	it("pop() returns queued item and triggers background refill", async () => {
@@ -49,7 +61,7 @@ describe("useNoteQueue", () => {
 			.mockResolvedValueOnce(fakeNote("E"))
 			.mockResolvedValueOnce(fakeNote("F"));
 
-		const { result } = renderHook(() => useNoteQueue("C", "4", true));
+		const { result } = renderHook(() => useNoteQueue("C", "4", true, RANGE));
 
 		await waitFor(() => {
 			expect(result.current.isInitializing).toBe(false);
@@ -70,7 +82,7 @@ describe("useNoteQueue", () => {
 
 	it("pop() returns null when queue is empty", () => {
 		// Don't resolve anything — render with isReady=false so hydrate never runs
-		const { result } = renderHook(() => useNoteQueue("C", "4", false));
+		const { result } = renderHook(() => useNoteQueue("C", "4", false, RANGE));
 
 		let note: NoteGameResponse | null;
 		act(() => {
@@ -81,7 +93,7 @@ describe("useNoteQueue", () => {
 	});
 
 	it("no fetches when isReady=false", async () => {
-		const { result } = renderHook(() => useNoteQueue("C", "4", false));
+		const { result } = renderHook(() => useNoteQueue("C", "4", false, RANGE));
 
 		// Give it a tick to ensure nothing fires
 		await new Promise((r) => setTimeout(r, 50));
@@ -108,7 +120,7 @@ describe("useNoteQueue", () => {
 					}),
 			);
 
-		const { result } = renderHook(() => useNoteQueue("C", "4", true));
+		const { result } = renderHook(() => useNoteQueue("C", "4", true, RANGE));
 
 		// Initial hydrate is in-flight — pop should try to hydrate again but be blocked
 		act(() => {
@@ -135,7 +147,7 @@ describe("useNoteQueue", () => {
 			.mockResolvedValueOnce(fakeNote("D"));
 
 		const { result, rerender } = renderHook(
-			({ scale }) => useNoteQueue(scale, "4", true),
+			({ scale }) => useNoteQueue(scale, "4", true, RANGE),
 			{ initialProps: { scale: "C" } },
 		);
 
@@ -202,7 +214,7 @@ describe("useNoteQueue", () => {
 			.mockRejectedValueOnce(new Error("network error"))
 			.mockResolvedValueOnce(fakeNote("D"));
 
-		const { result } = renderHook(() => useNoteQueue("C", "4", true));
+		const { result } = renderHook(() => useNoteQueue("C", "4", true, RANGE));
 
 		await waitFor(() => {
 			expect(result.current.isInitializing).toBe(false);
@@ -223,5 +235,6 @@ describe("useNoteQueue", () => {
 		});
 
 		expect(second).toBeNull();
+		expect(mockShowError).toHaveBeenCalledTimes(1);
 	});
 });

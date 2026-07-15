@@ -5,9 +5,15 @@ export { useLogin, useRegister, useLogout, authKeys } from "./useAuthQuery";
 export {
 	useUserProfile,
 	useUserStats,
+	useRecentGameEntries,
+	useActivityHeatmap,
 	useSaveGameResult,
+	useGameSettings,
+	useSaveGameSettings,
 	useNoteGameSettings,
 	useSaveNoteGameSettings,
+	useKeyboardBindings,
+	useSaveKeyboardBindings,
 	userKeys,
 } from "./useUserQuery";
 
@@ -25,3 +31,20 @@ export {
 	useAddFriend,
 	friendsKeys,
 } from "./useFriendsQuery";
+
+// Classes queries
+export {
+	useTeacherClasses,
+	useStudentClasses,
+	useClassRoster,
+	useClassAssignments,
+	useStudentAssignments,
+	useAssignmentResults,
+	useCreateClass,
+	useJoinClass,
+	useArchiveClass,
+	useRemoveStudent,
+	useCreateAssignment,
+	useDeleteAssignment,
+	classesKeys,
+} from "./useClassesQuery";

@@ -10,11 +10,24 @@ on:
         required: true
         type: string
 
+# One deploy at a time per target; never cancel one mid-restart.
+concurrency:
+  group: deploy-${{ inputs.runner }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
+
+      # Pin the interpreter so prod matches what music CI validates against
+      # (music-microservice.yml also uses 3.14). Without this, the venv is
+      # built against whatever python3 happens to be on the runner.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
 
       - name: Build Frontend
         working-directory: frontend

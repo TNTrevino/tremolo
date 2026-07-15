@@ -72,8 +72,8 @@ export function ProfilePage() {
 					<Card>
 						<CardHeader>
 							<div className="flex items-center gap-3">
-								<div className="rounded-lg bg-accent/10 p-2">
-									<Music className="h-6 w-6 text-accent" />
+								<div className="rounded-lg bg-brass/10 p-2">
+									<Music className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Practice Preferences</CardTitle>
 							</div>
@@ -112,8 +112,8 @@ export function ProfilePage() {
 					<Card>
 						<CardHeader>
 							<div className="flex items-center gap-3">
-								<div className="rounded-lg bg-accent/10 p-2">
-									<Award className="h-6 w-6 text-accent" />
+								<div className="rounded-lg bg-brass/10 p-2">
+									<Award className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Achievements & Badges</CardTitle>
 							</div>
@@ -152,8 +152,8 @@ export function ProfilePage() {
 					<Card>
 						<CardHeader>
 							<div className="flex items-center gap-3">
-								<div className="rounded-lg bg-accent/10 p-2">
-									<School className="h-6 w-6 text-accent" />
+								<div className="rounded-lg bg-brass/10 p-2">
+									<School className="h-6 w-6 text-brass" />
 								</div>
 								<CardTitle>Connections</CardTitle>
 							</div>

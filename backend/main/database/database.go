@@ -3,6 +3,7 @@ package database
 
 import (
 	"database/sql"
+	"log"
 	"os"
 	"sight-reading/database/generated"
 	"strings"
@@ -33,7 +34,7 @@ func InitializeDBConnection() {
 	DBConn = conn
 	Queries = generated.New(conn)
 
-	println(strings.Repeat("------------------------------", 2))
-	println("\nConnected to database successfully\n")
-	println(strings.Repeat("------------------------------", 2))
+	log.Println(strings.Repeat("------------------------------", 2))
+	log.Println("Connected to database successfully")
+	log.Println(strings.Repeat("------------------------------", 2))
 }

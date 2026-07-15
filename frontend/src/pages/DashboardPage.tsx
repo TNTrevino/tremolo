@@ -13,8 +13,11 @@
  */
 
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store";
+import type { DashboardLocationState } from "@/shared/types";
 import { useDashboardData } from "@/features/dashboard/hooks";
+import { useActivityHeatmap } from "@/shared/hooks/queries";
 import {
 	DashboardStats,
 	PerformanceChart,
@@ -22,7 +25,13 @@ import {
 	UserProfileCard,
 	DashboardSkeleton,
 } from "@/features/dashboard/components";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
+import { ActivityHeatmap } from "@/shared/components/charts";
 import type { ChartInterval } from "@/services/api/types";
 
 /**
@@ -42,6 +51,8 @@ function calculateTimeReading(totalSessions: number): string {
 }
 
 export function DashboardPage() {
+	const location = useLocation();
+	const locationState = location.state as DashboardLocationState | null;
 	const authUser = useAuthStore((state) => state.user);
 	const [interval, setInterval] = useState<ChartInterval>("day");
 	const [viewMode, setViewMode] = useState<"my" | "class">("my");
@@ -52,6 +63,12 @@ export function DashboardPage() {
 			interval,
 			days: interval === "day" ? 30 : undefined,
 		});
+
+	const {
+		data: activityData,
+		isLoading: isHeatmapLoading,
+		isError: isHeatmapError,
+	} = useActivityHeatmap();
 
 	// Show loading skeleton
 	if (isLoading) {
@@ -93,6 +110,12 @@ export function DashboardPage() {
 	return (
 		<div className="min-h-screen py-8 px-4">
 			<div className="container mx-auto max-w-6xl space-y-6">
+				{locationState?.infoMessage && (
+					<div className="p-3 rounded-md bg-primary/10 border-2 border-primary text-sm font-medium">
+						{locationState.infoMessage}
+					</div>
+				)}
+
 				{/* User Profile Card */}
 				<UserProfileCard
 					user={user}
@@ -111,6 +134,38 @@ export function DashboardPage() {
 					viewMode={viewMode}
 					onViewModeChange={setViewMode}
 				/>
+
+				{/* Activity Heatmap */}
+				{isHeatmapLoading && (
+					<Card className="shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-2xl">Activity</CardTitle>
+						</CardHeader>
+						<CardContent className="p-6">
+							<div className="animate-pulse h-32 bg-muted rounded" />
+						</CardContent>
+					</Card>
+				)}
+				{isHeatmapError && (
+					<Card className="shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-2xl">Activity</CardTitle>
+						</CardHeader>
+						<CardContent className="p-6 text-center text-sm text-muted-foreground">
+							Activity data unavailable. Try refreshing.
+						</CardContent>
+					</Card>
+				)}
+				{activityData && (
+					<Card className="shadow-lg">
+						<CardHeader>
+							<CardTitle className="text-2xl">Activity</CardTitle>
+						</CardHeader>
+						<CardContent className="overflow-x-auto">
+							<ActivityHeatmap data={activityData} />
+						</CardContent>
+					</Card>
+				)}
 
 				{/* Stats Grid */}
 				<DashboardStats

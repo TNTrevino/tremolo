@@ -154,12 +154,11 @@ func generateRealisticNPM(skillLevel SkillLevel, variance float64) int {
 
 	// Apply variance (variance is a percentage, e.g., 0.2 for ±20%)
 	varianceAmount := int(float64(baseNPM) * variance)
-	npmWithVariance := max(
+	npmWithVariance := min(
 		// Ensure we stay within bounds
-		baseNPM+rand.IntN(varianceAmount*2+1)-varianceAmount, minNPM)
-	if npmWithVariance > maxNPM {
-		npmWithVariance = maxNPM
-	}
+		max(
+
+			baseNPM+rand.IntN(varianceAmount*2+1)-varianceAmount, minNPM), maxNPM)
 
 	return npmWithVariance
 }

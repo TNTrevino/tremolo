@@ -1,15 +1,20 @@
-import { useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { useBreakpoint } from "@/shared/hooks";
 import { useNoteGameDisplay } from "@/features/note-game-display";
-import { useNoteQueue } from "../hooks";
+import {
+	QuestionDisplay,
+	useQuestionLoader,
+} from "@/features/identification-game";
+import type { NoteGameResponse } from "@/services/api/types";
+import { useNoteQueue, type NoteRange } from "../hooks";
 import type { NoteAnswer } from "../types";
 import { NOTES } from "../types";
 import { ComponentErrorBoundary } from "@/shared/components/ComponentErrorBoundary";
 import { GameBoardFallback } from "@/shared/components/fallbacks";
 import { logger } from "@/lib/logger";
 import { useThemeStore } from "@/stores/theme.store";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
 
 export interface GameBoardProps {
 	currentNote: string;
@@ -18,101 +23,89 @@ export interface GameBoardProps {
 	onNoteGenerated: (noteName: string) => void;
 	scale: string;
 	octave: number;
+	range: NoteRange;
+	keyBindings?: Record<string, string>;
 }
 
-const extractTonic = (scaleStr: string): string => {
-	return scaleStr.split(" ")[0] ?? "C";
-};
+// "C Major" -> "C"; notation conversion happens in the API service.
+const extractTonic = (scaleStr: string): string =>
+	scaleStr.split(" ")[0] ?? "C";
 
-interface NoteDisplayProps {
-	currentNote: string;
-	containerRef: React.RefObject<HTMLDivElement>;
-	isInitializing: boolean;
-	loadError: boolean;
-	className?: string;
-}
-
-function NoteDisplay({
-	currentNote,
-	containerRef,
-	isInitializing,
-	loadError,
-	className = "",
-}: NoteDisplayProps) {
-	return (
-		<div className={className}>
-			{loadError ? (
-				<Card className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/30">
-					<div className="text-center space-y-4">
-						<div className="text-destructive font-medium">
-							Failed to load sheet music
-						</div>
-						<div className="text-sm text-muted-foreground">
-							Falling back to text display
-						</div>
-						<div className="text-9xl font-bold text-primary animate-fade-in">
-							{currentNote}
-						</div>
-					</div>
-				</Card>
-			) : (
-				<Card className="h-full relative flex items-center justify-center overflow-hidden">
-					{isInitializing && (
-						<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-							<div className="text-center text-muted-foreground">
-								Loading sheet music...
-							</div>
-						</div>
-					)}
-					<div ref={containerRef} className="w-full h-full overflow-hidden" />
-				</Card>
-			)}
-		</div>
-	);
-}
+// Module-level so the loader effect doesn't re-run per render.
+const getNoteName = (note: NoteGameResponse): string => note.noteName;
 
 export interface NoteButtonGridProps {
 	onAnswer: (answer: string) => void;
 	buttonHeight: string;
+	keyBindings?: Record<string, string>;
 }
 
 export function NoteButtonGrid({
 	onAnswer,
 	buttonHeight,
+	keyBindings,
 }: NoteButtonGridProps) {
+	const keyMap = keyBindings ?? DEFAULT_NOTE_TO_KEY_MAP;
+
 	return (
 		<Card className="flex-shrink-0 p-2 sm:p-4">
 			<div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-				{NOTES.map((note) => (
-					<Button
-						key={`${note}#`}
-						variant="outline"
-						onClick={() => onAnswer(`${note}#`)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}#
-					</Button>
-				))}
-				{NOTES.map((note) => (
-					<Button
-						key={note}
-						variant="default"
-						onClick={() => onAnswer(note)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}
-					</Button>
-				))}
-				{NOTES.map((note) => (
-					<Button
-						key={`${note}b`}
-						variant="outline"
-						onClick={() => onAnswer(`${note}b`)}
-						className={`${buttonHeight} font-bold px-0 sm:px-2`}
-					>
-						{note}b
-					</Button>
-				))}
+				{NOTES.map((note) => {
+					const noteKey = `${note}#`;
+					const boundKey = keyMap[noteKey];
+					return (
+						<Button
+							key={noteKey}
+							variant="outline"
+							onClick={() => onAnswer(noteKey)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{noteKey}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
+				{NOTES.map((note) => {
+					const boundKey = keyMap[note];
+					return (
+						<Button
+							key={note}
+							variant="secondary"
+							onClick={() => onAnswer(note)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{note}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
+				{NOTES.map((note) => {
+					const noteKey = `${note}b`;
+					const boundKey = keyMap[noteKey];
+					return (
+						<Button
+							key={noteKey}
+							variant="outline"
+							onClick={() => onAnswer(noteKey)}
+							className={`${buttonHeight} font-bold px-0 sm:px-2 flex flex-col items-center justify-center gap-0`}
+						>
+							<span>{noteKey}</span>
+							{boundKey && (
+								<span className="text-[10px] text-muted-foreground font-normal leading-none">
+									{boundKey}
+								</span>
+							)}
+						</Button>
+					);
+				})}
 			</div>
 		</Card>
 	);
@@ -123,11 +116,13 @@ function useGameBoardCore({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
 }: {
 	answers: NoteAnswer[];
 	onNoteGenerated: (noteName: string) => void;
 	scale: string;
 	octave: number;
+	range: NoteRange;
 }) {
 	const theme = useThemeStore((s) => s.theme);
 
@@ -144,50 +139,18 @@ function useGameBoardCore({
 		extractTonic(scale),
 		octave.toString(),
 		isDisplayReady,
+		range,
 	);
 
-	const [loadError, setLoadError] = useState(false);
-
-	useEffect(() => {
-		if (!isDisplayReady || isInitializing) return;
-
-		let cancelled = false;
-
-		const loadNext = async () => {
-			const note = pop();
-			if (!note) {
-				logger.warn("useNoteQueue: pop() returned null -- queue was empty");
-				return;
-			}
-
-			try {
-				await loadNote(note.generatedXml);
-				if (!cancelled) {
-					setLoadError(false);
-					onNoteGenerated(note.noteName);
-				}
-			} catch (err) {
-				if (!cancelled) {
-					logger.error("Failed to render note in OSMD", err);
-					setLoadError(true);
-					onNoteGenerated(note.noteName);
-				}
-			}
-		};
-
-		void loadNext();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		answers.length,
+	const { loadError } = useQuestionLoader({
+		answersLength: answers.length,
 		isDisplayReady,
 		isInitializing,
 		pop,
 		loadNote,
-		onNoteGenerated,
-	]);
+		getAnswer: getNoteName,
+		onQuestionLoaded: onNoteGenerated,
+	});
 
 	return { containerRef, isInitializing, loadError };
 }
@@ -208,28 +171,36 @@ const GameBoardLandscapeInternal = ({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
 	statusBar,
+	keyBindings,
 }: GameBoardLandscapeProps) => {
 	const { containerRef, isInitializing, loadError } = useGameBoardCore({
 		answers,
 		onNoteGenerated,
 		scale,
 		octave,
+		range,
 	});
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 gap-1.5">
 			<div className="flex gap-1.5 min-h-0 flex-1">
 				<div className="w-28 flex-shrink-0">{statusBar}</div>
-				<NoteDisplay
-					currentNote={currentNote}
+				<QuestionDisplay
+					fallbackLabel={currentNote}
+					fallbackTextClassName="text-9xl"
 					containerRef={containerRef}
 					isInitializing={isInitializing}
 					loadError={loadError}
 					className="flex-1 min-h-0"
 				/>
 			</div>
-			<NoteButtonGrid onAnswer={onAnswer} buttonHeight="h-8 text-xs" />
+			<NoteButtonGrid
+				onAnswer={onAnswer}
+				buttonHeight="h-8 text-xs"
+				keyBindings={keyBindings}
+			/>
 		</div>
 	);
 };
@@ -265,6 +236,8 @@ const GameBoardInternal = ({
 	onNoteGenerated,
 	scale,
 	octave,
+	range,
+	keyBindings,
 }: GameBoardProps) => {
 	const { isMobile } = useBreakpoint();
 
@@ -273,6 +246,7 @@ const GameBoardInternal = ({
 		onNoteGenerated,
 		scale,
 		octave,
+		range,
 	});
 
 	const noteDisplayClassName = isMobile
@@ -283,14 +257,19 @@ const GameBoardInternal = ({
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0 gap-2 sm:gap-4">
-			<NoteDisplay
-				currentNote={currentNote}
+			<QuestionDisplay
+				fallbackLabel={currentNote}
+				fallbackTextClassName="text-9xl"
 				containerRef={containerRef}
 				isInitializing={isInitializing}
 				loadError={loadError}
 				className={noteDisplayClassName}
 			/>
-			<NoteButtonGrid onAnswer={onAnswer} buttonHeight={buttonHeight} />
+			<NoteButtonGrid
+				onAnswer={onAnswer}
+				buttonHeight={buttonHeight}
+				keyBindings={keyBindings}
+			/>
 		</div>
 	);
 };

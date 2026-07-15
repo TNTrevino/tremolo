@@ -4,15 +4,17 @@
  * Displays teacher-specific information and features:
  * - Teacher name
  * - Number of students (placeholder for future implementation)
- * - Student management features (coming soon)
+ * - Entry point to classes & assignments
  */
 
+import { Link } from "react-router-dom";
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
 } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import type { UserProfile } from "@/services/api/types";
 
 interface TeacherDashboardProps {
@@ -46,11 +48,15 @@ export function TeacherDashboard({
 						</p>
 					</div>
 				</div>
-				<p className="text-sm text-muted-foreground">
-					Student management features will be available in a future update.
-					You&apos;ll be able to view student progress, assign exercises, and
-					track class performance.
-				</p>
+				<div className="flex items-center justify-between gap-4">
+					<p className="text-sm text-muted-foreground">
+						Create classes, hand out join codes, assign exercises, and track
+						results per assignment.
+					</p>
+					<Button asChild variant="brass">
+						<Link to="/classes">My Classes</Link>
+					</Button>
+				</div>
 			</CardContent>
 		</Card>
 	);

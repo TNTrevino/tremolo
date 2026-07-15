@@ -1,212 +1,140 @@
-# Tremolo Frontend - Design Overview
+# Tremolo Design System — "Ink, Paper & Brass"
 
-## Design Direction
+This document is the source of truth for Tremolo's visual direction. It
+replaces the earlier purple "neo-brutalist" theme. When a component and
+this document disagree, the component is wrong.
 
-This frontend was created with a **Neo-Brutalist Academic** aesthetic that combines:
+## Why the redesign
 
-- **Bold, confident typography** with strong visual hierarchy
-- **High contrast color schemes** that work in both dark and light modes
-- **Geometric shapes** and grid-based layouts for a modern feel
-- **Subtle musical motifs** without being overly playful
-- **Dark mode optimized** for comfortable extended practice sessions
-- **Professional yet energetic** design appropriate for educational use
+The previous theme used one saturated purple for every job: brand mark,
+primary action, selected state, active nav, answer buttons, login. When
+everything is the accent, nothing is — and saturated violet on white
+with a default sans is the most recognizable "AI-generated app"
+fingerprint there is. The references we're steering toward instead:
 
-## Key Design Decisions
+- **My Music Staff** — navy foundation, warm yellow spent on exactly
+  one CTA per screen, friendly without being childish.
+- **musictheory.net** — near-monochrome, content-first; color appears
+  almost exclusively as _feedback_.
 
-### Color Palette
+The common thread: a neutral ink does the everyday work, and the warm
+accent is scarce enough to mean something.
 
-**Dark Mode (Primary Focus):**
+## Direction
 
-- Deep charcoal backgrounds (#0a0a0a) for reduced eye strain
-- Vibrant purple primary (#9333ea) for interactive elements and CTAs
-- Bright yellow accent (#eab308) for feedback and highlights
-- High contrast for excellent readability
+Ground the palette in the subject's own material. Engraved notation is
+**ink on paper**; the reward color of a school music room is **brass**.
 
-**Light Mode:**
+- **Ink** (deep navy): text, primary buttons, selected chips, active
+  nav. Navy instead of black keeps it friendly for 6th–12th graders.
+- **Paper** (warm near-white): backgrounds. The staff must always be
+  the highest-contrast element on a game page.
+- **Brass** (warm amber): THE accent. Primary CTA, scores/streaks,
+  focus rings. If brass appears more than ~twice on a screen, remove
+  one.
+- **Feedback pair** (green/red): correct/incorrect only. Feedback color
+  is never used decoratively, so when it appears it carries meaning.
+- Purple is retired everywhere, including the logo chip.
 
-- Clean white backgrounds with warm undertones
-- Same primary and accent colors maintaining brand consistency
-- Adjusted contrast ratios for comfortable daytime use
+## Tokens
 
-### Typography Strategy
+Semantic tokens live in `src/index.css` as shadcn-style HSL variables.
+Two token changes beyond re-valuing:
 
-- **Display/Headings**: Bold, geometric sans-serif for impact
-- **Body**: Clean, highly legible sans for comfortable reading
-- **Monospace**: Used for rhythm patterns and technical content
-- Font sizes scale responsively from mobile to desktop
-- Generous line heights for improved readability
+1. `--accent` returns to its shadcn meaning: a **quiet hover/selected
+   surface** (neutral), because nav and menus use `hover:bg-accent`.
+2. A new `--brass` token carries the brand accent (charts, stat
+   highlights, CTA). Never use `--accent` for emphasis and never use
+   `--brass` as a hover wash.
+3. A new `--correct` token joins `--destructive` for answer feedback.
 
-### Component Design
+### Light ("paper")
 
-**Cards & Containers:**
+| Token                  | HSL                             | Role                        |
+| ---------------------- | ------------------------------- | --------------------------- |
+| `--background`         | `40 20% 98%`                    | paper                       |
+| `--foreground`         | `222 39% 16%`                   | ink text                    |
+| `--card` / `--popover` | `0 0% 100%`                     | raised paper                |
+| `--primary`            | `222 39% 20%`                   | ink actions, selected chips |
+| `--primary-foreground` | `40 20% 98%`                    |                             |
+| `--secondary`          | `222 15% 93%`                   | quiet fills                 |
+| `--muted`              | `40 12% 93%` / fg `222 12% 42%` |                             |
+| `--accent`             | `222 18% 92%`                   | hover wash (menus, nav)     |
+| `--brass`              | `36 68% 46%` / fg `40 20% 98%`  | THE accent                  |
+| `--correct`            | `152 55% 32%` / fg `40 20% 98%` | right answers               |
+| `--destructive`        | `0 72% 45%`                     | errors, wrong answers       |
+| `--border` / `--input` | `222 15% 86%`                   |                             |
+| `--ring`               | `36 68% 42%`                    | brass focus ring            |
+| `--radius`             | `0.5rem` (unchanged)            |                             |
 
-- Bold 2px borders for strong visual separation
-- Subtle shadows for depth without overwhelming
-- Rounded corners (8px) for modern feel
-- Hover effects with scale transforms for interactivity
+### Dark ("charcoal")
 
-**Buttons:**
+Charcoal like musictheory.net — neutral and warm-tinted, **not**
+purple-tinted.
 
-- Multiple variants (default, outline, ghost, destructive)
-- Clear active states with scale animations
-- Loading states with spinner animations
-- Size variants from small to extra-large
+| Token                     | HSL                                               |
+| ------------------------- | ------------------------------------------------- |
+| `--background`            | `220 8% 10%`                                      |
+| `--foreground`            | `40 15% 92%`                                      |
+| `--card` / `--popover`    | `220 8% 14%`                                      |
+| `--primary`               | `40 15% 92%` (light fill, dark text `220 8% 12%`) |
+| `--secondary` / `--muted` | `220 6% 18%` / fg `220 5% 64%`                    |
+| `--accent`                | `220 6% 20%`                                      |
+| `--brass`                 | `36 70% 55%` / fg `220 8% 10%`                    |
+| `--correct`               | `152 45% 45%`                                     |
+| `--destructive`           | `0 60% 50%`                                       |
+| `--border` / `--input`    | `220 6% 22%`                                      |
+| `--ring`                  | `36 70% 55%`                                      |
 
-**Form Elements:**
+Selected chips in dark mode are light fills on charcoal — the same
+figure/ground flip musictheory.net's keyboard uses.
 
-- 2px borders matching the design system
-- Clear error states with red borders and messages
-- Success states with green accents
-- Real-time validation feedback
+## Typography
 
-### Animation & Interaction
+- **Display** (`font-display`): **Bricolage Grotesque** — headings,
+  game titles, hero, big stats. Characterful without being a toy.
+- **Body** (`font-sans`): **Inter** — everything else. Inter is fine as
+  a body face once the display face carries the personality.
+- Both are self-hosted via `@fontsource-variable/*` packages imported
+  in `main.tsx` — never a Google Fonts `<link>` (no third-party request,
+  versioned with the app). The old config _named_ fonts it never
+  loaded; if a face isn't imported, don't list it.
+- Timer, score, and NPM figures use `tabular-nums` so they don't jitter
+  as digits change.
 
-**Micro-interactions:**
+## Component rules
 
-- Smooth transitions (200ms standard timing)
-- Scale transforms on hover (1.02x-1.1x)
-- Fade-in animations for page loads
-- Slide-in animations for mobile menus
+1. **Answer buttons are quiet.** Paper surface, 2px ink border, ink
+   text (`outline` style). The staff is the loudest thing on a game
+   page — answers never compete with the question. Correct/incorrect
+   feedback (when wired) flashes `--correct`/`--destructive`; color
+   arrives as _feedback_, not decoration.
+2. **One shadow level.** Cards may carry a single soft shadow. Buttons
+   carry none — borders do the work.
+3. **Selected = ink fill.** Settings chips, nav active state, mode
+   toggles: filled ink (light fill in dark mode). Never brass.
+4. **Brass is scarce.** Login/primary CTA, the accuracy/NPM highlight,
+   focus rings, chart emphasis. Nothing else.
+5. **Hero = notation, not gradient.** Paper background, one-color ink
+   headline set on faint engraved staff lines (the signature element),
+   a single brass CTA. No gradient washes, no accent-colored half
+   headlines.
+6. **Logo chip** is ink with the paper glyph (brass in dark mode is
+   acceptable); purple does not survive anywhere.
 
-**Loading States:**
+## Rollout
 
-- Skeleton screens matching component shapes
-- Spinner animations for async actions
-- Progressive disclosure of content
+Phased so each commit is visually reviewable:
 
-### Responsive Design
+1. **Tokens + fonts + quiet answers** — re-value `index.css`, add
+   `--brass`/`--correct` + Tailwind mappings, load fonts, strip button
+   shadows, convert AnswerPad/NoteButtonGrid to the quiet style,
+   repoint chart/stat `accent` usages at `brass`.
+2. **Chrome** — nav active states, Games menu, logo chip, settings
+   chips (mostly free via tokens; audit `text-accent`/`bg-accent`).
+3. **Hero + display type** — HomePage rebuild per rule 5; apply
+   `font-display` to headings and big stats.
 
-**Mobile-First Approach:**
-
-- Base styles target mobile screens
-- Progressive enhancement for larger viewports
-- Touch-friendly targets (minimum 44px)
-- Sticky navigation and game controls on mobile
-
-**Breakpoints:**
-
-- Mobile: 0-600px (single column, stacked layouts)
-- Tablet: 600-900px (2 columns where appropriate)
-- Desktop: 900px+ (3-4 columns, side-by-side layouts)
-- Large Desktop: 1200px+ (max-width containers)
-
-### Page-Specific Features
-
-#### Home Page
-
-- Gradient hero section with animated background pattern
-- Feature cards with hover lift effects
-- Numbered timeline for "How It Works"
-- Strong CTAs with icon + text combinations
-
-#### Note Game
-
-- Clean, distraction-free gameplay interface
-- Desktop: Side-by-side sheet music and answer buttons
-- Mobile: Stacked layout with sticky controls
-- Real-time feedback with color-coded responses
-- Performance charts using Recharts library
-
-#### Dashboard
-
-- User profile card with avatar and quick stats
-- Multi-metric line chart with time interval selector
-- Stats cards with icons and gradient backgrounds
-- Teacher-specific dashboard section
-
-#### Authentication Pages
-
-- Centered card layouts with max-width constraints
-- Real-time form validation with inline errors
-- Password strength meter with visual feedback
-- Show/hide password toggles
-- Loading states on submit buttons
-
-## Technical Implementation
-
-### State Management
-
-- React Context for global state (theme, auth)
-- Local state for component-specific data
-- LocalStorage for persistence (theme, user)
-
-### Routing
-
-- React Router v6 for navigation
-- Protected routes with authentication guards
-- Redirect logic for unauthorized access
-
-### Styling Architecture
-
-- TailwindCSS utility-first approach
-- CSS custom properties for theme variables
-- Component composition with shadcn/ui
-- Responsive utilities throughout
-
-### Performance Considerations
-
-- Lazy loading potential for route-based code splitting
-- Optimized re-renders with proper React patterns
-- Minimal dependencies for smaller bundle size
-- SVG icons for crisp rendering at any size
-
-## Accessibility Features
-
-- Semantic HTML throughout
-- ARIA labels where needed
-- Keyboard navigation support
-- Focus management in modals
-- Color contrast meeting WCAG AA standards
-- Screen reader friendly error messages
-
-## Theme System
-
-The dual-theme system allows users to:
-
-- Toggle between dark and light modes
-- Preference persists in localStorage
-- Smooth transitions between themes
-- All colors use HSL for easy adjustments
-
-**Implementation:**
-
-```typescript
-// Theme stored as CSS custom properties
-// Easy to modify in index.css
-:root { --primary: 262 83% 58%; }
-.dark { --primary: 262 83% 58%; }
-```
-
-## Future Design Enhancements
-
-1. **Advanced Animations:**
-   - Confetti effects for achievements
-   - Progress bar animations
-   - Chart transitions between time periods
-
-2. **Additional Themes:**
-   - High contrast mode
-   - Colorblind-friendly variants
-   - Custom brand themes for schools
-
-3. **Enhanced Data Visualization:**
-   - More chart types (bar, pie, radar)
-   - Interactive tooltips
-   - Drill-down capabilities
-
-4. **Gamification Elements:**
-   - Badge showcase animations
-   - Level-up celebrations
-   - Streak tracking visuals
-
-## Design System Documentation
-
-All components follow a consistent design language:
-
-- **Spacing**: 4px base unit (0.25rem)
-- **Border Radius**: 0.5rem standard
-- **Transitions**: 200ms ease-out
-- **Shadows**: Layered approach (sm, md, lg, xl)
-- **Z-index**: Semantic scale (10, 20, 30, 40, 50)
-
-This creates a cohesive, professional experience that scales from mobile to desktop while maintaining visual consistency and accessibility standards.
+Known follow-ups: wire correct/incorrect flash into the answer flow;
+eyeball OSMD dark-mode rendering against charcoal (it re-colors glyphs
+via `darkMode`, verify contrast).

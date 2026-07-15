@@ -10,6 +10,7 @@ import { AuthService } from "./auth.service";
 import { UserService } from "./user.service";
 import { MusicService } from "./music.service";
 import { FriendsService } from "./friends.service";
+import { ClassesService } from "./classes.service";
 
 export const authService = new AuthService(mainApiClient, {
 	setTokens,
@@ -21,11 +22,13 @@ export const authService = new AuthService(mainApiClient, {
 export const userService = new UserService(mainApiClient);
 export const musicService = new MusicService(musicApiClient);
 export const friendsService = new FriendsService(mainApiClient);
+export const classesService = new ClassesService(mainApiClient);
 
 export { AuthService } from "./auth.service";
 export { UserService } from "./user.service";
 export { MusicService } from "./music.service";
 export { FriendsService } from "./friends.service";
+export { ClassesService } from "./classes.service";
 
 export {
 	musicApiClient,
@@ -66,4 +69,13 @@ export type {
 	ApiError,
 	ApiResponse,
 	FriendResponse,
+	ClassResponse,
+	StudentClassResponse,
+	RosterEntryResponse,
+	AssignmentResponse,
+	StudentAssignmentResponse,
+	AssignmentResultRow,
+	CreateClassRequest,
+	JoinClassRequest,
+	CreateAssignmentRequest,
 } from "./types";

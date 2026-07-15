@@ -152,7 +152,7 @@ type CreateUserWithPasswordParams struct {
 	SchoolID  sql.NullInt32  `json:"school_id"`
 	RoleID    int32          `json:"role_id"`
 	Email     sql.NullString `json:"email"`
-	Password  string         `json:"password"`
+	Password  sql.NullString `json:"password"`
 }
 
 func (q *Queries) CreateUserWithPassword(ctx context.Context, arg CreateUserWithPasswordParams) (int32, error) {

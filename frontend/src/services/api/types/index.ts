@@ -15,15 +15,23 @@ export type {
 	RefreshTokenRequest,
 	RefreshTokenResponse,
 	PasswordRequirement,
+	GoogleCallbackRequest,
 } from "./auth.types";
 
 export type {
+	GameType,
 	CreateNoteGameEntryRequest,
+	GameSettingsRequest,
+	GameSettingsResponse,
 	SaveGameResultParams,
 	NoteGameEntry,
 	CreateNoteGameEntryResponse,
 	NoteGameSettingsResponse,
 	NoteGameSettingsRequest,
+	KeyBindings,
+	KeyboardBindingsResponse,
+	KeyboardBindingsRequest,
+	DailyActivityCount,
 } from "./game.types";
 
 export type { GeneralUserInfo, UserProfile } from "./user.types";
@@ -40,8 +48,34 @@ export type {
 	RandomNotesRequest,
 	NoteGameRequest,
 	NoteGameResponse,
+	StaffClef,
+	RangeClef,
+	KeySignatureGameRequest,
+	KeySignatureGameResponse,
+	ScaleType,
+	ScaleGameRequest,
+	ScaleGameResponse,
+	ChordQuality,
+	ChordGameRequest,
+	ChordGameResponse,
+	ScaleQuestionMode,
+	IntervalDisplayMode,
+	IntervalGameRequest,
+	IntervalGameResponse,
 } from "./music.types";
 
 export type { ApiError, ApiResponse } from "./error.types";
 
 export type { FriendResponse } from "./friend.types";
+
+export type {
+	ClassResponse,
+	StudentClassResponse,
+	RosterEntryResponse,
+	AssignmentResponse,
+	StudentAssignmentResponse,
+	AssignmentResultRow,
+	CreateClassRequest,
+	JoinClassRequest,
+	CreateAssignmentRequest,
+} from "./class.types";

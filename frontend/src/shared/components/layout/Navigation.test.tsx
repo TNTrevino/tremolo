@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@/test/test-utils";
+import userEvent from "@testing-library/user-event";
 import { Navigation } from "./Navigation";
 
 // Mock the auth store
@@ -93,7 +94,7 @@ describe("Navigation", () => {
 	});
 
 	describe("navigation links", () => {
-		it("renders all navigation links", () => {
+		it("renders the top-level navigation links", () => {
 			render(<Navigation />);
 
 			// There are multiple Tremolo links (logo + nav), so use getAllByRole
@@ -103,13 +104,32 @@ describe("Navigation", () => {
 			expect(
 				screen.getByRole("link", { name: /practice/i }),
 			).toBeInTheDocument();
-			expect(
-				screen.getByRole("link", { name: /note game/i }),
-			).toBeInTheDocument();
 			expect(screen.getByRole("link", { name: /about/i })).toBeInTheDocument();
 			expect(
 				screen.getByRole("link", { name: /convert/i }),
 			).toBeInTheDocument();
+		});
+
+		it("lists every game inside the Games menu", async () => {
+			const user = userEvent.setup();
+			render(<Navigation />);
+
+			// Game links are collapsed behind the Games menu, not top-level
+			expect(
+				screen.queryByRole("link", { name: /note game/i }),
+			).not.toBeInTheDocument();
+
+			await user.click(screen.getByRole("button", { name: /games/i }));
+
+			for (const game of [
+				/note game/i,
+				/key signatures/i,
+				/intervals/i,
+				/scales/i,
+				/chords/i,
+			]) {
+				expect(screen.getByRole("link", { name: game })).toBeInTheDocument();
+			}
 		});
 	});
 

@@ -20,7 +20,7 @@ func (q *Queries) DeleteNoteGameSettings(ctx context.Context, userID int32) erro
 }
 
 const getNoteGameSettings = `-- name: GetNoteGameSettings :one
-select id, user_id, game_mode, time_limit, note_limit, scale, octave
+select id, user_id, game_mode, time_limit, note_limit, scale, octave, low_note, high_note, clef
 from tremolo.note_game_settings
 where user_id = $1
 `
@@ -36,6 +36,9 @@ func (q *Queries) GetNoteGameSettings(ctx context.Context, userID int32) (Tremol
 		&i.NoteLimit,
 		&i.Scale,
 		&i.Octave,
+		&i.LowNote,
+		&i.HighNote,
+		&i.Clef,
 	)
 	return i, err
 }
@@ -47,16 +50,22 @@ insert into tremolo.note_game_settings (
     time_limit,
     note_limit,
     scale,
-    octave
+    octave,
+    low_note,
+    high_note,
+    clef
 )
-values ($1, $2, $3, $4, $5, $6)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 on conflict (user_id) do update set
     game_mode = EXCLUDED.game_mode,
     time_limit = EXCLUDED.time_limit,
     note_limit = EXCLUDED.note_limit,
     scale = EXCLUDED.scale,
-    octave = EXCLUDED.octave
-returning id, user_id, game_mode, time_limit, note_limit, scale, octave
+    octave = EXCLUDED.octave,
+    low_note = EXCLUDED.low_note,
+    high_note = EXCLUDED.high_note,
+    clef = EXCLUDED.clef
+returning id, user_id, game_mode, time_limit, note_limit, scale, octave, low_note, high_note, clef
 `
 
 type UpsertNoteGameSettingsParams struct {
@@ -66,6 +75,9 @@ type UpsertNoteGameSettingsParams struct {
 	NoteLimit int32  `json:"note_limit"`
 	Scale     string `json:"scale"`
 	Octave    int32  `json:"octave"`
+	LowNote   string `json:"low_note"`
+	HighNote  string `json:"high_note"`
+	Clef      string `json:"clef"`
 }
 
 func (q *Queries) UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error) {
@@ -76,6 +88,9 @@ func (q *Queries) UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGame
 		arg.NoteLimit,
 		arg.Scale,
 		arg.Octave,
+		arg.LowNote,
+		arg.HighNote,
+		arg.Clef,
 	)
 	var i TremoloNoteGameSetting
 	err := row.Scan(
@@ -86,6 +101,9 @@ func (q *Queries) UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGame
 		&i.NoteLimit,
 		&i.Scale,
 		&i.Octave,
+		&i.LowNote,
+		&i.HighNote,
+		&i.Clef,
 	)
 	return i, err
 }

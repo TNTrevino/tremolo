@@ -1,10 +1,17 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/lib/query-client";
+import {
+	QueryClient,
+	QueryClientProvider,
+	QueryCache,
+	MutationCache,
+} from "@tanstack/react-query";
+import { getErrorMessage } from "@/shared/utils/error.utils";
 
 import { Navigation } from "@/shared/components/layout/Navigation";
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute";
+import { GuestRoute } from "@/shared/components/layout/GuestRoute";
+import { TeacherRoute } from "@/shared/components/layout/TeacherRoute";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { ToastProvider, useToast } from "@/shared/hooks/useToast";
 import { ToastContainer } from "@/shared/components/ui/toast";
@@ -25,6 +32,22 @@ const SignupPage = lazy(() =>
 const NoteGamePage = lazy(() =>
 	import("@/pages/NoteGamePage").then((m) => ({ default: m.NoteGamePage })),
 );
+const KeySignatureGamePage = lazy(() =>
+	import("@/pages/KeySignatureGamePage").then((m) => ({
+		default: m.KeySignatureGamePage,
+	})),
+);
+const IntervalGamePage = lazy(() =>
+	import("@/pages/IntervalGamePage").then((m) => ({
+		default: m.IntervalGamePage,
+	})),
+);
+const ScaleGamePage = lazy(() =>
+	import("@/pages/ScaleGamePage").then((m) => ({ default: m.ScaleGamePage })),
+);
+const ChordGamePage = lazy(() =>
+	import("@/pages/ChordGamePage").then((m) => ({ default: m.ChordGamePage })),
+);
 const SheetMusicPage = lazy(() =>
 	import("@/pages/SheetMusicPage").then((m) => ({ default: m.SheetMusicPage })),
 );
@@ -39,6 +62,29 @@ const ProfilePage = lazy(() =>
 );
 const AccountPage = lazy(() =>
 	import("@/pages/AccountPage").then((m) => ({ default: m.AccountPage })),
+);
+const GoogleCallbackPage = lazy(() =>
+	import("@/pages/GoogleCallbackPage").then((m) => ({
+		default: m.GoogleCallbackPage,
+	})),
+);
+const ClassesPage = lazy(() =>
+	import("@/pages/ClassesPage").then((m) => ({ default: m.ClassesPage })),
+);
+const ClassDetailPage = lazy(() =>
+	import("@/pages/ClassDetailPage").then((m) => ({
+		default: m.ClassDetailPage,
+	})),
+);
+const AssignmentsPage = lazy(() =>
+	import("@/pages/AssignmentsPage").then((m) => ({
+		default: m.AssignmentsPage,
+	})),
+);
+const AssignmentPlayPage = lazy(() =>
+	import("@/pages/AssignmentPlayPage").then((m) => ({
+		default: m.AssignmentPlayPage,
+	})),
 );
 
 /**
@@ -58,6 +104,49 @@ function ToastContainerWrapper() {
 	return <ToastContainer toasts={toasts} onClose={removeToast} />;
 }
 
+/**
+ * Creates the QueryClient with global error toasting via cache-level handlers.
+ * Must be rendered inside ToastProvider so it can access useToast.
+ */
+function QueryProviderWithToast({ children }: { children: React.ReactNode }) {
+	const { showError } = useToast();
+
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				queryCache: new QueryCache({
+					onError: (error, query) => {
+						if (query.meta?.suppressErrorToast) return;
+						showError(
+							getErrorMessage(error),
+							query.meta?.errorTitle ?? "Something went wrong",
+						);
+					},
+				}),
+				mutationCache: new MutationCache({
+					onError: (error, _vars, _ctx, mutation) => {
+						if (mutation.meta?.suppressErrorToast) return;
+						showError(
+							getErrorMessage(error),
+							mutation.meta?.errorTitle ?? "Something went wrong",
+						);
+					},
+				}),
+				defaultOptions: {
+					queries: {
+						staleTime: 60 * 1000,
+						refetchOnWindowFocus: false,
+						retry: 1,
+					},
+				},
+			}),
+	);
+
+	return (
+		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+	);
+}
+
 function AppContent() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
@@ -71,11 +160,36 @@ function AppContent() {
 						<Route path="/" element={<Navigate to="/note-game" replace />} />
 						<Route path="/home" element={<HomePage />} />
 						<Route path="/about" element={<AboutPage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/signup" element={<SignupPage />} />
+						<Route
+							path="/login"
+							element={
+								<GuestRoute>
+									<LoginPage />
+								</GuestRoute>
+							}
+						/>
+						<Route
+							path="/signup"
+							element={
+								<GuestRoute>
+									<SignupPage />
+								</GuestRoute>
+							}
+						/>
 						<Route path="/note-game" element={<NoteGamePage />} />
+						<Route
+							path="/key-signature-game"
+							element={<KeySignatureGamePage />}
+						/>
+						<Route path="/interval-game" element={<IntervalGamePage />} />
+						<Route path="/scale-game" element={<ScaleGamePage />} />
+						<Route path="/chord-game" element={<ChordGamePage />} />
 						<Route path="/sheet-music" element={<SheetMusicPage />} />
 						<Route path="/convert" element={<ConverterPage />} />
+						<Route
+							path="/auth/google/callback"
+							element={<GoogleCallbackPage />}
+						/>
 
 						{/* Protected Routes */}
 						<Route
@@ -102,6 +216,38 @@ function AppContent() {
 								</ProtectedRoute>
 							}
 						/>
+						<Route
+							path="/classes"
+							element={
+								<TeacherRoute>
+									<ClassesPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/classes/:id"
+							element={
+								<TeacherRoute>
+									<ClassDetailPage />
+								</TeacherRoute>
+							}
+						/>
+						<Route
+							path="/assignments"
+							element={
+								<ProtectedRoute>
+									<AssignmentsPage />
+								</ProtectedRoute>
+							}
+						/>
+						<Route
+							path="/assignments/:id/play"
+							element={
+								<ProtectedRoute>
+									<AssignmentPlayPage />
+								</ProtectedRoute>
+							}
+						/>
 					</Routes>
 				</Suspense>
 			</ErrorBoundary>
@@ -114,13 +260,13 @@ function AppContent() {
 function App() {
 	return (
 		<ErrorBoundary>
-			<QueryClientProvider client={queryClient}>
-				<ToastProvider>
+			<ToastProvider>
+				<QueryProviderWithToast>
 					<BrowserRouter>
 						<AppContent />
 					</BrowserRouter>
-				</ToastProvider>
-			</QueryClientProvider>
+				</QueryProviderWithToast>
+			</ToastProvider>
 		</ErrorBoundary>
 	);
 }

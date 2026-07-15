@@ -15,7 +15,7 @@ export const signupSchema = z
 			.string()
 			.min(2, "At least 2 characters")
 			.regex(/^[a-zA-Z]+$/, "Only letters"),
-		email: z.string().email("Invalid email format"),
+		email: z.email("Invalid email format"),
 		password: z
 			.string()
 			.min(8, "At least 8 characters")

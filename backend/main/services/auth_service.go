@@ -167,7 +167,7 @@ func Login(c *gin.Context) {
 func GetCurrentUser(c *gin.Context) {
 	uid, err := middleware.GetAuthenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -258,10 +258,10 @@ func Register(c *gin.Context) {
 	}
 
 	createParams := generated.CreateUserParams{
-		FirstName: reqBody.FirstName,
-		LastName:  reqBody.LastName,
+		FirstName: strings.TrimSpace(reqBody.FirstName),
+		LastName:  strings.TrimSpace(reqBody.LastName),
 		Email:     emailNullStr,
-		Password:  passwordHash,
+		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
 		SchoolID:  sql.NullInt32{Valid: false},
 	}
@@ -273,6 +273,12 @@ func Register(c *gin.Context) {
 			"error": "Failed to create user",
 		})
 		return
+	}
+
+	if err := CreateDefaultKeyboardBindings(ctx, database.Queries, int(createdUser.ID)); err != nil {
+		logger.Error("Failed to seed default keyboard bindings for new user",
+			"error", err.Error(),
+			"user_id", createdUser.ID)
 	}
 
 	response := dtos.RegisterResponse{
@@ -295,7 +301,7 @@ func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullS
 }
 
 func normalizeEmail(email string) string {
-	return strings.ToLower(email)
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 func getLockoutDuration() time.Duration {

@@ -10,6 +10,7 @@ import (
 	"sight-reading/generation"
 	"sight-reading/logger"
 	"sight-reading/middleware"
+	"sight-reading/services"
 	"strings"
 
 	"github.com/gin-contrib/cors"
@@ -22,6 +23,7 @@ func main() {
 	database.InitializeDBConnection()
 	database.RunMigrations(database.DBConn)
 	middleware.InitJWTSecret()
+	services.InitGoogleOAuth()
 
 	// faker flag
 	runPackage := flag.Bool("fake-it", false, "use this flag to generate data")
@@ -63,7 +65,10 @@ func main() {
 	controllers.SetupUserInfoRoutes(router)
 	controllers.SetupNoteGameRoutes(router)
 	controllers.SetupNoteGameSettingsRoutes(router)
+	controllers.SetupGameSettingsRoutes(router)
+	controllers.SetupKeyboardBindingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
+	controllers.SetupClassRoutes(router)
 
 	port := os.Getenv("USER_SERVICE_PORT")
 	if port == "" {

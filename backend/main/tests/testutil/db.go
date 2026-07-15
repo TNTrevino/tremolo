@@ -31,7 +31,9 @@ func SetupTestDB(t *testing.T) {
 			setupErr = fmt.Errorf("DATABASE_URL environment variable not set")
 			return
 		}
+		initTestLogger()
 		database.InitializeDBConnection()
+		database.RunMigrations(database.DBConn)
 	})
 
 	if setupErr != nil {
@@ -74,7 +76,7 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
 		Email:     sql.NullString{String: params.Email, Valid: true},
-		Password:  hashedPassword,
+		Password:  sql.NullString{String: hashedPassword, Valid: true},
 		RoleID:    roleID,
 	}
 
@@ -91,6 +93,10 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 	t.Cleanup(func() {
 		DeleteTestUser(t, int(createdUser.ID))
 	})
+
+	if err := services.CreateDefaultKeyboardBindings(context.Background(), database.Queries, int(createdUser.ID)); err != nil {
+		t.Fatalf("failed to seed default keyboard bindings for test user %d: %v", createdUser.ID, err)
+	}
 
 	return int(createdUser.ID)
 }
@@ -122,6 +128,12 @@ func DeleteTestUser(t *testing.T, userID int) {
 		t.Logf("Warning: Failed to delete note game entries for user %d: %v", userID, err)
 	}
 
+	// Delete keyboard bindings
+	err = database.Queries.DeleteKeyboardBindings(ctx, int32(userID))
+	if err != nil {
+		t.Logf("Warning: Failed to delete keyboard bindings for user %d: %v", userID, err)
+	}
+
 	// Delete teacher-student associations where user is teacher
 	err = database.Queries.DeleteAllTeacherStudentsByTeacher(ctx, int32(userID))
 	if err != nil {
@@ -148,6 +160,7 @@ type CreateTestNoteGameEntryParams struct {
 	TotalQuestions   int
 	CorrectQuestions int
 	NotesPerMinute   float64
+	GameType         string // defaults to "note"
 }
 
 // parseTimeLength parses a time string like "00:05:00" into a time.Time
@@ -174,12 +187,18 @@ func CreateTestNoteGameEntry(t *testing.T, params CreateTestNoteGameEntryParams)
 		t.Fatalf("Failed to parse time length %q: %v", params.TimeLength, err)
 	}
 
+	gameType := params.GameType
+	if gameType == "" {
+		gameType = "note"
+	}
+
 	createParams := generated.CreateNoteGameEntryParams{
 		UserID:           int32(params.UserID),
 		TimeLength:       timeLength,
 		TotalQuestions:   int32(params.TotalQuestions),
 		CorrectQuestions: int32(params.CorrectQuestions),
 		NotesPerMinute:   int32(params.NotesPerMinute),
+		GameType:         gameType,
 	}
 
 	entryID, err := database.Queries.CreateNoteGameEntry(context.Background(), createParams)

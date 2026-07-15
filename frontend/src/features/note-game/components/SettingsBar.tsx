@@ -1,20 +1,70 @@
-import { useState } from "react";
-import { Settings } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Keyboard, Settings } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Select } from "@/shared/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/shared/components/ui/dialog";
 import { useBreakpoint } from "@/shared/hooks";
+import { useAuthStore } from "@/stores/auth.store";
+import {
+	useKeyboardBindings,
+	useSaveKeyboardBindings,
+} from "@/shared/hooks/queries";
 import type { GameSettings as GameSettingsType } from "../types";
 import { GameMode, SCALES } from "../types";
+import { TIME_LIMITS, NOTE_LIMITS } from "@/features/identification-game";
 import { MobileSettingsDrawer } from "./MobileSettingsDrawer";
+import { NoteRangeSetting } from "./NoteRangeSetting";
+import { KeyboardBindingsDialog } from "./KeyboardBindingsDialog";
+import { DEFAULT_NOTE_TO_KEY_MAP } from "../hooks/useKeyboardInput";
+import { keyBindingsToNoteMap } from "../utils";
+import type { KeyboardBindingsRequest } from "@/services/api/types";
 
 export interface SettingsBarProps {
 	settings: GameSettingsType;
 	onSettingsChange: (settings: Partial<GameSettingsType>) => void;
+	onDialogOpenChange?: (open: boolean) => void;
 }
 
-const TIME_LIMITS = [15, 30, 60, 120] as const;
-const NOTE_LIMITS = [10, 25, 50, 100] as const;
-const OCTAVES = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+interface KeyboardUpsellDialogProps {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+}
+
+function KeyboardUpsellDialog({
+	open,
+	onOpenChange,
+}: KeyboardUpsellDialogProps) {
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Customize Keyboard Input</DialogTitle>
+				</DialogHeader>
+				<div className="px-6 py-4 space-y-3">
+					<p className="text-base text-muted-foreground">
+						Create an account to configure your own keyboard bindings for all 21
+						notes and have them saved across sessions.
+					</p>
+				</div>
+				<DialogFooter>
+					<Button variant="ghost" onClick={() => onOpenChange(false)}>
+						Cancel
+					</Button>
+					<Link to="/signup">
+						<Button variant="default">Create Account</Button>
+					</Link>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
 
 function Divider() {
 	return <div className="w-px bg-border self-stretch" />;
@@ -27,7 +77,7 @@ function buildSummaryParts(settings: GameSettingsType): string[] {
 		isTimeMode ? "time" : "notes",
 		isTimeMode ? `${activeLimit}s` : `${activeLimit}`,
 		settings.scale,
-		`Oct ${settings.octave}`,
+		`${settings.lowNote}\u2013${settings.highNote}`,
 	];
 }
 
@@ -97,6 +147,7 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
 	const isTimeMode = settings.gameMode === GameMode.Time;
 	const limits = isTimeMode ? TIME_LIMITS : NOTE_LIMITS;
 	const activeLimit = isTimeMode ? settings.timeLimit : settings.noteLimit;
+	const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
 
 	return (
 		<div className="flex flex-wrap items-center gap-2 md:gap-3 bg-card border-2 border-border rounded-lg px-3 md:px-4 py-2">
@@ -151,17 +202,36 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
 					))}
 				</Select>
 
-				<Select
-					className="w-28 h-9"
-					value={settings.octave.toString()}
-					onChange={(e) => onSettingsChange({ octave: Number(e.target.value) })}
+				<Button
+					size="sm"
+					variant="outline"
+					className="h-9"
+					onClick={() => setRangeDialogOpen(true)}
 				>
-					{OCTAVES.map((octave) => (
-						<option key={octave} value={octave}>
-							Octave {octave}
-						</option>
-					))}
-				</Select>
+					{settings.lowNote}–{settings.highNote}
+				</Button>
+
+				<Dialog open={rangeDialogOpen} onOpenChange={setRangeDialogOpen}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Note Range</DialogTitle>
+						</DialogHeader>
+						<div className="px-6 py-4">
+							<NoteRangeSetting
+								settings={settings}
+								onSettingsChange={onSettingsChange}
+							/>
+						</div>
+						<DialogFooter>
+							<Button
+								variant="default"
+								onClick={() => setRangeDialogOpen(false)}
+							>
+								Done
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 			</div>
 		</div>
 	);
@@ -172,21 +242,78 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
  * Conditionally renders the appropriate layout variant based on viewport,
  * so only one is ever mounted at a time.
  */
-export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
+export function SettingsBar({
+	settings,
+	onSettingsChange,
+	onDialogOpenChange,
+}: SettingsBarProps) {
 	const { isMobile, isPhoneLandscape } = useBreakpoint();
+	const { isAuthenticated } = useAuthStore();
+	const { data: savedBindings } = useKeyboardBindings();
+	const saveBindings = useSaveKeyboardBindings();
+	const [dialogOpen, setDialogOpen] = useState(false);
+
+	function handleDialogOpenChange(open: boolean) {
+		setDialogOpen(open);
+		onDialogOpenChange?.(open);
+	}
+
+	function handleSaveBindings(noteToKey: Record<string, string>) {
+		const request: KeyboardBindingsRequest = {
+			key_bindings: {
+				key_c: noteToKey["C"] ?? "",
+				key_c_sharp: noteToKey["C#"] ?? "",
+				key_c_flat: noteToKey["Cb"] ?? "",
+				key_d: noteToKey["D"] ?? "",
+				key_d_sharp: noteToKey["D#"] ?? "",
+				key_d_flat: noteToKey["Db"] ?? "",
+				key_e: noteToKey["E"] ?? "",
+				key_e_sharp: noteToKey["E#"] ?? "",
+				key_e_flat: noteToKey["Eb"] ?? "",
+				key_f: noteToKey["F"] ?? "",
+				key_f_sharp: noteToKey["F#"] ?? "",
+				key_f_flat: noteToKey["Fb"] ?? "",
+				key_g: noteToKey["G"] ?? "",
+				key_g_sharp: noteToKey["G#"] ?? "",
+				key_g_flat: noteToKey["Gb"] ?? "",
+				key_a: noteToKey["A"] ?? "",
+				key_a_sharp: noteToKey["A#"] ?? "",
+				key_a_flat: noteToKey["Ab"] ?? "",
+				key_b: noteToKey["B"] ?? "",
+				key_b_sharp: noteToKey["B#"] ?? "",
+				key_b_flat: noteToKey["Bb"] ?? "",
+			},
+		};
+		saveBindings.mutate(request);
+	}
+
+	const currentBindings = useMemo(
+		() =>
+			savedBindings
+				? keyBindingsToNoteMap(savedBindings.key_bindings)
+				: DEFAULT_NOTE_TO_KEY_MAP,
+		[savedBindings],
+	);
+
+	let variant: React.ReactNode;
 
 	if (isPhoneLandscape) {
-		return (
+		variant = (
 			<SettingsBarLandscape
 				settings={settings}
 				onSettingsChange={onSettingsChange}
 			/>
 		);
-	}
-
-	if (isMobile) {
-		return (
+	} else if (isMobile) {
+		variant = (
 			<SettingsBarMobile
+				settings={settings}
+				onSettingsChange={onSettingsChange}
+			/>
+		);
+	} else {
+		variant = (
+			<SettingsBarDesktop
 				settings={settings}
 				onSettingsChange={onSettingsChange}
 			/>
@@ -194,9 +321,29 @@ export function SettingsBar({ settings, onSettingsChange }: SettingsBarProps) {
 	}
 
 	return (
-		<SettingsBarDesktop
-			settings={settings}
-			onSettingsChange={onSettingsChange}
-		/>
+		<>
+			{variant}
+			<button
+				type="button"
+				onClick={() => handleDialogOpenChange(true)}
+				className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+				aria-label="Configure keyboard bindings"
+			>
+				<Keyboard className="h-5 w-5" />
+			</button>
+			{isAuthenticated ? (
+				<KeyboardBindingsDialog
+					open={dialogOpen}
+					onOpenChange={handleDialogOpenChange}
+					bindings={currentBindings}
+					onSave={handleSaveBindings}
+				/>
+			) : (
+				<KeyboardUpsellDialog
+					open={dialogOpen}
+					onOpenChange={handleDialogOpenChange}
+				/>
+			)}
+		</>
 	);
 }

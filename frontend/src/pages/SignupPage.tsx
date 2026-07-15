@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import type { LoginLocationState } from "@/shared/types";
 import type { PasswordRequirement } from "@/services/api/types";
 import { getErrorMessage } from "@/shared/utils/error.utils";
+import { GoogleSignInButton } from "@/features/auth/components/GoogleSignInButton";
 
 export function SignupPage() {
 	const [showPassword, setShowPassword] = useState(false);
@@ -305,6 +306,19 @@ export function SignupPage() {
 						>
 							Create Account
 						</Button>
+
+						<div className="relative w-full">
+							<div className="absolute inset-0 flex items-center">
+								<span className="w-full border-t" />
+							</div>
+							<div className="relative flex justify-center text-xs uppercase">
+								<span className="bg-card px-2 text-muted-foreground">
+									Or continue with
+								</span>
+							</div>
+						</div>
+
+						<GoogleSignInButton label="Sign up with Google" />
 
 						<p className="text-sm text-center text-muted-foreground">
 							Already have an account?{" "}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,7 +231,7 @@ func TestLogin_EmailNormalization(t *testing.T) {
 	})
 
 	// Login with uppercase email
-	uppercaseEmail := "TEST" + email[4:] // Make part of email uppercase
+	uppercaseEmail := strings.ToUpper(email)
 	reqBody := dtos.LoginRequest{
 		Email:    uppercaseEmail,
 		Password: password,
@@ -275,6 +276,41 @@ func TestRegister_Success(t *testing.T) {
 	t.Cleanup(func() {
 		testutil.DeleteTestUser(t, response.User.ID)
 	})
+}
+
+func TestRegister_TrimsNames(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "register_trim")
+
+	// min=2 length validation passes with the padding intact, so a padded
+	// name reaches the insert. It must be trimmed before persisting.
+	reqBody := dtos.RegisterRequest{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "  John  ",
+		LastName:  "  Doe  ",
+		Role:      "STUDENT",
+	}
+	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+
+	services.Register(c)
+
+	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
+
+	var response dtos.RegisterResponse
+	testutil.ParseJSONResponse(t, w, &response)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, response.User.ID) })
+
+	assert.Equal(t, "John", response.User.FirstName, "leading/trailing whitespace must be trimmed")
+	assert.Equal(t, "Doe", response.User.LastName)
+
+	// Cross-check the persisted row, not just the echoed response.
+	stored := testutil.GetTestUserByEmail(t, email)
+	require.NotNil(t, stored)
+	assert.Equal(t, "John", stored.FirstName)
+	assert.Equal(t, "Doe", stored.LastName)
 }
 
 func TestRegister_DuplicateEmail(t *testing.T) {
@@ -568,12 +604,12 @@ func TestGetCurrentUser_InvalidUserIDType(t *testing.T) {
 
 	services.GetCurrentUser(c)
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code, "Response body: %s", w.Body.String())
+	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
 	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 
-	assert.Equal(t, "Internal server error", response["error"])
+	assert.Equal(t, "Unauthorized", response["error"])
 }
 
 func TestGetCurrentUser_UserNotFound(t *testing.T) {

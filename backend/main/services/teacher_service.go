@@ -52,7 +52,7 @@ func CreateUser(c *gin.Context) {
 		FirstName: reqBody.FirstName,
 		LastName:  reqBody.LastName,
 		Email:     sql.NullString{String: reqBody.Email, Valid: reqBody.Email != ""},
-		Password:  reqBody.PasswordHash,
+		Password:  sql.NullString{String: reqBody.PasswordHash, Valid: reqBody.PasswordHash != ""},
 		RoleID:    roleID,
 	}
 
@@ -62,11 +62,8 @@ func CreateUser(c *gin.Context) {
 
 	createdUser, err := database.Queries.CreateUser(ctx, params)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    err.Error(),
-			"message":  "The school is most likely not found",
-			"scenario": "TS.3",
-		})
+		logger.Error("failed to create user", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
@@ -81,10 +78,8 @@ func GetStudents(c *gin.Context) {
 
 	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Student))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   err.Error(),
-			"message": "not updated",
-		})
+		logger.Error("failed to get students", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve students"})
 		return
 	}
 
@@ -111,10 +106,8 @@ func GetStudent(c *gin.Context) {
 
 	user, err := database.Queries.GetUserByRoleAndID(ctx, params)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   err.Error(),
-			"message": "not found",
-		})
+		logger.Error("failed to get student", "error", err, "id", id)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
 		return
 	}
 

@@ -123,7 +123,7 @@ def expected_error_messages():
     return {
         "mary": "The note",  # Error messages contain "The note"
         "random": "something is not right!",  # Error messages contain this
-        "note_game": "something is not right",  # Error messages contain this
+        "note_game": "something is not right!",  # Error messages contain this
     }
 
 
