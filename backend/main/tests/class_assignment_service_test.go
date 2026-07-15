@@ -365,6 +365,91 @@ func TestAssignmentResults_StudentWithNoAttemptsAppears(t *testing.T) {
 	assert.Empty(t, results[0].LastAttemptDate)
 }
 
+func TestGetAssignmentAttempts_OrderedAndAuthorized(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	teacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsview_t"), "TEACHER")
+	otherTeacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsview_t2"), "TEACHER")
+	studentID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsview_s"), "STUDENT")
+	otherStudentID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsview_s2"), "STUDENT")
+
+	class := createTestClass(t, teacherID, "Attempts Class")
+	joinTestClass(t, studentID, class.JoinCode)
+	joinTestClass(t, otherStudentID, class.JoinCode)
+
+	assignment, err := services.CreateAssignment(context.Background(), database.Queries, teacherID, class.ID, testAssignmentRequest())
+	require.NoError(t, err)
+
+	// Two attempts, out of chronological insertion order intentionally
+	// irrelevant here -- the query orders by created_date/time/id, and
+	// entries created back-to-back in a test share the same wall-clock
+	// second, so the tiebreaker (insertion id) is what actually proves
+	// ordering.
+	for _, a := range []struct{ correct, total int16 }{{9, 10}, {15, 20}} {
+		entry := &dtos.Entry{
+			TimeLength:       "00:01:00",
+			TotalQuestions:   a.total,
+			CorrectQuestions: a.correct,
+			UserID:           int16(studentID),
+			NPM:              12,
+			GameType:         "note",
+			AssignmentID:     &assignment.ID,
+		}
+		id, err := services.CreateNoteGameEntry(context.Background(), database.Queries, studentID, entry)
+		require.NoError(t, err)
+		t.Cleanup(func() { testutil.DeleteTestNoteGameEntry(t, id) })
+	}
+
+	// Teacher-owner: sees both attempts, oldest first.
+	attempts, err := services.GetAssignmentAttempts(context.Background(), database.Queries, teacherID, assignment.ID, studentID)
+	require.NoError(t, err)
+	require.Len(t, attempts, 2)
+	assert.Equal(t, 9, attempts[0].CorrectQuestions)
+	assert.Equal(t, 10, attempts[0].TotalQuestions)
+	assert.Equal(t, 90, attempts[0].Accuracy)
+	assert.Equal(t, 12, attempts[0].NotesPerMinute)
+	assert.NotEmpty(t, attempts[0].AttemptedDate)
+	assert.Equal(t, 15, attempts[1].CorrectQuestions)
+	assert.Equal(t, 75, attempts[1].Accuracy)
+
+	// Student-self: allowed to fetch their own attempts.
+	selfAttempts, err := services.GetAssignmentAttempts(context.Background(), database.Queries, studentID, assignment.ID, studentID)
+	require.NoError(t, err)
+	assert.Len(t, selfAttempts, 2)
+
+	// Another student cannot read a classmate's attempts.
+	_, err = services.GetAssignmentAttempts(context.Background(), database.Queries, otherStudentID, assignment.ID, studentID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+
+	// A teacher who doesn't own the class cannot read attempts either.
+	_, err = services.GetAssignmentAttempts(context.Background(), database.Queries, otherTeacherID, assignment.ID, studentID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+
+	// Unknown assignment is a 404, not a 500.
+	_, err = services.GetAssignmentAttempts(context.Background(), database.Queries, teacherID, assignment.ID+1000000, studentID)
+	assert.ErrorIs(t, err, services.ErrNotFound)
+}
+
+func TestGetAssignmentAttempts_EmptyWhenNoAttempts(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	teacherID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsempty_t"), "TEACHER")
+	studentID := testutil.CreateTestUserWithDefaults(t, testutil.UniqueEmail(t, "attemptsempty_s"), "STUDENT")
+
+	class := createTestClass(t, teacherID, "Empty Attempts Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	assignment, err := services.CreateAssignment(context.Background(), database.Queries, teacherID, class.ID, testAssignmentRequest())
+	require.NoError(t, err)
+
+	attempts, err := services.GetAssignmentAttempts(context.Background(), database.Queries, teacherID, assignment.ID, studentID)
+	require.NoError(t, err)
+	assert.NotNil(t, attempts)
+	assert.Empty(t, attempts)
+}
+
 func TestDeleteAssignment_KeepsEntries(t *testing.T) {
 	testutil.SetupTestDB(t)
 	t.Parallel()

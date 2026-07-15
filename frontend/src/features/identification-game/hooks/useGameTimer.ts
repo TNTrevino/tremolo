@@ -13,25 +13,28 @@ export function useGameTimer(onTimerEnd?: () => void) {
 		onTimerEndRef.current = onTimerEnd;
 	}, [onTimerEnd]);
 
-	// Timer countdown effect
+	// The countdown lives in a ref and mirrors into state for rendering.
+	// Expiry fires from the interval callback, never from a setState
+	// updater — StrictMode double-invokes updaters in dev, which made a
+	// side-effecting updater save duplicate game-end entries.
+	const remainingRef = useRef(0);
 	useEffect(() => {
 		if (!isRunning) return undefined;
 
 		const timer = setInterval(() => {
-			setTimeRemaining((prev) => {
-				if (prev <= 1) {
-					setIsRunning(false);
-					onTimerEndRef.current?.();
-					return 0;
-				}
-				return prev - 1;
-			});
+			remainingRef.current = Math.max(remainingRef.current - 1, 0);
+			setTimeRemaining(remainingRef.current);
+			if (remainingRef.current === 0) {
+				setIsRunning(false);
+				onTimerEndRef.current?.();
+			}
 		}, 1000);
 
 		return () => clearInterval(timer);
 	}, [isRunning]);
 
 	const startTimer = useCallback((seconds: number) => {
+		remainingRef.current = seconds;
 		setTimeRemaining(seconds);
 		setIsRunning(true);
 	}, []);
@@ -41,6 +44,7 @@ export function useGameTimer(onTimerEnd?: () => void) {
 	}, []);
 
 	const resetTimer = useCallback(() => {
+		remainingRef.current = 0;
 		setTimeRemaining(0);
 		setIsRunning(false);
 	}, []);
