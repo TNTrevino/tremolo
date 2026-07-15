@@ -18,14 +18,22 @@ concurrency:
 jobs:
   deploy:
     runs-on: ${{ inputs.runner }}
+    env:
+      UV_PYTHON_INSTALL_DIR: /opt/tremolo/python
     steps:
       - uses: actions/checkout@v4
 
       # Pin the interpreter so prod matches what music CI validates against
       # (music-microservice.yml also uses 3.14). Without this, the venv is
       # built against whatever python3 happens to be on the runner.
+      #
+      # uv rather than actions/setup-python: setup-python only publishes
+      # arm64 Linux builds for LTS releases, so it cannot serve 3.14 to an
+      # arm64 runner on an interim Ubuntu. uv builds are per-arch, not
+      # per-distro. Install under /opt so the interpreter the deployed venv
+      # symlinks to stays readable regardless of which user the runner runs as.
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
 
@@ -44,9 +52,8 @@ jobs:
       - name: Setup Python venv
         working-directory: backend/music
         run: |
-          python3 -m venv env || true
-          source env/bin/activate
-          pip install -r requirements.txt
+          uv venv --python 3.14 env
+          uv pip install --python env/bin/python -r requirements.txt
 
       - name: Stop Services
         run: |

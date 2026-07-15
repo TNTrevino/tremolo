@@ -78,4 +78,5 @@ export type {
 	CreateClassRequest,
 	JoinClassRequest,
 	CreateAssignmentRequest,
+	AttemptResponse,
 } from "./class.types";

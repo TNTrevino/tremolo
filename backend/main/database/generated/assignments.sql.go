@@ -75,6 +75,66 @@ func (q *Queries) DeleteAssignment(ctx context.Context, id int32) error {
 	return err
 }
 
+const getAssignmentAttempts = `-- name: GetAssignmentAttempts :many
+select e.correct_questions,
+       e.total_questions,
+       case
+           when e.total_questions > 0
+           then e.correct_questions * 100 / e.total_questions
+           else 0
+       end as accuracy,
+       e.notes_per_minute,
+       coalesce(e.created_date, current_date)::text as attempted_date
+from tremolo.note_game_entries e
+where e.assignment_id = $1
+  and e.user_id = $2
+order by e.created_date asc, e.created_time asc, e.id asc
+`
+
+type GetAssignmentAttemptsParams struct {
+	AssignmentID sql.NullInt32 `json:"assignment_id"`
+	UserID       int32         `json:"user_id"`
+}
+
+type GetAssignmentAttemptsRow struct {
+	CorrectQuestions int32  `json:"correct_questions"`
+	TotalQuestions   int32  `json:"total_questions"`
+	Accuracy         int32  `json:"accuracy"`
+	NotesPerMinute   int32  `json:"notes_per_minute"`
+	AttemptedDate    string `json:"attempted_date"`
+}
+
+// Every attempt (score entry) tagged with the assignment for one
+// student, oldest to newest -- the drill-down behind the results grid.
+func (q *Queries) GetAssignmentAttempts(ctx context.Context, arg GetAssignmentAttemptsParams) ([]GetAssignmentAttemptsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAssignmentAttempts, arg.AssignmentID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAssignmentAttemptsRow{}
+	for rows.Next() {
+		var i GetAssignmentAttemptsRow
+		if err := rows.Scan(
+			&i.CorrectQuestions,
+			&i.TotalQuestions,
+			&i.Accuracy,
+			&i.NotesPerMinute,
+			&i.AttemptedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAssignmentByID = `-- name: GetAssignmentByID :one
 select id, class_id, title, game_type, config, due_at, target_questions, target_accuracy, created_at
 from tremolo.assignments

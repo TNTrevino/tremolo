@@ -1,29 +1,27 @@
 name: Frontend CI
 
 on:
-  pull_request:
-    branches: [main, prod]
-    paths:
-      - "frontend/**"
-      # A broken edit to this workflow or the Makefile must not merge unvalidated
-      - ".github/workflows/frontend-ci.yml"
-      - "Makefile"
   push:
     branches: [main]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
       - "Makefile"
-  # Reusable: the deploy workflows run this as a gate before deploying.
+  # Reusable, and the only path this runs on a PR: the CI gate calls it
+  # for the services a PR touches, and the deploy workflows call it as a
+  # gate before deploying.
   workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # Hardcoded prefix: when called via workflow_call, github.workflow is
-  # the caller's name, which the other CI workflows would share.
-  group: frontend-ci-${{ github.event.pull_request.number || github.ref }}
+  # Prefix + github.workflow keeps each entry point in its own lane. Under
+  # workflow_call github.workflow is the CALLER's name, so the prefix stops
+  # the workflows a caller invokes together from sharing a group, and
+  # github.workflow stops different callers (CI gate, deploy) from sharing
+  # one. Same group + cancel-in-progress means they cancel each other.
+  group: frontend-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
