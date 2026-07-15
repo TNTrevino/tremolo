@@ -6,10 +6,10 @@ name: CI
 # PR that touches only one service isn't left waiting on checks for the
 # others that never run.
 #
-# The per-service workflows keep their own pull_request triggers, so on a
-# PR they also run standalone -- the affected ones therefore run twice
-# (once standalone, once via this gate). That duplication is deliberate:
-# it keeps those workflow files untouched. Only "gate" is required.
+# This gate is the ONLY path those workflows run on a PR -- they have no
+# pull_request trigger of their own. Keep the filters below in sync with
+# each workflow's own paths: a service dropped from a filter silently
+# stops being checked on PRs. Only "gate" is required.
 
 on:
   pull_request:
