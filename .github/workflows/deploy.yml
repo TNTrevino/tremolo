@@ -33,7 +33,7 @@ jobs:
       # per-distro. Install under /opt so the interpreter the deployed venv
       # symlinks to stays readable regardless of which user the runner runs as.
       - name: Set up Python
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           python-version: "3.14"
 
