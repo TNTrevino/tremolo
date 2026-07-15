@@ -76,3 +76,12 @@ export interface CreateAssignmentRequest {
 	target_questions?: number | null;
 	target_accuracy?: number | null;
 }
+
+// One attempt at an assignment, ordered oldest->newest by the API.
+export interface AttemptResponse {
+	correct_questions: number;
+	total_questions: number;
+	accuracy: number;
+	notes_per_minute: number;
+	attempted_date: string;
+}

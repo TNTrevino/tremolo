@@ -75,15 +75,17 @@ func insertClassesAndAssignments(studentIDs []int32) {
 
 	// Tag attempts for roughly half of class 1's roster (including the
 	// test student) so the results grid shows a mix of attempted /
-	// not-started students.
+	// not-started students. Attempts are backdated across the past days
+	// with gently rising accuracy so the drill-down chart shows a
+	// believable improvement arc.
 	attemptRoster := append([]int32{studentID}, roster1...)
 	for i, sid := range attemptRoster {
 		if i%2 != 0 {
 			continue
 		}
-		attempts := 1 + rand.IntN(3)
-		for range attempts {
-			insertAssignmentAttempt(ctx, sid, noteAssignment)
+		attempts := 2 + rand.IntN(6) // 2-7 attempts over as many days
+		for n := range attempts {
+			insertAssignmentAttempt(ctx, sid, noteAssignment, n, attempts)
 		}
 	}
 
@@ -275,25 +277,38 @@ func createKeySignatureAssignment(ctx context.Context, classID int32) int32 {
 // tagged with assignmentID. game_type is "note" to match the note
 // assignment it's attempting (entries must match their assignment's
 // game_type for the results grid aggregation to pick them up).
-func insertAssignmentAttempt(ctx context.Context, studentID, assignmentID int32) {
-	total := int32(15 + rand.IntN(26))                             // 15-40 questions
-	correct := int32(float64(total) * (0.6 + rand.Float64()*0.35)) // 60-95% accuracy
+//
+// attemptIndex/attemptCount backdate the entry (oldest attempt first,
+// one per day ending today) and scale accuracy upward across attempts
+// so per-student attempt history reads as improvement, not noise.
+// Direct SQL because the sqlc insert stamps created_date with now().
+func insertAssignmentAttempt(
+	ctx context.Context,
+	studentID, assignmentID int32,
+	attemptIndex, attemptCount int,
+) {
+	total := int32(15 + rand.IntN(26)) // 15-40 questions
+	// Accuracy climbs from ~55-70% on the first attempt toward ~85-98%
+	// on the last, with a little per-attempt jitter.
+	progress := float64(attemptIndex) / float64(max(attemptCount-1, 1))
+	accuracy := 0.55 + 0.35*progress + rand.Float64()*0.1
+	correct := int32(float64(total) * accuracy)
 	if correct > total {
 		correct = total
 	}
-	npm := int32(40 + rand.IntN(71)) // 40-110 notes per minute
-	seconds := 60 + rand.IntN(181)   // 1-4 minutes
+	npm := int32(40+rand.IntN(31)) + int32(40*progress) // rises with practice
+	seconds := 60 + rand.IntN(181)                      // 1-4 minutes
 	timeLength := time.Date(0, 1, 1, 0, seconds/60, seconds%60, 0, time.UTC)
+	attemptedAt := time.Now().AddDate(0, 0, attemptIndex-attemptCount+1)
 
-	_, err := database.Queries.CreateNoteGameEntry(ctx, generated.CreateNoteGameEntryParams{
-		UserID:           studentID,
-		TimeLength:       timeLength,
-		TotalQuestions:   total,
-		CorrectQuestions: correct,
-		NotesPerMinute:   npm,
-		GameType:         "note",
-		AssignmentID:     sql.NullInt32{Int32: assignmentID, Valid: true},
-	})
+	_, err := database.DBConn.ExecContext(ctx,
+		`INSERT INTO tremolo.note_game_entries
+			(user_id, time_length, total_questions, correct_questions,
+			 notes_per_minute, game_type, assignment_id, created_date, created_time)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		studentID, timeLength, total, correct, npm, "note",
+		assignmentID, attemptedAt, attemptedAt,
+	)
 	if err != nil {
 		log.Printf("Warning: failed to insert assignment attempt for student %d: %v", studentID, err)
 	}

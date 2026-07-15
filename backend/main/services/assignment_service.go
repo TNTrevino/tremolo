@@ -192,6 +192,49 @@ func GetAssignmentResults(ctx context.Context, q generated.Querier, teacherID, a
 	return results, nil
 }
 
+// GetAssignmentAttempts returns one student's attempt history on an
+// assignment, oldest to newest -- the drill-down behind the teacher's
+// results grid. The caller must either own the assignment's class
+// (teacher/admin) or be the student themself; anyone else is forbidden.
+func GetAssignmentAttempts(ctx context.Context, q generated.Querier, callerID, assignmentID, studentID int) ([]dtos.AssignmentAttempt, error) {
+	assignment, err := q.GetAssignmentByID(ctx, int32(assignmentID))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	if callerID != studentID {
+		if _, err := requireClassOwner(ctx, q, callerID, int(assignment.ClassID)); err != nil {
+			return nil, err
+		}
+	}
+
+	rows, err := q.GetAssignmentAttempts(ctx, generated.GetAssignmentAttemptsParams{
+		AssignmentID: sql.NullInt32{Int32: int32(assignmentID), Valid: true},
+		UserID:       int32(studentID),
+	})
+	if err != nil {
+		logger.Error("Failed to fetch assignment attempts",
+			"error", err.Error(),
+			"assignment_id", assignmentID,
+			"student_id", studentID)
+		return nil, err
+	}
+
+	attempts := make([]dtos.AssignmentAttempt, 0, len(rows))
+	for _, row := range rows {
+		attempts = append(attempts, dtos.AssignmentAttempt{
+			CorrectQuestions: int(row.CorrectQuestions),
+			TotalQuestions:   int(row.TotalQuestions),
+			Accuracy:         int(row.Accuracy),
+			NotesPerMinute:   int(row.NotesPerMinute),
+			AttemptedDate:    row.AttemptedDate,
+		})
+	}
+	return attempts, nil
+}
+
 // DeleteAssignment removes an assignment on a class the caller owns.
 // Tagged entries survive (assignment_id is set null by the FK).
 func DeleteAssignment(ctx context.Context, q generated.Querier, teacherID, assignmentID int) error {

@@ -8,6 +8,7 @@ import type {
 	AssignmentResponse,
 	StudentAssignmentResponse,
 	AssignmentResultRow,
+	AttemptResponse,
 } from "./types";
 
 function createMockClient() {
@@ -331,5 +332,31 @@ describe("ClassesService", () => {
 
 		expect(client.delete).toHaveBeenCalledWith("/api/assignments/3");
 		expect(result).toEqual({ message: "deleted" });
+	});
+
+	it("maps AttemptResponse[] to Attempt[] on getAssignmentAttempts", async () => {
+		const response: AttemptResponse[] = [
+			{
+				correct_questions: 13,
+				total_questions: 14,
+				accuracy: 92,
+				notes_per_minute: 80,
+				attempted_date: "2026-07-12",
+			},
+		];
+		client.get.mockResolvedValue({ data: response });
+
+		const result = await service.getAssignmentAttempts(3, 42);
+
+		expect(client.get).toHaveBeenCalledWith("/api/assignments/3/attempts/42");
+		expect(result).toEqual([
+			{
+				correctQuestions: 13,
+				totalQuestions: 14,
+				accuracy: 92,
+				notesPerMinute: 80,
+				attemptedDate: "2026-07-12",
+			},
+		]);
 	});
 });
