@@ -8,7 +8,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | Phase | Name                       | Status  | Date | Commits | Notes |
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
-| 1     | Core plumbing              | pending | —    | —       |       |
+| 1     | Core plumbing              | built   | 2026-08-20 | `fc19c37..HEAD` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below. |
 | 2     | Shared UI kit              | pending | —    | —       |       |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
@@ -43,6 +43,14 @@ could not be followed as written. One row per deviation.
 | 0 | Packet §4: `environments/` exposing `mainApi` and `musicApi` | Also exposes `appName` and `googleClientId` | `.env.example` defines four `VITE_*` vars, not two (R5). |
 | 0 | Packet: aliases `@app/ @core/ @shared/ @features/` + tsconfig `baseUrl` | Aliases as specified; **no** `baseUrl` | TypeScript 6 errors on `baseUrl` (TS5101). `paths` resolve relative to the tsconfig without it. |
 | 0 | Packet is silent on the React app's accessibility | Added `aria-label` to 9 icon-only controls in `frontend-react/` (commit `cb7b35b`, plus the game staff container and the note-game scale picker) | The packet requires user-visible selectors only, and these controls -- including the theme and friends toggles, both named golden flows -- had no accessible name at all. Pixel-neutral; **the Angular port must carry the same names**. |
+| 1 | PLAN.md §5.4 calls `inject(AuthService)` inside `catchError` | `inject()` hoisted to the interceptor body | `catchError`'s callback runs outside the injection context, where `inject()` throws NG0203. The stream shape (`??=`, `shareReplay(1)`, `finalize`, `switchMap`) is unchanged. |
+| 1 | §5.4 skips refresh for `isAuthEndpoint(req.url)` | Skips only the four session-establishing endpoints (login, register, refresh, google/callback) | A 401 from `/api/auth/me` is a real expiry and must stay recoverable; a 401 from login is a wrong password. |
+| 1 | Packet: port the guards "and their `.test.tsx` files" | `TeacherRoute.tsx` has no test in the repo (R5); wrote a new one | Its ordering rule -- anonymous goes to /login, not /dashboard -- was untested. |
+| 1 | React passed the attempted URL in router state | It rides on `AuthStore.redirectUrl` | A query param changes the landing URL and the parity suite asserts a bare `/login`. |
+| 1 | React's `refreshToken()` returned the whole response | Returns `Observable<string>` (the access token) | That is what §5.4's `switchMap((token) => ...)` consumes. Both tokens are still stored. |
+| 1 | PLAN.md §4 has no folder for interceptors | Added `core/interceptors/` | Core, not a feature, and not components. |
+| 1 | PLAN.md §4 has no folder for shared test fixtures | Added `src/testing/`, in `tsconfig.spec.json` and excluded from `tsconfig.app.json` | Guard specs need a signed-in store fixture; the exclusion stops app code importing it. |
+| 1 | Packet is silent on the Angular CLI writing to `angular.json` | Export `NG_CLI_ANALYTICS=false` before `ng` commands | The first `ng` run added an unformatted `"analytics": false`, which fails `format:check`. Reverted. |
 
 ---
 
@@ -65,6 +73,10 @@ could not be followed as written. One row per deviation.
   `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, which the Go service panics
   without). Postgres is on :5432 with the `tremolo` database already
   migrated; connect as the `postgres` role.
+
+- **Export `NG_CLI_ANALYTICS=false` before any `ng` command.** Without it
+  the first CLI run of a session rewrites `angular.json` with an unformatted
+  `"analytics": false`, which then fails `npm run format:check`.
 
 - **`frontend/` is the Angular app; `frontend-react/` is the React one.**
   Both are checked by CI and by `make check`. The deploy workflow builds
