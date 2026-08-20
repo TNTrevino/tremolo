@@ -7,7 +7,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 
 | Phase | Name                       | Status  | Date | Commits | Notes |
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
-| 0     | Scaffold + parity harness  | built   | 2026-08-20 | `2e94f8a..HEAD` | React app moved to `frontend-react/`; 7 deviations below |
+| 0     | Scaffold + parity harness  | built   | 2026-08-20 | `2e94f8a..3e967b1` | React app moved to `frontend-react/`; 7 deviations below |
 | 1     | Core plumbing              | pending | —    | —       |       |
 | 2     | Shared UI kit              | pending | —    | —       |       |
 | 3     | CRUD features              | pending | —    | —       |       |
