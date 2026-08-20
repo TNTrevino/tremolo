@@ -1,0 +1,22 @@
+<!--
+	Phase 0 shell. Deliberately almost empty: it exists to prove the app
+	boots, that both fonts load, and that Tailwind's utilities compile.
+	Phase 1 replaces this with the Navigation + router chrome ported from
+	frontend-react/src/App.tsx.
+-->
+<div class="min-h-screen bg-background text-foreground">
+	<main
+		class="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-4 p-8"
+	>
+		<h1 class="font-display text-4xl font-bold tracking-tight">Tremolo</h1>
+		<p class="text-muted-foreground">
+			Angular shell. Nothing is wired up yet — see
+			<code class="font-mono text-sm">.migration/STATE.md</code> for where the
+			migration stands.
+		</p>
+		<p class="text-red-500" data-tailwind-probe>
+			Tailwind is compiling: this line is red.
+		</p>
+		<router-outlet />
+	</main>
+</div>

@@ -1,0 +1,19 @@
+node_modules
+dist
+build
+.git
+*.min.js
+*.min.css
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+coverage
+.next
+.nuxt
+.vite
+.angular
+
+# The migration control directory. These are the plan of record and the
+# packets agents read verbatim -- reflowing their fenced code samples
+# changes what a later phase is told to build.
+.migration

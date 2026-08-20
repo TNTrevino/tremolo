@@ -1,0 +1,52 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+	"compileOnSave": false,
+	"compilerOptions": {
+		/* Carried over from the React app's tsconfig -- these were already
+		   green there, so keeping them means the port can't quietly loosen
+		   type safety. See .migration/phase-0.md. */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+
+		/* Angular scaffold defaults */
+		"noImplicitOverride": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"experimentalDecorators": true,
+		"importHelpers": true,
+		"target": "ES2022",
+		"module": "preserve",
+
+		/* D14: the React app's `@/...` aliases, re-cut along the Angular
+		   layout in PLAN.md §4. No `baseUrl`: TypeScript 6 deprecates it
+		   (TS5101) and it is unnecessary -- `paths` without a `baseUrl`
+		   resolve relative to this file. */
+		"paths": {
+			"@app/*": ["./src/app/*"],
+			"@core/*": ["./src/app/core/*"],
+			"@shared/*": ["./src/app/shared/*"],
+			"@features/*": ["./src/app/features/*"]
+		}
+	},
+	"angularCompilerOptions": {
+		"enableI18nLegacyMessageIdFormat": false,
+		"strictInjectionParameters": true,
+		"strictInputAccessModifiers": true,
+		"strictTemplates": true
+	},
+	"files": [],
+	"references": [
+		{
+			"path": "./tsconfig.app.json"
+		},
+		{
+			"path": "./tsconfig.spec.json"
+		}
+	]
+}
