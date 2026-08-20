@@ -288,6 +288,44 @@
 		</div>
 	</section>
 
+	<!-- OSMD wrapper -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Sheet music (OSMD)</h2>
+		<p class="text-sm text-muted-foreground">
+			`&lt;app-sheet-music&gt;` on its own, without the card chrome
+			`&lt;app-sheet-music-display&gt;` adds. The XML is a static one-note score
+			held in this file, so nothing here calls the API.
+		</p>
+		<div class="flex flex-wrap items-end gap-3">
+			<app-button (click)="loadSheet()">Load</app-button>
+			<app-button variant="outline" (click)="loadBrokenSheet()">
+				Load broken XML
+			</app-button>
+			<app-button variant="outline" (click)="clearSheet()">Clear</app-button>
+			<div class="w-40 space-y-1">
+				<label appLabel for="kit-zoom">Zoom</label>
+				<app-select selectId="kit-zoom" [(value)]="sheetZoom">
+					@for (level of zoomLevels; track level) {
+						<option [value]="level">{{ level }}x</option>
+					}
+				</app-select>
+			</div>
+		</div>
+		<div appCard class="p-4">
+			<app-sheet-music
+				#sheet
+				[zoom]="zoom()"
+				containerClass="min-h-[160px]"
+				(renderComplete)="sheetStatus.set('rendered')"
+				(renderError)="sheetStatus.set('error: ' + $event.message)"
+			/>
+		</div>
+		<p class="text-xs text-muted-foreground">
+			Status: {{ sheetStatus() }} · loading: {{ sheet.isLoading() }} · error:
+			{{ sheet.error()?.message ?? "none" }}
+		</p>
+	</section>
+
 	<!-- Forced-dark preview -->
 	<section class="space-y-4">
 		<h2 class="font-display text-xl font-bold">Pinned to dark</h2>
