@@ -32,6 +32,23 @@ interface PersistedAuth {
 
 const PERSIST_VERSION = 0;
 
+/** How a one-shot notice is styled by the page that shows it. */
+export type AuthNoticeKind = "success" | "error" | "info";
+
+/**
+ * A message handed from the page that navigates to the page that lands.
+ *
+ * React put these in react-router's location state -- signup -> /login
+ * ("Account created! Please log in."), a failed Google callback -> /login,
+ * and a Google account link -> /dashboard. Angular's router has no
+ * equivalent that survives a `navigateByUrl`, so they ride here, exactly
+ * as `redirectUrl` does.
+ */
+export interface AuthNotice {
+	kind: AuthNoticeKind;
+	message: string;
+}
+
 @Injectable({ providedIn: "root" })
 export class AuthStore {
 	private readonly _user = signal<User | null>(null);
@@ -51,6 +68,25 @@ export class AuthStore {
 	 * URL stays a bare `/login`, so this rides alongside it instead.
 	 */
 	readonly redirectUrl = signal<string | null>(null);
+
+	private readonly _notice = signal<AuthNotice | null>(null);
+
+	/**
+	 * The pending one-shot notice. Set it before navigating; the landing
+	 * page reads it with `takeNotice()`, which is what makes it one-shot --
+	 * react-router's location state did not survive the next navigation
+	 * either.
+	 */
+	setNotice(kind: AuthNoticeKind, message: string): void {
+		this._notice.set({ kind, message });
+	}
+
+	/** Reads the pending notice and clears it. Returns null when there is none. */
+	takeNotice(): AuthNotice | null {
+		const notice = this._notice();
+		if (notice) this._notice.set(null);
+		return notice;
+	}
 
 	constructor() {
 		this.hydrate();

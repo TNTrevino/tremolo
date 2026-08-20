@@ -90,4 +90,46 @@ describe("AuthStore", () => {
 		expect(store.token()).toBeNull();
 		expect(store.isAuthenticated()).toBe(false);
 	});
+
+	/**
+	 * The port of react-router's location state. `takeNotice()` is the whole
+	 * contract: the landing page reads it once, and a later page must not
+	 * find it still there -- location state did not survive the next
+	 * navigation either.
+	 */
+	describe("one-shot notices", () => {
+		it("hands the pending notice over exactly once", () => {
+			const store = TestBed.inject(AuthStore);
+
+			expect(store.takeNotice()).toBeNull();
+
+			store.setNotice("success", "Account created! Please log in.");
+
+			expect(store.takeNotice()).toEqual({
+				kind: "success",
+				message: "Account created! Please log in.",
+			});
+			expect(store.takeNotice()).toBeNull();
+		});
+
+		it("keeps only the most recent notice", () => {
+			const store = TestBed.inject(AuthStore);
+
+			store.setNotice("error", "first");
+			store.setNotice("info", "second");
+
+			expect(store.takeNotice()).toEqual({ kind: "info", message: "second" });
+		});
+
+		it("stays out of the persisted session blob", () => {
+			const store = TestBed.inject(AuthStore);
+			signIn(store, "STUDENT");
+			store.setNotice("error", "not for localStorage");
+			TestBed.tick();
+
+			expect(localStorage.getItem(AUTH_STORAGE_KEY)).not.toContain(
+				"not for localStorage",
+			);
+		});
+	});
 });
