@@ -1,8 +1,173 @@
 import { Routes } from "@angular/router";
 
+import { authGuard } from "./auth/services/security/auth.guard";
+import { guestGuard } from "./auth/services/security/guest.guard";
+import { teacherGuard } from "./auth/services/security/teacher.guard";
+
 /**
- * The React app's 20 routes (frontend-react/src/App.tsx) land here in
- * Phase 1, with ProtectedRoute/GuestRoute/TeacherRoute becoming functional
- * guards. Phase 0 ships an empty table: the shell boots, nothing renders.
+ * The 20 routes of frontend-react/src/App.tsx.
+ *
+ * Guard assignments are one for one with the wrapper components they
+ * replace: ProtectedRoute x5 -> `authGuard`, GuestRoute x2 -> `guestGuard`,
+ * TeacherRoute x2 -> `teacherGuard`. Every other route is public, including
+ * all five games -- they are playable signed out, and that is deliberate.
+ *
+ * `loadComponent` everywhere is the port of React's `lazy()` imports.
+ * `/classes/:id` and `/assignments/:id/play` bind `:id` to an `input()` on
+ * the page, which `withComponentInputBinding()` in app.config.ts turns on.
  */
-export const routes: Routes = [];
+export const routes: Routes = [
+	// "/" lands on the note game, not on /home. Long-standing behaviour and
+	// the parity suite pins it.
+	{ path: "", pathMatch: "full", redirectTo: "/note-game" },
+
+	// --- Public ---------------------------------------------------------
+	{
+		path: "home",
+		loadComponent: () =>
+			import("./public/home-page/home-page.component").then(
+				(m) => m.HomePageComponent,
+			),
+	},
+	{
+		path: "about",
+		loadComponent: () =>
+			import("./public/about-page/about-page.component").then(
+				(m) => m.AboutPageComponent,
+			),
+	},
+	{
+		path: "note-game",
+		loadComponent: () =>
+			import("./features/note-game/components/note-game-page/note-game-page.component").then(
+				(m) => m.NoteGamePageComponent,
+			),
+	},
+	{
+		path: "key-signature-game",
+		loadComponent: () =>
+			import("./features/identification-game/components/key-signature-game-page/key-signature-game-page.component").then(
+				(m) => m.KeySignatureGamePageComponent,
+			),
+	},
+	{
+		path: "interval-game",
+		loadComponent: () =>
+			import("./features/identification-game/components/interval-game-page/interval-game-page.component").then(
+				(m) => m.IntervalGamePageComponent,
+			),
+	},
+	{
+		path: "scale-game",
+		loadComponent: () =>
+			import("./features/identification-game/components/scale-game-page/scale-game-page.component").then(
+				(m) => m.ScaleGamePageComponent,
+			),
+	},
+	{
+		path: "chord-game",
+		loadComponent: () =>
+			import("./features/identification-game/components/chord-game-page/chord-game-page.component").then(
+				(m) => m.ChordGamePageComponent,
+			),
+	},
+	{
+		path: "sheet-music",
+		loadComponent: () =>
+			import("./features/sheet-music/components/sheet-music-page/sheet-music-page.component").then(
+				(m) => m.SheetMusicPageComponent,
+			),
+	},
+	{
+		path: "convert",
+		loadComponent: () =>
+			import("./features/sheet-music/components/converter-page/converter-page.component").then(
+				(m) => m.ConverterPageComponent,
+			),
+	},
+	{
+		path: "auth/google/callback",
+		loadComponent: () =>
+			import("./auth/components/google-callback/google-callback-page.component").then(
+				(m) => m.GoogleCallbackPageComponent,
+			),
+	},
+
+	// --- Guest only (was GuestRoute) -------------------------------------
+	{
+		path: "login",
+		canActivate: [guestGuard],
+		loadComponent: () =>
+			import("./auth/components/login/login.component").then(
+				(m) => m.LoginPageComponent,
+			),
+	},
+	{
+		path: "signup",
+		canActivate: [guestGuard],
+		loadComponent: () =>
+			import("./auth/components/signup/signup-page.component").then(
+				(m) => m.SignupPageComponent,
+			),
+	},
+
+	// --- Signed in (was ProtectedRoute) ----------------------------------
+	{
+		path: "dashboard",
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import("./features/dashboard/components/dashboard-page/dashboard-page.component").then(
+				(m) => m.DashboardPageComponent,
+			),
+	},
+	{
+		path: "profile",
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import("./features/account/components/profile-page/profile-page.component").then(
+				(m) => m.ProfilePageComponent,
+			),
+	},
+	{
+		path: "account",
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import("./features/account/components/account-page/account-page.component").then(
+				(m) => m.AccountPageComponent,
+			),
+	},
+	{
+		path: "assignments",
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import("./features/classes/components/assignments-page/assignments-page.component").then(
+				(m) => m.AssignmentsPageComponent,
+			),
+	},
+	{
+		path: "assignments/:id/play",
+		canActivate: [authGuard],
+		loadComponent: () =>
+			import("./features/classes/components/assignment-play-page/assignment-play-page.component").then(
+				(m) => m.AssignmentPlayPageComponent,
+			),
+	},
+
+	// --- Teachers only (was TeacherRoute) --------------------------------
+	{
+		path: "classes",
+		canActivate: [teacherGuard],
+		loadComponent: () =>
+			import("./features/classes/components/classes-page/classes-page.component").then(
+				(m) => m.ClassesPageComponent,
+			),
+	},
+	{
+		path: "classes/:id",
+		canActivate: [teacherGuard],
+		loadComponent: () =>
+			import("./features/classes/components/class-detail-page/class-detail-page.component").then(
+				(m) => m.ClassDetailPageComponent,
+			),
+	},
+];

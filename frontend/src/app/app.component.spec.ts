@@ -1,13 +1,14 @@
-import { render, screen } from "@testing-library/angular";
+import { provideRouter } from "@angular/router";
+import { render } from "@testing-library/angular";
 
 import { AppComponent } from "./app.component";
 
 describe("AppComponent", () => {
-	it("renders the shell", async () => {
-		await render(AppComponent);
+	it("hosts the router outlet", async () => {
+		const { container } = await render(AppComponent, {
+			providers: [provideRouter([])],
+		});
 
-		expect(
-			screen.getByRole("heading", { name: "Tremolo", level: 1 }),
-		).toBeTruthy();
+		expect(container.querySelector("router-outlet")).toBeTruthy();
 	});
 });
