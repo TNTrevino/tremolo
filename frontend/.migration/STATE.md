@@ -10,7 +10,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
-| 3     | CRUD features              | built (3.1) | 2026-08-20 | `2dd1e3d..` (3.1) | **Sub-feature 1 (auth screens) only** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. Sub-features 2-6 not started. |
+| 3     | CRUD features              | built (3.1) | 2026-08-20 | `2dd1e3d..` (3.1) | **Sub-feature 1 (auth screens) only** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
@@ -245,6 +245,162 @@ Gotcha for a wrong-password check: the Go service validates password
 returns its own 400 ("Password must contain…"), not "Invalid credentials".
 Use a well-formed wrong password (e.g. `Wr0ngPassw0rd!`) to exercise the 401.
 
+### Verifier notes (Phase 3 sub-feature 1, 2026-08-20) — 3.1 **verified**
+
+Sub-feature 1 passes. Phase 3 stays `built (3.1)` because five sub-features
+are still unbuilt; what is confirmed here is that the pattern-setter is sound
+and that 2-6 may fan out. Nothing below is taken from the handoff — all of it
+was run by the verifier, on `:4200`, against the Go service on `:5001`.
+
+**Gates.** `npm run build` / `lint` / `test:run` / `format:check` all exit 0,
+**146 tests in 21 files** — the handoff's count is exact.
+
+**Parity suite, unmodified.** `navigation.spec.ts` **21/21**,
+`auth.spec.ts` **4/5**, `friends-and-theme.spec.ts` **3/4** (28 passed, 2
+failed of 30) — the handoff's numbers, reproduced. Both failures are
+pre-existing, not regressions: re-run against a detached checkout of
+**`24a3bba`** (the commit before the range) the same two fail there, plus a
+third — `auth.spec.ts` was **3/5** before this slice, and the signup flow is
+the test 3.1 fixed. The two residuals are the dashboard full-name assertion
+(sub-feature 6) and the friends-panel heading (sub-feature 4), exactly as
+owned.
+
+**Live flows**, fresh throwaway accounts, driven through the UI:
+
+- **Signup.** Form → account created (confirmed by a direct `POST
+  /api/auth/login` against the Go service, 200) → lands on `/login` carrying
+  "Account created! Please log in." → that account then signs in through the
+  UI to `/dashboard`. A mismatched confirmation shows **"Passwords do not
+  match"**, stays on `/signup`, and **fires no `POST /api/auth/register`** at
+  all (asserted on the request, not on the URL). The checklist and meter are
+  live: all five requirements flip and the label moves `Weak` → `Strong` as
+  the field is typed into.
+- **Login.** `Wr0ngPassw0rd!` → `role="alert"` reading **"Invalid
+  credentials"**, still on `/login`. Correct password → `/dashboard`,
+  `tremolo-auth` holds `"isAuthenticated":true`, and the session survives a
+  reload (still `/dashboard` at t=0 and t=1s).
+- **Google callback**, all four failure paths, no crash and no hang:
+  no query string → `/login` + "OAuth callback missing required parameters.";
+  `?error=access_denied` → "Google sign-in was cancelled.";
+  `?error=server_error` → "Google sign-in failed. Please try again.";
+  `?code=…&state=…` with a **matching** seeded `google_oauth_state` → the
+  exchange really reaches the Go service and its own message, **"Invalid
+  authorization code"**, is what the user sees. The notice is one-shot:
+  navigating back to `/login` does not re-show it. Zero page errors; the only
+  console error is the deliberate 401.
+
+**Screenshot parity — the residual was read, not trusted.** 12/12 outside
+threshold at the suite's own `maxDiffPixelRatio: 0.01`, ratios 0.02 desktop /
+0.04 mobile, **13,060–17,433 px** — the handoff's figures to the pixel. Each
+diff PNG was then decomposed into connected regions. Every shot resolves to
+the same two large regions and nothing else of size:
+
+| Region | Desktop | Mobile | What it is |
+| ------ | ------- | ------ | ---------- |
+| CTA fill | 396x44, ~17,1k px | 306x44, ~13,2k px | the brass button (DESIGN.md rule 4) |
+| Heading | ~283x24, ~1.9k px | same | `font-display` (rollout step 3) |
+
+So deviation 9 holds: the two deliberate Phase-2 restyles are the whole of
+the large residual. No layout shift, no missing element, no size change in
+the card, the fields, the reveal toggle, the divider, the Google button or
+the footer link. **With one exception, recorded as V1.**
+
+**V1 (non-blocking, and NOT a 3.1 regression). The mobile nav bar is not
+pixel-clean; handoff §6's "nav bar … pixel-clean at both viewports" is
+overstated.** A third diff region survives in every shot, and at mobile it is
+a real 8px layout shift rather than antialiasing:
+
+- **Desktop:** 34 px, and it is noise — the theme-toggle moon's ink box is
+  `(1143,24)-(1158,39)`, **16x16, byte-identical in position and size** to the
+  baseline, with the same 67/68 ink pixels. Only the crescent tip antialiases
+  differently. The Login button is identical too. Nav icons therefore *do*
+  render at their intended size (§7.2 confirmed).
+- **Mobile:** 190 px + 72 px. The theme-toggle icon sits **8px right** of its
+  React position (`(306,24)` vs `(298,24)`, same 16x16 size), and the
+  hamburger glyph gains 1px of antialiasing top and bottom (18x14 → 18x16,
+  **same 108 ink pixels**, so same glyph, sub-pixel offset from §7.2's new
+  `display: block` host).
+
+Cause, pinned in the live DOM rather than inferred. The nav's right cluster is
+`<div class="flex items-center space-x-2">` with three children: the theme
+toggle `<app-button>`, the Login `<a>`, and the mobile-menu `<app-button>`.
+`space-x-2` puts `margin-left: 8px` on `> * + *`. The `<a>` is a real box, so
+its margin applies and **desktop is correct**. At mobile the `<a>` is
+`display: none` (`hidden md:block`) and the only remaining margin sits on the
+mobile-menu `<app-button>`, whose host is `display: contents` — **so it is
+ignored**, and the two buttons butt together at gap 0 instead of 8px.
+
+That is precisely **handoff §7.3's own rule** ("a container holding kit
+components uses `flex flex-col gap-*`, not `space-y-*`/`space-x-*`") applied
+to the login card but not to the nav bar the same slice was editing. It is
+**Phase 2's markup**: `git diff 24a3bba..cdaef29` on
+`navigation.component.html` adds `size=` attributes and nothing else — the
+`space-x-2` container and the `hidden md:block` are untouched, and the
+`size="icon"` buttons were 40px wide before the fix too. Phase 2's verifier
+never ran the baselines, which is why it went unseen until now.
+
+Not blocking: 262 px of 355k (0.07%), no behaviour, test, or accessible name
+is affected, and the screenshot exit criterion was already carried as
+deviation 9. **Whoever next edits the nav — sub-feature 4 owns its friends
+toggle — should swap `space-x-2` for `gap-2` on that container and re-check
+the mobile shot.**
+
+**Kit fixes (§7), all three confirmed.**
+
+- **§7.1 card `className`.** On `/login` the card's live class list is
+  `… rounded-lg shadow-lg …` with **no `shadow-sm`** — tailwind-merge
+  *replaced* rather than concatenated — and the computed `box-shadow` is the
+  three-layer large one. The title is `font-bold font-display text-3xl
+  tracking-tight`: **no `text-2xl`, and `leading-none` is gone too**
+  (computed `line-height: 36px`), which is the subtle half of the fix.
+- **§7.2 icon sizing.** Verified above against the baseline shot — desktop
+  nav icons are pixel-identical in position and size.
+- **§7.3 / Phase 2 regression check.** `/dev/kit` renders in **both** themes
+  with **zero** console or page errors: 12 headings, 35 buttons, 9 fields, no
+  "something went wrong" banner. Screenshotted both ways and read — brass is
+  still one CTA, cards carry the single soft shadow, dark is charcoal.
+  Full unit suite green (above).
+
+**Pattern check.** Handoff §2 is concrete enough to copy without asking:
+file layout, selector/class naming, spec placement, a full component
+skeleton with the five load-bearing rules, the template shape, the `TestBed`
++ `HttpTestingController` boilerplate with the `afterEach` contract, how to
+drive an input and a submit, and the `npx ng test --include=` invocation.
+Its claims check out: **`PLAN.md` was not edited in the range**, so §5.2
+remains the canonical fetch-displaying form; **`rxResource` appears nowhere
+in `src/` except in comments**, matching deviation 1 honestly rather than
+cargo-culting; and every mutation is a one-shot `.subscribe()` per §5.6.
+§2.1's "imports inside `src/app/` are relative, the aliases exist but nothing
+uses them" is literally true — `grep` for `from "@core/|@shared/|@features/|@app/"`
+returns nothing.
+
+**Hygiene.** `shareReplay` still only in `refresh.interceptor.ts` (D6). No
+`@NgModule`, no `zone.js` (`npm ls zone.js` empty), no stored `Subscription`,
+no `.unsubscribe()`, no `takeUntil`/`destroy$`, no TanStack-shaped code. The
+only `ngOnDestroy` hit is a comment saying there isn't one.
+`git log 2dd1e3d..cdaef29 -- frontend/e2e/ frontend/.migration/baselines/
+frontend-react/` is **empty**, and the baselines were still untracked-clean
+after the 12-shot diff run.
+
+**Deviation spot-checks (4 of 9).**
+
+1. **No `rxResource` (dev. 1) — holds.** See the pattern check above.
+2. **Password reveal carries no `aria-label` (§4) — proved by experiment.**
+   Adding `aria-label="Show password"` to the login reveal button fails
+   `login.component.spec.ts` (`expected [] to equal [ "Show password" ]`,
+   1 of 10) **and** breaks **4 of 5** tests in `auth.spec.ts` with
+   `strict mode violation: getByLabel('Password') resolved to 2 elements`.
+   The mutation was reverted and `git diff` was empty afterwards. The
+   deviation is not a shortcut; it is load-bearing.
+3. **`setNotice`/`takeNotice` (dev. 3) — holds.** The signal is private, read
+   once and cleared, never written into the `tremolo-auth` blob (a spec pins
+   that, and the live callback run confirms the notice does not survive the
+   next navigation).
+4. **`[required]` dropped from the auth fields (dev. 6) — holds.** Neither
+   auth template passes `required`, so no label renders an asterisk — and
+   `grep required` over the React `LoginPage.tsx` / `SignupPage.tsx` returns
+   nothing, so the baselines really do have none.
+
 ---
 
 ## Environment notes
@@ -260,6 +416,20 @@ Use a well-formed wrong password (e.g. `Wr0ngPassw0rd!`) to exercise the 401.
 
   Every `ng`, `npm`, and `npx playwright` command in `frontend/` needs this
   first. `node --version` must print v24.x.
+- **`ALLOWED_ORIGINS` — settled 2026-08-20 by the 3.1 verifier. The running
+  Go service allows three origins:
+  `http://localhost:5173,http://localhost:4200,http://localhost:4300`.**
+  Sub-feature 1's handoff §8 says "only `:4200` and `:5173`" — **that is
+  wrong**, and an agent that believed it would pick a port it did not need to.
+  Read from the live process (`tr '\0' '\n' < /proc/<pid>/environ`) and
+  confirmed by preflight: `OPTIONS /api/auth/login` with
+  `Origin: http://localhost:4300` returns **204** with
+  `Access-Control-Allow-Origin: http://localhost:4300`; `:4200` likewise; an
+  unlisted origin (`:9999`) returns **403**. So `:4300` is a first-class dev
+  port for Go-service calls as well as Python ones. Anything outside the three
+  still fails at the preflight, so a fourth port is a coordination problem, not
+  a "pick another port" problem — that half of §8 stands.
+
 - Local dev needs both backends running for integration/E2E work:
   Go on :5001, Python on :8000. See root `README.md` for env vars, and
   `phase-0-handoff.md` for the exact working invocation (the README omits
