@@ -1,8 +1,10 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	inject,
 	signal,
+	viewChild,
 } from "@angular/core";
 import {
 	form,
@@ -12,6 +14,7 @@ import {
 import { NgIcon } from "@ng-icons/core";
 
 import { AppErrorComponent } from "../../core/components/app-error/app-error.component";
+import { SheetMusicComponent } from "../../features/sheet-music/components/sheet-music/sheet-music.component";
 import { ConfirmDialogComponent } from "../../core/components/confirm-dialog/confirm-dialog.component";
 import { SpinnerComponent } from "../../core/components/spinner/spinner.component";
 import { NotificationService } from "../../core/services/notification.service";
@@ -37,6 +40,33 @@ import {
 	type SignupFormData,
 } from "../../shared/validators/auth.schemas";
 import type { ToastType } from "../../core/services/notification.service";
+
+/** One whole note, so the OSMD demo needs no network. */
+const KIT_MUSIC_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+	<part-list>
+		<score-part id="P1"><part-name>Kit</part-name></score-part>
+	</part-list>
+	<part id="P1">
+		<measure number="1">
+			<attributes>
+				<divisions>1</divisions>
+				<key><fifths>0</fifths></key>
+				<time><beats>4</beats><beat-type>4</beat-type></time>
+				<clef><sign>G</sign><line>2</line></clef>
+			</attributes>
+			<note>
+				<pitch><step>C</step><octave>4</octave></pitch>
+				<duration>4</duration>
+				<type>whole</type>
+			</note>
+		</measure>
+	</part>
+</score-partwise>`;
+
+/** Passes the converter page's checks and still fails OSMD's parser. */
+const BROKEN_MUSIC_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><part id="P1"><measure`;
 
 /**
  * `/dev/kit` -- the shared UI kit, on one page.
@@ -67,6 +97,7 @@ import type { ToastType } from "../../core/services/notification.service";
 		NgIcon,
 		RhythmGlyphComponent,
 		SelectComponent,
+		SheetMusicComponent,
 		SkeletonDirective,
 		SpinnerComponent,
 		...CARD_DIRECTIVES,
@@ -148,6 +179,34 @@ export class KitPageComponent {
 			confirmPassword: "Str0ng!pass",
 			role: "TEACHER",
 		});
+	}
+
+	/**
+	 * The OSMD wrapper, driven by hand.
+	 *
+	 * `<app-sheet-music>` is imperative -- `loadAndRender` and `clear` are
+	 * methods, not inputs -- so this is where a human can see the three
+	 * things a unit test can only assert about a mock: real MusicXML draws,
+	 * `zoom` re-renders in place, and `clear` empties the container.
+	 */
+	private readonly sheet = viewChild.required(SheetMusicComponent);
+
+	protected readonly zoomLevels = [1, 1.4, 2.2];
+	protected readonly sheetZoom = signal("1");
+	protected readonly zoom = computed(() => Number(this.sheetZoom()));
+	protected readonly sheetStatus = signal("nothing loaded");
+
+	protected loadSheet(): void {
+		void this.sheet().loadAndRender(KIT_MUSIC_XML);
+	}
+
+	protected loadBrokenSheet(): void {
+		void this.sheet().loadAndRender(BROKEN_MUSIC_XML);
+	}
+
+	protected clearSheet(): void {
+		this.sheet().clear();
+		this.sheetStatus.set("cleared");
 	}
 
 	protected confirmDestructive(): void {

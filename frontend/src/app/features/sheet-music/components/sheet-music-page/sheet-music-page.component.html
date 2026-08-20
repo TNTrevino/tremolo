@@ -1,3 +1,167 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">Sheet Music</h1>
-</section>
+<div class="min-h-screen py-8 px-4">
+	<div class="container mx-auto max-w-5xl space-y-6">
+		<div class="text-center space-y-2">
+			<h1 class="text-4xl font-bold">Sheet Music Practice</h1>
+			<p class="text-muted-foreground text-lg">
+				Generate custom exercises with specific rhythms and scales
+			</p>
+		</div>
+
+		<!-- Sheet Music Display -->
+		@if (musicXml()) {
+			<app-sheet-music-display
+				[musicXml]="musicXml()"
+				(renderError)="onRenderError($event)"
+			/>
+		} @else {
+			<div
+				appCard
+				class="p-12 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30"
+			>
+				<div class="text-center space-y-6">
+					@if (error()) {
+						<div class="space-y-4">
+							<div class="text-destructive font-semibold">
+								Error: {{ errorMessage() }}
+							</div>
+							<p class="text-sm text-muted-foreground">
+								Please try again with different options
+							</p>
+						</div>
+					} @else if (isGenerating()) {
+						<div class="space-y-4">
+							<div class="animate-spin mx-auto">
+								<ng-icon
+									name="lucideMusic2"
+									aria-hidden="true"
+									class="h-16 w-16 text-primary"
+								/>
+							</div>
+							<p class="text-lg text-muted-foreground">Generating music...</p>
+						</div>
+					} @else {
+						<ng-icon
+							name="lucideMusic2"
+							aria-hidden="true"
+							class="h-24 w-24 text-muted-foreground mx-auto"
+						/>
+						<p class="text-lg text-muted-foreground">
+							Select options below and click a button to generate sheet music
+						</p>
+					}
+				</div>
+			</div>
+		}
+
+		<!-- Controls -->
+		<div class="space-y-4">
+			<div appCard class="p-6">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<!-- Scale Selector -->
+					<div class="space-y-2">
+						<label for="scale-select" class="text-sm font-medium">
+							Choose Scale
+						</label>
+						<app-select selectId="scale-select" [(value)]="scaleIndex">
+							@for (scale of scales; track scale.label; let i = $index) {
+								<option [value]="i">{{ scale.label }}</option>
+							}
+						</app-select>
+					</div>
+
+					<!-- Octave Selector -->
+					<div class="space-y-2">
+						<label for="octave-select" class="text-sm font-medium">
+							Choose Octave
+						</label>
+						<app-select selectId="octave-select" [(value)]="octave">
+							@for (o of octaves; track o) {
+								<option [value]="o">Octave {{ o }}</option>
+							}
+						</app-select>
+					</div>
+
+					<!-- Generate Mary Button.
+					     `flex flex-col gap-2` rather than React's `space-y-2`:
+					     `space-y-*` sets a margin on each child, and
+					     `<app-button>` is a `display: contents` host, which has
+					     no box to take one. Flex gap lands on the real
+					     <button> instead, at the same 8px. -->
+					<div class="flex flex-col gap-2">
+						<span class="text-sm font-medium block">Generate Exercise</span>
+						<app-button
+							className="w-full"
+							[disabled]="isGenerating()"
+							(click)="generateMary()"
+						>
+							Generate Mary
+						</app-button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Rhythm Selectors -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<!-- 16th Note Rhythms -->
+				<div appCard class="p-6">
+					<h3 class="text-lg font-bold mb-4">16th Note Rhythms</h3>
+					<!-- flex gap, not space-y: see the Generate Mary column. -->
+					<div class="flex flex-col gap-2">
+						@for (rhythm of sixteenthRhythms; track rhythm) {
+							<app-button
+								[variant]="isSelected(rhythm, 16) ? 'default' : 'outline'"
+								[disabled]="isGenerating()"
+								[ariaLabel]="describe(rhythm, 16)"
+								className="w-full justify-start h-12"
+								(click)="generateRhythm(rhythm, 16)"
+							>
+								<app-rhythm-glyph [rhythm]="rhythm" [rhythmType]="16" />
+							</app-button>
+						}
+					</div>
+				</div>
+
+				<!-- 8th Note Rhythms -->
+				<div appCard class="p-6">
+					<h3 class="text-lg font-bold mb-4">8th Note Rhythms</h3>
+					<!-- flex gap, not space-y: see the Generate Mary column. -->
+					<div class="flex flex-col gap-2">
+						@for (rhythm of eighthRhythms; track rhythm) {
+							<app-button
+								[variant]="isSelected(rhythm, 8) ? 'default' : 'outline'"
+								[disabled]="isGenerating()"
+								[ariaLabel]="describe(rhythm, 8)"
+								className="w-full justify-start h-12"
+								(click)="generateRhythm(rhythm, 8)"
+							>
+								<app-rhythm-glyph [rhythm]="rhythm" [rhythmType]="8" />
+							</app-button>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Info Card -->
+		<div appCard class="p-6 bg-primary/5 border-primary/20">
+			<div class="space-y-2">
+				<h3 class="font-bold text-lg">How It Works</h3>
+				<ul class="space-y-1 text-sm text-muted-foreground">
+					<li>
+						• Select a scale and octave to determine which notes will be used
+					</li>
+					<li>• Choose a rhythm pattern (16th or 8th note combinations)</li>
+					<li>
+						• The system generates random notes from your selected scale
+						arranged in the chosen rhythm
+					</li>
+					<li>
+						• Each generation creates a unique exercise - no memorization
+						possible!
+					</li>
+					<li>• Perfect for sight-reading practice and UIL preparation</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>

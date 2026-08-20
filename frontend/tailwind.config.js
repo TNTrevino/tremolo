@@ -6,6 +6,25 @@ export default {
 	// frontend-react/tailwind.config.js -- the design tokens below are the
 	// contract the screenshot baselines are diffed against.
 	content: ["./src/**/*.{ts,html}"],
+	/**
+	 * Utilities are emitted as `html .h-6 { ... }` rather than `.h-6 { ... }`.
+	 *
+	 * The React app had no component styles, so a utility class was the only
+	 * thing setting a property and it always won. Angular injects each
+	 * component's styles into `<head>` **after** `styles.css`, as
+	 * `[_nghost-…] { ... }` -- the same specificity as a class -- so a
+	 * library component that sizes its own host beats the utility written on
+	 * it. `@ng-icons` does exactly that
+	 * (`:host { width: var(--ng-icon__size, 1em) }`), which made every one of
+	 * the 47 `<ng-icon class="h-N w-N">` call sites render at 1em: the nav
+	 * bar's icons measured 14-16px against React's 16-24px.
+	 *
+	 * The selector strategy costs one element of specificity (0,1,1) and
+	 * nothing else -- no `!important` anywhere, so inline styles and real
+	 * `!important` rules still win, exactly as in React. `html` is chosen
+	 * because every utility must keep applying.
+	 */
+	important: "html",
 	theme: {
 		container: {
 			center: true,

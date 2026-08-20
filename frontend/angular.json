@@ -36,7 +36,8 @@
 								"input": "public"
 							}
 						],
-						"styles": ["src/styles.css"]
+						"styles": ["src/styles.css"],
+						"allowedCommonJsDependencies": ["opensheetmusicdisplay"]
 					},
 					"configurations": {
 						"production": {
