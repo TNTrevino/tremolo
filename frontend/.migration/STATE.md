@@ -9,7 +9,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
-| 2     | Shared UI kit              | pending | —    | —       |       |
+| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..HEAD` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
 | 5     | Identification-game engine | pending | —    | —       |       |
@@ -50,7 +50,22 @@ could not be followed as written. One row per deviation.
 | 1 | React's `refreshToken()` returned the whole response | Returns `Observable<string>` (the access token) | That is what §5.4's `switchMap((token) => ...)` consumes. Both tokens are still stored. |
 | 1 | PLAN.md §4 has no folder for interceptors | Added `core/interceptors/` | Core, not a feature, and not components. |
 | 1 | PLAN.md §4 has no folder for shared test fixtures | Added `src/testing/`, in `tsconfig.spec.json` and excluded from `tsconfig.app.json` | Guard specs need a signed-in store fixture; the exclusion stops app code importing it. |
-| 1 | Packet is silent on the Angular CLI writing to `angular.json` | Export `NG_CLI_ANALYTICS=false` before `ng` commands | The first `ng` run added an unformatted `"analytics": false`, which fails `format:check`. Reverted. |
+| 1 | Packet is silent on the Angular CLI writing to `angular.json` | Export `NG_CLI_ANALYTICS=false` before `ng` commands | The first `ng` run added an unformatted `"analytics": false`, which fails `format:check`. Reverted. **Superseded in Phase 2 -- the env var does not actually stop it; see Phase 2 deviation 13.** |
+| 2 | Packet: read `frontend-react/DESIGN.md` | It lives at `frontend/DESIGN.md` | R5. Phase 0 moved the React app but left `DESIGN.md` behind. Content unchanged; still the source of truth. |
+| 2 | Packet: `shared/components/ui/` is "10 files" / "10 primitives" | 9 primitives ported; the 10th file is `button.test.tsx` | R5. The packet's own list names nine. `/dev/kit` renders those nine plus `app-spinner` and `app-error`. |
+| 2 | Packet lists confirm-dialog and toast under `shared/components/ui/` | Both in `core/components/`, with navigation, spinner and app-error | R5. PLAN.md §4 puts them there and Phase 1 left the `.gitkeep` folders waiting. |
+| 2 | PLAN.md §4 has no folder for a demo route | Added `src/app/dev/kit-page/` | The packet requires `/dev/kit` and that it be trivially removable; a top-level `dev/` says "not the product". |
+| 2 | Packet: prove the pattern with the login **and signup** schemas | Login rebuilt on Signal Forms; signup stays a placeholder, its schema proven on `/dev/kit` | PLAN.md §1 makes auth screens Phase 3's pattern-setter; building signup here takes work out of the phase scoped for it. |
+| 2 | Phase 1 handoff: "delete the `(ngSubmit)` workaround" | Native `(submit)` + `preventDefault()` stays | It was never a workaround -- Signal Forms brings no `NgForm`, so native submit is the documented idiom. |
+| 2 | React's `<Button>` defaulted to `type="submit"` inside a form | `<app-button>` defaults to `type="button"` | Explicit beats implicit for the one behaviour that silently posts a form. |
+| 2 | React portaled the dialog into `document.body` | Renders in place; `fixed inset-0 z-50`, host `display: contents` | A portal needs `@angular/cdk`, a dependency this packet does not authorise. No ancestor creates a containing block for `fixed`. |
+| 2 | `ConfirmDialog` took `ReactNode` for `title`/`description` | Plain strings | Nothing passed markup; same move D9 makes for `GameDefinition`. |
+| 2 | Packet: component test for "select keyboard nav" | The spec pins the contract that earns native keyboard nav (real `<select>`, focusable, labelled, value round-trips) | jsdom implements none of the browser's arrow-key/type-ahead handling. The real keyboard path is Playwright's `selectOption`. |
+| 2 | Packet: port `stores/theme.store.ts`; friends store unmentioned | `FriendsUiStore` ported too (UI half only) | The nav bar's friends toggle needs it, and `friends-and-theme.spec.ts` asserts the toggle is hidden from anonymous visitors. |
+| 2 | Nothing about what logout should navigate to | `withRouterConfig({ onSameUrlNavigation: "reload" })` + re-navigate the current URL after logout | Angular guards do not re-run on a store change. This reproduces React: guarded page bounces to `/login`, public page stays. |
+| 2 | Phase 1 deviation 1/8: `NG_CLI_ANALYTICS=false` "stops it recurring" | It does not. Fixed with `npx ng analytics disable --global` | The CLI rewrote `angular.json` again with the env var exported. The global setting lives in `~/.angular-config.json`, outside the repo. |
+| 2 | `src/testing/auth-fixtures.ts` claimed the tsconfig exclusion blocks app imports | Header rewritten to say it is a convention | Acting on the Phase 1 verifier's note, so no later phase trusts a guard rail that is not enforcing anything. |
+| 2 | React's inputs/selects had no `aria-invalid` | Set when they carry an error | Pixel-neutral; it is what tells a screen reader what the red border means. Same class of change as Phase 0's accessible names. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
 
@@ -93,9 +108,14 @@ is not actually enforcing anything.
   without). Postgres is on :5432 with the `tremolo` database already
   migrated; connect as the `postgres` role.
 
-- **Export `NG_CLI_ANALYTICS=false` before any `ng` command.** Without it
-  the first CLI run of a session rewrites `angular.json` with an unformatted
-  `"analytics": false`, which then fails `npm run format:check`.
+- **CLI analytics are now disabled globally** (`~/.angular-config.json`,
+  written by `npx ng analytics disable --global` in Phase 2). Before that,
+  the CLI kept rewriting `angular.json` with an unformatted
+  `"analytics": false`, which fails `npm run format:check` --
+  `NG_CLI_ANALYTICS=false` did **not** reliably prevent it, despite what the
+  Phase 1 note said. Exporting the env var is still harmless. If
+  `angular.json` ever shows that diff again, `git checkout` it and re-run the
+  global disable.
 
 - **`frontend/` is the Angular app; `frontend-react/` is the React one.**
   Both are checked by CI and by `make check`. The deploy workflow builds
