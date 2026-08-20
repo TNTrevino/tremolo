@@ -98,17 +98,53 @@ export async function playIdentificationGame(
 }
 
 /**
- * Waits for the app to confirm a finished game was persisted.
- *
- * Game over and save-complete are different moments: the POST is fired when
- * the game ends, so anything that reads the score afterwards -- a
- * navigation, an API assertion -- is racing it. Only meaningful when a user
- * is signed in; anonymous games are not saved at all.
+ * How many of the finished game's questions were answered correctly, read
+ * off the results screen.
  */
-export async function expectScoreSaved(page: Page): Promise<void> {
-	await expect(page.getByText("Game results saved successfully!")).toBeVisible({
-		timeout: 15_000,
-	});
+export async function correctCount(page: Page): Promise<number> {
+	const summary = await page
+		.getByText(/^Score: \d+\/\d+$/)
+		.first()
+		.textContent();
+	const match = /Score: (\d+)\/(\d+)/.exec(summary ?? "");
+	expect(
+		match,
+		"the results screen should show Score: correct/total",
+	).not.toBeNull();
+	return Number(match![1]);
+}
+
+/**
+ * Asserts the app reported what happened to the finished game's score.
+ *
+ * Two things make this more than "wait for a toast":
+ *
+ * 1. Game over and save-complete are different moments -- the POST is fired
+ *    when the game ends -- so anything that reads the score afterwards is
+ *    racing the request unless it waits here first.
+ *
+ * 2. The Go service **rejects a game with zero correct answers**: the DTO
+ *    marks `correct_questions` `validate:"required"`, and `required` refuses
+ *    a zero, so the save comes back 400. The specs answer without knowing
+ *    the right answer (deliberately -- see games.spec.ts), so a run that
+ *    scores nothing is normal and must not be reported as a frontend
+ *    failure. What is asserted is that the frontend told the player the
+ *    truth either way, which is behaviour the Angular port owes as well.
+ *
+ * Returns whether the score was actually persisted.
+ */
+export async function expectScoreOutcomeReported(page: Page): Promise<boolean> {
+	const saved = (await correctCount(page)) > 0;
+
+	await expect(
+		page.getByText(
+			saved
+				? "Game results saved successfully!"
+				: /Failed to save game results/,
+		),
+	).toBeVisible({ timeout: 15_000 });
+
+	return saved;
 }
 
 /**

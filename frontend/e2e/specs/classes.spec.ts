@@ -7,7 +7,7 @@ import {
 	unique,
 	type SeededUser,
 } from "../support/api";
-import { expectScoreSaved, login } from "../support/app";
+import { expectScoreOutcomeReported, login } from "../support/app";
 
 /**
  * Golden flows: a teacher creates a class, a student joins one, and a
@@ -120,10 +120,12 @@ test.describe("classes", () => {
 
 		// Game over and save-complete are different moments; leaving the page
 		// in between aborts the POST and the attempt is lost.
-		await expectScoreSaved(page);
+		const saved = await expectScoreOutcomeReported(page);
 
 		// Back on the list, the attempt is counted against the assignment.
 		await page.goto("/assignments");
-		await expect(page.getByText(/1 attempt\b/).first()).toBeVisible();
+		await expect(
+			page.getByText(saved ? /1 attempt\b/ : "No attempts yet").first(),
+		).toBeVisible();
 	});
 });

@@ -124,10 +124,11 @@ needed care:
 - **The note game has two scale pickers** (settings bar + mobile drawer),
   one hidden per viewport. `visibleScalePicker()` filters on visibility, not
   on structure.
-- **Never read a score straight after game over.** `expectScoreSaved()`
-  waits for the app's own success toast first; the POST is fired on game
-  end, so a navigation or an API poll placed immediately after it is racing
-  the request. Three separate flakes traced back to this one seam.
+- **Never read a score straight after game over.**
+  `expectScoreOutcomeReported()` waits for the app's own toast first; the
+  POST is fired on game end, so a navigation or an API poll placed
+  immediately after it is racing the request. Several flakes traced back to
+  this one seam.
 
 ### Running it
 
@@ -249,27 +250,39 @@ page can call the Go service — that is the first thing that will bite.
 5. **`/` redirects to `/note-game`**, not to `/home`.
 6. **Game over and save-complete are different moments.** The score POST is
    fired when the game ends; navigating away in between aborts it and the
-   attempt is silently lost. The assignment spec waits for the app's own
-   "Game results saved successfully!" toast before navigating -- that toast
-   is part of the contract and the Angular port must keep it.
+   attempt is silently lost. Both toasts -- "Game results saved
+   successfully!" and "Failed to save game results. Your score was not
+   recorded." -- are part of the contract and the Angular port must keep
+   both, wording included; the specs select on them.
 
-### A real bug in the Go service (out of scope, but it shapes the harness)
+### Two real bugs in the Go service (out of scope, but they shape the harness)
 
-`DTOs/Entry.NPM` is an **`int8`**. A score above 127 notes-per-minute fails
-`ShouldBindJSON` and the save returns `400 Invalid request body` — the
-player's game is silently lost. The harness therefore paces answers at
-1200 ms (`ANSWER_INTERVAL_MS` in `e2e/support/app.ts`), which puts a
-10-question game near 50 npm. At machine speed every save 400s; at 800 ms
-it lands near 80 and tipped over the ceiling intermittently under load. `UserID` is an `int16` and user ids are already in the
-1500s, so that one has headroom left but not unlimited.
+Both are in `DTOs/entry_dto.go`, on the score-entry payload, and both make a
+finished game unsaveable. The Go service is out of scope for this
+migration; recorded here so they are not rediscovered as "port bugs".
 
-A worked example from a passing run, for calibration:
-`{"time_length":"00:00:08","total_questions":10,"notes_per_minute":80,...}`
--- 80 is already two-thirds of the way to the ceiling for a 10-question
-game answered at roughly one per second.
+**1. A game with zero correct answers cannot be saved.** `CorrectQuestions`
+is tagged `validate:"required"`, and go-playground/validator's `required`
+rejects a zero value, so the POST comes back `400`. A real beginner who
+gets nothing right loses their score and sees "Failed to save game
+results."
 
-This is not an Angular problem and the Go service is out of scope for this
-migration — recorded here so it is not rediscovered as a "port bug".
+This is why the game specs do not simply assert "the score was saved".
+They answer without knowing the right answer (deliberately -- checking
+correctness would mean porting each game's music theory into the harness),
+so a zero-score run is normal. `expectScoreOutcomeReported()` reads the
+results screen's `Score: correct/total`, then asserts the app reported the
+matching outcome -- the success toast, or the failure toast -- and returns
+whether the score was persisted so the caller can assert the database
+accordingly. **What that pins on the Angular port is that it tells the
+player the truth either way**, not that the save always succeeds.
+
+**2. `NPM` is an `int8`.** A score above 127 notes-per-minute fails the
+JSON bind, same 400, same silent loss. The harness paces answers at 1200ms
+(`ANSWER_INTERVAL_MS` in `e2e/support/app.ts`), which puts a ten-question
+game near 50 -- comfortably clear. At machine speed every save fails.
+`UserID` is an `int16` and ids are already in the 1500s: headroom, but not
+unlimited.
 
 ### CI and deploy
 

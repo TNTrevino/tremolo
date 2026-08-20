@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { createUser, recentEntries, type SeededUser } from "../support/api";
 import {
-	expectScoreSaved,
+	expectScoreOutcomeReported,
 	expectStaffRendered,
 	login,
 	playIdentificationGame,
@@ -60,21 +60,22 @@ test.describe("games", () => {
 			await useQuestionMode(page, "identification");
 			await playIdentificationGame(page, game.answer);
 
-			await expectScoreSaved(page);
 			await expect(page.getByText(/Accuracy/)).toBeVisible();
 			await expect(
 				page.getByRole("button", { name: /play again/i }),
 			).toBeVisible();
 
-			// The score reached the database, not just the results screen.
+			// The score reached the database, not just the results screen --
+			// when the server accepted it. A game that happened to score zero
+			// is rejected by the Go service, and the frontend's job is then to
+			// say so rather than to persist anything.
+			const saved = await expectScoreOutcomeReported(page);
 			await expect
 				.poll(
 					async () => (await recentEntries(student, game.gameType)).length,
-					{
-						timeout: 15_000,
-					},
+					{ timeout: 15_000 },
 				)
-				.toBe(before.length + 1);
+				.toBe(before.length + (saved ? 1 : 0));
 		});
 	}
 
@@ -87,13 +88,13 @@ test.describe("games", () => {
 		await page.goto("/note-game");
 		await useQuestionMode(page, "note");
 		await playIdentificationGame(page, /^C(\s|$)/);
-		await expectScoreSaved(page);
 
+		const saved = await expectScoreOutcomeReported(page);
 		await expect
 			.poll(async () => (await recentEntries(student, "note")).length, {
 				timeout: 15_000,
 			})
-			.toBe(before.length + 1);
+			.toBe(before.length + (saved ? 1 : 0));
 	});
 
 	test("renders a staff on every game before the first answer", async ({
