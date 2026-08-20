@@ -93,6 +93,17 @@ export const routes: Routes = [
 			),
 	},
 
+	// --- Not part of the app ---------------------------------------------
+	// The Phase 2 UI-kit showcase. Unguarded, imported by nothing, and
+	// removable by deleting this entry plus src/app/dev/.
+	{
+		path: "dev/kit",
+		loadComponent: () =>
+			import("./dev/kit-page/kit-page.component").then(
+				(m) => m.KitPageComponent,
+			),
+	},
+
 	// --- Guest only (was GuestRoute) -------------------------------------
 	{
 		path: "login",

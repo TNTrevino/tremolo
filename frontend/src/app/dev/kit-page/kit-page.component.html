@@ -1,0 +1,316 @@
+<div class="container mx-auto space-y-10 px-4 py-10">
+	<header class="space-y-2">
+		<h1 class="font-display text-3xl font-bold tracking-tight">
+			Shared UI kit
+		</h1>
+		<p class="max-w-2xl text-sm text-muted-foreground">
+			Every primitive this app is built from. Use the theme toggle in the
+			navigation bar to see the whole page in the other theme; the last section
+			is pinned to dark so both are on screen at once.
+		</p>
+	</header>
+
+	<!-- Buttons -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Button</h2>
+		<div class="flex flex-wrap items-center gap-3">
+			@for (variant of variants; track variant) {
+				<app-button [variant]="variant">{{ variant }}</app-button>
+			}
+		</div>
+		<div class="flex flex-wrap items-center gap-3">
+			@for (size of sizes; track size) {
+				<app-button
+					[size]="size"
+					variant="outline"
+					[ariaLabel]="size === 'icon' ? 'Icon button' : null"
+				>
+					@if (size === "icon") {
+						<ng-icon name="lucideMusic" aria-hidden="true" class="h-5 w-5" />
+					} @else {
+						{{ size }}
+					}
+				</app-button>
+			}
+		</div>
+		<div class="flex flex-wrap items-center gap-3">
+			<app-button [loading]="true">Saving</app-button>
+			<app-button [disabled]="true">Disabled</app-button>
+			<app-button variant="brass" size="lg"
+				>One brass CTA per screen</app-button
+			>
+		</div>
+	</section>
+
+	<!-- Card -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Card</h2>
+		<div appCard class="max-w-md">
+			<div appCardHeader>
+				<h3 appCardTitle class="font-display">Card title</h3>
+				<p appCardDescription>
+					One soft shadow, a two-pixel border, raised paper.
+				</p>
+			</div>
+			<div appCardContent>
+				<p class="text-sm">
+					Cards are the one place DESIGN.md allows a shadow.
+				</p>
+			</div>
+			<div appCardFooter class="gap-2">
+				<app-button variant="outline" size="sm">Cancel</app-button>
+				<app-button size="sm">Save</app-button>
+			</div>
+		</div>
+	</section>
+
+	<!-- Input, label, select, skeleton -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">
+			Input, label, select, skeleton
+		</h2>
+		<div class="grid max-w-3xl gap-4 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<label appLabel for="kit-input" class="block">Plain input</label>
+				<input
+					appInput
+					id="kit-input"
+					placeholder="Type something"
+					[value]="plainInput()"
+				/>
+			</div>
+			<div class="space-y-1.5">
+				<label appLabel for="kit-input-error" class="block"
+					>Input with an error</label
+				>
+				<input
+					appInput
+					id="kit-input-error"
+					error="That name is already taken"
+					value="tremolo"
+				/>
+			</div>
+			<div class="space-y-1.5">
+				<label appLabel for="kit-select" class="block">Select</label>
+				<app-select selectId="kit-select" [(value)]="plainSelect">
+					<option value="treble">Treble</option>
+					<option value="bass">Bass</option>
+					<option value="alto">Alto</option>
+				</app-select>
+				<p class="text-xs text-muted-foreground">
+					Selected: {{ plainSelect() }}
+				</p>
+			</div>
+			<div class="space-y-2">
+				<p class="text-sm font-medium">Skeleton</p>
+				<div appSkeleton class="h-4 w-3/4"></div>
+				<div appSkeleton class="h-4 w-1/2"></div>
+				<div appSkeleton class="h-20 w-full"></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Loading and error states -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Spinner and error</h2>
+		<p class="max-w-2xl text-sm text-muted-foreground">
+			These two are the loading and error arms of the resource template block
+			that replaced <code>QueryState</code>.
+		</p>
+		<div class="grid max-w-3xl gap-4 sm:grid-cols-2">
+			<div appCard><app-spinner /></div>
+			<div appCard>
+				<app-error [error]="'The classes could not be loaded.'" />
+			</div>
+		</div>
+	</section>
+
+	<!-- Dialogs -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Dialog and confirm dialog</h2>
+		<div class="flex flex-wrap gap-3">
+			<app-button variant="outline" (click)="dialogOpen.set(true)"
+				>Open dialog</app-button
+			>
+			<app-button variant="destructive" (click)="confirmOpen.set(true)"
+				>Delete something</app-button
+			>
+		</div>
+
+		<app-dialog [(open)]="dialogOpen">
+			<div appDialogContent class="max-w-lg">
+				<div appDialogHeader>
+					<h2 appDialogTitle class="font-display">A dialog</h2>
+				</div>
+				<div class="space-y-2 p-6">
+					<p class="text-sm text-muted-foreground">
+						Click the backdrop or press Escape to close.
+					</p>
+				</div>
+				<div appDialogFooter>
+					<app-button variant="outline" (click)="dialogOpen.set(false)"
+						>Close</app-button
+					>
+				</div>
+			</div>
+		</app-dialog>
+
+		<app-confirm-dialog
+			[(open)]="confirmOpen"
+			title="Delete this thing?"
+			description="This cannot be undone. The confirm button shows its own loading state."
+			confirmLabel="Delete"
+			[pending]="confirmPending()"
+			(confirm)="confirmDestructive()"
+		/>
+	</section>
+
+	<!-- Toasts -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Toast</h2>
+		<div class="flex flex-wrap gap-3">
+			@for (type of toastTypes; track type) {
+				<app-button variant="outline" (click)="showToast(type)"
+					>Show {{ type }}</app-button
+				>
+			}
+		</div>
+	</section>
+
+	<!-- Forms -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">
+			Form components (Signal Forms + zod)
+		</h2>
+		<p class="max-w-2xl text-sm text-muted-foreground">
+			The real signup schema, validated by zod through
+			<code>validateStandardSchema</code>. Blur a field or press Validate to
+			reveal messages; fix the value and the message clears.
+			<em>Confirm password</em> is the cross-field case.
+		</p>
+
+		<div appCard class="max-w-xl">
+			<div appCardContent class="space-y-4 pt-6">
+				<app-form-field
+					label="First Name"
+					htmlFor="kit-first"
+					[required]="true"
+					[field]="signupForm.firstName"
+				>
+					<input
+						appFormInput
+						id="kit-first"
+						[formField]="signupForm.firstName"
+					/>
+				</app-form-field>
+
+				<app-form-field
+					label="Email Address"
+					htmlFor="kit-email"
+					[required]="true"
+					[field]="signupForm.email"
+				>
+					<input
+						appFormInput
+						id="kit-email"
+						type="email"
+						[formField]="signupForm.email"
+					/>
+				</app-form-field>
+
+				<app-form-field
+					label="Password"
+					htmlFor="kit-password"
+					[required]="true"
+					[field]="signupForm.password"
+				>
+					<input
+						appFormInput
+						id="kit-password"
+						type="password"
+						[formField]="signupForm.password"
+					/>
+				</app-form-field>
+
+				<app-form-field
+					label="Confirm Password"
+					htmlFor="kit-confirm"
+					[required]="true"
+					[field]="signupForm.confirmPassword"
+				>
+					<input
+						appFormInput
+						id="kit-confirm"
+						type="password"
+						[formField]="signupForm.confirmPassword"
+					/>
+				</app-form-field>
+
+				<div class="space-y-1.5">
+					<app-form-label htmlFor="kit-role" [required]="true"
+						>I am a...</app-form-label
+					>
+					<app-select
+						appFormSelect
+						selectId="kit-role"
+						[formField]="signupForm.role"
+					>
+						<option value="STUDENT">Student</option>
+						<option value="TEACHER">Teacher</option>
+						<option value="PARENT">Parent</option>
+					</app-select>
+					<app-form-error [message]="signupForm.role().errors()[0]?.message" />
+				</div>
+
+				<div class="flex flex-wrap gap-3">
+					<app-button (click)="validateSignup()">Validate</app-button>
+					<app-button variant="outline" (click)="resetSignup()"
+						>Fill with valid values</app-button
+					>
+				</div>
+
+				<p class="text-xs text-muted-foreground">
+					Form valid: {{ signupForm().valid() }}
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Music -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Rhythm glyph</h2>
+		<div class="flex flex-wrap items-end gap-6">
+			<app-rhythm-glyph rhythm="1111" [rhythmType]="16" />
+			<app-rhythm-glyph rhythm="121" [rhythmType]="16" />
+			<app-rhythm-glyph rhythm="0111" [rhythmType]="16" />
+			<app-rhythm-glyph rhythm="10" [rhythmType]="8" />
+			<app-rhythm-glyph rhythm="11" [rhythmType]="8" />
+		</div>
+	</section>
+
+	<!-- Forced-dark preview -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Pinned to dark</h2>
+		<div class="dark rounded-lg border-2 border-border">
+			<div class="space-y-6 bg-background p-6 text-foreground">
+				<div class="flex flex-wrap items-center gap-3">
+					@for (variant of variants; track variant) {
+						<app-button [variant]="variant">{{ variant }}</app-button>
+					}
+				</div>
+				<div appCard class="max-w-md">
+					<div appCardHeader>
+						<h3 appCardTitle class="font-display">Charcoal, not purple</h3>
+						<p appCardDescription>
+							Selected states flip to a light ink fill in dark mode.
+						</p>
+					</div>
+					<div appCardContent class="space-y-3">
+						<input appInput placeholder="An input on charcoal" />
+						<div appSkeleton class="h-4 w-2/3"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</div>
