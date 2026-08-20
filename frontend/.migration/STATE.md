@@ -9,7 +9,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
-| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..8ecc6aa` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. |
+| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..8ecc6aa` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. **Verification 2026-08-20: every packet exit criterion passes, but the phase is held at `built` -- deviation 12 (logout) does not do what it claims. See the Phase 2 verifier findings below.** |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
 | 5     | Identification-game engine | pending | —    | —       |       |
@@ -85,6 +85,86 @@ is not actually enforcing anything.
   convention, not a compile-time barrier. A phase that wants it enforced
   needs an ESLint `no-restricted-imports` (or `import/no-restricted-paths`)
   rule — `eslint.config.js` currently has none.
+
+### Verifier findings (Phase 2, 2026-08-20) — status held at `built`
+
+Every criterion in the phase-2 packet's **Exit criteria** passes. The phase
+is nevertheless **not** marked `done`, because one shipped behaviour does not
+do what the handoff and deviation 12 say it does. Phase 2's builder owns the
+fix; the verifier does not fix.
+
+**F1 (blocking). Logout does not bounce a guarded page to `/login`.**
+Deviation 12 and handoff §6 both assert that
+`withRouterConfig({ onSameUrlNavigation: "reload" })` plus
+`router.navigateByUrl(router.url)` "makes the guards run again" and
+"reproduces React exactly". It does not. Driven in Chromium against the Go
+service on :5001:
+
+- sign in, land on `/dashboard`, open the account menu, press **Log Out**
+- the session *is* cleared (`tremolo-auth` goes to
+  `{"user":null,"token":null,"isAuthenticated":false}`) and the nav bar
+  correctly flips to the signed-out chrome (Login link, no account menu, no
+  friends toggle)
+- **the URL stays `/dashboard`** at t = 0.5s / 1s / 2s / 4s / 8s, and the
+  guarded page keeps rendering to a signed-out visitor
+
+The guard itself is fine: an anonymous visit to `/dashboard` redirects, and
+so does a fresh navigation *after* the logout. Only the re-navigation fails
+to re-run it. React's `ProtectedRoute` re-rendered on the store change and
+bounced, so this is a real behaviour change, not a cosmetic one.
+
+Cause, confirmed by experiment: `onSameUrlNavigation: "reload"` re-processes
+the navigation but does not by itself re-run `canActivate`. Angular's default
+`runGuardsAndResolvers` is `"paramsOrQueryParamsChange"`, and re-navigating
+to an identical URL changes neither. Adding `runGuardsAndResolvers: "always"`
+to the `dashboard` route made the same script bounce to `/login` at t=0.5s;
+the diagnostic was reverted and the working tree left clean. Whether the
+right fix is that property on all eight guarded routes, a
+`router.navigate(["/login"])` when the current route is guarded, or
+something else is the builder's call — but deviation 12's rationale as
+written is false and must not be inherited by Phase 3.
+
+The half of deviation 12 that *does* hold: logging out on a **public** page
+(`/about`) leaves the visitor there. Verified.
+
+**F2 (note, non-blocking). Handoff §8 miscounts `button.component.spec.ts`.**
+It says 16 tests; the file actually runs **22** (verbose vitest reporter).
+The suite total, 104 tests in 16 files, is exact.
+
+**What was verified green** (all run by the verifier, not taken from the
+handoff): `npm run build` / `lint` / `test:run` / `format:check` all exit 0,
+104 tests in 16 files; no `lucide-react` or `ngx-toastr` in `package.json`;
+`shareReplay` only in `refresh.interceptor.ts`; no NgModules, no `zone.js`
+(`npm ls zone.js` empty), no stored `Subscription`, no hand-written
+unsubscribe, no `takeUntil` subject, no caching layer — every `.subscribe()`
+in app code is a one-shot handler or a `timer()` under `takeUntilDestroyed`;
+`e2e/`, `.migration/baselines/` and `frontend-react/` untouched across the
+range; the only new runtime deps are the two R6-recorded `@ng-icons`
+packages (`@ng-icons/core@35.0.1` peers `@angular/core >=22.0.0`;
+`@ng-icons/lucide` declares no peers), and no `@angular/cdk` was installed;
+the icon registry's 47 symbols are exactly the 47 `lucide-react` imports
+across the React app's 33 consumers; `/dev/kit` renders all nine primitives,
+both dialogs, toast, spinner, `app-error`, RhythmGlyph and all five form
+components, legible in both themes; theme toggles the `documentElement`
+class, writes Zustand's envelope to `tremolo-theme` and survives a reload;
+dialog closes by button and by Escape; toast shows, dismisses on click and
+self-dismisses at 5s; the zod round trip appears and clears on `/login`, a
+wrong password shows "Invalid credentials" and stays on `/login`, and the Go
+service's own 400 message surfaces too; the three icon-only nav controls
+("Switch to light theme", "Open friends", "Open menu") all carry accessible
+names. Two specs were mutation-tested: neutering
+`FormFieldComponent.message` failed 3 tests, and dropping the `closed.emit`
+from `ToastItemComponent.dismiss()` failed 1; both were restored and
+`git diff` was empty afterwards. `navigation.spec.ts` passes 26/26 against
+Angular on :4200; `friends-and-theme.spec.ts` fails only its friends-panel
+test, which Phase 3 owns as the handoff says. `/dev/kit` and the login page
+read as DESIGN.md conformant — ink does the everyday work, brass appears
+once as the CTA, `--accent` only as a hover wash, one soft shadow on cards
+and none on buttons, charcoal rather than purple in dark. No violations to
+flag.
+
+Env note for the next agent: `:4200` was free and used for this run,
+contrary to handoff §10.
 
 ---
 
