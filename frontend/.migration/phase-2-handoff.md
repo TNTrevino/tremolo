@@ -2,7 +2,11 @@
 
 Status: **built**. `npm run build`, `npm run lint`, `npm run test:run` and
 `npm run format:check` all exit 0 (104 unit tests in 16 files, up from 27 in
-8). The kit was also driven in a real browser — see §8.
+8; **109 in 17** after the F1 fix). The kit was also driven in a real browser
+— see §8.
+
+**Read §11 before §6 or deviation 12.** The verifier's finding F1 showed the
+logout claim in both was false; §11 is the correction and the fix.
 
 ---
 
@@ -42,7 +46,8 @@ it exist.
 
 `app.config.ts` gained three providers: `provideIcons(TREMOLO_ICONS)`,
 `{ provide: ErrorHandler, useClass: GlobalErrorHandler }`, and
-`withRouterConfig({ onSameUrlNavigation: "reload" })` (see §6, logout).
+`withRouterConfig(ROUTER_CONFIG)`, which is
+`{ onSameUrlNavigation: "reload" }` (see §6 and §11, logout).
 
 ---
 
@@ -241,12 +246,15 @@ nothing renders until something actually throws.
 
 ## 6. Behaviour notes for Phase 3+
 
-- **Logout re-runs guards.** `AuthService.logout()` clears the session;
+- **Logout re-runs guards.** ~~`AuthService.logout()` clears the session;
   `NavigationComponent` then does `router.navigateByUrl(router.url)`, and
   `onSameUrlNavigation: "reload"` (app.config.ts) makes the guards run again.
   That reproduces React exactly: a guarded page bounces to `/login`, a public
   page stays put. No E2E spec covers logout, so this was a judgement call —
-  recorded as a deviation.
+  recorded as a deviation.~~ **Wrong as shipped — the verifier's finding F1.**
+  `onSameUrlNavigation: "reload"` does not make the guards run again on its
+  own, so the guarded page kept rendering to a signed-out visitor. Fixed in
+  §11; read that instead.
 - **Theme.** Key `tremolo-theme`, Zustand's envelope
   `{"state":{"theme":"dark"},"version":0}`, default `dark`, class swapped on
   `documentElement`. `AppComponent` injects `ThemeStore` purely so the class
@@ -299,7 +307,7 @@ Tests the packet required, and where they live:
 
 | Requirement                                  | Spec                                                       |
 | -------------------------------------------- | ---------------------------------------------------------- |
-| Button variants                              | `shared/components/ui/button.component.spec.ts` (16 tests)  |
+| Button variants                              | `shared/components/ui/button.component.spec.ts` (22 tests)  |
 | Dialog open / close / escape                 | `shared/components/ui/dialog.component.spec.ts`             |
 | Select keyboard nav                          | `shared/components/ui/select.component.spec.ts` — see below |
 | Toast show / dismiss                         | `core/components/toast/toast-container.component.spec.ts`   |
@@ -354,7 +362,7 @@ delivers — both need the Go service on :5001 for their fixtures.
 | 9   | React's `ConfirmDialog` took `ReactNode` for `title`/`description`                | Strings                                                                                                 | Nothing passed markup, and turning component-shaped data back into plain data is the same move D9 makes for `GameDefinition`.                                                                                                                   |
 | 10  | Packet: component test for "select **keyboard nav**"                              | The spec pins the contract that *earns* native keyboard nav, not the key handling                       | The control is a native `<select>`; arrow keys, type-ahead and Home/End are the browser's, and **jsdom implements none of them**. The spec asserts it really is a `<select>`, is focusable, carries its label's `for` id, and round-trips a selection. The real keyboard path is Playwright's `selectOption`. |
 | 11  | Packet: port `stores/theme.store.ts`; friends store is not mentioned              | `FriendsUiStore` was ported too                                                                         | The nav bar's friends toggle needs `isPanelOpen`/`togglePanel`, and `friends-and-theme.spec.ts` asserts the toggle is hidden from anonymous visitors. Only the UI half was ported; nothing here touches the API.                                |
-| 12  | Nothing in the packet about logout navigation                                     | Added `withRouterConfig({ onSameUrlNavigation: "reload" })` and re-navigate after logout                | Angular guards do not re-run when a store changes, so without it a signed-out user stays on `/dashboard`. This is the smallest change that reproduces React's behaviour on both guarded and public pages.                                        |
+| 12  | Nothing in the packet about logout navigation                                     | Re-navigate the current URL after logout, with `onSameUrlNavigation: "reload"` **and** `runGuardsAndResolvers: "always"` on the seven signed-in-only routes | Angular guards do not re-run when a store changes. **Corrected after verifier finding F1:** the first two pieces alone left the signed-out visitor on `/dashboard`, because the default `runGuardsAndResolvers` (`"paramsOrQueryParamsChange"`) never fires on a same-URL navigation. All three together reproduce React's behaviour on both guarded and public pages; `app.routes.spec.ts` covers it. See §11. |
 | 13  | Phase 1 deviation 8: `NG_CLI_ANALYTICS=false` "stops it recurring"                | It did **not**. Fixed properly with `npx ng analytics disable --global`                                 | The CLI rewrote `angular.json` with an unformatted `"analytics": false` again even with the env var exported. The global setting lives in `~/.angular-config.json`, outside the repo, and `ng build`/`lint`/`test` now leave `angular.json` untouched. |
 | 14  | Phase 1 deviation 7 / `src/testing/auth-fixtures.ts` header                       | The header now says the split is a convention, not a barrier                                            | The Phase 1 verifier disproved the original claim by importing the fixture from `auth.store.ts` and building clean. Left uncorrected, a later phase would trust a guard rail that is not enforcing anything.                                     |
 | 15  | React's inputs/selects had no `aria-invalid`                                       | `appInput`, `appFormInput` and `app-select` set it when they carry an error                             | Pixel-neutral, and it is the attribute that tells a screen reader what the red border says. Same class of change as Phase 0's accessible names.                                                                                                 |
@@ -385,6 +393,113 @@ delivers — both need the Go service on :5001 for their fixtures.
   is what lets the button swap its content for the spinner.
 - **`TestBed.tick()`** flushes effects in a zoneless service test (the theme
   store spec uses it); `fixture.whenStable()` is the component equivalent.
-- The dev server refuses `:4200` on this machine — something else already
+- ~~The dev server refuses `:4200` on this machine — something else already
   holds it. `npm run dev -- --port 4321` works; note that
-  `E2E_BASE_URL` then has to match.
+  `E2E_BASE_URL` then has to match.~~ **Not a standing fact.** `:4200` was
+  busy during this phase's build session only; the verifier found it free and
+  ran the parity suite on it, and so did the F1 fix session. Check the port
+  before assuming either way — `npm run dev -- --port <n>` works if it is
+  taken, and `E2E_BASE_URL` then has to match.
+
+---
+
+## 11. Fix addendum — verifier findings F1 and F2 (2026-08-20)
+
+The phase was held at `built` on one blocking finding. This section is the
+correction; where it disagrees with §6 or deviation 12 above, this section
+wins. Nothing outside the findings was touched.
+
+### F1 — logging out on a guarded page now bounces to `/login`
+
+**What was wrong.** §6 and deviation 12 claimed
+`withRouterConfig({ onSameUrlNavigation: "reload" })` plus
+`router.navigateByUrl(router.url)` re-ran the guards. It does not.
+`onSameUrlNavigation: "reload"` only decides whether a navigation to the URL
+you are already on is *processed* instead of dropped; whether that processed
+navigation re-runs `canActivate` is `runGuardsAndResolvers`, which defaults to
+`"paramsOrQueryParamsChange"` — and a same-URL navigation changes neither.
+So the session cleared, the nav bar flipped to signed-out chrome, and the
+visitor stayed on `/dashboard` reading a guarded page.
+
+**The fix.** `runGuardsAndResolvers: "always"` on the seven signed-in-only
+routes (`dashboard`, `profile`, `account`, `assignments`,
+`assignments/:id/play`, `classes`, `classes/:id`). This is the verifier's own
+diagnostic, promoted to the fix: it keeps the guards as the single source of
+truth for who may see a route, rather than teaching the logout button a second
+list of which URLs are guarded.
+
+The guest-only routes (`login`, `signup`) deliberately do not carry it —
+nothing re-navigates them in place, and signing in navigates away explicitly.
+
+Two supporting changes, both in service of the fix:
+
+- `app.config.ts` now exports `ROUTER_CONFIG` (`{ onSameUrlNavigation:
+  "reload" }`) so the spec drives the app's real router configuration instead
+  of a copy that could drift from it.
+- The three comments that repeated the false claim — in `app.config.ts`,
+  `app.routes.ts` and `NavigationComponent.logout()` — now say what actually
+  happens and name the other half.
+
+`NavigationComponent.logout()` itself is unchanged: clear the session, close
+the menus, re-navigate `router.url`.
+
+### The test, and the proof it guards the fix
+
+`src/app/app.routes.spec.ts` (new, 5 tests). It builds a shell of
+`<app-navigation> + <router-outlet>` over the **real** `routes` and the
+**real** `ROUTER_CONFIG`, with only the lazy `loadComponent`s swapped for a
+blank component — guards and route flags are the shipped ones. Each test signs
+in, navigates, opens the account menu and presses **Log Out**, exactly as a
+user does:
+
+| Test | Asserts |
+| ---- | ------- |
+| guarded page | `/dashboard` → `/login`, session cleared |
+| teacher page | `/classes` as a TEACHER → `/login` |
+| redirect memory | `/assignments` is what `AuthStore.redirectUrl` holds afterwards |
+| public page | `/about` → still `/about` (the half that already worked) |
+| route table | every route guarded by `authGuard`/`teacherGuard` carries `runGuardsAndResolvers: "always"` — seven of them, so a new guarded route added in Phase 3+ cannot quietly miss it |
+
+**Mutation proof, run twice.** With the fix in place: 109 tests in 17 files,
+all green.
+
+1. Deleted the seven `runGuardsAndResolvers: "always"` lines and re-ran
+   `npm run test:run`: **4 of the 5 fail** — the three logout-bounce tests
+   report `expected '/dashboard' to be '/login'` (and `redirectUrl` `null`),
+   and the route-table test reports `expected 'dashboard: undefined' to be
+   'dashboard: always'`. The public-page test still passes, which is correct:
+   that behaviour never depended on the fix. Restored.
+2. Flipped `ROUTER_CONFIG` to `onSameUrlNavigation: "ignore"` and re-ran:
+   **3 fail** — the same three bounce tests. So the spec pins *both* halves of
+   the mechanism, not just the new one. Restored.
+
+`git diff` was empty after each restore before the fix was re-applied.
+
+### Browser verification (the fix, not the test)
+
+Chromium against the Go service on `:5001`, `ng serve` on `:4200`, a freshly
+registered student:
+
+- sign in → `/dashboard`; account menu → **Log Out** → URL is **`/login`**,
+  `tremolo-auth` is `{"user":null,"token":null,"isAuthenticated":false}`
+- sign in again, go to `/about`, log out → URL is **still `/about`**, nav bar
+  shows the Login link
+- zero console or page errors across both flows
+
+### F2 — the miscount
+
+§8 said `button.component.spec.ts` runs 16 tests. It runs **22**. Corrected in
+place. The suite total the phase reported (104 in 16 files) was exact; it is
+now **109 in 17 files** with this spec added.
+
+### Checks re-run after the fix
+
+```
+npm run build        exit 0
+npm run lint         exit 0   (--max-warnings 0)
+npm run test:run     exit 0   109 tests, 17 files
+npm run format:check exit 0
+```
+
+`e2e/` was not edited — the parity suite is read-only to this fix, and the
+vitest harness above is the committed instrument for the logout behaviour.

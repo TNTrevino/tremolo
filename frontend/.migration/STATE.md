@@ -9,7 +9,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
-| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..8ecc6aa` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. **Verification 2026-08-20: every packet exit criterion passes, but the phase is held at `built` -- deviation 12 (logout) does not do what it claims. See the Phase 2 verifier findings below.** |
+| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..HEAD` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. **Verification 2026-08-20: every packet exit criterion passes, but the phase is held at `built` -- deviation 12 (logout) does not do what it claims. See the Phase 2 verifier findings below.** **F1 fixed 2026-08-20** by the phase's builder: `runGuardsAndResolvers: "always"` on the seven signed-in-only routes, covered by the new `src/app/app.routes.spec.ts` (suite now 109 tests in 17 files) and re-verified in Chromium; F2's miscount corrected. Deviation 12 amended. Awaiting re-verification. |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
 | 5     | Identification-game engine | pending | —    | —       |       |
@@ -62,7 +62,7 @@ could not be followed as written. One row per deviation.
 | 2 | `ConfirmDialog` took `ReactNode` for `title`/`description` | Plain strings | Nothing passed markup; same move D9 makes for `GameDefinition`. |
 | 2 | Packet: component test for "select keyboard nav" | The spec pins the contract that earns native keyboard nav (real `<select>`, focusable, labelled, value round-trips) | jsdom implements none of the browser's arrow-key/type-ahead handling. The real keyboard path is Playwright's `selectOption`. |
 | 2 | Packet: port `stores/theme.store.ts`; friends store unmentioned | `FriendsUiStore` ported too (UI half only) | The nav bar's friends toggle needs it, and `friends-and-theme.spec.ts` asserts the toggle is hidden from anonymous visitors. |
-| 2 | Nothing about what logout should navigate to | `withRouterConfig({ onSameUrlNavigation: "reload" })` + re-navigate the current URL after logout | Angular guards do not re-run on a store change. This reproduces React: guarded page bounces to `/login`, public page stays. |
+| 2 | Nothing about what logout should navigate to | Re-navigate the current URL after logout, with `ROUTER_CONFIG`'s `onSameUrlNavigation: "reload"` **and** `runGuardsAndResolvers: "always"` on the seven signed-in-only routes | Angular guards do not re-run on a store change. **Amended after verifier finding F1:** the first two alone left the signed-out visitor on `/dashboard` — `onSameUrlNavigation` only lets the same-URL navigation be processed, and the default `runGuardsAndResolvers` (`"paramsOrQueryParamsChange"`) never fires on it, so `canActivate` never re-ran. With the third piece it reproduces React: guarded page bounces to `/login`, public page stays. `src/app/app.routes.spec.ts` pins both halves; handoff §11 has the mutation proof. |
 | 2 | Phase 1 deviation 1/8: `NG_CLI_ANALYTICS=false` "stops it recurring" | It does not. Fixed with `npx ng analytics disable --global` | The CLI rewrote `angular.json` again with the env var exported. The global setting lives in `~/.angular-config.json`, outside the repo. |
 | 2 | `src/testing/auth-fixtures.ts` claimed the tsconfig exclusion blocks app imports | Header rewritten to say it is a convention | Acting on the Phase 1 verifier's note, so no later phase trusts a guard rail that is not enforcing anything. |
 | 2 | React's inputs/selects had no `aria-invalid` | Set when they carry an error | Pixel-neutral; it is what tells a screen reader what the red border means. Same class of change as Phase 0's accessible names. |
@@ -165,6 +165,29 @@ flag.
 
 Env note for the next agent: `:4200` was free and used for this run,
 contrary to handoff §10.
+
+#### Builder's response (2026-08-20)
+
+Both findings are addressed; the phase stays at `built` for a verifier to
+re-check.
+
+- **F1 fixed.** `runGuardsAndResolvers: "always"` now sits on the seven
+  signed-in-only routes in `app.routes.ts` — the verifier's own diagnostic,
+  promoted to the fix, so the guards stay the single source of truth for who
+  may see a route. `app.config.ts` exports `ROUTER_CONFIG` so the new
+  `src/app/app.routes.spec.ts` drives the app's real router configuration.
+  That spec presses the real **Log Out** button over the real route table:
+  `/dashboard` and `/classes` bounce to `/login`, `/about` does not, and a
+  fifth test fails if any future guarded route omits the flag. Deleting the
+  fix fails 4 of its 5 tests; flipping `onSameUrlNavigation` to `"ignore"`
+  fails 3 — both mutations were run and reverted (handoff §11). Re-verified in
+  Chromium against the Go service on :5001: logout on `/dashboard` lands on
+  `/login`, logout on `/about` stays, no console errors.
+- **F2 corrected.** Handoff §8 now says 22 tests for
+  `button.component.spec.ts`. The `:4200` claim in handoff §10 was corrected
+  too.
+- `e2e/` was not touched. Suite is now 109 tests in 17 files; build, lint,
+  test:run and format:check all exit 0.
 
 ---
 
