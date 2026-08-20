@@ -24,10 +24,10 @@ npm run e2e                                      # against React, :5173
 E2E_BASE_URL=http://localhost:4200 npm run e2e   # against Angular
 ```
 
-| Variable        | Default                  | What it points at        |
-| --------------- | ------------------------ | ------------------------ |
-| `E2E_BASE_URL`  | `http://localhost:5173`  | the frontend under test  |
-| `E2E_MAIN_API`  | `http://localhost:5001`  | the Go service, for seeding |
+| Variable       | Default                 | What it points at           |
+| -------------- | ----------------------- | --------------------------- |
+| `E2E_BASE_URL` | `http://localhost:5173` | the frontend under test     |
+| `E2E_MAIN_API` | `http://localhost:5001` | the Go service, for seeding |
 
 ## Screenshot baselines
 
@@ -56,10 +56,10 @@ are listed in the handoff, and the Angular port must reproduce those names.
 
 ## Layout
 
-| Path                | What it is                                                |
-| ------------------- | --------------------------------------------------------- |
+| Path                | What it is                                                  |
+| ------------------- | ----------------------------------------------------------- |
 | `routes.ts`         | the 20 routes and each one's guard, shared by both projects |
-| `support/api.ts`    | seeds users/classes/assignments through the Go API         |
-| `support/app.ts`    | page helpers — the only place locators live                |
-| `specs/`            | the golden flows (`--project=golden`)                      |
-| `baselines.spec.ts` | the screenshots (`--project=baselines`)                    |
+| `support/api.ts`    | seeds users/classes/assignments through the Go API          |
+| `support/app.ts`    | page helpers — the only place locators live                 |
+| `specs/`            | the golden flows (`--project=golden`)                       |
+| `baselines.spec.ts` | the screenshots (`--project=baselines`)                     |
