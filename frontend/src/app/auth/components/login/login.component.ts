@@ -10,6 +10,7 @@ import {
 	validateStandardSchema,
 } from "@angular/forms/signals";
 import { Router, RouterLink } from "@angular/router";
+import { NgIcon } from "@ng-icons/core";
 
 import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
@@ -22,10 +23,11 @@ import {
 import { getErrorMessage } from "../../../shared/utils/error.utils";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
+import { GoogleSignInButtonComponent } from "../google-sign-in-button/google-sign-in-button.component";
 
 /**
- * Login -- and the phase's worked example of the Signal Forms + zod
- * wiring (D11) that Phase 3's auth screens copy.
+ * Login -- and, with signup, the worked example of the Signal Forms + zod
+ * wiring (D11) that the rest of Phase 3 copies.
  *
  * The whole pattern is four lines:
  *
@@ -53,6 +55,8 @@ import { AuthStore } from "../../services/auth.store";
 		FormField,
 		FormFieldComponent,
 		FormInputDirective,
+		GoogleSignInButtonComponent,
+		NgIcon,
 		RouterLink,
 		...CARD_DIRECTIVES,
 	],
@@ -72,6 +76,18 @@ export class LoginPageComponent {
 
 	readonly pending = signal(false);
 	readonly errorMessage = signal<string | null>(null);
+	readonly showPassword = signal(false);
+
+	/**
+	 * The message signup or a failed Google callback left behind, read once
+	 * at construction. React carried it in react-router's location state;
+	 * `AuthStore.takeNotice()` is the port (see `auth.store.ts`).
+	 */
+	readonly notice = signal(this.store.takeNotice());
+
+	togglePassword(): void {
+		this.showPassword.update((shown) => !shown);
+	}
 
 	/**
 	 * The native `submit` event, not `(ngSubmit)`: that one comes from
