@@ -5,5 +5,12 @@
 	"compilerOptions": {
 		"types": ["vitest/globals"]
 	},
-	"include": ["src/**/*.d.ts", "src/**/*.spec.ts", "src/test-setup.ts"]
+	"include": [
+		"src/**/*.d.ts",
+		"src/**/*.spec.ts",
+		"src/test-setup.ts",
+		/* Shared test fixtures. Kept out of tsconfig.app.json below so they
+		   cannot be imported by application code. */
+		"src/testing/**/*.ts"
+	]
 }
