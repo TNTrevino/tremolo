@@ -229,6 +229,11 @@ export function Navigation() {
 							size="icon"
 							onClick={toggleTheme}
 							className="rounded-full"
+							aria-label={
+								theme === "dark"
+									? "Switch to light theme"
+									: "Switch to dark theme"
+							}
 						>
 							{theme === "dark" ? (
 								<Sun className="h-5 w-5" />
@@ -247,6 +252,8 @@ export function Navigation() {
 									"rounded-full",
 									isPanelOpen && "bg-accent text-accent-foreground",
 								)}
+								aria-label={isPanelOpen ? "Close friends" : "Open friends"}
+								aria-expanded={isPanelOpen}
 							>
 								<Users className="h-5 w-5" />
 							</Button>
@@ -258,6 +265,9 @@ export function Navigation() {
 								<button
 									onClick={() => setUserMenuOpen(!userMenuOpen)}
 									className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-primary-foreground font-bold hover:scale-110 transition-transform"
+									aria-label="Account menu"
+									aria-haspopup="menu"
+									aria-expanded={userMenuOpen}
 								>
 									{user?.firstName[0]}
 									{user?.lastName[0]}
@@ -336,6 +346,8 @@ export function Navigation() {
 							size="icon"
 							className="md:hidden"
 							onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+							aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+							aria-expanded={mobileMenuOpen}
 						>
 							{mobileMenuOpen ? (
 								<X className="h-6 w-6" />

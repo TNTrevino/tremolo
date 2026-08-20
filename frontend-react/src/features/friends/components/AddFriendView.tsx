@@ -46,6 +46,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 					size="icon"
 					onClick={onBack}
 					className="rounded-full h-8 w-8"
+					aria-label="Back to friends"
 				>
 					<ArrowLeft className="h-4 w-4" />
 				</Button>
@@ -89,6 +90,7 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 							user={user}
 							action={
 								<AddFriendButton
+									name={`${user.firstName} ${user.lastName}`}
 									isAdded={addedIds.has(user.id)}
 									isAdding={
 										addFriend.isPending && addFriend.variables === user.id
@@ -111,12 +113,18 @@ export function AddFriendView({ onBack }: AddFriendViewProps) {
 }
 
 interface AddFriendButtonProps {
+	name: string;
 	isAdded: boolean;
 	isAdding: boolean;
 	onAdd: () => void;
 }
 
-function AddFriendButton({ isAdded, isAdding, onAdd }: AddFriendButtonProps) {
+function AddFriendButton({
+	name,
+	isAdded,
+	isAdding,
+	onAdd,
+}: AddFriendButtonProps) {
 	return (
 		<Button
 			variant={isAdded ? "ghost" : "outline"}
@@ -124,6 +132,7 @@ function AddFriendButton({ isAdded, isAdding, onAdd }: AddFriendButtonProps) {
 			className="rounded-full h-8 w-8 shrink-0"
 			onClick={onAdd}
 			disabled={isAdded || isAdding}
+			aria-label={isAdded ? `${name} added` : `Add ${name}`}
 		>
 			{isAdding ? (
 				<Loader2 className="h-4 w-4 animate-spin" />

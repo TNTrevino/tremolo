@@ -42,6 +42,7 @@ export function MyFriendsView({ onAddFriend, onClose }: MyFriendsViewProps) {
 						size="icon"
 						onClick={onAddFriend}
 						className="rounded-full h-8 w-8"
+						aria-label="Add friend"
 					>
 						<UserPlus className="h-4 w-4" />
 					</Button>
@@ -51,6 +52,7 @@ export function MyFriendsView({ onAddFriend, onClose }: MyFriendsViewProps) {
 					size="icon"
 					onClick={onClose}
 					className="rounded-full h-8 w-8"
+					aria-label="Close friends"
 				>
 					<X className="h-4 w-4" />
 				</Button>
