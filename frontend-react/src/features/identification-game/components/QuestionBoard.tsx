@@ -76,7 +76,11 @@ export function QuestionDisplay({
 							</div>
 						</div>
 					)}
-					<div ref={containerRef} className="w-full h-full overflow-hidden" />
+					<div
+						ref={containerRef}
+						className="w-full h-full overflow-hidden"
+						aria-label="Music staff"
+					/>
 				</Card>
 			)}
 		</div>

@@ -10,14 +10,14 @@ export const environment = {
 	production: false,
 
 	/** Go "user tracking" service -- auth, users, classes, scores (was VITE_BACKEND_MAIN). */
-	mainApi: 'http://localhost:5001',
+	mainApi: "http://localhost:5001",
 
 	/** Python "music generation" service -- exercises and MusicXML (was VITE_BACKEND_MUSIC). */
-	musicApi: 'http://localhost:8000',
+	musicApi: "http://localhost:8000",
 
 	/** Was VITE_APP_NAME. */
-	appName: 'Tremolo',
+	appName: "Tremolo",
 
 	/** Was VITE_GOOGLE_CLIENT_ID. */
-	googleClientId: 'your-client-id.apps.googleusercontent.com',
+	googleClientId: "your-client-id.apps.googleusercontent.com",
 };

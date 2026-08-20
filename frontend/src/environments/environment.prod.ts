@@ -8,8 +8,8 @@
  */
 export const environment = {
 	production: true,
-	mainApi: '',
-	musicApi: '',
-	appName: 'Tremolo',
-	googleClientId: '',
+	mainApi: "",
+	musicApi: "",
+	appName: "Tremolo",
+	googleClientId: "",
 };

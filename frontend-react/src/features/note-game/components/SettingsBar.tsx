@@ -191,6 +191,7 @@ function SettingsBarDesktop({ settings, onSettingsChange }: SettingsBarProps) {
 
 			<div className="flex items-center gap-2 [&>div]:w-auto">
 				<Select
+					aria-label="Scale"
 					className="w-28 h-9"
 					value={settings.scale}
 					onChange={(e) => onSettingsChange({ scale: e.target.value })}

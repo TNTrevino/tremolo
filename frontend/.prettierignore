@@ -12,6 +12,8 @@ coverage
 .nuxt
 .vite
 .angular
+playwright-report
+test-results
 
 # The migration control directory. These are the plan of record and the
 # packets agents read verbatim -- reflowing their fenced code samples

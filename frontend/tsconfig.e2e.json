@@ -1,0 +1,13 @@
+/* Playwright specs. Separate from tsconfig.app/spec because they run in
+   Node under Playwright's own transform, not through the Angular compiler,
+   and they must not be swept into the application build. */
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["node"],
+		"module": "preserve",
+		"moduleResolution": "bundler",
+		"noEmit": true
+	},
+	"include": ["e2e/**/*.ts", "playwright.config.ts"]
+}

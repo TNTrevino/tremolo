@@ -38,6 +38,22 @@ export default tseslint.config(
 		},
 	},
 	{
+		// The Playwright specs. They are Node code, not Angular code, so the
+		// Angular template/selector rules do not apply -- but the TypeScript
+		// ones still should.
+		files: ["e2e/**/*.ts", "playwright.config.ts"],
+		extends: [
+			eslint.configs.recommended,
+			...tseslint.configs.recommended,
+			prettier,
+		],
+		rules: {
+			// Playwright's own lint story is `await expect(...)`; the plain
+			// TS rules cannot tell a floating promise from a fixture here.
+			"@typescript-eslint/no-non-null-assertion": "off",
+		},
+	},
+	{
 		files: ["**/*.html"],
 		extends: [
 			...angular.configs.templateRecommended,
