@@ -8,7 +8,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | Phase | Name                       | Status  | Date | Commits | Notes |
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
-| 1     | Core plumbing              | built   | 2026-08-20 | `fc19c37..HEAD` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below. |
+| 1     | Core plumbing              | built   | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. |
 | 2     | Shared UI kit              | pending | —    | —       |       |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
