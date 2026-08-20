@@ -20,13 +20,18 @@ import type { SeededUser } from "./api";
  * Not cosmetic. The score a finished game posts includes notes-per-minute,
  * and the Go service's Entry DTO types that field as `int8` -- answering at
  * machine speed produces a rate above 127, the JSON bind fails, and the
- * save comes back 400. Roughly one answer per second keeps the rate inside
- * the range a human can actually produce, which is what these flows are
- * meant to represent. (The overflow itself is a real bug in the Go service,
- * recorded in .migration/phase-0-handoff.md; the service is out of scope
- * for this migration.)
+ * save comes back 400 and the score is silently lost.
+ *
+ * 1200ms puts a 10-question game at roughly 50 notes-per-minute. 800ms was
+ * not enough margin -- it lands around 80 and tipped over the ceiling
+ * intermittently under load. These flows are meant to represent a human
+ * playing, and a human does not answer four times a second.
+ *
+ * (The overflow is a real bug in the Go service -- a genuinely fast player
+ * cannot save a score. Recorded in .migration/phase-0-handoff.md; the Go
+ * service is out of scope for this migration.)
  */
-const ANSWER_INTERVAL_MS = 800;
+const ANSWER_INTERVAL_MS = 1200;
 
 /** Signs in through the login form, as a real user would. */
 export async function login(page: Page, user: SeededUser): Promise<void> {
@@ -93,6 +98,20 @@ export async function playIdentificationGame(
 }
 
 /**
+ * Waits for the app to confirm a finished game was persisted.
+ *
+ * Game over and save-complete are different moments: the POST is fired when
+ * the game ends, so anything that reads the score afterwards -- a
+ * navigation, an API assertion -- is racing it. Only meaningful when a user
+ * is signed in; anonymous games are not saved at all.
+ */
+export async function expectScoreSaved(page: Page): Promise<void> {
+	await expect(page.getByText("Game results saved successfully!")).toBeVisible({
+		timeout: 15_000,
+	});
+}
+
+/**
  * Puts a game into "N questions" mode at the shortest limit, so a spec
  * finishes a game deterministically instead of waiting out a timer.
  *
@@ -115,7 +134,15 @@ export async function useQuestionMode(
 
 	await page.getByRole("button", { name: "Settings" }).click();
 	await page.getByRole("button", { name: "Questions", exact: true }).click();
-	await page.getByLabel("Questions").selectOption(String(limit));
+
+	// Verified, not assumed. If the mode switch does not land the game stays
+	// on its default timer and the spec fails much later, as a timeout on a
+	// game-over that is thirty seconds away rather than ten questions away.
+	const limitPicker = page.getByLabel("Questions");
+	await expect(limitPicker).toBeVisible();
+	await limitPicker.selectOption(String(limit));
+	await expect(limitPicker).toHaveValue(String(limit));
+
 	await page.getByRole("button", { name: "Done" }).click();
 }
 

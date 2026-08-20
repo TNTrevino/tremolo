@@ -251,8 +251,9 @@ page can call the Go service — that is the first thing that will bite.
 `DTOs/Entry.NPM` is an **`int8`**. A score above 127 notes-per-minute fails
 `ShouldBindJSON` and the save returns `400 Invalid request body` — the
 player's game is silently lost. The harness therefore paces answers at
-800 ms (`ANSWER_INTERVAL_MS` in `e2e/support/app.ts`); at machine speed
-every save 400s. `UserID` is an `int16` and user ids are already in the
+1200 ms (`ANSWER_INTERVAL_MS` in `e2e/support/app.ts`), which puts a
+10-question game near 50 npm. At machine speed every save 400s; at 800 ms
+it lands near 80 and tipped over the ceiling intermittently under load. `UserID` is an `int16` and user ids are already in the
 1500s, so that one has headroom left but not unlimited.
 
 A worked example from a passing run, for calibration:

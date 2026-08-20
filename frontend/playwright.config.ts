@@ -30,6 +30,10 @@ export default defineConfig({
 	// counts (attempts, friends, roster size) that concurrent runs would
 	// race on. Parity is the goal here, not suite wall-clock.
 	workers: 1,
+	// A game spec plays ten questions at a deliberately human pace (see
+	// ANSWER_INTERVAL_MS) on top of a login and a couple of navigations, so
+	// Playwright's 30s default is not enough headroom.
+	timeout: 90_000,
 	reporter: process.env["CI"]
 		? [["github"], ["html", { open: "never" }]]
 		: [["list"]],

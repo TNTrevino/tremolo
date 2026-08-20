@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { createUser, recentEntries, type SeededUser } from "../support/api";
 import {
+	expectScoreSaved,
 	expectStaffRendered,
 	login,
 	playIdentificationGame,
@@ -59,6 +60,7 @@ test.describe("games", () => {
 			await useQuestionMode(page, "identification");
 			await playIdentificationGame(page, game.answer);
 
+			await expectScoreSaved(page);
 			await expect(page.getByText(/Accuracy/)).toBeVisible();
 			await expect(
 				page.getByRole("button", { name: /play again/i }),
@@ -85,6 +87,7 @@ test.describe("games", () => {
 		await page.goto("/note-game");
 		await useQuestionMode(page, "note");
 		await playIdentificationGame(page, /^C(\s|$)/);
+		await expectScoreSaved(page);
 
 		await expect
 			.poll(async () => (await recentEntries(student, "note")).length, {
