@@ -84,6 +84,28 @@
 	}
 }
 
+@layer base {
+	/*
+	 * `<ng-icon>` is a custom element, so Tailwind's preflight -- which sets
+	 * `display: block; vertical-align: middle` on every `<svg>` -- never
+	 * reaches it. React's lucide icons *were* `<svg>`, so they were block and
+	 * middle-aligned; an `<ng-icon>` left inline-block on the text baseline
+	 * adds a descender's worth of line-box height (6px on the converter
+	 * page's empty state) and rides ~3px high in the nav bar. This is
+	 * preflight's rule, extended to the element that replaced the svg.
+	 *
+	 * `:root` rather than a bare `ng-icon` for specificity: `@ng-icons` sets
+	 * `display` on its own host from a component style Angular injects after
+	 * this sheet, and `[_nghost-…]` (0,1,0) outranks a type selector. Being
+	 * in `@layer base` keeps it *below* the utilities, so a display utility
+	 * written on an `<ng-icon>` still wins.
+	 */
+	:root ng-icon {
+		display: block;
+		vertical-align: middle;
+	}
+}
+
 @layer utilities {
 	.text-balance {
 		text-wrap: balance;
