@@ -7,7 +7,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 
 | Phase | Name                       | Status  | Date | Commits | Notes |
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
-| 0     | Scaffold + parity harness  | built   | 2026-08-20 | `2e94f8a..3e967b1` | React app moved to `frontend-react/`; 7 deviations below |
+| 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | pending | —    | —       |       |
 | 2     | Shared UI kit              | pending | —    | —       |       |
 | 3     | CRUD features              | pending | —    | —       |       |
