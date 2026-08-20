@@ -7,8 +7,15 @@ import type { UserRole } from "../app/auth/models/auth.models";
 import type { AuthStore } from "../app/auth/services/auth.store";
 
 /**
- * Shared test fixtures. `src/testing/` is compiled by tsconfig.spec.json and
- * excluded from tsconfig.app.json, so nothing in here can reach a build.
+ * Shared test fixtures. `src/testing/` is in tsconfig.spec.json's root file
+ * set and out of tsconfig.app.json's.
+ *
+ * That split is a **convention, not a compile-time barrier** -- the Phase 1
+ * verifier proved it by importing this file from `auth.store.ts` and
+ * building clean. TypeScript's `exclude` only trims the root file set; a
+ * file reached through an import is still compiled. Enforcing it would take
+ * an ESLint `no-restricted-imports` rule, which `eslint.config.js` does not
+ * have. Today only `.spec.ts` files import from here; keep it that way.
  */
 
 /**
