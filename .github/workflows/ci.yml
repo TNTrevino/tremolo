@@ -44,6 +44,7 @@ jobs:
               - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
+              - 'frontend-react/**'
               - 'Makefile'
               - '.github/workflows/frontend-ci.yml'
               - '.github/workflows/ci.yml'

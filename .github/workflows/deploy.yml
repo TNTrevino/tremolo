@@ -37,8 +37,11 @@ jobs:
         with:
           python-version: "3.14"
 
+      # frontend-react/, not frontend/: the Angular migration moved the
+      # live app aside and frontend/ is still a shell. Phase 7 (cutover)
+      # points this back at frontend/ -- see frontend/.migration/.
       - name: Build Frontend
-        working-directory: frontend
+        working-directory: frontend-react
         run: |
           set -a && source /etc/tremolo/.env && set +a
           npm ci
@@ -74,7 +77,7 @@ jobs:
 
       - name: Sync Frontend to Reverse Proxy
         run: |
-          rsync -avz --delete frontend/dist/ ${{ inputs.frontend-dest }}
+          rsync -avz --delete frontend-react/dist/ ${{ inputs.frontend-dest }}
 
       - name: Health Check
         run: |

@@ -16,6 +16,7 @@ eggs/
 .eggs/
 lib/
 !frontend/src/lib/
+!frontend-react/src/lib/
 lib64/
 parts/
 sdist/
@@ -192,6 +193,7 @@ build/
 *.d.ts
 !vite-env.d.ts
 !frontend/src/shared/types/*.d.ts
+!frontend-react/src/shared/types/*.d.ts
 *.tsbuildinfo
 
 # IDE-specific files
@@ -226,6 +228,7 @@ yarn.lock
 yarn.lock
 # package.json
 frontend/src/Secret.tsx
+frontend-react/src/Secret.tsx
 staticfiles/
 
 backend/main/tmp/

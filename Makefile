@@ -1,27 +1,30 @@
 .PHONY: help \
-	test test-frontend test-music test-go test-api \
-	lint lint-frontend lint-music lint-go vet-go \
-	format format-frontend format-music format-go \
-	format-check format-check-frontend format-check-music format-check-go \
-	check check-frontend check-music check-go \
-	build-frontend
+	test test-frontend test-react test-music test-go test-api \
+	lint lint-frontend lint-react lint-music lint-go vet-go \
+	format format-frontend format-react format-music format-go \
+	format-check format-check-frontend format-check-react \
+	format-check-music format-check-go \
+	check check-frontend check-react check-music check-go \
+	build-frontend build-react
 
 # ---- pretty output ----
 # $(call banner,MESSAGE) prints "[ STEP ] MESSAGE". STEP is passed down by the
-# aggregate targets (e.g. STEP=1/3); it defaults to a bullet for lone runs.
+# aggregate targets (e.g. STEP=1/4); it defaults to a bullet for lone runs.
 STEP ?= •
 banner = printf '\033[1m\033[36m[ %s ]\033[0m %s\n' '$(STEP)' '$(1)'
 
 help:
 	@echo "Targets:"
-	@echo "  test                   run all test suites (frontend, music, go)"
-	@echo "  test-frontend          vitest single run"
+	@echo "  test                   run all suites (frontend, react, music, go)"
+	@echo "  test-frontend          vitest single run (Angular, frontend/)"
+	@echo "  test-react             vitest single run (React, frontend-react/)"
 	@echo "  test-music             pytest (backend/music)"
 	@echo "  test-go                go test ./... -race (backend/main)"
 	@echo "  test-api               kulala HTTP smoke tests (needs the service running)"
 	@echo ""
 	@echo "  lint                   run all linters"
-	@echo "  lint-frontend          eslint --max-warnings 0"
+	@echo "  lint-frontend          ng lint --max-warnings 0 (Angular)"
+	@echo "  lint-react             eslint --max-warnings 0 (React)"
 	@echo "  lint-music             flake8"
 	@echo "  lint-go                go vet + golangci-lint"
 	@echo ""
@@ -38,14 +41,15 @@ help:
 	@echo "  check-music            format-check + lint + test"
 	@echo "  check-go               format-check + vet + golangci-lint + test"
 
-# ---- frontend ----
+# ---- frontend (Angular -- frontend/) ----
+# The migration target. See frontend/.migration/ for the plan and ledger.
 
 test-frontend:
 	@$(call banner,Testing frontend (vitest)...)
 	cd frontend && npm run test:run
 
 lint-frontend:
-	@$(call banner,Linting frontend (eslint)...)
+	@$(call banner,Linting frontend (ng lint)...)
 	cd frontend && npm run lint
 
 format-frontend:
@@ -57,10 +61,37 @@ format-check-frontend:
 	cd frontend && npm run format:check
 
 build-frontend:
-	@$(call banner,Building frontend (tsc + vite)...)
+	@$(call banner,Building frontend (ng build)...)
 	cd frontend && npm run build
 
 check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
+
+# ---- frontend-react (React -- frontend-react/) ----
+# The outgoing app. It stays runnable and checked until Phase 7 of the
+# migration deletes it: it is the executable spec that the parity harness
+# (frontend/e2e/) and the screenshot baselines were captured from.
+
+test-react:
+	@$(call banner,Testing react frontend (vitest)...)
+	cd frontend-react && npm run test:run
+
+lint-react:
+	@$(call banner,Linting react frontend (eslint)...)
+	cd frontend-react && npm run lint
+
+format-react:
+	@$(call banner,Formatting react frontend (prettier)...)
+	cd frontend-react && npm run format
+
+format-check-react:
+	@$(call banner,Checking react frontend formatting (prettier)...)
+	cd frontend-react && npm run format:check
+
+build-react:
+	@$(call banner,Building react frontend (tsc + vite)...)
+	cd frontend-react && npm run build
+
+check-react: format-check-react lint-react test-react build-react
 
 # ---- backend/music ----
 
@@ -135,26 +166,31 @@ test-api:
 # Each leaf runs via a recursive make so we can number the steps ([ 1/3 ] ...).
 
 test:
-	@$(MAKE) --no-print-directory test-frontend STEP=1/3
-	@$(MAKE) --no-print-directory test-music    STEP=2/3
-	@$(MAKE) --no-print-directory test-go        STEP=3/3
+	@$(MAKE) --no-print-directory test-frontend STEP=1/4
+	@$(MAKE) --no-print-directory test-react    STEP=2/4
+	@$(MAKE) --no-print-directory test-music    STEP=3/4
+	@$(MAKE) --no-print-directory test-go       STEP=4/4
 
 lint:
-	@$(MAKE) --no-print-directory lint-frontend STEP=1/3
-	@$(MAKE) --no-print-directory lint-music    STEP=2/3
-	@$(MAKE) --no-print-directory lint-go        STEP=3/3
+	@$(MAKE) --no-print-directory lint-frontend STEP=1/4
+	@$(MAKE) --no-print-directory lint-react    STEP=2/4
+	@$(MAKE) --no-print-directory lint-music    STEP=3/4
+	@$(MAKE) --no-print-directory lint-go       STEP=4/4
 
 format:
-	@$(MAKE) --no-print-directory format-frontend STEP=1/3
-	@$(MAKE) --no-print-directory format-music    STEP=2/3
-	@$(MAKE) --no-print-directory format-go        STEP=3/3
+	@$(MAKE) --no-print-directory format-frontend STEP=1/4
+	@$(MAKE) --no-print-directory format-react    STEP=2/4
+	@$(MAKE) --no-print-directory format-music    STEP=3/4
+	@$(MAKE) --no-print-directory format-go       STEP=4/4
 
 format-check:
-	@$(MAKE) --no-print-directory format-check-frontend STEP=1/3
-	@$(MAKE) --no-print-directory format-check-music    STEP=2/3
-	@$(MAKE) --no-print-directory format-check-go        STEP=3/3
+	@$(MAKE) --no-print-directory format-check-frontend STEP=1/4
+	@$(MAKE) --no-print-directory format-check-react    STEP=2/4
+	@$(MAKE) --no-print-directory format-check-music    STEP=3/4
+	@$(MAKE) --no-print-directory format-check-go       STEP=4/4
 
 check:
-	@$(MAKE) --no-print-directory check-frontend STEP=1/3
-	@$(MAKE) --no-print-directory check-music    STEP=2/3
-	@$(MAKE) --no-print-directory check-go        STEP=3/3
+	@$(MAKE) --no-print-directory check-frontend STEP=1/4
+	@$(MAKE) --no-print-directory check-react    STEP=2/4
+	@$(MAKE) --no-print-directory check-music    STEP=3/4
+	@$(MAKE) --no-print-directory check-go       STEP=4/4
