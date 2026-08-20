@@ -3,10 +3,16 @@ import {
 	provideBrowserGlobalErrorListeners,
 	provideZonelessChangeDetection,
 } from "@angular/core";
-import { provideHttpClient, withFetch } from "@angular/common/http";
+import {
+	provideHttpClient,
+	withFetch,
+	withInterceptors,
+} from "@angular/common/http";
 import { provideRouter, withComponentInputBinding } from "@angular/router";
 
 import { routes } from "./app.routes";
+import { authInterceptor } from "./core/interceptors/auth.interceptor";
+import { refreshInterceptor } from "./core/interceptors/refresh.interceptor";
 
 export const appConfig: ApplicationConfig = {
 	providers: [
@@ -23,6 +29,13 @@ export const appConfig: ApplicationConfig = {
 		// parameterized rxResource pattern binds to.
 		provideRouter(routes, withComponentInputBinding()),
 
-		provideHttpClient(withFetch()),
+		// Order matters. `authInterceptor` runs first and attaches the bearer
+		// token; `refreshInterceptor` sits closer to the backend, so the 401 it
+		// catches is the one the token failed on, and its retry re-attaches the
+		// refreshed token itself (PLAN.md 5.4).
+		provideHttpClient(
+			withFetch(),
+			withInterceptors([authInterceptor, refreshInterceptor]),
+		),
 	],
 };
