@@ -22,14 +22,17 @@ import type { SeededUser } from "./api";
  * machine speed produces a rate above 127, the JSON bind fails, and the
  * save comes back 400 and the score is silently lost.
  *
- * 1200ms puts a 10-question game at roughly 50 notes-per-minute. 800ms was
- * not enough margin -- it lands around 80 and tipped over the ceiling
- * intermittently under load. These flows are meant to represent a human
- * playing, and a human does not answer four times a second.
+ * 1200ms puts a 10-question game at roughly 50 notes-per-minute, which is
+ * well clear of the ceiling and is also just what these flows are for:
+ * representing a human playing, and a human does not answer four times a
+ * second. 800ms worked too (it measures around 80) -- the extra margin is
+ * deliberate, not a fix for an observed failure at 800ms.
  *
- * (The overflow is a real bug in the Go service -- a genuinely fast player
- * cannot save a score. Recorded in .migration/phase-0-handoff.md; the Go
- * service is out of scope for this migration.)
+ * The 400s that showed up while this suite was being written were a
+ * *different* bug in the same DTO -- `correct_questions` rejecting a zero,
+ * see expectScoreOutcomeReported() -- not this one. Both are real; both are
+ * recorded in .migration/phase-0-handoff.md; the Go service is out of scope
+ * for this migration.
  */
 const ANSWER_INTERVAL_MS = 1200;
 
@@ -66,7 +69,8 @@ export async function expectStaffRendered(page: Page): Promise<void> {
  *
  * Answers are deliberately not checked for correctness: what is being
  * pinned is the loop (question renders -> answer accepted -> next question
- * -> game ends -> score saved), and forcing correct answers would mean
+ * -> game ends -> the score's fate is reported), and forcing correct
+ * answers would mean
  * re-implementing each game's music theory in the harness.
  */
 export async function playIdentificationGame(
