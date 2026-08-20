@@ -184,9 +184,15 @@ export class NavigationComponent {
 	 * React's `useLogout` cleared the session and let `ProtectedRoute`
 	 * re-render, which bounced a signed-in-only page to /login while
 	 * leaving a public one alone. Angular guards do not re-run on their
-	 * own, so the session is cleared and the current URL is re-navigated:
-	 * `onSameUrlNavigation: "reload"` (app.config.ts) makes the guards run
-	 * again and reproduces both halves of that behaviour.
+	 * own, so the session is cleared and the current URL is re-navigated.
+	 *
+	 * That re-navigation only re-runs `canActivate` because of two settings
+	 * working together: `onSameUrlNavigation: "reload"` (app.config.ts) lets
+	 * the same-URL navigation be processed at all, and
+	 * `runGuardsAndResolvers: "always"` on the guarded routes (app.routes.ts)
+	 * is what re-runs the guard once it is. A public route has no guard to
+	 * re-run, so the visitor stays where they are. `app.routes.spec.ts` covers
+	 * both halves.
 	 */
 	protected logout(): void {
 		this.auth.logout();

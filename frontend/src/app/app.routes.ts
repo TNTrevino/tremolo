@@ -15,6 +15,21 @@ import { teacherGuard } from "./auth/services/security/teacher.guard";
  * `loadComponent` everywhere is the port of React's `lazy()` imports.
  * `/classes/:id` and `/assignments/:id/play` bind `:id` to an `input()` on
  * the page, which `withComponentInputBinding()` in app.config.ts turns on.
+ *
+ * **`runGuardsAndResolvers: "always"` on every signed-in-only route.** React's
+ * `ProtectedRoute` re-rendered whenever the auth store changed, so logging out
+ * on a guarded page bounced the visitor to /login. Angular has no such
+ * re-render: logging out re-navigates the current URL (see
+ * `NavigationComponent.logout`), and `onSameUrlNavigation: "reload"`
+ * (app.config.ts) is what lets that same-URL navigation run at all. It is
+ * **not** enough on its own -- the default `runGuardsAndResolvers` is
+ * `"paramsOrQueryParamsChange"`, and re-navigating to an identical URL changes
+ * neither, so `canActivate` never re-runs and the signed-out visitor keeps
+ * looking at the guarded page. `"always"` is the half that re-runs the guard.
+ * Both halves are covered by `app.routes.spec.ts`.
+ *
+ * The two guest-only routes deliberately do not carry it: nothing re-navigates
+ * /login or /signup in place, and signing in navigates away explicitly.
  */
 export const routes: Routes = [
 	// "/" lands on the note game, not on /home. Long-standing behaviour and
@@ -126,6 +141,7 @@ export const routes: Routes = [
 	{
 		path: "dashboard",
 		canActivate: [authGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/dashboard/components/dashboard-page/dashboard-page.component").then(
 				(m) => m.DashboardPageComponent,
@@ -134,6 +150,7 @@ export const routes: Routes = [
 	{
 		path: "profile",
 		canActivate: [authGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/account/components/profile-page/profile-page.component").then(
 				(m) => m.ProfilePageComponent,
@@ -142,6 +159,7 @@ export const routes: Routes = [
 	{
 		path: "account",
 		canActivate: [authGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/account/components/account-page/account-page.component").then(
 				(m) => m.AccountPageComponent,
@@ -150,6 +168,7 @@ export const routes: Routes = [
 	{
 		path: "assignments",
 		canActivate: [authGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/classes/components/assignments-page/assignments-page.component").then(
 				(m) => m.AssignmentsPageComponent,
@@ -158,6 +177,7 @@ export const routes: Routes = [
 	{
 		path: "assignments/:id/play",
 		canActivate: [authGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/classes/components/assignment-play-page/assignment-play-page.component").then(
 				(m) => m.AssignmentPlayPageComponent,
@@ -168,6 +188,7 @@ export const routes: Routes = [
 	{
 		path: "classes",
 		canActivate: [teacherGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/classes/components/classes-page/classes-page.component").then(
 				(m) => m.ClassesPageComponent,
@@ -176,6 +197,7 @@ export const routes: Routes = [
 	{
 		path: "classes/:id",
 		canActivate: [teacherGuard],
+		runGuardsAndResolvers: "always",
 		loadComponent: () =>
 			import("./features/classes/components/class-detail-page/class-detail-page.component").then(
 				(m) => m.ClassDetailPageComponent,

@@ -11,6 +11,7 @@ import {
 } from "@angular/common/http";
 import {
 	provideRouter,
+	type RouterConfigOptions,
 	withComponentInputBinding,
 	withRouterConfig,
 } from "@angular/router";
@@ -21,6 +22,20 @@ import { TREMOLO_ICONS } from "./core/icons";
 import { authInterceptor } from "./core/interceptors/auth.interceptor";
 import { refreshInterceptor } from "./core/interceptors/refresh.interceptor";
 import { GlobalErrorHandler } from "./core/services/global-error.handler";
+
+/**
+ * Half of the logout bounce, and exported so `app.routes.spec.ts` can drive
+ * the real thing rather than a copy of it.
+ *
+ * `onSameUrlNavigation: "reload"` lets a navigation to the URL you are already
+ * on be processed instead of dropped. On its own it does **not** re-run
+ * `canActivate` -- the routes' `runGuardsAndResolvers: "always"` does that (see
+ * app.routes.ts). Both are needed for logging out on a guarded page to bounce
+ * to /login the way React's `ProtectedRoute` did.
+ */
+export const ROUTER_CONFIG: RouterConfigOptions = {
+	onSameUrlNavigation: "reload",
+};
 
 export const appConfig: ApplicationConfig = {
 	providers: [
@@ -40,15 +55,11 @@ export const appConfig: ApplicationConfig = {
 		// which is what the `input.required<string>()` half of PLAN.md 5.2's
 		// parameterized rxResource pattern binds to.
 		//
-		// onSameUrlNavigation "reload": re-navigating to the URL you are
-		// already on re-runs its guards. That is what logging out uses to
-		// reproduce React's behaviour, where clearing the store re-rendered
-		// `ProtectedRoute` and bounced a signed-in-only page to /login while
-		// leaving a public page alone.
+		// ROUTER_CONFIG is the logout bounce's other half; see above.
 		provideRouter(
 			routes,
 			withComponentInputBinding(),
-			withRouterConfig({ onSameUrlNavigation: "reload" }),
+			withRouterConfig(ROUTER_CONFIG),
 		),
 
 		// D12. Only the icons the app actually uses; see core/icons.ts.
