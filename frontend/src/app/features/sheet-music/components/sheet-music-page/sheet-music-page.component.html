@@ -81,8 +81,13 @@
 						</app-select>
 					</div>
 
-					<!-- Generate Mary Button -->
-					<div class="space-y-2">
+					<!-- Generate Mary Button.
+					     `flex flex-col gap-2` rather than React's `space-y-2`:
+					     `space-y-*` sets a margin on each child, and
+					     `<app-button>` is a `display: contents` host, which has
+					     no box to take one. Flex gap lands on the real
+					     <button> instead, at the same 8px. -->
+					<div class="flex flex-col gap-2">
 						<span class="text-sm font-medium block">Generate Exercise</span>
 						<app-button
 							className="w-full"
@@ -100,7 +105,8 @@
 				<!-- 16th Note Rhythms -->
 				<div appCard class="p-6">
 					<h3 class="text-lg font-bold mb-4">16th Note Rhythms</h3>
-					<div class="space-y-2">
+					<!-- flex gap, not space-y: see the Generate Mary column. -->
+					<div class="flex flex-col gap-2">
 						@for (rhythm of sixteenthRhythms; track rhythm) {
 							<app-button
 								[variant]="isSelected(rhythm, 16) ? 'default' : 'outline'"
@@ -118,7 +124,8 @@
 				<!-- 8th Note Rhythms -->
 				<div appCard class="p-6">
 					<h3 class="text-lg font-bold mb-4">8th Note Rhythms</h3>
-					<div class="space-y-2">
+					<!-- flex gap, not space-y: see the Generate Mary column. -->
+					<div class="flex flex-col gap-2">
 						@for (rhythm of eighthRhythms; track rhythm) {
 							<app-button
 								[variant]="isSelected(rhythm, 8) ? 'default' : 'outline'"
