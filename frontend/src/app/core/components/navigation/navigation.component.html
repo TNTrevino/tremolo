@@ -9,6 +9,7 @@
 					class="rounded-lg bg-primary p-2 group-hover:scale-110 transition-transform"
 				>
 					<ng-icon
+						size="1.5rem"
 						name="lucideMusic"
 						aria-hidden="true"
 						class="h-6 w-6 text-primary-foreground"
@@ -38,6 +39,7 @@
 					>
 						Games
 						<ng-icon
+							size="1rem"
 							name="lucideChevronDown"
 							aria-hidden="true"
 							class="h-4 w-4 transition-transform"
@@ -108,6 +110,7 @@
 					(click)="theme.toggleTheme()"
 				>
 					<ng-icon
+						size="1.25rem"
 						[name]="theme.theme() === 'dark' ? 'lucideSun' : 'lucideMoon'"
 						aria-hidden="true"
 						class="h-5 w-5"
@@ -129,7 +132,12 @@
 						[ariaExpanded]="friends.isPanelOpen()"
 						(click)="toggleFriends()"
 					>
-						<ng-icon name="lucideUsers" aria-hidden="true" class="h-5 w-5" />
+						<ng-icon
+							size="1.25rem"
+							name="lucideUsers"
+							aria-hidden="true"
+							class="h-5 w-5"
+						/>
 					</app-button>
 				}
 
@@ -173,6 +181,7 @@
 									(click)="userMenuOpen.set(false)"
 								>
 									<ng-icon
+										size="1rem"
 										name="lucideLayoutDashboard"
 										aria-hidden="true"
 										class="h-4 w-4"
@@ -185,6 +194,7 @@
 									(click)="userMenuOpen.set(false)"
 								>
 									<ng-icon
+										size="1rem"
 										name="lucideUserCircle"
 										aria-hidden="true"
 										class="h-4 w-4"
@@ -197,6 +207,7 @@
 									(click)="userMenuOpen.set(false)"
 								>
 									<ng-icon
+										size="1rem"
 										name="lucideSettings"
 										aria-hidden="true"
 										class="h-4 w-4"
@@ -210,6 +221,7 @@
 									(click)="logout()"
 								>
 									<ng-icon
+										size="1rem"
 										name="lucideLogOut"
 										aria-hidden="true"
 										class="h-4 w-4"
@@ -223,6 +235,7 @@
 					<a routerLink="/login" class="hidden md:block">
 						<app-button variant="default" size="sm">
 							<ng-icon
+								size="1rem"
 								name="lucideUser"
 								aria-hidden="true"
 								class="mr-2 h-4 w-4"
@@ -242,6 +255,7 @@
 					(click)="toggleMobileMenu()"
 				>
 					<ng-icon
+						size="1.5rem"
 						[name]="mobileMenuOpen() ? 'lucideX' : 'lucideMenu'"
 						aria-hidden="true"
 						class="h-6 w-6"
