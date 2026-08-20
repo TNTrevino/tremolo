@@ -128,12 +128,15 @@ export class SheetMusicComponent implements OnDestroy {
 	/** Whether a score is loaded, so `render()` has something to draw. */
 	private hasScore = false;
 
+	/** Live only while waiting for a zero-width container to get a width. */
+	private visibilityWatch: ResizeObserver | null = null;
+
 	constructor() {
 		effect(() => {
 			const zoom = this.zoom();
 			if (!this.osmd) return; // applied at construction instead
 			this.osmd.zoom = zoom;
-			if (this.hasScore) this.osmd.render();
+			if (this.hasScore) this.draw(this.osmd);
 		});
 	}
 
@@ -158,8 +161,8 @@ export class SheetMusicComponent implements OnDestroy {
 
 		try {
 			await osmd.load(musicXml);
-			osmd.render();
 			this.hasScore = true;
+			this.draw(osmd);
 			this.renderComplete.emit();
 		} catch (err) {
 			this.logger.error("Failed to render sheet music", err);
@@ -177,6 +180,7 @@ export class SheetMusicComponent implements OnDestroy {
 	 * because clearing mid-load would lie about a request still in flight.
 	 */
 	clear(): void {
+		this.stopWatchingVisibility();
 		if (this.osmd) {
 			try {
 				this.osmd.clear();
@@ -198,6 +202,7 @@ export class SheetMusicComponent implements OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		this.stopWatchingVisibility();
 		if (!this.osmd) return;
 		try {
 			this.osmd.clear();
@@ -206,6 +211,54 @@ export class SheetMusicComponent implements OnDestroy {
 		}
 		this.osmd = null;
 		this.hasScore = false;
+	}
+
+	/**
+	 * Draws, and copes with being asked to draw into a hidden container.
+	 *
+	 * **This is a deliberate fix, not a port.** OSMD reads the container's
+	 * `clientWidth` when it renders and writes it onto the `<svg>`; a
+	 * container that is `display: none` at that instant gets `width="0"` and
+	 * stays blank after it is shown again. React's `SheetMusicDisplay` hides
+	 * the container while `isLoading` is true, and whether the hide lands
+	 * before OSMD's async `load()` resolves is a race -- driving the React
+	 * app on 2026-08-20 produced `width="0"` on the 1st and 3rd generation
+	 * and a correct 908px staff on the 2nd. The Angular port reproduced it
+	 * exactly, which is how it was found.
+	 *
+	 * So: render, and if the container had no width, watch it and render
+	 * once more when it gets one. The observer is one-shot and is torn down
+	 * by `clear()` and by `ngOnDestroy`.
+	 */
+	private draw(osmd: OpenSheetMusicDisplay): void {
+		osmd.render();
+
+		if (this.containerRef().nativeElement.clientWidth > 0) {
+			this.stopWatchingVisibility();
+			return;
+		}
+
+		this.watchVisibility();
+	}
+
+	private watchVisibility(): void {
+		if (this.visibilityWatch) return;
+		// jsdom has no ResizeObserver; unit tests stub it in test-setup.ts,
+		// and a stray environment without one simply keeps React's behaviour.
+		if (typeof ResizeObserver === "undefined") return;
+
+		const element = this.containerRef().nativeElement;
+		this.visibilityWatch = new ResizeObserver(() => {
+			if (element.clientWidth === 0) return;
+			this.stopWatchingVisibility();
+			if (this.hasScore) this.osmd?.render();
+		});
+		this.visibilityWatch.observe(element);
+	}
+
+	private stopWatchingVisibility(): void {
+		this.visibilityWatch?.disconnect();
+		this.visibilityWatch = null;
 	}
 
 	/** Creates the instance on first use, as React's `initializeOSMD` did. */

@@ -1,6 +1,7 @@
 import { Component, signal, viewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
+import { ResizeObserverStub } from "../../../../../test-setup";
 import { SheetMusicComponent } from "./sheet-music.component";
 
 /**
@@ -91,6 +92,7 @@ describe("SheetMusicComponent", () => {
 	beforeEach(async () => {
 		FakeOsmd.instances = [];
 		FakeOsmd.failToConstruct = false;
+		ResizeObserverStub.instances = [];
 		fixture = TestBed.createComponent(HostComponent);
 		host = fixture.componentInstance;
 		await fixture.whenStable();
@@ -209,6 +211,63 @@ describe("SheetMusicComponent", () => {
 		await fixture.whenStable();
 
 		expect(FakeOsmd.instances).toHaveLength(0);
+	});
+
+	describe("drawing into a container that has no width", () => {
+		// jsdom reports clientWidth 0 for everything, so every load in this
+		// file takes the "hidden container" path -- which is exactly the
+		// case React got wrong (a staff with width="0" that never redraws).
+		function widen(px: number): void {
+			Object.defineProperty(container(), "clientWidth", {
+				configurable: true,
+				value: px,
+			});
+		}
+
+		it("watches the container instead of leaving a zero-width staff", async () => {
+			await load(VALID_XML);
+
+			expect(ResizeObserverStub.instances).toHaveLength(1);
+			expect(ResizeObserverStub.instances[0]!.observed).toEqual([container()]);
+		});
+
+		it("re-renders once the container gets a width", async () => {
+			await load(VALID_XML);
+			expect(osmd().renderCount).toBe(1);
+
+			widen(900);
+			ResizeObserverStub.instances[0]!.fire();
+
+			expect(osmd().renderCount).toBe(2);
+			expect(ResizeObserverStub.instances[0]!.disconnected).toBe(true);
+			// The score is redrawn, not refetched.
+			expect(osmd().loaded).toHaveLength(1);
+		});
+
+		it("keeps waiting while the container is still zero-width", async () => {
+			await load(VALID_XML);
+
+			ResizeObserverStub.instances[0]!.fire();
+
+			expect(osmd().renderCount).toBe(1);
+			expect(ResizeObserverStub.instances[0]!.disconnected).toBe(false);
+		});
+
+		it("stops watching when the display is cleared", async () => {
+			await load(VALID_XML);
+
+			host.sheet().clear();
+
+			expect(ResizeObserverStub.instances[0]!.disconnected).toBe(true);
+		});
+
+		it("stops watching on destroy", async () => {
+			await load(VALID_XML);
+
+			fixture.destroy();
+
+			expect(ResizeObserverStub.instances[0]!.disconnected).toBe(true);
+		});
 	});
 
 	it("disposes the instance on destroy", async () => {
