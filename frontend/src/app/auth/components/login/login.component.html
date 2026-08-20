@@ -1,44 +1,75 @@
-<section class="mx-auto flex min-h-screen max-w-md flex-col justify-center p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">
-		Welcome to Tremolo
-	</h1>
-	<p class="text-muted-foreground">Sign in to continue your musical journey</p>
-
-	@if (errorMessage(); as message) {
-		<p role="alert" class="text-destructive">{{ message }}</p>
-	}
-
-	<form (submit)="submit($event)" class="flex flex-col gap-4">
-		<div class="flex flex-col gap-1">
-			<label for="email">Email Address</label>
-			<input
-				id="email"
-				name="email"
-				type="email"
-				autocomplete="email"
-				class="border p-2"
-				[value]="email()"
-				(input)="email.set(value($event))"
-			/>
+<section
+	class="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center p-4 sm:p-8"
+>
+	<div appCard>
+		<div appCardHeader>
+			<h1 appCardTitle class="font-display">Welcome to Tremolo</h1>
+			<p appCardDescription>Sign in to continue your musical journey</p>
 		</div>
 
-		<div class="flex flex-col gap-1">
-			<label for="password">Password</label>
-			<input
-				id="password"
-				name="password"
-				type="password"
-				autocomplete="current-password"
-				class="border p-2"
-				[value]="password()"
-				(input)="password.set(value($event))"
-			/>
+		<div appCardContent class="space-y-4">
+			@if (errorMessage(); as message) {
+				<p
+					role="alert"
+					class="rounded-md border-2 border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+				>
+					{{ message }}
+				</p>
+			}
+
+			<form class="space-y-4" (submit)="submit($event)">
+				<app-form-field
+					label="Email Address"
+					htmlFor="email"
+					[required]="true"
+					[field]="loginForm.email"
+				>
+					<input
+						appFormInput
+						id="email"
+						type="email"
+						autocomplete="email"
+						placeholder="you@school.edu"
+						[formField]="loginForm.email"
+					/>
+				</app-form-field>
+
+				<app-form-field
+					label="Password"
+					htmlFor="password"
+					[required]="true"
+					[field]="loginForm.password"
+				>
+					<input
+						appFormInput
+						id="password"
+						type="password"
+						autocomplete="current-password"
+						[formField]="loginForm.password"
+					/>
+				</app-form-field>
+
+				<app-button
+					type="submit"
+					variant="brass"
+					size="lg"
+					className="w-full"
+					[loading]="pending()"
+				>
+					Sign In
+				</app-button>
+			</form>
 		</div>
 
-		<button type="submit" class="border p-2" [disabled]="pending()">
-			Sign In
-		</button>
-	</form>
-
-	<p>Don't have an account? <a routerLink="/signup">Sign up</a></p>
+		<div appCardFooter class="justify-center">
+			<p class="text-sm text-muted-foreground">
+				Don't have an account?
+				<a
+					routerLink="/signup"
+					class="font-medium text-foreground underline-offset-4 hover:underline"
+					>Sign up</a
+				>
+			</p>
+		</div>
+	</div>
 </section>
