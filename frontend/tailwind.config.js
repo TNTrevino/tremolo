@@ -23,6 +23,18 @@ export default {
 	 * nothing else -- no `!important` anywhere, so inline styles and real
 	 * `!important` rules still win, exactly as in React. `html` is chosen
 	 * because every utility must keep applying.
+	 *
+	 * Phase 3.1 fixed the same defect for the nav by writing `<ng-icon
+	 * size="1.25rem">` alongside the `h-N w-N` class. Both mechanisms are
+	 * live and both are load-bearing: this one is the only thing sizing the
+	 * call sites that carry a class and no `size=`, and `size=` is the only
+	 * thing sizing the two auth-page logos, which carry `size="2rem"` and no
+	 * class. Where a call site has both, they agree exactly -- `size=` sets
+	 * nothing but `--ng-icon__size`, which `@ng-icons` reads only for the
+	 * host's `width`/`height`, and the inner `svg` is `width: inherit`. So
+	 * either may size an icon; write one of them, and if you write both,
+	 * keep them in step (`h-3`/0.75rem, `h-4`/1rem, `h-5`/1.25rem,
+	 * `h-6`/1.5rem, `h-8`/2rem).
 	 */
 	important: "html",
 	theme: {

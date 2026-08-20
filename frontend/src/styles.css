@@ -12,25 +12,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * <ng-icon> stands where a lucide-react <svg> stood, and Tailwind's
- * preflight makes every <svg> `display: block`. @ng-icons' own component
- * stylesheet makes its host `inline-block`, which puts the icon on a text
- * baseline and adds descender space the screenshot baselines do not have --
- * six pixels of it under a 2rem glyph. The attribute selector is here
- * because that stylesheet is unlayered and injected after this file, so it
- * wins any tie on specificity; `[role="img"]` is an attribute @ng-icons
- * always sets, and it outranks the library's `:host`.
- *
- * It does **not** fix sizing: the host's width/height come from
- * `--ng-icon__size`, which @ng-icons writes as an inline style (default
- * `1em`), and no class can beat an inline style. Size an icon with
- * `<ng-icon size="1.25rem">`, not with `h-5 w-5`.
- */
-ng-icon[role="img"] {
-	display: block;
-}
-
 @layer base {
 	/* "Ink, paper & brass" — see DESIGN.md. Ink navy does the everyday
 	   work; brass is the one scarce accent; --accent is a quiet hover
@@ -118,6 +99,12 @@ ng-icon[role="img"] {
 	 * this sheet, and `[_nghost-…]` (0,1,0) outranks a type selector. Being
 	 * in `@layer base` keeps it *below* the utilities, so a display utility
 	 * written on an `<ng-icon>` still wins.
+	 *
+	 * Phase 3.1 shipped the same fix as an unlayered `ng-icon[role="img"]`
+	 * rule below `@tailwind utilities`. Removed at Phase 4's integration:
+	 * same specificity, but sitting after the utilities it beat a `display`
+	 * utility written on the element, which is the cascade bug the pair of
+	 * fixes exists to undo. This is the one rule; do not re-add the other.
 	 */
 	:root ng-icon {
 		display: block;
