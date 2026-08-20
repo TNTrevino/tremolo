@@ -1,5 +1,6 @@
 import {
 	ApplicationConfig,
+	ErrorHandler,
 	provideBrowserGlobalErrorListeners,
 	provideZonelessChangeDetection,
 } from "@angular/core";
@@ -8,11 +9,18 @@ import {
 	withFetch,
 	withInterceptors,
 } from "@angular/common/http";
-import { provideRouter, withComponentInputBinding } from "@angular/router";
+import {
+	provideRouter,
+	withComponentInputBinding,
+	withRouterConfig,
+} from "@angular/router";
+import { provideIcons } from "@ng-icons/core";
 
 import { routes } from "./app.routes";
+import { TREMOLO_ICONS } from "./core/icons";
 import { authInterceptor } from "./core/interceptors/auth.interceptor";
 import { refreshInterceptor } from "./core/interceptors/refresh.interceptor";
+import { GlobalErrorHandler } from "./core/services/global-error.handler";
 
 export const appConfig: ApplicationConfig = {
 	providers: [
@@ -24,10 +32,27 @@ export const appConfig: ApplicationConfig = {
 		// fail loudly if anything ever pulled zone.js back in.
 		provideZonelessChangeDetection(),
 
+		// The single error boundary Angular allows (PLAN.md 8). It logs and
+		// toasts; the granularity trade-off is documented on the class.
+		{ provide: ErrorHandler, useClass: GlobalErrorHandler },
+
 		// withComponentInputBinding: route params arrive as component inputs,
 		// which is what the `input.required<string>()` half of PLAN.md 5.2's
 		// parameterized rxResource pattern binds to.
-		provideRouter(routes, withComponentInputBinding()),
+		//
+		// onSameUrlNavigation "reload": re-navigating to the URL you are
+		// already on re-runs its guards. That is what logging out uses to
+		// reproduce React's behaviour, where clearing the store re-rendered
+		// `ProtectedRoute` and bounced a signed-in-only page to /login while
+		// leaving a public page alone.
+		provideRouter(
+			routes,
+			withComponentInputBinding(),
+			withRouterConfig({ onSameUrlNavigation: "reload" }),
+		),
+
+		// D12. Only the icons the app actually uses; see core/icons.ts.
+		provideIcons(TREMOLO_ICONS),
 
 		// Order matters. `authInterceptor` runs first and attaches the bearer
 		// token; `refreshInterceptor` sits closer to the backend, so the 401 it

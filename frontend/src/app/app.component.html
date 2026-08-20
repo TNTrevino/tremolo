@@ -1,8 +1,11 @@
 <!--
-	The app shell. Phase 1 gives it the router outlet and nothing else:
-	the chrome that wraps it in frontend-react/src/App.tsx -- Navigation,
-	the toast container, the friends panel -- is Phase 2's work.
+	The app shell, mirroring `AppContent` in frontend-react/src/App.tsx:
+	navigation above the routed page, toasts pinned over everything. The
+	friends panel -- rendered there whenever the user is signed in -- is
+	Phase 3's work.
 -->
 <div class="min-h-screen bg-background text-foreground">
+	<app-navigation />
 	<router-outlet />
+	<app-toast-container />
 </div>
