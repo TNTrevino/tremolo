@@ -12,7 +12,7 @@ conversation history: everything is here or in the repo.
 | `STATE.md`                  | **The ledger.** One row per phase. The only place status lives.     |
 | `PROMPT_TEMPLATE.md`        | Copy-paste prompts for builder and verifier agents                  |
 | `phase-0.md` … `phase-7.md` | Self-contained work packets, one per phase                          |
-| `baselines/`                | Screenshot baselines captured from the React app (Phase 0)          |
+| `baselines/`                | 80 screenshot baselines from the React app (Phase 0) -- see `../e2e/README.md` |
 | `phase-N-handoff.md`        | Written by each builder when it finishes                            |
 
 ## How to run a phase
