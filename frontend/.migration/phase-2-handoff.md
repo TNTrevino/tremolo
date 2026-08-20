@@ -56,6 +56,14 @@ it exist.
 This is the section Phase 3+ reads before composing anything. Where a name
 differs from React, the React name is in the last column.
 
+> **Corrected by Phase 3 sub-feature 1 — read
+> `phase-3-subfeature-1-handoff.md` §7 before using this table.** Three
+> rows here are wrong as written: the Card parts now take a `className`
+> input merged through `cn()` (a plain `class` cannot override a base
+> utility); `<ng-icon>` must be sized with its own `size` input, not with
+> `h-*`/`w-*`; and `space-y-*` does nothing across a `display: contents`
+> host, so containers holding kit components use `flex flex-col gap-*`.
+
 ### The shape rule
 
 Three shapes, and which one a primitive got was decided by one question:
