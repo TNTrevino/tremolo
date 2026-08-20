@@ -9,7 +9,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
-| 2     | Shared UI kit              | built   | 2026-08-20 | `6de4be4..b743133` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. build/lint/test:run/format:check all exit 0 (104 tests, 16 files); all 19 reachable paths render with the nav bar and **zero** console errors; theme persists across reload; the zod round trip was driven in a browser. Parity suite not run -- 18 pages are still placeholders. **Verification 2026-08-20: every packet exit criterion passes, but the phase is held at `built` -- deviation 12 (logout) does not do what it claims. See the Phase 2 verifier findings below.** **F1 fixed 2026-08-20** by the phase's builder: `runGuardsAndResolvers: "always"` on the seven signed-in-only routes, covered by the new `src/app/app.routes.spec.ts` (suite now 109 tests in 17 files) and re-verified in Chromium; F2's miscount corrected. Deviation 12 amended. Awaiting re-verification. |
+| 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..74e504e` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
 | 5     | Identification-game engine | pending | —    | —       |       |
@@ -188,6 +188,53 @@ re-check.
   too.
 - `e2e/` was not touched. Suite is now 109 tests in 17 files; build, lint,
   test:run and format:check all exit 0.
+
+#### Re-verification (2026-08-20) — Phase 2 is `done`
+
+F1 is fixed, F2's correction is in place, and every packet exit criterion
+still holds. Nothing below is taken from the handoff; all of it was run.
+
+- **F1, live.** `ng serve` on `:4200` (started fresh from a clean tree at
+  `74e504e`), Go service on `:5001`, a freshly registered student, Chromium.
+  Sign in → `/dashboard`; account menu → **Log Out** → the URL is `/login` at
+  every sample from t=0.5s to t=8s, `tremolo-auth` is
+  `{"user":null,"token":null,"isAuthenticated":false}`, and the page renders
+  the sign-in screen, not the guarded one. Pressing **Back** from there does
+  not show signed-out content on the guarded page — the guard re-runs and the
+  URL is `/login` again. Logging out on `/about` leaves the visitor on
+  `/about`. One console error across the whole run: the deliberate
+  wrong-password 400/401.
+- **Mutation-checked independently.** Deleting the single
+  `runGuardsAndResolvers: "always"` line from the `dashboard` route fails
+  **2 of the 5** tests in `app.routes.spec.ts`, both naming that route:
+  `expected '/dashboard' to be '/login'` and
+  `expected 'dashboard: undefined' to be 'dashboard: always'`. Restored,
+  `git diff` empty, back to 5/5 green. Note for later phases: `npx vitest run
+  <file>` does **not** work here — the vitest config is the
+  `@angular/build:unit-test` builder's, so a single file is
+  `npx ng test --include=<file>`; a bare `npx vitest` dies on
+  "JIT compilation failed for service [class BrowserXhr]".
+- **Route flags.** Exactly seven routes carry
+  `runGuardsAndResolvers: "always"` — `dashboard`, `profile`, `account`,
+  `assignments`, `assignments/:id/play`, `classes`, `classes/:id`. `login`,
+  `signup` and all public routes do not.
+- **Regression.** `npm run build` / `lint` / `test:run` / `format:check` all
+  exit 0; **109 tests in 17 files**. `shareReplay` still only in
+  `refresh.interceptor.ts`. `git log a823d0a..HEAD -- frontend/e2e/
+  frontend-react/` is empty. `/dev/kit` renders in both themes (screenshotted;
+  brass still one CTA per screen); the zod round trip shows and clears; a
+  wrong password shows **"Invalid credentials"** and stays on `/login`; the
+  theme survives a reload (`tremolo-theme` → `{"state":{"theme":"light"},
+  "version":0}`, class swapped on `documentElement`).
+- **Docs.** Deviation 12 and handoff §11 now describe the real mechanism —
+  `onSameUrlNavigation: "reload"` lets the same-URL navigation be processed,
+  `runGuardsAndResolvers: "always"` is what re-runs `canActivate` — and §11
+  carries the mutation proof.
+
+Gotcha for a wrong-password check: the Go service validates password
+*format* before credentials, so a throwaway string like `definitely-wrong`
+returns its own 400 ("Password must contain…"), not "Invalid credentials".
+Use a well-formed wrong password (e.g. `Wr0ngPassw0rd!`) to exercise the 401.
 
 ---
 
