@@ -118,6 +118,13 @@ test.describe("classes", () => {
 		}
 		await expect(gameOver).toBeVisible({ timeout: 20_000 });
 
+		// Wait for the app to say the attempt was saved before navigating.
+		// Game over and save-complete are different moments -- the POST is
+		// fired on game end -- and leaving the page in between aborts it.
+		await expect(
+			page.getByText("Game results saved successfully!"),
+		).toBeVisible({ timeout: 15_000 });
+
 		// Back on the list, the attempt is counted against the assignment.
 		await page.goto("/assignments");
 		await expect(page.getByText(/1 attempt\b/).first()).toBeVisible();

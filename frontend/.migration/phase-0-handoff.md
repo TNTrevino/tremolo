@@ -240,6 +240,11 @@ page can call the Go service — that is the first thing that will bite.
 4. **The theme must persist to `localStorage`** and survive a reload; the
    signal store (D7) has to do this explicitly.
 5. **`/` redirects to `/note-game`**, not to `/home`.
+6. **Game over and save-complete are different moments.** The score POST is
+   fired when the game ends; navigating away in between aborts it and the
+   attempt is silently lost. The assignment spec waits for the app's own
+   "Game results saved successfully!" toast before navigating -- that toast
+   is part of the contract and the Angular port must keep it.
 
 ### A real bug in the Go service (out of scope, but it shapes the harness)
 
@@ -248,7 +253,12 @@ page can call the Go service — that is the first thing that will bite.
 player's game is silently lost. The harness therefore paces answers at
 800 ms (`ANSWER_INTERVAL_MS` in `e2e/support/app.ts`); at machine speed
 every save 400s. `UserID` is an `int16` and user ids are already in the
-1400s, so that one has real headroom left but not unlimited.
+1500s, so that one has headroom left but not unlimited.
+
+A worked example from a passing run, for calibration:
+`{"time_length":"00:00:08","total_questions":10,"notes_per_minute":80,...}`
+-- 80 is already two-thirds of the way to the ceiling for a 10-question
+game answered at roughly one per second.
 
 This is not an Angular problem and the Go service is out of scope for this
 migration — recorded here so it is not rediscovered as a "port bug".
