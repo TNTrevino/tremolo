@@ -424,11 +424,12 @@ global fixes **improved** `/login`'s diff at every viewport and theme
 
 ## 11. Ledger line for `STATE.md`
 
-Copy into row 4, replacing the `pending` cells (the range's last commit will
-be the orchestrator's own doc commit):
+Copy into row 4, replacing the `pending` cells. The range ends at this
+handoff's own commit; the one commit after it does nothing but write this
+hash down, as Phase 1's did.
 
 ```
-| 4     | Sheet music / OSMD         | built   | 2026-08-20 | `64fb283..49e4767` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. |
+| 4     | Sheet music / OSMD         | built   | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. |
 ```
 
 Deviations to append to the deviations table (short forms; the full table is
