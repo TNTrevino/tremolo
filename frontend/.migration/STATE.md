@@ -8,7 +8,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | Phase | Name                       | Status  | Date | Commits | Notes |
 | ----- | -------------------------- | ------- | ---- | ------- | ----- |
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
-| 1     | Core plumbing              | built   | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. |
+| 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | pending | —    | —       |       |
 | 3     | CRUD features              | pending | —    | —       |       |
 | 4     | Sheet music / OSMD         | pending | —    | —       |       |
@@ -51,6 +51,25 @@ could not be followed as written. One row per deviation.
 | 1 | PLAN.md §4 has no folder for interceptors | Added `core/interceptors/` | Core, not a feature, and not components. |
 | 1 | PLAN.md §4 has no folder for shared test fixtures | Added `src/testing/`, in `tsconfig.spec.json` and excluded from `tsconfig.app.json` | Guard specs need a signed-in store fixture; the exclusion stops app code importing it. |
 | 1 | Packet is silent on the Angular CLI writing to `angular.json` | Export `NG_CLI_ANALYTICS=false` before `ng` commands | The first `ng` run added an unformatted `"analytics": false`, which fails `format:check`. Reverted. |
+
+### Verifier notes (Phase 1, 2026-08-20)
+
+Phase 1 passed every exit criterion. One deviation rationale is overstated
+and is corrected here so a later phase does not rely on a guard rail that
+is not actually enforcing anything.
+
+- **Deviation 1/7 (`src/testing/`) — the exclusion does not enforce the
+  boundary it claims.** The row says excluding `src/testing/**/*.ts` from
+  `tsconfig.app.json` "stops app code importing it." It does not. TypeScript
+  `exclude` only trims the *root* file set; a file reached through an import
+  is still compiled. Verified by adding `import "../../../testing/auth-fixtures"`
+  to `auth.store.ts` and running `npm run build` — **exit 0, no error**.
+
+  Not a defect and not an exit-criterion failure: the split is real, and
+  today only the four `.spec.ts` files import the fixture. But it is a
+  convention, not a compile-time barrier. A phase that wants it enforced
+  needs an ESLint `no-restricted-imports` (or `import/no-restricted-paths`)
+  rule — `eslint.config.js` currently has none.
 
 ---
 
