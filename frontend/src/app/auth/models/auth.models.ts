@@ -64,3 +64,9 @@ export interface GoogleCallbackRequest {
 	code: string;
 	redirect_uri: string;
 }
+
+/** One line of the signup page's password checklist. */
+export interface PasswordRequirement {
+	label: string;
+	met: boolean;
+}
