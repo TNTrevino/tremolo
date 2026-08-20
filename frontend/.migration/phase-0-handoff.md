@@ -105,7 +105,10 @@ frontend/
         └── friends-and-theme.spec.ts  friends add/list, theme toggle
 ```
 
-**48 specs, all green against the React app.**
+**43 specs in 6 files, plus 4 baseline captures — all green against the
+React app.** The suite runs `workers: 1` with a 90s per-test timeout:
+the specs share one database and assert on counts (attempts, friends,
+roster size) that concurrent runs would race on.
 
 ### Selector discipline
 
@@ -121,6 +124,10 @@ needed care:
 - **The note game has two scale pickers** (settings bar + mobile drawer),
   one hidden per viewport. `visibleScalePicker()` filters on visibility, not
   on structure.
+- **Never read a score straight after game over.** `expectScoreSaved()`
+  waits for the app's own success toast first; the POST is fired on game
+  end, so a navigation or an API poll placed immediately after it is racing
+  the request. Three separate flakes traced back to this one seam.
 
 ### Running it
 
