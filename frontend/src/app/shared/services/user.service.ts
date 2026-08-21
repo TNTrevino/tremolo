@@ -73,7 +73,7 @@ import {
 @Injectable({ providedIn: "root" })
 export class UserService {
 	private readonly http = inject(HttpClient);
-	private readonly base = environment.mainApi;
+	private readonly base = environment.coreApi;
 
 	// --- Profile ----------------------------------------------------------
 

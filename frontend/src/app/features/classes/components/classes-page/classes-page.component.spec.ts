@@ -11,7 +11,7 @@ import { environment } from "../../../../../environments/environment";
 import { TREMOLO_ICONS } from "../../../../core/icons";
 import { ClassesPageComponent } from "./classes-page.component";
 
-const CLASSES_URL = `${environment.mainApi}/api/classes`;
+const CLASSES_URL = `${environment.coreApi}/api/classes`;
 
 const SAMPLE = [
 	{

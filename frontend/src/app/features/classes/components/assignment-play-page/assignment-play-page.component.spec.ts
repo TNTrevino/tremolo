@@ -11,7 +11,7 @@ import { environment } from "../../../../../environments/environment";
 import { TREMOLO_ICONS } from "../../../../core/icons";
 import { AssignmentPlayPageComponent } from "./assignment-play-page.component";
 
-const ASSIGNMENTS_URL = `${environment.mainApi}/api/assignments`;
+const ASSIGNMENTS_URL = `${environment.coreApi}/api/assignments`;
 
 const ASSIGNMENT = {
 	id: 3,

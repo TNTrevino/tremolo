@@ -11,8 +11,8 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import { NotificationService } from "../../../../core/services/notification.service";
 import { JoinClassCardComponent } from "./join-class-card.component";
 
-const JOINED_URL = `${environment.mainApi}/api/classes/joined`;
-const JOIN_URL = `${environment.mainApi}/api/classes/join`;
+const JOINED_URL = `${environment.coreApi}/api/classes/joined`;
+const JOIN_URL = `${environment.coreApi}/api/classes/join`;
 
 /**
  * Port of

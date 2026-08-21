@@ -11,8 +11,8 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import type { Assignment } from "../../models/classes.models";
 import { AssignmentResultsGridComponent } from "./assignment-results-grid.component";
 
-const RESULTS_URL = `${environment.mainApi}/api/assignments/3/results`;
-const ATTEMPTS_URL = `${environment.mainApi}/api/assignments/3/attempts/42`;
+const RESULTS_URL = `${environment.coreApi}/api/assignments/3/results`;
+const ATTEMPTS_URL = `${environment.coreApi}/api/assignments/3/attempts/42`;
 
 const ASSIGNMENT: Assignment = {
 	id: 3,

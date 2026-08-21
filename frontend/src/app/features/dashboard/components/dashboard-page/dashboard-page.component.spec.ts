@@ -15,7 +15,7 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import type { MultiMetricChartData } from "../../../../shared/models/chart.models";
 import { DashboardPageComponent } from "./dashboard-page.component";
 
-const BASE = environment.mainApi;
+const BASE = environment.coreApi;
 const PROFILE_URL = `${BASE}/api/users/9/general-info`;
 const METRICS_URL = `${BASE}/api/charts/user/9/metrics`;
 const CLASS_METRICS_URL = `${BASE}/api/charts/teacher/class-metrics`;

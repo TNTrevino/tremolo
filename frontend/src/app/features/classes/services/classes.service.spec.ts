@@ -36,8 +36,8 @@ import { ClassesService } from "./classes.service";
  * PLAN.md §5.1): snake_case in, camelCase out, on every method.
  */
 
-const CLASSES = `${environment.mainApi}/api/classes`;
-const ASSIGNMENTS = `${environment.mainApi}/api/assignments`;
+const CLASSES = `${environment.coreApi}/api/classes`;
+const ASSIGNMENTS = `${environment.coreApi}/api/assignments`;
 
 describe("ClassesService", () => {
 	let service: ClassesService;

@@ -9,7 +9,7 @@ import { environment } from "../../../../environments/environment";
 import type { FriendResponse } from "../models/friends.models";
 import { FriendsService } from "./friends.service";
 
-const BASE = `${environment.mainApi}/api/friends`;
+const BASE = `${environment.coreApi}/api/friends`;
 
 const AMIGA: FriendResponse = {
 	id: 12,

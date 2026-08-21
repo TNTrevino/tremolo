@@ -11,7 +11,7 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import { FriendsUiStore } from "../../services/friends.store";
 import { FriendsPanelComponent } from "./friends-panel.component";
 
-const FRIENDS_URL = `${environment.mainApi}/api/friends`;
+const FRIENDS_URL = `${environment.coreApi}/api/friends`;
 
 /**
  * The panel is the piece of chrome the parity suite exists to catch in the

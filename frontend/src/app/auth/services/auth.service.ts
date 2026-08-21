@@ -28,7 +28,7 @@ export class AuthService {
 	private readonly http = inject(HttpClient);
 	private readonly tokens = inject(TokenStorage);
 	private readonly store = inject(AuthStore);
-	private readonly base = `${environment.mainApi}/api/auth`;
+	private readonly base = `${environment.coreApi}/api/auth`;
 
 	login(credentials: LoginRequest): Observable<LoginResponse> {
 		return this.http

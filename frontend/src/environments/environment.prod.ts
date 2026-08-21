@@ -15,13 +15,13 @@
  *
  * The values below are therefore what a *local* production build gets, not
  * what production runs on. They are left empty rather than pointed at the
- * real API on purpose: an empty `mainApi` makes a local production bundle
+ * real API on purpose: an empty `coreApi` makes a local production bundle
  * visibly non-functional instead of quietly talking to the live service.
- * `core/interceptors/api-url.ts` guards on `mainApi.length > 0`.
+ * `core/interceptors/api-url.ts` guards on `coreApi.length > 0`.
  */
 export const environment = {
 	production: true,
-	mainApi: "",
+	coreApi: "",
 	musicApi: "",
 	appName: "Tremolo",
 	googleClientId: "",

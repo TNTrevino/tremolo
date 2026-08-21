@@ -33,9 +33,9 @@ describe("authInterceptor", () => {
 	afterEach(() => backend.verify());
 
 	it("attaches the bearer token to main-service requests", () => {
-		http.get(`${environment.mainApi}/api/auth/me`).subscribe();
+		http.get(`${environment.coreApi}/api/auth/me`).subscribe();
 
-		const req = backend.expectOne(`${environment.mainApi}/api/auth/me`);
+		const req = backend.expectOne(`${environment.coreApi}/api/auth/me`);
 		expect(req.request.headers.get("Authorization")).toBe("Bearer access-123");
 		req.flush({});
 	});
@@ -53,9 +53,9 @@ describe("authInterceptor", () => {
 	it("sends no header when there is no token", () => {
 		TestBed.inject(TokenStorage).clearTokens();
 
-		http.get(`${environment.mainApi}/api/users/me`).subscribe();
+		http.get(`${environment.coreApi}/api/users/me`).subscribe();
 
-		const req = backend.expectOne(`${environment.mainApi}/api/users/me`);
+		const req = backend.expectOne(`${environment.coreApi}/api/users/me`);
 		expect(req.request.headers.has("Authorization")).toBe(false);
 		req.flush({});
 	});

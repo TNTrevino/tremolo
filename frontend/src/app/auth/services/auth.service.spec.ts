@@ -10,7 +10,7 @@ import { AuthService } from "./auth.service";
 import { AuthStore } from "./auth.store";
 import { TokenStorage } from "./token.storage";
 
-const AUTH = `${environment.mainApi}/api/auth`;
+const AUTH = `${environment.coreApi}/api/auth`;
 
 const LOGIN_RESPONSE = {
 	user: {

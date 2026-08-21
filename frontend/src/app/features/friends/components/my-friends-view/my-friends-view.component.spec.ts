@@ -13,7 +13,7 @@ import type { FriendResponse } from "../../models/friends.models";
 import { FriendsUiStore } from "../../services/friends.store";
 import { MyFriendsViewComponent } from "./my-friends-view.component";
 
-const FRIENDS_URL = `${environment.mainApi}/api/friends`;
+const FRIENDS_URL = `${environment.coreApi}/api/friends`;
 
 function friend(overrides: Partial<FriendResponse> = {}): FriendResponse {
 	return {

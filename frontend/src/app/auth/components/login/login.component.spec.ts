@@ -13,7 +13,7 @@ import { TREMOLO_ICONS } from "../../../core/icons";
 import { AuthStore } from "../../services/auth.store";
 import { LoginPageComponent } from "./login.component";
 
-const LOGIN_URL = `${environment.mainApi}/api/auth/login`;
+const LOGIN_URL = `${environment.coreApi}/api/auth/login`;
 
 const LOGIN_RESPONSE = {
 	user: {

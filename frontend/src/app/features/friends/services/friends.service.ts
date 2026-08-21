@@ -34,7 +34,7 @@ import {
 @Injectable({ providedIn: "root" })
 export class FriendsService {
 	private readonly http = inject(HttpClient);
-	private readonly base = `${environment.mainApi}/api/friends`;
+	private readonly base = `${environment.coreApi}/api/friends`;
 
 	/** The signed-in user's friends. */
 	getFriends(): Observable<Friend[]> {

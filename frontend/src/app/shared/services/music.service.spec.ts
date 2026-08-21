@@ -173,7 +173,7 @@ describe("MusicService", () => {
 
 		const req = backend.expectOne(`${MUSIC}/mary`);
 		expect(req.request.url.startsWith(environment.musicApi)).toBe(true);
-		expect(req.request.url.startsWith(environment.mainApi)).toBe(false);
+		expect(req.request.url.startsWith(environment.coreApi)).toBe(false);
 		req.flush(XML);
 	});
 });

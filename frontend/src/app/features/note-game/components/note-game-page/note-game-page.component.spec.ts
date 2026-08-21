@@ -16,8 +16,8 @@ import {
 	NoteGamePageComponent,
 } from "./note-game-page.component";
 
-const SETTINGS_URL = `${environment.mainApi}/api/note-game/settings`;
-const BINDINGS_URL = `${environment.mainApi}/api/note-game/keyboard-bindings`;
+const SETTINGS_URL = `${environment.coreApi}/api/note-game/settings`;
+const BINDINGS_URL = `${environment.coreApi}/api/note-game/keyboard-bindings`;
 const NOTE_GAME_URL = `${environment.musicApi}/music/note-game`;
 
 /**

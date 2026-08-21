@@ -10,7 +10,7 @@ export const environment = {
 	production: false,
 
 	/** Go "user tracking" service -- auth, users, classes, scores (was VITE_BACKEND_MAIN). */
-	mainApi: "http://localhost:5001",
+	coreApi: "http://localhost:5001",
 
 	/** Python "music generation" service -- exercises and MusicXML (was VITE_BACKEND_MUSIC). */
 	musicApi: "http://localhost:8000",
