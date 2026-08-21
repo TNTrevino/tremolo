@@ -1,12 +1,8 @@
 {
-	"name": "sight-reading-app",
-	"version": "1.0.0",
-	"private": true,
-	"scripts": {
-		"prepare": "husky"
-	},
-	"devDependencies": {
-		"husky": "^9.1.7",
-		"lint-staged": "^16.2.4"
-	}
+  "name": "sight-reading-app",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "lint-staged": "^16.2.4"
+  }
 }

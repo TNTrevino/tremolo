@@ -194,3 +194,8 @@ check:
 	@$(MAKE) --no-print-directory check-react    STEP=2/4
 	@$(MAKE) --no-print-directory check-music    STEP=3/4
 	@$(MAKE) --no-print-directory check-go       STEP=4/4
+
+## hooks: point git at the repo's pre-commit hook (run once per clone)
+hooks:
+	git config core.hooksPath .githooks
+	@echo "pre-commit hook active from .githooks/"

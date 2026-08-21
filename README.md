@@ -31,6 +31,14 @@ This also be a technical exercise for myself as I will be learning a huge amount
 
 ## Run the Project Locally
 
+Once per clone, activate the git pre-commit hook (formats staged files per
+service — Prettier / Black / gofmt):
+
+```bash
+make hooks
+```
+
+
 ### Database
 
 Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./backend/main/database/schema.sql` file. 
