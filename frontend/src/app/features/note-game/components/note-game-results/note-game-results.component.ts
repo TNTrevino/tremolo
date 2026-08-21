@@ -154,9 +154,17 @@ export class NoteGameResultsComponent {
 		stream: () => this.users.getRecentGameEntries(),
 	});
 
-	/** Newest-first from the server; the chart reads oldest-left. */
+	/**
+	 * Newest-first from the server; the chart reads oldest-left.
+	 *
+	 * The template's "Could not load recent games" notice is a *sibling* of
+	 * the chart, not a gate on it, and `value()` rethrows on a failed
+	 * resource -- so an unguarded read would take the whole results screen
+	 * down instead of showing that notice. Empty is the honest answer, and
+	 * it is what `showChart()` reads to hide the chart.
+	 */
 	protected readonly chartData = computed<RecentGamePoint[]>(() => {
-		const entries = this.recent.value() ?? [];
+		const entries = this.recent.error() ? [] : (this.recent.value() ?? []);
 		return [...entries].reverse().map((entry, i) => ({
 			index: i + 1,
 			npm: entry.notesPerMinute,
