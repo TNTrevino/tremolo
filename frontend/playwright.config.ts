@@ -13,7 +13,7 @@ import { defineConfig, devices } from "@playwright/test";
  * their own users and classes through the Go API rather than through the
  * UI, so seeding never depends on which frontend is under test.
  */
-const baseURL = process.env["E2E_BASE_URL"] ?? "http://localhost:5173";
+const baseURL = process.env["E2E_BASE_URL"] ?? "http://localhost:4200";
 
 /** Desktop and phone, the two viewports the baselines are captured at. */
 export const VIEWPORTS = {

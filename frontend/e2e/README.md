@@ -1,13 +1,13 @@
 # The parity harness
 
-One Playwright suite, two apps. It was written against the **React** app
-(`frontend-react/`) in Phase 0 and proved green there; from Phase 1 on,
-every phase must make its slice of this **same, unmodified** suite pass
-against the Angular app. `E2E_BASE_URL` is the only thing that changes.
+The app's regression suite. It was written against the old React app in
+Phase 0 of the 2026 Angular migration and proved green there; the Angular
+app passes the **same, unmodified** suite, which is what "the migration
+preserved behaviour" means concretely. `E2E_BASE_URL` is the only thing
+that ever changed.
 
-If a spec has to be edited to pass on Angular, that is a behaviour change.
-Record it in `.migration/STATE.md` as a deviation — do not quietly edit the
-spec.
+A spec that has to be edited to pass is a behaviour change. Treat it as
+one: record why in the commit, do not quietly edit the spec.
 
 ## Running it
 
@@ -20,13 +20,14 @@ exact backend invocations.
 export NVM_DIR="$HOME/.config/nvm" && . "$NVM_DIR/nvm.sh" && nvm use 24
 cd frontend
 
-npm run e2e                                      # against React, :5173
-E2E_BASE_URL=http://localhost:4200 npm run e2e   # against Angular
+npm run dev &                                    # ng serve on :4200
+npm run e2e                                      # runs against :4200
+E2E_BASE_URL=http://localhost:4300 npm run e2e   # or any other port
 ```
 
 | Variable       | Default                 | What it points at           |
 | -------------- | ----------------------- | --------------------------- |
-| `E2E_BASE_URL` | `http://localhost:5173` | the frontend under test     |
+| `E2E_BASE_URL` | `http://localhost:4200` | the frontend under test     |
 | `E2E_MAIN_API` | `http://localhost:5001` | the Go service, for seeding |
 
 ## Screenshot baselines
