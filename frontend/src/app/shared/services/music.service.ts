@@ -1,11 +1,22 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { catchError, type Observable, throwError, timeout } from "rxjs";
+import { catchError, map, type Observable, throwError, timeout } from "rxjs";
 
 import { environment } from "../../../environments/environment";
 import { LoggerService } from "../../core/services/logger.service";
-import type { MaryRequest, RandomNotesRequest } from "../models/music.models";
-import { toMusic21NoteName } from "../utils/music.mapper";
+import type {
+	ChordGameRequest,
+	ChordGameResponse,
+	IntervalGameRequest,
+	IntervalGameResponse,
+	KeySignatureGameRequest,
+	KeySignatureGameResponse,
+	MaryRequest,
+	RandomNotesRequest,
+	ScaleGameRequest,
+	ScaleGameResponse,
+} from "../models/music.models";
+import { fromMusic21NoteName, toMusic21NoteName } from "../utils/music.mapper";
 
 /** React's `musicApiClient` timeout, carried over. */
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -30,12 +41,14 @@ const REQUEST_TIMEOUT_MS = 10_000;
  * notation, and `toMusic21NoteName` / `fromMusic21NoteName` are called
  * nowhere else in the app.
  *
- * This phase ports the two endpoints the sheet-music and converter pages
- * use. The five game endpoints (`/note-game`, `/key-signature-game`,
- * `/scale-game`, `/chord-game`, `/interval-game`) belong to Phases 5 and 6
- * and are added here, in the same shape, when those phases land. Their
- * responses carry note names, so they are also where
- * `fromMusic21NoteName` gets its first caller.
+ * Phase 4 ported the two endpoints the sheet-music and converter pages use;
+ * Phase 5 adds the four identification-game endpoints. `/note-game` is
+ * Phase 6's and is the one still missing.
+ *
+ * **The game endpoints answer JSON, so they do *not* take
+ * `responseType: "text"`** -- that is only for `/mary` and `/random`, which
+ * answer `application/xml` (phase-4-handoff.md §5). They do carry note
+ * names, which is where `fromMusic21NoteName` gets its callers.
  */
 @Injectable({ providedIn: "root" })
 export class MusicService {
@@ -57,6 +70,78 @@ export class MusicService {
 			...params,
 			tonic: toMusic21NoteName(params.tonic),
 		});
+	}
+
+	// --- Identification games ---------------------------------------------
+
+	/** A clef plus a key signature; the answer is the tonic. */
+	generateKeySignatureGame(
+		params: KeySignatureGameRequest,
+	): Observable<KeySignatureGameResponse> {
+		return this.postJson<KeySignatureGameResponse>(
+			"/key-signature-game",
+			params,
+		).pipe(
+			map((response) => ({
+				...response,
+				tonic: fromMusic21NoteName(response.tonic),
+				minorTonic: fromMusic21NoteName(response.minorTonic),
+			})),
+		);
+	}
+
+	/** One octave of a scale; the answer is the scale type. */
+	generateScaleGame(params: ScaleGameRequest): Observable<ScaleGameResponse> {
+		return this.postJson<ScaleGameResponse>("/scale-game", {
+			...params,
+			...(params.tonicPool
+				? { tonicPool: params.tonicPool.map(toMusic21NoteName) }
+				: {}),
+		}).pipe(
+			map((response) => ({
+				...response,
+				tonic: fromMusic21NoteName(response.tonic),
+			})),
+		);
+	}
+
+	/** A stacked chord; the answer is its quality. */
+	generateChordGame(params: ChordGameRequest): Observable<ChordGameResponse> {
+		return this.postJson<ChordGameResponse>("/chord-game", {
+			...params,
+			...(params.rootPool
+				? { rootPool: params.rootPool.map(toMusic21NoteName) }
+				: {}),
+		}).pipe(
+			map((response) => ({
+				...response,
+				root: fromMusic21NoteName(response.root),
+			})),
+		);
+	}
+
+	/**
+	 * Two notes, stacked or in sequence; the answer is the interval.
+	 *
+	 * The only game endpoint with nothing to convert: music21 interval names
+	 * ("m3", "P5") are not note names and carry no flat sign.
+	 */
+	generateIntervalGame(
+		params: IntervalGameRequest,
+	): Observable<IntervalGameResponse> {
+		return this.postJson<IntervalGameResponse>("/interval-game", params);
+	}
+
+	/**
+	 * The game endpoints answer JSON, so this is a plain typed post -- the
+	 * `responseType: "text"` below is specific to the two MusicXML routes.
+	 * Timeout and error shaping are shared.
+	 */
+	private postJson<T>(path: string, body: unknown): Observable<T> {
+		return this.http.post<T>(`${this.base}${path}`, body).pipe(
+			timeout(REQUEST_TIMEOUT_MS),
+			catchError((err: unknown) => throwError(() => this.describe(path, err))),
+		);
 	}
 
 	/**

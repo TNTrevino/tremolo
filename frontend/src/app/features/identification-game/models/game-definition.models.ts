@@ -1,6 +1,7 @@
 import type { Observable } from "rxjs";
 
 import type { SettingsGameType } from "@shared/models/game.models";
+import type { MusicService } from "@shared/services/music.service";
 
 import type { BaseGameSettings, GeneratedQuestion } from "./game-state.models";
 import type { SettingDescriptor } from "./setting-descriptor.models";
@@ -53,7 +54,17 @@ export interface GameDefinition<
 	 * here, or prefetched questions go stale.
 	 */
 	toRequest: (settings: S) => Req;
-	fetchQuestion: (request: Req) => Observable<T>;
+	/**
+	 * Fetches one question.
+	 *
+	 * The music service arrives as an argument rather than through
+	 * `inject()`, because the prefetch queue calls this from inside a
+	 * `switchMap` -- not an injection context, where `inject()` throws
+	 * NG0203 (the same trap Phase 1 hit in `catchError`, STATE.md 1/1).
+	 * Passing it also means a game definition can be exercised in a test
+	 * with a stub and no TestBed at all.
+	 */
+	fetchQuestion: (request: Req, music: MusicService) => Observable<T>;
 	/** The correct answer for a fetched question. */
 	getAnswer: (question: T, settings: S) => string;
 	/** Answer buttons; their values must match `getAnswer`'s output. */
