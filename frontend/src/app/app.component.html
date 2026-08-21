@@ -1,11 +1,13 @@
 <!--
 	The app shell, mirroring `AppContent` in frontend-react/src/App.tsx:
-	navigation above the routed page, toasts pinned over everything. The
-	friends panel -- rendered there whenever the user is signed in -- is
-	Phase 3's work.
+	navigation above the routed page, the friends panel beside it for a
+	signed-in user, toasts pinned over everything.
 -->
 <div class="min-h-screen bg-background text-foreground">
 	<app-navigation />
 	<router-outlet />
+	@if (auth.isAuthenticated()) {
+		<app-friends-panel />
+	}
 	<app-toast-container />
 </div>
