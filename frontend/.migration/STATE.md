@@ -11,7 +11,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
 | 3     | CRUD features              | built (3.1) | 2026-08-20 | `2dd1e3d..` (3.1) | **Sub-feature 1 (auth screens) only** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
-| 4     | Sheet music / OSMD         | pending | —    | —       |       |
+| 4     | Sheet music / OSMD         | built   | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
 | 7     | Cutover                    | pending | —    | —       |       |
@@ -72,9 +72,25 @@ could not be followed as written. One row per deviation.
 | 3.1 | D5: data services return `Observable<T>` | `GoogleOAuthService` returns plain values | It touches `crypto`, `sessionStorage` and `window.location` and never makes a request; nothing to cancel, retry or pipe. |
 | 3.1 | Phase 2 shipped `[required]="true"` on the login fields | Dropped on both auth pages | React passes no `required`, so no baseline has an asterisk -- and `getByLabel("Password", { exact: true })` in `auth.spec.ts`'s signup flow cannot match "Password *". |
 | 3.1 | Phase 2 handoff §2: the card parts take "none -- put your own classes on the element" | All six take a `className` input merged through `cn()` | React ran base + caller through tailwind-merge, so `shadow-lg` replaced `shadow-sm` and `text-3xl` replaced `text-2xl` **and** `leading-none`. Angular concatenated, and the winner was alphabetical accident: `text-sm` beat `text-base`, `shadow-sm` beat `shadow-lg`. The login card came out 46px short. Handoff §7.1. |
-| 3.1 | Phase 2 handoff §4: size an icon with `class="h-5 w-5"` | Size it with `<ng-icon size="1.25rem">`; `styles.css` makes the host `display: block` | @ng-icons writes `--ng-icon__size` as an **inline style**, which no class can beat, so `h-8 w-8` rendered a 16px icon and the nav logo was 8px narrow in every screenshot. Its host was also `inline-block` where Tailwind's preflight makes every `<svg>` block. 14 nav icons re-sized. Handoff §7.2. |
+| 3.1 | Phase 2 handoff §4: size an icon with `class="h-5 w-5"` | Size it with `<ng-icon size="1.25rem">`; `styles.css` makes the host `display: block` | @ng-icons writes `--ng-icon__size` as an **inline style**, which no class can beat, so `h-8 w-8` rendered a 16px icon and the nav logo was 8px narrow in every screenshot. Its host was also `inline-block` where Tailwind's preflight makes every `<svg>` block. 14 nav icons re-sized. Handoff §7.2. **Amended at the Phase 4 merge:** the rationale is half wrong -- `size=` sets only the `--ng-icon__size` custom property inline; the `width`/`height` that read it live in `@ng-icons`' *component stylesheet*, so a class **can** beat them, and Phase 4's `important: "html"` now does. The 14 `size=` attributes stay (they agree with the `h-N` classes exactly and are load-bearing on the two auth logos, which carry no class), but `h-*` on an `<ng-icon>` is no longer decoration. Integration note below. |
 | 3.1 | Phase 2 used `space-y-*` around kit components | `flex flex-col gap-*` | `space-y-*` sets `margin-top` on the `<app-form-field>` / `<app-button>` element, and margins on a `display: contents` box are ignored. Two 16px gaps were missing from the login card. Handoff §7.3. |
 | 3.1 | Packet: "delivered routes screenshot-diff within threshold" | 12/12 shots are outside threshold as shipped; 12/12 pass with two Phase-2 restyles backed out | The residual is exactly the brass CTA fill and the `font-display` heading -- both deliberate DESIGN.md changes (rule 4, rollout step 3) that Phase 2's verifier signed off, and both newer than the baselines. Measured both ways and recorded rather than reverted; relitigating a Phase-2 decision is not this slice's call. Handoff §6. |
+| 4 | Packet: one `SheetMusicComponent` | Two -- `<app-sheet-music>` (wrapper) + `<app-sheet-music-display>` (React's card) | React had the same hook/component split, and Phases 5-6 draw their own chrome around the wrapper. |
+| 4 | Packet: "port the mapper test" | Written new | R5 -- the React repo has no test for `music.mapper.ts`. |
+| 4 | React's SheetMusicPage posted music21 spellings (`"B-"`) from page code | Page holds `"Bb"`; `MusicService` converts | The stated invariant is that feature code never sees `-` flats; React's own page broke it. Identical wire payload. |
+| 4 | React's `MusicService` had `isValidNote`/`isValidRhythm` | Not ported | Dead code -- nothing calls them. |
+| 4 | Packet Inputs list all 7 music endpoints | `/mary` and `/random` only | The Work section scopes it to "the endpoints these pages use"; Phases 5-6 add theirs. |
+| 4 | React had a separate axios `musicApiClient` module | Base URL, 10s timeout and error shaping live in `MusicService` | `HttpClient` is injected, not constructed; error strings are unchanged. |
+| 4 | React wrapped the display in `ComponentErrorBoundary` + `SheetMusicFallback` | Error panel driven by the `error` signal | Phase 2 handoff §5's replacement for boundaries, applied to the case it named. |
+| 4 | React renders OSMD into a hidden container and ships `width="0"` staves | One-shot `ResizeObserver` redraws once the container has a width | Verified React loses this race 2 times in 3 on :5173. A blank stave fails the packet's exit criterion. |
+| 4 | Nothing about Tailwind's `important` | `important: "html"` | Angular injects component styles after `styles.css` at class specificity, so `@ng-icons` beat every `h-N w-N`: all 47 icons rendered at 1em. Selector strategy, no `!important`. **See the integration note -- this is now the general fix, and 3.1's `size=` attributes coexist with it.** |
+| 4 | Nothing about `styles.css` | `:root ng-icon { display: block; vertical-align: middle }` | `<ng-icon>` is a custom element, so preflight's `svg` rule never reached it -- 6px of stray line-box height and a 3px nav offset. **Superseded 3.1's unlayered `ng-icon[role="img"]` rule at the merge (`3e92b99`); see the integration note.** |
+| 4 | React used `space-y-2` for the rhythm/CTA columns | `flex flex-col gap-2` | `display: contents` hosts take no margin, so the columns stacked flush -- 32px short. |
+| 4 | React's file input had no accessible name | `aria-label="Select a MusicXML file"` | Pixel-neutral; same class of change as Phase 0's nine names. Recorded because it is a name React does not have. |
+| 4 | Phase 1 put mappers/types under the feature (`auth/models/`) | Followed PLAN.md §4: `shared/utils/`, `shared/models/`, `shared/services/` | `MusicService` serves three features; a feature-local home would mean cross-feature imports. |
+| 4 | Packet silent on the CommonJS build warning | `allowedCommonJsDependencies: ["opensheetmusicdisplay"]` in `angular.json` | The documented remedy; keeps the build output clean. |
+| 4 | Packet silent on exercising zoom/clear by hand | Added a "Sheet music (OSMD)" section to `/dev/kit` | No page exposes those; the section uses a static score so the kit still touches no API. |
+| 4 | Phase 2 handoff §10: `display: contents` hosts swallow `class` | They swallow **margins** too | Recorded so Phases 5-6 do not rediscover it through a silent 32px layout shift. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
 
@@ -400,6 +416,85 @@ after the 12-shot diff run.
    auth template passes `required`, so no label renders an asterisk — and
    `grep required` over the React `LoginPage.tsx` / `SignupPage.tsx` returns
    nothing, so the baselines really do have none.
+
+### Integration note (Phase 4, 2026-08-20) — merged, **not** verified
+
+Phase 4 was built in a parallel worktree while 3.1 landed here. This records
+what the merge did, because a textual merge alone would have left the branch
+in a state neither builder shipped. **Phase 4 stays `built`; a verifier owns
+`done` and must verify the *integrated* result, not Phase 4's own base.**
+
+**Base-branch reset.** The worktree branch was created from `origin/main`
+(`b2a52b7`), then reset onto **`24a3bba`** — Phase 2's last commit, *before*
+3.1 — and its nine commits (`64fb283` through `2d41eb8`) sit on that. So Phase 4 never
+saw 3.1's work, and every "unchanged since" claim in `phase-4-handoff.md`
+(§8's `git log 24a3bba..HEAD -- frontend/e2e/ .migration/baselines/`, the
+screenshot and geometry runs, the 146/21 suite count) is scoped to that base,
+not to this branch. Re-measure before quoting any of it.
+
+**Merge.** `dd80abe`, a real merge commit, both histories preserved. **No
+textual conflicts** — the two phases touched disjoint files apart from
+`styles.css` and `tailwind.config.js`, and even there git took both hunks
+cleanly. `angular.json`, `test-setup.ts` and the `/dev/kit` page merged
+additively. `e2e/`, `.migration/baselines/` and `frontend-react/` are
+untouched across the merge (`git diff 7131492 dd80abe` on those paths is empty),
+and Phase 4's ad-hoc screenshot runner was never committed — handoff §8 says
+it ran from a scratch directory, and no Playwright config or spec appears in
+the range.
+
+**The icon overlap, reconciled in `3e92b99`.** Both builders fixed Phase 2's
+`<ng-icon>` sizing defect, differently, and the merge kept both:
+
+- 3.1: `size=` on 17 call sites (10 in the nav, 7 on the auth pages) + an
+  unlayered `ng-icon[role="img"]
+  { display: block }` in `styles.css`.
+- Phase 4: `important: "html"` in `tailwind.config.js` (the general
+  mechanism) + `:root ng-icon { display: block; vertical-align: middle }`
+  inside `@layer base`.
+
+Settled as follows.
+
+1. **One `display` rule, Phase 4's.** 3.1's is the same specificity but sits
+   *below* `@tailwind utilities`, so it would beat a `display` utility
+   written on an `<ng-icon>` — the same cascade bug both fixes exist to undo.
+   Deleted. Phase 4's also carries preflight's `vertical-align: middle`,
+   which 3.1's omitted.
+2. **Both *sizing* mechanisms stay, because both are load-bearing.** 3.1's
+   `size=` attributes are **not** redundant: `login.component.html:6` and
+   `signup-page.component.html:6` carry `size="2rem"` and **no `h-*` class**,
+   so `important: "html"` has no utility to promote there and removing
+   `size=` would drop both auth logos from 32px to 16px. Symmetrically, all
+   seven of Phase 4's own call sites (converter, sheet-music page,
+   `/dev/kit`) carry a class and **no `size=`**, so they are sized only by
+   `important: "html"`. Removal in either direction changes pixels; nothing
+   was removed.
+3. **Where a call site has both, they agree exactly.** Audited all 27
+   `<ng-icon>` call sites in `src/` (29 tag matches, two of them inside doc
+   comments in `core/icons.ts`): **15** carry both, **2** carry `size=`
+   only, **10** carry a class only (Phase 4's seven plus Phase 2's toast ×2
+   and select). Every one of the 15 maps `h-3`↔
+   `0.75rem`, `h-4`↔`1rem`, `h-5`↔`1.25rem`, `h-6`↔`1.5rem` — no mismatch.
+   Equivalence is structural, not coincidental: `size=` sets only
+   `--ng-icon__size`, `@ng-icons` reads it only for the host's
+   `width`/`height`
+   (`:host { width: var(--ng-icon__size, 1em) }`), and the inner `svg` is
+   `width: inherit`. Whichever declaration wins the cascade, the drawn glyph
+   is the same box. **No screenshot was needed and none was taken** — the two
+   mechanisms cannot disagree while the mapping holds, and the audit is
+   cheaper to re-run than a baseline diff. The mapping is written down in
+   `tailwind.config.js` next to `important: "html"`.
+
+**Gates on the merged branch**, all re-run here, all exit 0: `npm run build`,
+`npm run lint`, `npm run test:run`, `npm run format:check` — **183 tests in
+25 files**, exactly 3.1's 146/21 plus Phase 4's 37/4. `shareReplay` is still
+only in `refresh.interceptor.ts` (D6).
+
+**Not done here, and still open for the verifier:** no E2E or screenshot run
+against the merged branch. `important: "html"` is a global cascade change
+that landed on a branch whose baselines were last diffed without it, and
+Phase 4's 8/8 and 12/12 numbers were measured on separate bases. The nav's
+`space-x-2` mobile shift (V1 above) is also still open, and sub-feature 4
+owns it.
 
 ---
 
