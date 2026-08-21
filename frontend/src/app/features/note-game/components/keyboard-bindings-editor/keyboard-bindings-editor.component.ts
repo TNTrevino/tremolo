@@ -11,6 +11,7 @@ import { filter, fromEvent } from "rxjs";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CardDirective } from "../../../../shared/components/ui/card.directive";
 import { cn } from "../../../../shared/utils/cn";
+import { NATURAL_NOTES } from "../../models/engine.models";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
 
 /**
@@ -33,13 +34,15 @@ import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
  * through `NoteGameService.inputDisabled` while the dialog is open, so
  * rebinding "C" cannot also answer "C".)
  *
- * The three row labels are the *editor's* own, not the shared
- * `NATURAL_NOTES`: they are 21 accidental-bearing names, and React declared
- * them here for the same reason.
+ * The sharp and flat rows are declared here because they exist nowhere else
+ * -- they are the seven letters with an accidental, which no other screen
+ * needs. The naturals row is **imported**: it is the shared `NATURAL_NOTES`,
+ * and this is one of the four constants `frontend/CLAUDE.md` says to import
+ * rather than redeclare. React had its own copy; that is the one thing here
+ * that is not a verbatim port.
  */
 
 const SHARP_NOTES = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"] as const;
-const NATURAL_NOTES = ["C", "D", "E", "F", "G", "A", "B"] as const;
 const FLAT_NOTES = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"] as const;
 
 @Component({
