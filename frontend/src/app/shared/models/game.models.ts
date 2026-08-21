@@ -70,7 +70,8 @@ export const toCreateGameEntryDto = (
 	assignment_id: params.assignmentId,
 });
 
-export interface CreateGameEntryResponseDto {
+/** No `Dto` suffix and no mapper: both keys are already domain-shaped. */
+export interface CreateGameEntryResponse {
 	message: string;
 	id: number;
 }

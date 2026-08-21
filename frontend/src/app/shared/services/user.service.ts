@@ -12,7 +12,7 @@ import type {
 	MultiMetricChartData,
 } from "../models/chart.models";
 import {
-	type CreateGameEntryResponseDto,
+	type CreateGameEntryResponse,
 	type DailyActivity,
 	type DailyActivityDto,
 	type GameEntry,
@@ -107,8 +107,8 @@ export class UserService {
 
 	saveGameResult(
 		params: SaveGameResultParams,
-	): Observable<CreateGameEntryResponseDto> {
-		return this.http.post<CreateGameEntryResponseDto>(
+	): Observable<CreateGameEntryResponse> {
+		return this.http.post<CreateGameEntryResponse>(
 			`${this.base}/api/note-game/entry`,
 			toCreateGameEntryDto(params),
 		);
