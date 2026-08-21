@@ -87,9 +87,7 @@ import { GameMode } from "../../models/engine.models";
 						{{ isTimeMode() ? "seconds" : unit() }}
 					</span>
 					<span>•</span>
-					<span>
-						Score: {{ gameStats().correct }}/{{ gameStats().total }}
-					</span>
+					<span>{{ scoreLabel() }}</span>
 					<ng-content select="[gameOverSummaryExtra]" />
 				</div>
 			</div>
@@ -126,5 +124,25 @@ export class GameOverCardComponent {
 		this.isTimeMode()
 			? "Time"
 			: this.unit().charAt(0).toUpperCase() + this.unit().slice(1),
+	);
+
+	/**
+	 * Built in TypeScript rather than interpolated in the template, and that
+	 * is not a style choice.
+	 *
+	 * `e2e/support/app.ts`'s `correctCount()` reads this line with the
+	 * **anchored** regex `/^Score: \d+\/\d+$/`, and Playwright does not trim
+	 * the text before testing a regex against it. JSX drops the whitespace
+	 * around a newline, so React rendered exactly `"Score: 2/10"`; Angular
+	 * collapses it to a single space instead and rendered `" Score: 2/10 "`,
+	 * which the anchors reject. Measured live: the locator matched **0**
+	 * elements while the number was plainly on screen.
+	 *
+	 * A single interpolation has no text node either side of it, so this
+	 * restores React's exact text content -- and it cannot be undone by a
+	 * reformat, which the multi-line version could.
+	 */
+	protected readonly scoreLabel = computed(
+		() => `Score: ${this.gameStats().correct}/${this.gameStats().total}`,
 	);
 }
