@@ -10,7 +10,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
-| 3     | CRUD features              | built (3.1-3.4, 3.6; 3.5 in flight) | 2026-08-20 | `2dd1e3d..99ef609` (3.1-3.4, 3.6; the ledger sync commit follows) | **Sub-features 1, 2, 3, 4 and 6 built; 5 (classes) still building in its worktree.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged here 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; see the Phase 3 integration note below for the four merges, the one conflicted merge and how it was resolved. Gates on the merged branch all exit 0 -- **308 tests in 38 files** (the union, not the sum, of the slices' own 158/23, 181/24, 177/25 and 234/30). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5** (3.6 closed the suite's last known failure), `friends-and-theme.spec.ts` **4/4** (3.4 closed the friends-panel failure) -- **30/30, the first fully green run of the three golden specs in the migration**. `classes.spec.ts` **1/4**, owned by 3.5 and expected until it lands. 26 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6) plus 4 integration deviations. **Not to be marked `done`** -- a consolidated verifier runs after 3.5. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
+| 3     | CRUD features              | built (all six slices) | 2026-08-20 | `2dd1e3d..d6c13ad` (the ledger sync commit follows) | **All six sub-features built and merged.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; **5 (classes) followed as `2a4f61b`**, branched from `7131492` and so carrying none of the other four merges nor Phase 4's. See the two Phase 3 integration notes below. Gates on the fully merged branch all exit 0 -- **394 tests in 49 files** (the union, not the sum: 308/38 before 3.5, whose own 232/32 contributed exactly its 86 new tests in 11 new files). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** -- **30/30, held across the 3.5 merge**. `classes.spec.ts` **3/4**; test 4 reaches the assignment-play route, resolves the game type and renders the host stub, then times out looking for an answer pad -- **Phase 5's**, and the only residual. 34 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6, 8 from 3.5) plus 5 integration deviations. **Not to be marked `done`** -- the consolidated verifier runs next and owns that. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** **Sub-feature 5 (classes)** -- classes list, class detail + roster, assignments, assignment-play plumbing, 20 components, 9 `rxResource`s. build/lint/test:run/format:check all exit 0 on its own base (232 tests, 32 files, +86). `classes.spec.ts` 3/4 and screenshots 12/16 -- both residuals are the Phase 5 game behind `/assignments/:id/play`. 8 deviations below. Resumed after its first agent died with 34 files uncommitted; see handoff §2. **Three defects found and fixed (handoff §7): Angular `isLoading()` is not TanStack's and was tearing pages down mid-refetch, a dropped unknown-game-type guard, and `display: inline` component hosts eating every `space-y-*` gap.** |
 | 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
@@ -117,10 +117,19 @@ could not be followed as written. One row per deviation.
 | 3.6 | React's heatmap tooltip was a hover card on a div grid | A `<title>` element | Makes the cells reachable by screen reader, which React's div grid was not. Visual output unchanged. |
 | 3.6 | React's `TeacherDashboard` passed `<Button asChild>` | The bug is **reproduced on purpose**: a `<button>` wrapping an `<a>` | `asChild` was never honoured, so React shipped that markup and the baselines were captured from it. Flagged for whoever cleans up the kit. |
 | 3.6 | React's `PerformanceChart` used a discriminated union (`isTeacher: true` => `viewMode` required) | Two independent inputs with defaults | Runtime behaviour is identical; the compile-time guarantee is gone. Recorded as a real loss, not a wash. |
+| 3.5 | Packet: port `AssignmentPlayPage.test` | Ported as `models/game-definitions.spec.ts`, and the page got a **new** spec | R5. That file does not test the page despite its name -- it tests `GENERIC_GAME_DEFINITIONS`. React has no component test for the page; 5 were written. |
+| 3.5 | Packet: port React's page structure | `@if (x.isLoading())` became `@if (x.status() === "loading")` on five templates | React's `isLoading` is first-load-only; Angular's is also true while reloading. Ported literally, it destroyed child components mid-refetch and cancelled their requests. Handoff §7.1. **The rule generalises: `isLoading()` is only safe on a resource nothing ever reloads.** |
+| 3.5 | Packet is silent on component host display | `:host { display: block }` on 11 components, `display: contents` on 2 dialogs | React had no wrapper element at all. Angular's default `inline` host silently ate every `space-y-*` gap; 8 screenshots were failing on it. Handoff §7.3. |
+| 3.5 | Packet: assignment-play is plumbing only | Added a runtime `isKnownGameType()` guard React got from its registry lookup | The guard is pure plumbing and needs no game code, so leaving it out was a dropped behaviour rather than a deferral. Handoff §7.2. |
+| 3.5 | React's `RosterList` gave each row its own `RosterRow` component | One `confirming` signal on the list, one dialog | That component existed only to hold a `useState` for its own confirm dialog. A signal does not need a component to live in. Same behaviour, one dialog in the DOM instead of one per row. |
+| 3.5 | React's play page used `useMemo` for a stable launch object | Plain `computed()` | `useMemo` was there because the game pages' effects keyed off the object's identity. A `computed()` is stable by construction; the concern has no port. |
+| 3.5 | Packet: "delivered routes screenshot-diff within threshold" | 12/16 pass; the 4 `assignment-play` shots do not | The baseline photographs React **playing a key-signature game**; Angular photographs the deferred-game stub, and the page is 32px shorter for exactly that reason. Phase 5 owns it. |
+| 3.5 | Packet: E2E specs green | `classes.spec.ts` 3/4 | Same cause. Test 4 passes its URL assertion and reaches the host stub; it fails looking for a game answer pad. **Phase 5.** Reproduced at the merge -- see the 3.5 integration note. |
 | 3 (integration) | The four slices each ship their own `shared/models/user.models.ts` + `UserService` | One of each, resolved to 3.3's | 3.3 probed the live service and typed what it actually sends; 3.6 branched before that finding existed and ported React's stale ten-field type. Ground truth wins (R5). All four of 3.6's methods already existed in 3.3's superset, so no capability was lost. Integration note below. |
 | 3 (integration) | 3.6 kept `game_count` snake_case in a `DailyActivityCount` on `chart.models.ts` | Dropped for 3.3's mapped `DailyActivity` in `game.models.ts` | 3.6 argued a one-field mapper was more machinery than the rename is worth; 3.3 had already written it. With the mapper in hand, the uniform rule (no snake_case above `shared/services/`) costs nothing and the exception costs a standing carve-out. |
 | 3 (integration) | 3.6 put `mapGeneralUserInfo` in `shared/utils/user.mapper.ts` | Deleted; 3.3's copy in `shared/models/user.models.ts` is the survivor | Not a judgement that `utils/` is the wrong home -- Phase 4's `music.mapper.ts` lives there. 3.3 co-locates **six** mappers with their DTOs in `game.models.ts`, and moving one without the other five would leave the convention split. A later phase may unify them; doing it mid-merge would be a refactor wearing a conflict's clothes. |
 | 3 (integration) | 3.6's dashboard read four stats and a parsed `createdAt` off the profile | Sessions from `total_entries`; the other three tiles zero; the join date rendered as the service's pre-formatted string | Forced by the row above -- the phantom fields no longer typecheck. React rendered four zeroes and "Joined Invalid Date" from the same absent data, so three tiles are unchanged in behaviour and the sessions tile now shows the number it always claimed to. **The join date is the one visible change and the `dashboard-*` baselines were captured with "Invalid Date"** -- flagged for the consolidated verifier, not re-baselined here. |
+| 3 (integration) | 3.5 ships `shared/models/game.types.ts` holding a `GameType` union that 3.3's `shared/models/game.models.ts` already declares | One declaration, 3.3's; 3.5's six importers repointed and its copy deleted | Both are ports of the same React file (`services/api/types/game.types.ts`); 3.3 ported all of it, 3.5 only the union it needed. `GameType` is one of three places a new game must be registered (root CLAUDE.md) and a second copy makes it four. The unions are string-literal types, so they were structurally interchangeable and **nothing failed to compile** -- which is why this had to be caught by reading rather than by building. `GenericGameType` and `SettingsGameType` are deliberately left as two aliases; a comment now explains why, so a third is not added. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
 
@@ -806,6 +815,116 @@ the sessions tile is pixel-identical to React's `?? 0`.
   (`agent-a741e57bd110253e8`) and was left alone. `:4200` was taken over
   from a stale server that was serving this checkout; it was stopped and
   replaced so the E2E numbers above are known to be this tree's.
+
+---
+
+### Integration note (Phase 3 sub-feature 5 — 2026-08-20) — merged, **not** verified
+
+The last Phase 3 merge. 3.5 branched from `7131492`, so it carries **none**
+of Phase 4's merge and none of the other four slice merges — it is the
+oldest base of the six and the only one merged alone.
+
+| Slice | Branch base | Merge commit | Conflicts |
+| ----- | ----------- | ------------ | --------- |
+| 3.5 classes | `7131492` | `2a4f61b` | **none, textually** |
+
+**The merge was textually clean and that is not the same as semantically
+clean.** 3.5 touches the classes feature (which the other five slices never
+opened, because Phase 1 left it as four placeholder components) plus exactly
+two new shared files. It did not touch `app.routes.ts` — its four routes
+were declared in Phase 1 and already carried
+`runGuardsAndResolvers: "always"` — and it did not touch the nav. So git had
+nothing to resolve. One overlap needed a human read anyway.
+
+#### The overlap git could not see: two `GameType` unions
+
+3.5 added `shared/models/game.types.ts` declaring
+`"note" | "key_signature" | "scale" | "chord" | "interval"`. 3.3's
+`shared/models/game.models.ts`, merged three merges earlier, declares the
+identical union. Both are ports of the same React file
+(`services/api/types/game.types.ts`) — 3.3 ported all of it (score entries,
+settings, key bindings), 3.5 only the union the classes feature needed.
+
+Different filenames, so no conflict; string-literal unions, so the two are
+structurally interchangeable and **every gate passed with both present**.
+The build could not have told anyone. Resolved in `d6c13ad`: 3.3's file
+survives, 3.5's six importers repoint to it, 3.5's copy is deleted.
+`game-definitions.ts` stays in the classes feature — its labels and default
+configs are the feature's, not the wire's.
+
+`GenericGameType` (3.5) and `SettingsGameType` (3.3) both spell
+`Exclude<GameType, "note">` and were **left as two aliases**. They agree
+because the note game is special twice over — it has its own page *and* its
+own settings table — not because either is defined in terms of the other. A
+comment in `game-definitions.ts` now says so.
+
+#### The `isLoading()` sweep — clean, with a standing trap
+
+3.5's handoff §7.1 found that Angular's `resource.isLoading()` is true for
+`loading` **and** `reloading`, where TanStack's was first-load only, and
+that a page gated on it tears its own body down mid-refetch — cancelling the
+child requests it had just started. The other four merged slices were swept
+for the same trap at this merge:
+
+- **`.reload()` appears nowhere outside the classes feature.** Every call
+  site (`classes-page`, `class-detail-page`, `class-assignments-list`,
+  `roster-list`, `join-class-card`) is 3.5's, and all five already gate on
+  `status() === "loading"`.
+- The three `isLoading()` uses in other slices — friends'
+  `add-friend-view` (`results`) and `my-friends-view` (`friends`), and
+  dashboard's `activity` — are on **params-driven resources that nothing
+  reloads**. Without a `.reload()`, `reloading` is unreachable and
+  `isLoading()` is exactly `status() === "loading"`. Dashboard's page
+  skeleton already keys on `status()` and documents why.
+- Friends' list is read-only in this phase: no mutation, no refresh, no
+  invalidation. That is *why* it is safe, and it is also why the safety is
+  contingent.
+
+**So: no exposure today, and one rule for Phases 5-6.** The moment anything
+adds a `.reload()` to friends' `friends` (after removing a friend) or to
+dashboard's `activity` (after a game), those three `isLoading()` calls
+become the same defect 3.5 fixed. Flagged for the consolidated verifier as a
+finding, not fixed here — fixing another slice's working code mid-merge is
+not an integrator's call.
+
+#### The host-`display` conventions coexist without colliding
+
+3.5 put `:host { display: block }` on 11 components and `display: contents`
+on its 2 dialogs; 3.6 used `host: { class: "block" }` on the heatmap; the
+kit and 3.1 use `display: contents` deliberately on parts that must
+contribute no box. **No component is claimed by two conventions** — the sets
+are disjoint — so nothing was changed. Recorded because the branch now
+carries two spellings of "this host is a block", and a later phase choosing
+between them should know both are load-bearing where they sit.
+
+#### What was measured on the fully merged branch
+
+- **Gates**, all exit 0: `npm run build`, `npm run lint`, `npm run test:run`,
+  `npm run format:check` — **394 tests in 49 files**, up from 308/38. The
+  delta is exactly 3.5's 86 new tests in 11 new files, so the merge added no
+  test and lost none.
+- **Parity suite, unmodified, on `:4200`** (this checkout's own `ng serve`;
+  `/proc/296658/cwd` confirmed to be `frontend/`): `navigation.spec.ts`
+  **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** —
+  **30/30 in one run.** The first fully green run, from the four-merge
+  train, **holds across this merge.**
+- **`classes.spec.ts` 3 / 4** — 3.5's own numbers reproduced here exactly.
+  Test 4 fails at `getByRole("button", { name: "C" })` after 20s. Its
+  captured page snapshot shows the "Back to assignments" link, a heading
+  reading **"Key Signature practice"** and the stub's own sentence, "This
+  assignment is ready to play. The Key Signature game is not available in
+  this build yet." The route, the resource, the list lookup, the game-type
+  resolution and the handoff to `<app-assignment-game-host>` all work; the
+  answer pad is **Phase 5's** and nothing else is missing.
+- `settings.spec.ts` and `games.spec.ts` were not run — Phases 5 and 6.
+- **Hygiene.** `shareReplay` appears as *code* only in
+  `refresh.interceptor.ts` (D6); the one other hit is a doc comment in
+  `user.service.ts` saying there isn't one. No `@NgModule`; the only
+  `takeUntil*` hits are `takeUntilDestroyed`, which is the sanctioned API.
+  `git diff 52c5a35..HEAD -- frontend/e2e/ frontend/.migration/baselines/
+  frontend-react/` is **empty**, and so is `git log` over those paths.
+- **No `npm install` surprises**: 3.5 adds no dependency. `package.json` is
+  untouched by the merge.
 
 ---
 
