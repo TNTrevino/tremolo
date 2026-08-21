@@ -37,9 +37,9 @@ jobs:
         with:
           filters: |
             go:
-              - 'backend/main/**'
+              - 'core-api/**'
               - 'Makefile'
-              - '.github/workflows/backend-go.yml'
+              - '.github/workflows/core-api.yml'
               - '.github/workflows/api-smoke.yml'
               - '.github/workflows/ci.yml'
             frontend:
@@ -48,15 +48,15 @@ jobs:
               - '.github/workflows/frontend-ci.yml'
               - '.github/workflows/ci.yml'
             music:
-              - 'backend/music/**'
+              - 'music-api/**'
               - 'Makefile'
-              - '.github/workflows/music-microservice.yml'
+              - '.github/workflows/music-api.yml'
               - '.github/workflows/ci.yml'
 
   go:
     needs: changes
     if: needs.changes.outputs.go == 'true'
-    uses: ./.github/workflows/backend-go.yml
+    uses: ./.github/workflows/core-api.yml
     secrets: inherit
 
   api-smoke:
@@ -74,7 +74,7 @@ jobs:
   music:
     needs: changes
     if: needs.changes.outputs.music == 'true'
-    uses: ./.github/workflows/music-microservice.yml
+    uses: ./.github/workflows/music-api.yml
     secrets: inherit
 
   # The single required check. Passes when every triggered job succeeded;

@@ -1,11 +1,11 @@
-name: FastAPI Checks
+name: Music API CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "backend/music/**"
-      - ".github/workflows/music-microservice.yml"
+      - "music-api/**"
+      - ".github/workflows/music-api.yml"
       - "Makefile"
   # Reusable, and the only path this runs on a PR: the CI gate calls it
   # for the services a PR touches, and the deploy workflows call it as a
@@ -37,10 +37,10 @@ jobs:
         with:
           python-version: "3.14"
           cache: "pip"
-          cache-dependency-path: backend/music/requirements.txt
+          cache-dependency-path: music-api/requirements.txt
 
       - name: Install dependencies
-        working-directory: backend/music
+        working-directory: music-api
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt

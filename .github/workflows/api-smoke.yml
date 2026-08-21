@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "backend/main/**"
+      - "core-api/**"
       - ".github/workflows/api-smoke.yml"
       - "Makefile"
   # Reusable, and the only path this runs on a PR: the CI gate calls it
@@ -68,7 +68,7 @@ jobs:
         with:
           go-version: "1.26.0"
           cache: true
-          cache-dependency-path: backend/main/go.sum
+          cache-dependency-path: core-api/go.sum
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -78,11 +78,11 @@ jobs:
       # Build separately so a compile failure reads as a build error, not
       # a mysterious "service never came up".
       - name: Build service
-        working-directory: backend/main
+        working-directory: core-api
         run: go build -o /tmp/tremolo-main .
 
       - name: Start service (migrations run on startup)
-        working-directory: backend/main
+        working-directory: core-api
         run: |
           /tmp/tremolo-main > /tmp/tremolo-main.log 2>&1 &
           echo "SERVICE_PID=$!" >> "$GITHUB_ENV"

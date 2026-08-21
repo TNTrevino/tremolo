@@ -11,9 +11,9 @@ jobs:
     uses: ./.github/workflows/frontend-ci.yml
     secrets: inherit
   go-ci:
-    uses: ./.github/workflows/backend-go.yml
+    uses: ./.github/workflows/core-api.yml
   music-ci:
-    uses: ./.github/workflows/music-microservice.yml
+    uses: ./.github/workflows/music-api.yml
 
   deploy:
     needs: [frontend-ci, go-ci, music-ci]
