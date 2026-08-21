@@ -10,7 +10,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
-| 3     | CRUD features              | built (3.1) | 2026-08-20 | `2dd1e3d..` (3.1) | **Sub-feature 1 (auth screens) only** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
+| 3     | CRUD features              | built (3.1-3.4, 3.6; 3.5 in flight) | 2026-08-20 | `2dd1e3d..99ef609` (3.1-3.4, 3.6; the ledger sync commit follows) | **Sub-features 1, 2, 3, 4 and 6 built; 5 (classes) still building in its worktree.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged here 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; see the Phase 3 integration note below for the four merges, the one conflicted merge and how it was resolved. Gates on the merged branch all exit 0 -- **308 tests in 38 files** (the union, not the sum, of the slices' own 158/23, 181/24, 177/25 and 234/30). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5** (3.6 closed the suite's last known failure), `friends-and-theme.spec.ts` **4/4** (3.4 closed the friends-panel failure) -- **30/30, the first fully green run of the three golden specs in the migration**. `classes.spec.ts` **1/4**, owned by 3.5 and expected until it lands. 26 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6) plus 4 integration deviations. **Not to be marked `done`** -- a consolidated verifier runs after 3.5. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
 | 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
@@ -24,7 +24,7 @@ Recorded here when made, so later phases and future readers can find them.
 
 | Decision                           | Phase | Choice      | Rationale |
 | ---------------------------------- | ----- | ----------- | --------- |
-| Chart library (replaces recharts)  | 3     | _undecided_ |           |
+| Chart library (replaces recharts)  | 3     | `d3-shape@3.2.0` (curve only; marks hand-drawn in SVG) | Rejected `@swimlane/ngx-charts@25` and `ng2-charts@10` -- both pass R6 on the Angular range, but both peer `@angular/cdk`, which Phase 2 declined (its deviation 8). Weight: `d3-shape` 247 KB unpacked vs 2,292 KB and 6,235 KB. `d3-shape` declares **no peerDependencies at all**, so it cannot fail R6 on a future Angular bump -- unlike `lucide-angular` (D12) and `ngx-toastr` (D13), which already have. React's `<Line type="monotone">` *is* `curveMonotoneX` (recharts delegates to it), so the port is the same interpolation, not a lookalike. Cost, stated plainly: ~700 lines of chart code maintained in-repo. `phase-3-subfeature-6-handoff.md` §2. |
 | Audio library (replaces use-sound) | 6     | _undecided_ |           |
 
 ---
@@ -91,6 +91,36 @@ could not be followed as written. One row per deviation.
 | 4 | Packet silent on the CommonJS build warning | `allowedCommonJsDependencies: ["opensheetmusicdisplay"]` in `angular.json` | The documented remedy; keeps the build output clean. |
 | 4 | Packet silent on exercising zoom/clear by hand | Added a "Sheet music (OSMD)" section to `/dev/kit` | No page exposes those; the section uses a static score so the kit still touches no API. |
 | 4 | Phase 2 handoff §10: `display: contents` hosts swallow `class` | They swallow **margins** too | Recorded so Phases 5-6 do not rediscover it through a silent 32px layout shift. |
+| 3.2 | 3.1 §2.1: pages live in `<feature>/components/<page>/` | `public/<page>/`, with no `components/` level | PLAN.md §4 draws `public/` as a flat leaf and Phase 1's placeholders were already there. The `components/` level exists to sit beside `models/` and `services/`; `public/` has neither. |
+| 3.2 | Packet "Uniform rules": every page consumes via `rxResource` (D6) | Neither page fetches anything | Both are static marketing copy. 3.1 made the same call for the same reason (its deviation 1). |
+| 3.2 | DESIGN.md rollout step 3: apply `font-display` to headings | About's `h1`/`h2`/`h3` stay `font-sans`; Home's `h1`/`h2` are `font-display` | React applied `font-display` on HomePage only, and the baselines were captured from React. Parity wins over a literal reading of the rollout. |
+| 3.2 | DESIGN.md rule 5: no gradient washes | About's vision card keeps `bg-gradient-to-br from-primary/5 to-brass/5` | Rule 5 governs **the hero**, and the hero has no gradient. This is a 5%-opacity wash on one card that the baseline contains. Flagged, not changed -- restyling is not that slice's call. |
+| 3.3 | Packet + 3.1 §9: sub-feature 3 is "the first honest `rxResource` consumer" | No `rxResource`. Both pages read `AuthStore` and fetch nothing | Neither page fetches in React either -- profile renders the session, and all three account actions end in a toast because no backend route exists. Inventing a fetch would have broken the screenshot parity the same packet requires. Handoff §2. |
+| 3.3 | Packet Inputs: `services/api/user.service.ts` as one unit | Ported minus four methods (`updateProfile`, `changePassword`, `deleteAccount`, `downloadUserData`) | R5. All four address routes `backend/main/controllers/` never registers, and nothing called them in React. Re-probed live: all four answer **404**. Handoff §4.2. |
+| 3.3 | React's `user.types.ts` declares ten `GeneralUserInfo` fields | Six, matching the live payload; `created_date` typed as pre-formatted text | R5, verified by `curl` and again by reading `DTOs/general_user_info_dto.go`. The four stats and `createdAt` never arrive; React masks it with `?? 0` and renders an Invalid Date. Typed away so sub-feature 6 gets a compile error instead of silence. **This is what the 3.6 merge conflict turned on** -- see the integration note. Handoff §4.1. |
+| 3.3 | Packet: DTO snake_case -> camelCase mapping at the service boundary, uniformly | `GameType`'s values, `KeyBindings`' keys and `GameSettings.config`'s contents keep their wire spelling | All three are data rather than property names -- a validated identifier, a note-keyed dictionary, and a JSONB blob the games own and `sanitizeConfig` validates. Rewriting keys inside `config` would break every saved config in the database. Handoff §4.4. |
+| 3.3 | Packet: `user.service` belongs to the account sub-feature | `shared/services/user.service.ts`, models in `shared/models/` | Neither account page calls it; its consumers are dashboard, note game, the four identification games and assignment-play. PLAN.md §4 maps `services/api/types/` -> `shared/models/` anyway. Handoff §1. |
+| 3.3 | React's password form renders a `passwordErrors.root` banner | Not ported | `zodResolver` never populates `root` and nothing calls `setError("root")`, so the branch is unreachable in React. Server errors have no route to come from here. |
+| 3.3 | DESIGN.md rollout step 3 applies `font-display` to headings | Not applied to account or profile | Rollout step 3 names the **HomePage** rebuild, and 3.1 measured that the same change costs every shot on a page its threshold. These are ports, not restyles. |
+| 3.3 | One agent builds a sub-feature start to finish | Two: the first died mid-handoff at its API limit, the second audited and finished it | Not a choice. Recorded because the audit is the only reason the `self-start` fix is in a commit rather than lost in a dirty tree -- every number was re-measured before being believed. Handoff §6.1. |
+| 3.4 | Task: "note the 3.1 verifier's finding V1 (STATE.md)" | `STATE.md` at 3.4's base (`cdaef29`) has **no** 3.1 verifier section and no V1 | R5, and recorded rather than guessed. V1 was reproduced from first principles against the committed markup before being fixed, so the fix does not depend on a document that worktree could not see. |
+| 3.4 | Worktree rule: base on `feature/angular-migration` | The worktree came up on `main` (`b2a52b7`); reset onto `cdaef29` | The same trap Phase 4 hit. Recorded so it is fixed rather than re-discovered a third time. |
+| 3.4 | Packet: "if it is just server data, it becomes `rxResource` … no store at all" | Both at once: no *new* store, and Phase 2's `FriendsUiStore` stays | The React store holds **only** client state (`isPanelOpen`, `searchQuery`) and never held server data. |
+| 3.4 | React rendered its own `<Loader2>` and raw `error?.message` inside the panel | `<app-spinner>` and `<app-error>` | PLAN.md §5.2's template block is the prescribed shape, and `app-error` runs `getErrorMessage`, which is friendlier copy than an axios message. No baseline photographs the open panel, so this costs no parity. |
+| 3.4 | React's `FriendCard` took an optional `className` | Dropped | Neither call site passed one. Dead API, and the kit's `className`-through-`cn()` rule (3.1 §7.1) is for parts with base classes worth overriding. |
+| 3.4 | React had a `FriendsUIStore` interface in `features/friends/types.ts` | Not ported (`Friend` **is**) | Its fields are `FriendsUiStore`'s signals and its setters are its methods. A second shape would only be a second thing to keep in sync. |
+| 3.4 | 3.1 §2.4: `createComponent` then `await fixture.whenStable()` | `createComponent`, `detectChanges()`, flush, **then** `whenStable()` | `whenStable()` deadlocks while an `rxResource` holds a pending task that only the flush releases. Not a change to the pattern -- an extension of it to the fetch-on-load case 3.1 had no example of. **Phases 5-6 will need this.** |
+| 3.4 | Task: run the dev server on `:4200` or `:4300`, claiming the lock | Ran on **`:5173`**, with its own lock | Both lock directories were held for the entire run with **no listener on either port**. `:5173` is the second origin in the Go service's `ALLOWED_ORIGINS`, so it passes CORS. |
+| 3.6 | PLAN.md §2 sanctioned hand-rolling **the heatmap** only | Both charts are hand-drawn; only the curve interpolator comes from a library | Follows from the same reasoning as the chart decision above, but goes beyond what the plan authorised, so it is recorded. |
+| 3.6 | React rendered recharts' `.recharts-legend-item` `<span>`s | `<ul>/<li>/<button aria-pressed>` -- real controls | A keyboard user can now toggle a series, which they could not before. Verified safe: **no spec in `e2e/` references a legend, a chart, or `recharts`**, and none uses `getByRole("img")`. |
+| 3.6 | React had no accessible name on the interval select or the chart SVGs | `aria-label="Chart interval"` and an `ariaLabel` on each `<svg role="img">` | Two names React does not have. Same class of change as Phase 0's nine names; same verification as the legend row. |
+| 3.6 | React's heatmap tooltip was a hover card on a div grid | A `<title>` element | Makes the cells reachable by screen reader, which React's div grid was not. Visual output unchanged. |
+| 3.6 | React's `TeacherDashboard` passed `<Button asChild>` | The bug is **reproduced on purpose**: a `<button>` wrapping an `<a>` | `asChild` was never honoured, so React shipped that markup and the baselines were captured from it. Flagged for whoever cleans up the kit. |
+| 3.6 | React's `PerformanceChart` used a discriminated union (`isTeacher: true` => `viewMode` required) | Two independent inputs with defaults | Runtime behaviour is identical; the compile-time guarantee is gone. Recorded as a real loss, not a wash. |
+| 3 (integration) | The four slices each ship their own `shared/models/user.models.ts` + `UserService` | One of each, resolved to 3.3's | 3.3 probed the live service and typed what it actually sends; 3.6 branched before that finding existed and ported React's stale ten-field type. Ground truth wins (R5). All four of 3.6's methods already existed in 3.3's superset, so no capability was lost. Integration note below. |
+| 3 (integration) | 3.6 kept `game_count` snake_case in a `DailyActivityCount` on `chart.models.ts` | Dropped for 3.3's mapped `DailyActivity` in `game.models.ts` | 3.6 argued a one-field mapper was more machinery than the rename is worth; 3.3 had already written it. With the mapper in hand, the uniform rule (no snake_case above `shared/services/`) costs nothing and the exception costs a standing carve-out. |
+| 3 (integration) | 3.6 put `mapGeneralUserInfo` in `shared/utils/user.mapper.ts` | Deleted; 3.3's copy in `shared/models/user.models.ts` is the survivor | Not a judgement that `utils/` is the wrong home -- Phase 4's `music.mapper.ts` lives there. 3.3 co-locates **six** mappers with their DTOs in `game.models.ts`, and moving one without the other five would leave the convention split. A later phase may unify them; doing it mid-merge would be a refactor wearing a conflict's clothes. |
+| 3 (integration) | 3.6's dashboard read four stats and a parsed `createdAt` off the profile | Sessions from `total_entries`; the other three tiles zero; the join date rendered as the service's pre-formatted string | Forced by the row above -- the phantom fields no longer typecheck. React rendered four zeroes and "Joined Invalid Date" from the same absent data, so three tiles are unchanged in behaviour and the sessions tile now shows the number it always claimed to. **The join date is the one visible change and the `dashboard-*` baselines were captured with "Invalid Date"** -- flagged for the consolidated verifier, not re-baselined here. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
 
@@ -667,6 +697,115 @@ hatch: an origin outside those three gets no
 `Access-Control-Allow-Origin` from either service (verified against both
 on :8000 and :5001). A port not in the list is still fine for a
 screenshot-only run, which needs no backend.
+
+### Integration note (Phase 3 sub-features 2, 3, 4, 6 — 2026-08-20) — merged, **not** verified
+
+Four slices built in parallel worktrees off three different bases, merged
+here in one pass, smallest/oldest-base first. **Sub-feature 5 (classes) was
+still building in its own worktree and is not in this range.** Phase 3 stays
+`built (…)`; a consolidated verifier owns `done` and must verify the
+*integrated* result, not any slice's own base.
+
+| # | Slice | Branch base | Merge commit | Conflicts |
+| - | ----- | ----------- | ------------ | --------- |
+| 1 | 3.2 public (home + about) | `7131492` | `b132e0e` | none |
+| 2 | 3.3 account (+ `UserService`) | `7131492` | `1f96692` | none |
+| 3 | 3.4 friends (+ nav V1 fix) | `cdaef29` | `de54a7d` | none |
+| 4 | 3.6 dashboard (+ charts) | `3e92b99` (already carried the Phase 4 merge) | `99ef609` | **4, all add/add** |
+
+**Gates were re-run after every merge and all four exit 0 each time.** Suite
+growth: 183/25 (base) → 195/27 → 230/30 → 261/34 → **308/38**. The union is
+not the sum of the slices' own counts (158/23, 181/24, 177/25, 234/30),
+because each was measured on a base that already contained 146/21 or 183/25.
+
+#### The one real conflict: whose profile type is true
+
+3.3 and 3.6 both created `shared/models/user.models.ts`,
+`shared/models/chart.models.ts`, `shared/services/user.service.ts` and its
+spec. This was not a formatting collision — the two files disagreed about
+what the Go service sends.
+
+- **3.3** probed `GET /api/users/:id/general-info` live and typed the **six**
+  fields it returns (`first_name`, `last_name`, `role`, `created_date`,
+  `total_entries`, `total_duration`), deliberately dropping the four stats
+  and `created_at` that React's `user.types.ts` declares and the service has
+  never sent. Its handoff §4.1 says in as many words that this is meant to
+  hand sub-feature 6 a compile error rather than another year of silence,
+  and it names the resulting stat-tile decision as 6's to make.
+- **3.6** branched from `3e92b99`, before 3.3 existed, so it never saw that
+  finding. It ported React's ten-field type verbatim and built the dashboard
+  on it.
+
+Resolved for 3.3, on ground truth rather than seniority:
+`backend/main/DTOs/general_user_info_dto.go` was read directly during the
+merge and serialises exactly the six fields 3.3 describes. Keeping 3.6's
+type would have meant knowingly shipping a declaration that lies about the
+wire. All four of 3.6's methods (`getProfile`, `getStats`,
+`getClassMetrics`, `getActivityHeatmap`) already existed in 3.3's superset,
+so the service reconciled to one file with nothing dropped.
+
+3.6's dashboard was then adapted to the surviving type — the four deviation
+rows above give the detail. **The decision 3.3 §4.1 left open was therefore
+forced by the merge rather than taken freely, and the verifier should treat
+it as still open**: the sessions tile now reads `total_entries`, and
+`total_questions` / `average_npm` / `average_accuracy` render zero because
+no endpoint supplies them. Deriving the latter two from the chart series is
+possible and was **not** done — that is new behaviour, not a port.
+
+**One open screenshot risk, not closed here.** 3.6 measured `/dashboard`
+**4/4 unmasked** against the baselines on its own base, with the join date
+rendering "Joined Invalid Date" exactly as React does. The reconciled model
+renders the real "Joined 15 Jan 2026". That string is a different width, so
+the four `dashboard-*` baselines are expected to diff on that region and
+**were deliberately not re-captured** — re-baselining to accommodate a merge
+resolution is not an integrator's call. Nothing else in 3.6's sweep is
+affected: the baseline student has zero games, so `total_entries` is 0 and
+the sessions tile is pixel-identical to React's `?? 0`.
+
+#### What was measured on the merged branch
+
+- **Gates**, all exit 0: `npm run build`, `npm run lint`, `npm run test:run`,
+  `npm run format:check` — **308 tests in 38 files**.
+- **Parity suite, unmodified, on `:4200`** (this checkout's own `ng serve`;
+  `/proc/<pid>/cwd` confirmed to be `frontend/`, per Phase 4's env note):
+  `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**,
+  `friends-and-theme.spec.ts` **4/4** — **30/30 in one run**. This is the
+  first fully green run of the three golden specs in the migration: 3.4
+  closed the friends-panel failure and 3.6 closed the dashboard full-name
+  failure, and both hold together.
+- `classes.spec.ts` **1/4** — the three failures are **sub-feature 5's**,
+  which is not in this range. `settings.spec.ts` and `games.spec.ts` were
+  not run; they belong to Phases 5 and 6.
+- **Hygiene.** `shareReplay` appears as *code* only in
+  `refresh.interceptor.ts` (D6); the two other hits are doc comments, one of
+  which says there isn't one. No `@NgModule`, no `zone.js` (`npm ls zone.js`
+  empty), no `takeUntil`. `git log 5191082..99ef609 -- frontend/e2e/
+  frontend/.migration/baselines/ frontend-react/` is **empty** and so is the
+  diff over those paths.
+- **The TanStack grep is no longer literally empty, and the criterion still
+  passes.** `grep -ri "tanstack\|useQuery\|queryClient" src/` returns **5**
+  matches; every one is English prose in a comment explaining what replaced
+  the query layer (checked mechanically — no hit is outside a comment).
+  3.6's handoff §6 predicted 3; 3.4 added two more. The grep as written
+  cannot tell prose from code. **A later phase that wants this greppable
+  should tighten the pattern rather than edit the comments.**
+
+#### Env notes for the next agent
+
+- **A full `npm install` is required after this merge** — 3.6 adds
+  `d3-shape` and `@types/d3-shape` to `package.json`.
+- **The OSMD specs flake under load.** On the first post-merge run, all four
+  `sheet-music-display.component.spec.ts` tests failed with
+  `Failed to initialize OpenSheetMusicDisplay Error: WebGL is not available`
+  while `npm install`'s native rebuilds were still settling. The file passes
+  **5/5** alone, and two consecutive full runs afterwards were **308/38
+  green**. It is WebGL context contention, not a merge defect — but a single
+  red run of that file is not evidence of a regression. Re-run before
+  believing it.
+- `:5173` was held throughout by sub-feature 5's worktree
+  (`agent-a741e57bd110253e8`) and was left alone. `:4200` was taken over
+  from a stale server that was serving this checkout; it was stopped and
+  replaced so the E2E numbers above are known to be this tree's.
 
 ---
 
