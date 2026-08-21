@@ -1,3 +1,64 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">Note Game</h1>
-</section>
+<div class="h-[calc(100vh-4rem)] flex flex-col py-2 px-2 sm:py-4 sm:px-4">
+	<div class="container mx-auto max-w-6xl flex flex-col flex-1 min-h-0">
+		@if (game.gameState() === states.GameOver && game.gameStats(); as stats) {
+			<app-note-game-results
+				[gameStats]="stats"
+				[saveError]="saveError()"
+				(playAgain)="onPlayAgain()"
+			/>
+		} @else if (breakpoints.isPhoneLandscape()) {
+			<app-note-game-board-landscape
+				[answersLength]="answersLength()"
+				[currentNote]="game.currentNote()"
+				[scale]="game.settings().scale"
+				[octave]="game.settings().octave"
+				[range]="range()"
+				[keyMap]="noteToKeyMap()"
+				(answer)="onAnswer($event)"
+				(questionLoaded)="onQuestionLoaded($event)"
+			>
+				<ng-container *ngTemplateOutlet="statusBar" />
+			</app-note-game-board-landscape>
+		} @else {
+			<div class="flex flex-col flex-1 min-h-0 gap-2 sm:gap-4">
+				<div class="flex-shrink-0">
+					<ng-container *ngTemplateOutlet="statusBar" />
+				</div>
+				<app-note-game-board
+					[answersLength]="answersLength()"
+					[currentNote]="game.currentNote()"
+					[scale]="game.settings().scale"
+					[octave]="game.settings().octave"
+					[range]="range()"
+					[keyMap]="noteToKeyMap()"
+					(answer)="onAnswer($event)"
+					(questionLoaded)="onQuestionLoaded($event)"
+				/>
+			</div>
+		}
+	</div>
+</div>
+
+<!--
+	The score bar replaces the settings bar during play, in both layouts, so
+	it is declared once and stamped where each layout wants it.
+-->
+<ng-template #statusBar>
+	@if (game.gameState() === states.Playing) {
+		<app-score-bar
+			[answers]="game.answers()"
+			[gameMode]="game.settings().gameMode"
+			[timeRemaining]="timeRemaining()"
+			[noteLimit]="game.settings().noteLimit"
+			[formatTime]="formatTime"
+		/>
+	} @else {
+		<app-settings-bar
+			[settings]="game.settings()"
+			[bindings]="noteToKeyMap()"
+			(settingsChange)="onSettingsChange($event)"
+			(saveBindings)="onSaveBindings($event)"
+			(bindingsOpenChange)="onBindingsOpenChange($event)"
+		/>
+	}
+</ng-template>

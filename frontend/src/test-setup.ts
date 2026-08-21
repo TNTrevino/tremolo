@@ -62,12 +62,20 @@ globalThis.ResizeObserver ??= ResizeObserverStub;
 /**
  * jsdom ships no `matchMedia` either, and `BreakpointService` builds three
  * media-query lists in its constructor -- so any spec whose component tree
- * reaches a game board, a score bar or the nav bar would throw on
- * injection rather than on anything it meant to test.
+ * reaches a game board, a score bar, the settings bar or the nav bar would
+ * throw on injection rather than on anything it meant to test.
  *
  * Every query reports `false`, which is `BreakpointService`'s own initial
- * state: not mobile, not phone-landscape. A spec that needs a viewport
- * overrides this or provides its own `BreakpointService`.
+ * state: not mobile, not phone-landscape, desktop. That is also the viewport
+ * the golden E2E specs run at, so a unit test and a Playwright run exercise
+ * the same branch.
+ *
+ * A spec that needs another breakpoint overrides this itself **before**
+ * `TestBed.inject(BreakpointService)`, or provides its own service -- the
+ * real one reads its queries once, in its constructor.
+ *
+ * Phases 5 and 6 each hit this independently and wrote the same stub; this
+ * is the single surviving copy.
  */
 globalThis.matchMedia ??= ((query: string) => ({
 	matches: false,

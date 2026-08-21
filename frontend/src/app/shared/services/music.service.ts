@@ -12,6 +12,8 @@ import type {
 	KeySignatureGameRequest,
 	KeySignatureGameResponse,
 	MaryRequest,
+	NoteGameRequest,
+	NoteGameResponse,
 	RandomNotesRequest,
 	ScaleGameRequest,
 	ScaleGameResponse,
@@ -42,8 +44,8 @@ const REQUEST_TIMEOUT_MS = 10_000;
  * nowhere else in the app.
  *
  * Phase 4 ported the two endpoints the sheet-music and converter pages use;
- * Phase 5 adds the four identification-game endpoints. `/note-game` is
- * Phase 6's and is the one still missing.
+ * Phase 5 added the four identification-game endpoints and Phase 6
+ * `/note-game`, so all six game endpoints now live here in the same shape.
  *
  * **The game endpoints answer JSON, so they do *not* take
  * `responseType: "text"`** -- that is only for `/mary` and `/random`, which
@@ -130,6 +132,31 @@ export class MusicService {
 		params: IntervalGameRequest,
 	): Observable<IntervalGameResponse> {
 		return this.postJson<IntervalGameResponse>("/interval-game", params);
+	}
+
+	// --- Note game ---------------------------------------------------------
+
+	/**
+	 * One random note inside the requested scale and pitch range, as MusicXML
+	 * plus the answer the game validates against.
+	 *
+	 * Both ends of the notation boundary are crossed here: `scale` goes out
+	 * as music21 spelling (`"Bb"` -> `"B-"`) and `noteName` comes back in UI
+	 * spelling, so the answer pad's `"Bb"` button can be compared against it
+	 * with `===`. `octave` is sent because the endpoint still accepts it and
+	 * saved settings still carry it; the range is what actually decides the
+	 * pitch.
+	 */
+	generateNoteGame(params: NoteGameRequest): Observable<NoteGameResponse> {
+		return this.postJson<NoteGameResponse>("/note-game", {
+			...params,
+			scale: toMusic21NoteName(params.scale),
+		}).pipe(
+			map((response) => ({
+				...response,
+				noteName: fromMusic21NoteName(response.noteName),
+			})),
+		);
 	}
 
 	/**
