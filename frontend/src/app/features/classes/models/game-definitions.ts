@@ -1,4 +1,4 @@
-import type { GameType } from "../../../shared/models/game.types";
+import type { GameType } from "../../../shared/models/game.models";
 
 /**
  * Port of frontend-react/src/features/classes/gameDefinitions.ts.
@@ -37,6 +37,13 @@ export const GAME_TYPE_OPTIONS: { value: GameType; label: string }[] =
  * identification shell. The note game is deliberately absent: it renders
  * through its own page, which is why React's `GENERIC_GAME_DEFINITIONS`
  * excluded it too.
+ *
+ * `SettingsGameType` in `shared/models/game.models.ts` is the same
+ * `Exclude<GameType, "note">` reached from the other direction -- every game
+ * but the note game persists its settings as JSONB. The two aliases agree
+ * today by coincidence of the note game being special twice over, not
+ * because one is defined in terms of the other; they are deliberately not
+ * unified, and a third alias should not be added.
  */
 export type GenericGameType = Exclude<GameType, "note">;
 

@@ -1,4 +1,4 @@
-import type { GameType } from "../../../shared/models/game.types";
+import type { GameType } from "../../../shared/models/game.models";
 import {
 	defaultAssignmentConfig,
 	GAME_TYPE_LABELS,

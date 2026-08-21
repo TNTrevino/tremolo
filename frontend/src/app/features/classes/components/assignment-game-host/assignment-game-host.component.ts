@@ -5,7 +5,7 @@ import {
 	input,
 } from "@angular/core";
 
-import type { GameType } from "../../../../shared/models/game.types";
+import type { GameType } from "../../../../shared/models/game.models";
 import { GAME_TYPE_LABELS } from "../../models/game-definitions";
 import type { AssignmentLaunch } from "../../models/assignment-launch";
 

@@ -1,4 +1,4 @@
-import type { GameType } from "../../../shared/models/game.types";
+import type { GameType } from "../../../shared/models/game.models";
 
 /**
  * Classes & assignments -- the wire shapes (snake_case, from the Go service)

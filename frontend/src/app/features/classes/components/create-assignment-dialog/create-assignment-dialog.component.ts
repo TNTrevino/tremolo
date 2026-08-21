@@ -21,7 +21,7 @@ import { FormInputDirective } from "../../../../shared/components/forms/form-inp
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { DIALOG_DIRECTIVES } from "../../../../shared/components/ui/dialog.component";
 import { SelectComponent } from "../../../../shared/components/ui/select.component";
-import type { GameType } from "../../../../shared/models/game.types";
+import type { GameType } from "../../../../shared/models/game.models";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import type {
 	Assignment,

@@ -11,7 +11,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { SkeletonDirective } from "../../../../shared/components/ui/skeleton.directive";
-import type { GameType } from "../../../../shared/models/game.types";
+import type { GameType } from "../../../../shared/models/game.models";
 import type { StudentAssignment } from "../../models/classes.models";
 import type { AssignmentLaunch } from "../../models/assignment-launch";
 import { isKnownGameType } from "../../models/game-definitions";
