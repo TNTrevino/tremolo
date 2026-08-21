@@ -148,7 +148,7 @@ preferences.
 
 - **Tailwind runs with `important: "html"`.** This lives in
   `tailwind.config.js`, which cannot hold a comment where you would look for
-  it, so: Angular injects component styles _after_ `styles.css` at equal
+  it, so: Angular injects component styles _after_ `styles.scss` at equal
   specificity, which means a third-party component's own stylesheet beats
   every utility class you put on its element. Without this setting all 47
   `<ng-icon>`s rendered at 1em. It is a selector strategy — one extra element
