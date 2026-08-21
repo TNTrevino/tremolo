@@ -73,6 +73,16 @@ export class SelectComponent implements FormValueControl<string> {
 	readonly ariaLabel = input<string | null>(null);
 
 	/**
+	 * Extra classes for the `<select>` itself, merged through `cn()`.
+	 *
+	 * React put `className` on the element, not on the wrapper -- the note
+	 * game's settings bar sizes its scale picker with `w-28 h-9` and the
+	 * baselines were captured from that. A `class` on `<app-select>` reaches
+	 * the wrapper instead, which is a different box.
+	 */
+	readonly className = input("");
+
+	/**
 	 * A `model()` rather than an `input()` so `appFormSelect` can push the
 	 * bound field's message in; callers may still set it directly.
 	 */
@@ -82,6 +92,7 @@ export class SelectComponent implements FormValueControl<string> {
 		cn(
 			SELECT_BASE,
 			this.error() ? "border-destructive focus-visible:ring-destructive" : "",
+			this.className(),
 		),
 	);
 
