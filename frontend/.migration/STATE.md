@@ -12,7 +12,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
 | 3     | CRUD features              | done    | 2026-08-20 | `2dd1e3d..5a83341` (this ledger entry's own commit follows) | **Verified 2026-08-20 by the consolidated verifier -- see the notes at the end of this file.** Gates re-run green at **394/49**; parity **33/34** (`navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4, `classes` 3/4 with the residual pinned to the Phase 5 answer pad); `settings.spec.ts` + `games.spec.ts` run for attribution only -- **9 failures, every one at a game screen, none at a CRUD screen**; seven live flows driven on fresh accounts with **zero console errors**; the recorded chart gap closed with a seeded 10-day play history; **32 of 40 Phase-3 shots inside threshold**, the 8 being the pre-recorded login/signup restyle residual. The baseline, chart-fidelity and `isLoading()` decisions are recorded in the verifier notes. **All six sub-features built and merged.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; **5 (classes) followed as `2a4f61b`**, branched from `7131492` and so carrying none of the other four merges nor Phase 4's. See the two Phase 3 integration notes below. Gates on the fully merged branch all exit 0 -- **394 tests in 49 files** (the union, not the sum: 308/38 before 3.5, whose own 232/32 contributed exactly its 86 new tests in 11 new files). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** -- **30/30, held across the 3.5 merge**. `classes.spec.ts` **3/4**; test 4 reaches the assignment-play route, resolves the game type and renders the host stub, then times out looking for an answer pad -- **Phase 5's**, and the only residual. 34 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6, 8 from 3.5) plus 5 integration deviations. **Not to be marked `done`** -- the consolidated verifier runs next and owns that. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** **Sub-feature 5 (classes)** -- classes list, class detail + roster, assignments, assignment-play plumbing, 20 components, 9 `rxResource`s. build/lint/test:run/format:check all exit 0 on its own base (232 tests, 32 files, +86). `classes.spec.ts` 3/4 and screenshots 12/16 -- both residuals are the Phase 5 game behind `/assignments/:id/play`. 8 deviations below. Resumed after its first agent died with 34 files uncommitted; see handoff §2. **Three defects found and fixed (handoff §7): Angular `isLoading()` is not TanStack's and was tearing pages down mid-refetch, a dropped unknown-game-type guard, and `display: inline` component hosts eating every `space-y-*` gap.** |
 | 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
-| 5     | Identification-game engine | pending | —    | —       |       |
+| 5     | Identification-game engine | built   | 2026-08-20 | `fd84777..f5e9e6a`, merged as `ff67321` (this ledger entry's own commit follows) | Engine **redesigned** as Angular/RxJS per PLAN.md §5.5-§5.7, not translated: the queue's `generationRef` is a `switchMap` on the keyed payload, its reset debounce a cancellable `timer` with the first emission exempt, its `inflightRef` an `exhaustMap`; the constants are preserved exactly (low water 2, hydrate batch 2, 300ms). All four identification games play from their own routes and from an assignment; `keySignature` is a `.ts` and no JSX-shaped data is left in `games/`. **Measured on the merged branch, not taken from the handoff:** build/lint/test:run/format:check all exit 0 -- **439 tests in 54 files** (+45 in 5 new files over Phase 3's 394/49), which reproduces the builder's own numbers exactly. Parity suite unmodified on `:4300`, own server, cwd-verified: `classes.spec.ts` **4/4** -- **Phase 3's single residual, closed and reproduced at the merge**; golden three **30/30** (`navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4); `games.spec.ts` **4/6** and `settings.spec.ts` **2/3**, and all three residuals are the note game, so **Phase 6's** -- attribution re-confirmed at the merge, including that "renders a staff on every game" iterates `/note-game` first and never reaches the four that work. 16 deviations below. The builder's screenshot sweep (**20/20**, including the four `assignment-play` shots Phase 3 recorded as failing against the deferred-game stub) is **carried over unverified** -- `baselines.spec.ts` cannot report it and the integrator did not re-run the scratch sweep; the verifier owns that. `e2e/`, `.migration/baselines/`, `frontend-react/` and `package.json` byte-identical across the merge. **Not to be marked `done`** -- a verifier owns that. See the Phase 5 integration note below, and `phase-5-handoff.md` for the verbatim `GameDefinition`. |
 | 6     | Note game                  | pending | —    | —       |       |
 | 7     | Cutover                    | pending | —    | —       |       |
 
@@ -130,6 +130,23 @@ could not be followed as written. One row per deviation.
 | 3 (integration) | 3.6 put `mapGeneralUserInfo` in `shared/utils/user.mapper.ts` | Deleted; 3.3's copy in `shared/models/user.models.ts` is the survivor | Not a judgement that `utils/` is the wrong home -- Phase 4's `music.mapper.ts` lives there. 3.3 co-locates **six** mappers with their DTOs in `game.models.ts`, and moving one without the other five would leave the convention split. A later phase may unify them; doing it mid-merge would be a refactor wearing a conflict's clothes. |
 | 3 (integration) | 3.6's dashboard read four stats and a parsed `createdAt` off the profile | Sessions from `total_entries`; the other three tiles zero; the join date rendered as the service's pre-formatted string | Forced by the row above -- the phantom fields no longer typecheck. React rendered four zeroes and "Joined Invalid Date" from the same absent data, so three tiles are unchanged in behaviour and the sessions tile now shows the number it always claimed to. **The join date is the one visible change and the `dashboard-*` baselines were captured with "Invalid Date"** -- flagged for the consolidated verifier, not re-baselined here. |
 | 3 (integration) | 3.5 ships `shared/models/game.types.ts` holding a `GameType` union that 3.3's `shared/models/game.models.ts` already declares | One declaration, 3.3's; 3.5's six importers repointed and its copy deleted | Both are ports of the same React file (`services/api/types/game.types.ts`); 3.3 ported all of it, 3.5 only the union it needed. `GameType` is one of three places a new game must be registered (root CLAUDE.md) and a second copy makes it four. The unions are string-literal types, so they were structurally interchangeable and **nothing failed to compile** -- which is why this had to be caught by reading rather than by building. `GenericGameType` and `SettingsGameType` are deliberately left as two aliases; a comment now explains why, so a third is not added. |
+| 5 | Worktree rule: base on `feature/angular-migration` | The worktree came up on bare `main` (`b2a52b7`); the builder reset onto `10cfbfb` | The trap the packet warned about, and the third time it has bitten (3.4 and Phase 4 before it). `origin/feature/angular-migration` is *behind* the local branch and does not contain `10cfbfb`, so resetting onto the origin ref as literally instructed would have missed Phase 3's completion. **Integrator's note:** `10cfbfb` turned out to be a *sibling* of this branch's `f022dfd`, not an ancestor -- same message, same parent `5a83341`, one docs paragraph apart. That is what produced the merge's single conflict. |
+| 5 | Packet: routes "via `identification-game.routes.ts`" | The four routes stay inlined in `app.routes.ts`; no such file | R5. Phase 1 declared them there and `app.routes.spec.ts` drives that table. A lazy child route file would buy nothing -- each page is one component, already lazily loaded. **This is why the merge had no route conflict at all.** |
+| 5 | React: `fetchQuestion: (request) => Promise<T>` | `(request, music) => Observable<T>` | The Observable half is D5. The *argument* is forced: the queue calls this inside a `switchMap`, where `inject()` throws NG0203 -- Phase 1's `catchError` finding (verifier notes 1/1) in a new place. A definition is a module-level constant with no injector of its own. It also means a definition can be exercised with a stub and no TestBed. |
+| 5 | `useIdentificationGame` owned the settings state | `GameStateService` does not; the page does | The page needs settings anyway for `toRequest`, `answerOptions` and `prompt`. Keeping them there is what lets the service stay **non-generic**, which is what makes it reusable by Phase 6 without a generic-DI cast. The hook owned them only because that is how hooks compose. |
+| 5 | React's `endGame` had no re-entry guard | `endGame` is idempotent | React relied on the timer's ref-mirroring -- which the packet forbids porting -- plus the assumption that the questions-mode branch and the timer never both fire. One line makes save-exactly-once a property of the machine. Three specs pin it. |
+| 5 | `useGameLifecycle`'s `endGameRef` | Not ported | It existed only to break a circular hook dependency. Two services and an `expired` observable have no cycle. |
+| 5 | Phase 4 handoff §4: the game OSMD display is "Phase 6's input" | Built here, as `GameStaffComponent` | Phase 5's `QuestionBoard` needs it first. **Phase 6 must reuse it rather than port `features/note-game-display/` a second time** -- see the integration note below, which is addressed to Phase 6's integrator. |
+| 5 | React's `QuestionDisplay` **removes** the staff container on a render error | It stays mounted and is hidden with `invisible` (visibility, not display) | React's version leaves its OSMD instance pointing at a detached div, so a game never recovers from one bad MusicXML until remount. Keeping the box also avoids the zero-width trap Phase 4 fixed (its F1). Error path only; no baseline photographs it. |
+| 5 | React wrapped the board in `ComponentErrorBoundary` + `GameBoardFallback` | Not ported | Phase 2 §5 already recorded the decision: global `ErrorHandler`, coarser granularity accepted. |
+| 5 | React's `useSaveGameOnEnd` invalidated three TanStack caches on success | No port | `rxResource` does not cache (D6), so the dashboard and the assignment list refetch on their next load. The policy working, not a dropped feature -- and `classes.spec.ts` test 4 is the assertion that it does. |
+| 5 | Phase 3 left `defaultAssignmentConfig()` reading a copied `DEFAULTS` table | The four identification entries now read each definition's own `defaults` | `game-definitions.ts`'s own header asked Phase 5 to do this. `game-definitions.spec.ts` needed no change -- it asserts values, and the values are identical. **`NOTE_DEFAULTS` is the last copy left and is Phase 6's to reclaim.** |
+| 5 | Nothing about jsdom's `matchMedia` | Stubbed in `src/test-setup.ts` | `BreakpointService` builds three media-query lists in its constructor, so **any** spec whose tree reaches a game board, the score bar or the nav bar threw on injection. Same class as the existing `ResizeObserver` stub. Every query reports `false`, which is `BreakpointService`'s own initial state. |
+| 5 | `assignment-play-page.component.spec.ts` verified an empty backend | It now drains music-service requests before `verify()` | The host renders a real game, and a real game prefetches two questions. Draining them keeps `verify()` meaning "no stray *assignment* request". The unknown-game-type tests are untouched. |
+| 5 | React's `SettingsControls` read `option.render` directly | The schema is normalised into view rows first | An optional `glyph?.kind` does not narrow in a `@switch`, and `@if (fifths; as f)` would **silently drop the natural key**, whose `fifths` is `0`. The normalisation is what makes the §5.7 glyph union safe in a template. |
+| 5 | PLAN.md §4 draws the feature as `{components,games,settings,services,models}` | Plus `game.utils.ts` and `index.ts` at the feature root | Mirrors React's own `utils.ts` and `index.ts`, and adds no folder. |
+| 5 | React's `GameOverCard` took three `ReactNode` props | Three `<ng-content select="[…]">` slots -- `[gameOverSections]`, `[gameOverSummary]`, `[gameOverActions]` | Same three seams (React's `children` / `summaryExtras` / `actions`); the note game fills them in Phase 6. |
+| 5 (integration) | The handoff's hygiene sweep says "the only `ngOnDestroy` in `src/` is still `SheetMusicComponent`'s" | There are **two**: `SheetMusicComponent` and `ToastItemComponent` | Not a Phase 5 regression -- `toast-item.component.ts` has carried one since Phase 2 (`84165f0`), so the sweep's baseline was simply stale. Recorded so a later phase does not read the claim as a policy and "fix" a component that is fine. Phase 5 itself added no `ngOnDestroy`, no stored `Subscription` and no `takeUntil(destroy$)`. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
 
@@ -1278,6 +1295,184 @@ not a verifier's change to make.
   interval 'N day' where id = …`. It is the only way any instrument in this
   migration has ever seen a chart with a line in it, and Phases 5-7 will want
   it again.
+
+---
+
+### Integration note (Phase 5 — 2026-08-20) — merged, **not** verified
+
+Merged as `ff67321` (`--no-ff`) from `worktree-agent-a7cb8ece04aed9523`,
+range `fd84777..f5e9e6a`, 7 commits. Phase 5 is `built`. A verifier owns
+`done`; nothing below is a verification.
+
+#### The base was a sibling, not an ancestor
+
+The worktree was built on `10cfbfb` and this branch was at `f022dfd`. Those
+are **two different commits with the same message** (`docs(migration): mark
+Phase 3 done after consolidated verification`), both children of `5a83341`,
+differing only in that `f022dfd`'s `STATE.md` carries 36 more lines. Deviation
+5/1 explains how it happened. Consequences, both benign:
+
+- The merge base was `5a83341`, so the merge replayed Phase 3's completion
+  docs from the other side. That is the **entire** source of the one conflict.
+- Phase 5's gate numbers were measured against a tree whose only difference
+  from `f022dfd` is prose in `STATE.md`, which is why they reproduce exactly
+  rather than approximately.
+
+#### The one conflict, and why "ours" lost nothing
+
+`STATE.md`'s "Notes for the next agent", first bullet. Both sides edited the
+`/proc/<pid>/cwd` paragraph; this branch's version is a **strict superset** —
+it appends the after-the-fact correction that `:5173` is now an Angular
+worktree rather than React, with the evidence for why the chart comparison
+still stands. Phase 5's side is the same bullet before that correction was
+written. Took ours. Phase 5 never authored a word in that paragraph, so
+nothing of its own was dropped.
+
+Everything else auto-merged. The two files both sides own *semantically* had
+no textual overlap, and were read rather than trusted:
+
+- **`assignment-game-host.component.ts`** — 3.5's stub replaced wholesale by
+  Phase 5's four-branch `@switch`. The `@default` placeholder survives, and
+  now covers exactly one game type: `"note"`. Replacing that one branch is
+  all Phase 6 owes this file.
+- **`game-definitions.ts`** — `defaultAssignmentConfig()` now reads each
+  definition's own `defaults`; only `NOTE_DEFAULTS` is still a copy.
+
+**The unknown-game-type guard 3.5 recovered survived**, which was the specific
+risk in taking Phase 5's version of the host: `isKnownGameType` is still what
+`playable()` gates on, and both its tests are green —
+`game-definitions.spec.ts` "recognises every known game type and nothing else"
+and `assignment-play-page.component.spec.ts` "shows not-found for a game type
+this build does not know".
+
+**No route conflict at all.** Phase 1 declared all 20 paths in
+`app.routes.ts`; Phase 5 filled in the four page components behind four of
+them and never touched the table (deviation 5/2). `app.routes.ts` is
+byte-identical on both sides.
+
+#### The `isLoading()` standing requirement — checked, and met
+
+The requirement recorded above: *adding a `.reload()` to any of the five
+listed resources obliges switching that template to `status() === "loading"`
+in the same commit.* Site 4 —
+`assignment-play-page.component.html:1`, called "Phase 5's first file" — was
+the one at risk.
+
+**Phase 5 added no `.reload()` anywhere.** Every `.reload()` in the merged
+tree is a pre-existing classes-feature call from 3.5 (`class-assignments-list`
+×2, `class-detail-page`, `classes-page`, `join-class-card`, `roster-list`);
+`git diff` over the range adds none. And
+`assignment-play-page.component.html` is **byte-identical to what Phase 3
+wrote** — still `@if (assignments.isLoading())`, correctly so, because nothing
+reloads `assignments`.
+
+The handoff says the temptation ("reload the assignment after an attempt is
+saved") was declined deliberately, since `rxResource` does not cache and
+returning to `/assignments` refetches anyway. `classes.spec.ts` test 4 passing
+is the evidence that declining it was right. **No finding.** The requirement
+carries forward unchanged to Phase 6.
+
+#### For the Phase 6 integrator: `GameStaffComponent` already exists
+
+**Read this before merging Phase 6.** Phase 4's handoff §4 assigned the
+game-configured OSMD display to Phase 6. **Phase 5 built it anyway**, as
+`features/identification-game/components/game-staff/game-staff.component.ts`,
+because `QuestionBoardComponent` needed it first (deviation 5/7). It is the
+port of React's `features/note-game-display/` — both files — carrying
+`compacttight`, zero margins, dark-mode recolour and `getBBox`→`viewBox`
+centering. Inputs `zoom`, `padding`, `ariaLabel`; API `loadNote(xml)`,
+`clear()`, `isReady`, `error`.
+
+So at Phase 6's merge, **check for a second port of that React class.** If
+Phase 6 built its own game staff — reasonably, since its packet told it to —
+that is a duplicate to resolve in favour of the one already on this branch,
+not a conflict to take both sides of. The same caution applies to the rest of
+what Phase 5 left reusable and non-identification-specific:
+`GameStateService` (non-generic on purpose), `GameTimerService`,
+`GameScoreSaverService` (already handles `gameType: "note"`),
+`QuestionQueueService`, `QuestionBoardComponent` (answer UI is
+`<ng-content />`), `GameOverCardComponent`, `ScoreBarComponent`,
+`GameModeLimitControlsComponent`. Shared constants — `TIME_LIMITS`,
+`NOTE_LIMITS`, `NATURAL_NOTES`, `CLEF_UNICODE`, `CLEF_LABELS` — are exported
+from `@features/identification-game` and **must not be redeclared**;
+`frontend/CLAUDE.md` makes that an invariant, and a redeclaration will merge
+cleanly and silently.
+
+Phase 6 also owes this branch two things named in the handoff: the `@default`
+branch of `assignment-game-host`, and `NOTE_DEFAULTS` in
+`classes/models/game-definitions.ts`.
+
+#### What was measured on the merged branch
+
+Gates, `nvm use 24`, from `frontend/`:
+
+| Gate | Result |
+| ---- | ------ |
+| `npm run build` | exit 0, no warnings |
+| `npm run lint` | exit 0 (`--max-warnings 0`) |
+| `npm run test:run` | exit 0 — **439 tests, 54 files** |
+| `npm run format:check` | exit 0 |
+
+439/54 reproduces the builder's number exactly; the union and the sum agree
+here because Phase 5's base and this branch differ only in `STATE.md` prose.
+
+E2E, specs unmodified, `E2E_BASE_URL=http://localhost:4300`, on a server this
+integrator started from **this** checkout — `/proc/352435/cwd` read as
+`/home/noetrevino/projects/tremolo/frontend` before any result was believed,
+per the env note. `/tmp/tremolo-port-4300.lock` held for the run and released
+after. Go on `:5001`, Python on `:8000`.
+
+| Spec | Result | Residual |
+| ---- | ------ | -------- |
+| `classes.spec.ts` | **4 / 4** | — |
+| `navigation.spec.ts` | 21 / 21 | — |
+| `auth.spec.ts` | 5 / 5 | — |
+| `friends-and-theme.spec.ts` | 4 / 4 | — |
+| `games.spec.ts` | **4 / 6** | both the note game |
+| `settings.spec.ts` | **2 / 3** | the note game |
+
+**`classes.spec.ts` 4/4 held across the merge.** Test 4 was Phase 3's single
+recorded residual, attributed to "a missing answer pad, not a plumbing error.
+Phase 5's". It now plays the assignment's frozen key-signature game to Game
+Over and records the attempt.
+
+All three failures were re-attributed at the merge rather than taken on
+faith:
+
+- "plays the note game to game over" — fails in
+  `useQuestionMode` (`e2e/support/app.ts:167`) on `/note-game`.
+- "renders a staff on every game before the first answer" — its loop is
+  `["/note-game", ...IDENTIFICATION_GAMES]`, so it fails on the **first**
+  iteration and never reaches the four that work. The four are covered
+  anyway by tests 1-4, which assert against
+  `GET /api/note-game/recent` per `game_type` — i.e. the score really
+  reached the database.
+- "the note game remembers its scale" — `/note-game`.
+
+**All Phase 6's.**
+
+The builder's 20/20 screenshot sweep was **not** re-run here.
+`baselines.spec.ts` cannot report it (its four passes abort at `/`, whose
+redirect target is the note game), and reproducing it needs the scratch
+harness the builder wrote and deleted. Carried over as a claim for the
+verifier to settle — it is the one number in the Phase 5 row that this
+integrator did not measure.
+
+#### Hygiene
+
+- `shareReplay` appears as **code** in one file, `refresh.interceptor.ts`
+  (D6). The other hit is a comment in `user.service.ts` saying there is none.
+- No `@NgModule`; `zone.js` appears only in `app.config.ts`'s comment
+  explaining that it is not installed. No `takeUntil` that is not
+  `takeUntilDestroyed`.
+- Two `ngOnDestroy`s, not one — see deviation 5 (integration). Neither is
+  Phase 5's.
+- `e2e/`, `.migration/baselines/`, `frontend-react/`, `package.json` and
+  `package-lock.json` are **byte-identical across the merge** (`git diff
+  f022dfd -- <paths>` is empty). No dependency added; R6 not exercised.
+- Phase 6's worktree (`agent-abb9039f68e79fc92`) and its `:5173` server
+  (pid 344145) were not touched, and the server was confirmed still up
+  afterwards.
 
 ---
 
