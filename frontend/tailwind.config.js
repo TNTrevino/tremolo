@@ -11,7 +11,7 @@ export default {
 	 *
 	 * The React app had no component styles, so a utility class was the only
 	 * thing setting a property and it always won. Angular injects each
-	 * component's styles into `<head>` **after** `styles.css`, as
+	 * component's styles into `<head>` **after** `styles.scss`, as
 	 * `[_nghost-…] { ... }` -- the same specificity as a class -- so a
 	 * library component that sizes its own host beats the utility written on
 	 * it. `@ng-icons` does exactly that

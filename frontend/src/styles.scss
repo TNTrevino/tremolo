@@ -1,12 +1,16 @@
 /*
  * Global styles. Ported from frontend-react/src/index.css verbatim.
  *
- * The two @fontsource-variable imports below were `import` statements in
- * the React app's main.tsx; Angular bootstraps from a .ts file that cannot
+ * The two @fontsource-variable loads below were `import` statements in the
+ * React app's main.tsx; Angular bootstraps from a .ts file that cannot
  * import CSS, so they move here, into the app's single global stylesheet.
+ * They are `@use`, not `@import`: Sass deprecated `@import` (removed in Dart
+ * Sass 3), and the builder warns on it. Sass resolves both to each package's
+ * index.css and inlines the @font-face rules; the builder rebases the
+ * url()s and emits the woff2 files. `@use` must stay above @tailwind.
  */
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/bricolage-grotesque";
+@use "@fontsource-variable/inter" as *;
+@use "@fontsource-variable/bricolage-grotesque" as *;
 
 @tailwind base;
 @tailwind components;

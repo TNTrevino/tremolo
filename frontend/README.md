@@ -104,7 +104,7 @@ rather than through the UI. `e2e/README.md` has the details.
 ```
 src/
 ├── main.ts                 bootstrap
-├── styles.css              Tailwind + the DESIGN.md tokens + font imports
+├── styles.scss             Tailwind + the DESIGN.md tokens + font imports
 ├── environments/           environment.ts, environment.prod.ts
 ├── testing/                shared spec fixtures
 └── app/
