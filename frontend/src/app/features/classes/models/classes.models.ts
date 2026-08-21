@@ -10,7 +10,7 @@ import type { GameType } from "../../../shared/models/game.models";
  * each other: the mapper in `classes.mappers.ts` is the only thing allowed
  * to convert between them (PLAN.md §5.1).
  *
- * See frontend-react/CLASSES_FRONTEND.md Part 1 for the exact contract.
+ * See frontend/CLASSES_FRONTEND.md Part 1 for the exact contract.
  */
 
 // --- Wire (snake_case) -------------------------------------------------
