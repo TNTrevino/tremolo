@@ -478,3 +478,107 @@ and multi-line interpolated text silently gains a leading and trailing space.
 Accessible names (`getByRole(..., { name })`) are unaffected — name
 computation trims — which is why every button-driven step of the same flow
 worked.
+
+---
+
+## 10. Fix addendum — verifier F1 + three code-review findings (2026-08-21)
+
+Written by the fix builder, after the Phase 6 verifier held the phase at
+`built`. **Four items, nothing else.** Phase 6 is still `built`; the
+re-verification is somebody else's.
+
+Commits: `7d9c1ec` (F1, test only), `620188b`, `9a452c8`, `ef35154`.
+Gates after all four: `build`, `lint`, `format:check` exit 0, and **three
+serial `npm run test:run` runs, all exit 0 at 523 tests / 61 files**, zero
+failure lines — +6 tests and +1 file over the verifier's 517/60.
+
+### 10.1 F1 — the stale-queue pin, restored
+
+The product fix was never missing; its guard was. The verifier's assertion
+is back in `features/identification-game/services/question-queue.service.spec.ts`
+— the surviving spec — retargeted at `QuestionQueueService`'s `request` +
+`enabled` signature and at this spec's own `connect()` / `settle()` helpers:
+
+```ts
+it("clears the buffer the moment the request changes, before the debounce", () => {
+	const request = signal<TestRequest>({ clefs: ["treble"] });
+	connect({ request });
+	settle();
+	expect(queue.size).toBe(2);
+	expect(queue.isInitializing()).toBe(false);
+
+	request.set({ clefs: ["bass"] });
+	// No timer advance: we are *inside* the 300ms debounce window, before
+	// the new generation has started.
+	TestBed.tick();
+
+	expect(queue.size).toBe(0);
+	// A question generated for the old payload must never be served.
+	expect(queue.pop()).toBeNull();
+	expect(queue.isInitializing()).toBe(true);
+	// And nothing was refetched yet -- the debounce is still pending.
+	expect(calls).toHaveLength(2);
+});
+```
+
+**Mutation proof.** Deleting `tap(() => this.discard())` from
+`question-queue.service.ts:142`:
+
+| Mutation | Result |
+| -------- | ------ |
+| `tap(() => this.discard())` deleted | `question-queue.service.spec.ts` **1 failed / 9 passed** — the new test, `AssertionError: expected 2 to be +0` at the `queue.size` line |
+| restored | **10/10**, and `git status --porcelain` clean |
+
+The failure is the first assertion rather than the `pop()` one, which is the
+sharper signal: the buffer is *still full* inside the window, so the stale
+question is not merely servable, it is sitting there.
+
+`7d9c1ec` touches exactly one file, and it is a spec.
+
+### 10.2 The three code-review findings — one defect in three places
+
+All three are the same mistake: **`resource.value()` rethrows while the
+resource is in its error state**, and every one of these readers runs during
+change detection. The review called it an idiom problem; it is a crash.
+
+| Where | Symptom before | Guard |
+| ----- | -------------- | ----- |
+| `note-game-page.component.ts` — `noteToKeyMap` **and** the bindings effect | A 500 on `/api/note-game/keyboard-bindings` took down the **main game screen** | `this.savedBindings.error() ? null : this.savedBindings.value()`, both readers, falling back to the default keymap |
+| `assignment-play-page` + `class-detail-page` | No `@else if (…error())` arm **at all**, and the row-finding computed read `.value()` raw: a failed list threw out of the template instead of saying anything | The canonical `<app-error>` arm (house pattern: `attempt-drilldown.component.ts:56-58`), plus `…error() ? [] : …value()` in each computed |
+| `note-game-results.component.ts` — `chartData` (and `showChart`, which reads it) | The "Could not load recent games" copy was a **sibling** of the chart, so the rethrow happened first and the copy was unreachable | `this.recent.error() ? [] : (this.recent.value() ?? [])` |
+
+**Every half mutation-tested, one at a time.** For the note game page the two
+guards were removed separately and *each one alone* reproduces the crash —
+the computed's rethrows out of `detectChanges`, the effect's out of
+`runEffect`. For the two classes pages, deleting the error arm loses the panel
+(`expected null to be truthy`) while deleting the computed's guard rethrows,
+so both specs assert the rendered panel **and** read the computed directly.
+For the results screen, restoring the unguarded read fails with the
+`ResourceValueError` by name.
+
+New spec file: `note-game-results.component.spec.ts` (the component had none),
+covering the chart path and the error path.
+
+### 10.3 Testing notes, for whoever writes the next error-path spec
+
+- **A 404 is not an error here.** `UserService.getOrNull` maps 404 and the
+  `{"settings": null}` sentinel to `null`, which is why the existing specs
+  flush 404 and get the defaults. To *error* a resource you need a real
+  failure — flush with `{ status: 500 }`.
+- **`whenStable()` deadlocks with an in-flight `rxResource`** under
+  `HttpTestingController` (Phase 3.4's deviation 3): flush first, settle
+  after. On `class-detail-page` even that is not enough, because rendering the
+  found-class arm starts two more requests — its spec's `settle()` is a
+  macrotask turn plus an explicit `detectChanges()`, and the error-path test
+  reuses it.
+- **`ResourceValueError` surfaces as a test failure, not a console warning.**
+  A view effect that rethrows fails the fixture, which is what makes these
+  guards pinnable at all.
+
+### 10.4 Out of scope, deliberately
+
+The review's idiom suggestions — `model()` instead of input+output pairs,
+`computed()` instead of an effect, splitting the identification-game barrel —
+are **post-merge backlog**, not cutover work. No dependency changed, and
+`e2e/`, `.migration/baselines/` and `frontend-react/` are untouched by all
+four commits.
