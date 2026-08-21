@@ -1,3 +1,82 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">Profile</h1>
-</section>
+@if (user(); as currentUser) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-4xl space-y-6">
+			<div class="space-y-2 text-center">
+				<h1 class="text-4xl font-bold">Profile</h1>
+				<p class="text-lg text-muted-foreground">
+					View and manage your personal information and preferences
+				</p>
+			</div>
+
+			<!-- User profile header -->
+			<div appCard className="shadow-lg">
+				<div appCardContent className="p-6">
+					<div
+						class="flex flex-col items-center gap-6 md:flex-row md:items-start"
+					>
+						<div
+							class="flex h-32 w-32 items-center justify-center rounded-full bg-primary text-4xl font-bold text-primary-foreground"
+						>
+							{{ initials() }}
+						</div>
+						<div class="flex-1 space-y-3 text-center md:text-left">
+							<h2 class="text-3xl font-bold">
+								{{ currentUser.firstName }} {{ currentUser.lastName }}
+							</h2>
+							<div class="space-y-1">
+								<p class="text-muted-foreground">{{ currentUser.email }}</p>
+								<div
+									class="flex flex-wrap justify-center gap-2 md:justify-start"
+								>
+									<span
+										class="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+										>{{ roleLabel() }}</span
+									>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Proposed features -->
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+				@for (card of featureCards; track card.title) {
+					<div appCard>
+						<div appCardHeader>
+							<div class="flex items-center gap-3">
+								<div [class]="card.iconWrapperClass">
+									<ng-icon
+										size="1.5rem"
+										aria-hidden="true"
+										[name]="card.icon"
+										[class]="card.iconClass"
+									/>
+								</div>
+								<h3 appCardTitle>{{ card.title }}</h3>
+							</div>
+						</div>
+						<div appCardContent className="text-sm text-muted-foreground">
+							<ul class="space-y-1">
+								@for (item of card.items; track item) {
+									<li>&bull; {{ item }}</li>
+								}
+							</ul>
+						</div>
+					</div>
+				}
+			</div>
+
+			<!-- Coming soon notice -->
+			<div appCard className="border-primary/20 bg-primary/5">
+				<div appCardContent className="p-6 text-center">
+					<h3 class="mb-2 text-xl font-bold">Coming Soon</h3>
+					<p class="text-muted-foreground">
+						Profile customization and detailed analytics features are currently
+						in development. Check back soon for updates!
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+}
