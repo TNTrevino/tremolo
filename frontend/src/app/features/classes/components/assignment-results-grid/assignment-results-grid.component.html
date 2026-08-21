@@ -1,0 +1,116 @@
+<div appCard>
+	<div appCardHeader className="space-y-0">
+		<h3 appCardTitle className="font-display text-xl">Results</h3>
+		<p class="text-sm text-muted-foreground truncate">
+			{{ assignment().title }}
+		</p>
+	</div>
+	<div appCardContent className="p-4 pt-0">
+		<app-class-insight-tiles
+			[results]="results.value()"
+			[isLoading]="results.isLoading()"
+		/>
+
+		@if (results.isLoading()) {
+			<div class="flex items-center justify-center h-24">
+				<ng-icon
+					name="lucideLoader2"
+					size="1.5rem"
+					aria-hidden="true"
+					class="animate-spin text-muted-foreground"
+				/>
+			</div>
+		} @else if (results.error()) {
+			<app-error [error]="results.error()" />
+		} @else if (results.value().length === 0) {
+			<div
+				class="flex flex-col items-center justify-center h-24 gap-1 text-center"
+			>
+				<p class="text-sm font-medium text-muted-foreground">
+					No students enrolled yet.
+				</p>
+			</div>
+		} @else {
+			<div class="overflow-x-auto">
+				<div class="min-w-[32rem] space-y-1">
+					<div [class]="headerClasses">
+						<span>Student</span>
+						<span class="text-right">Attempts</span>
+						<span class="text-right">Best / Most</span>
+						<span class="text-right">Accuracy</span>
+						<span class="text-right">Last attempt</span>
+					</div>
+
+					@for (row of results.value(); track row.studentId) {
+						@if (notStarted(row)) {
+							<div [class]="notStartedClasses">
+								<span class="text-sm font-medium truncate">{{
+									fullName(row)
+								}}</span>
+								<span class="col-span-4 text-xs">Not started</span>
+							</div>
+						} @else {
+							<div class="rounded-lg overflow-hidden">
+								<button
+									type="button"
+									[class]="rowButtonClasses"
+									[attr.aria-expanded]="expandedStudentId() === row.studentId"
+									(click)="toggle(row)"
+								>
+									<span
+										class="flex items-center gap-1.5 text-sm font-medium truncate"
+									>
+										<ng-icon
+											name="lucideChevronDown"
+											size="0.875rem"
+											aria-hidden="true"
+											[class]="
+												expandedStudentId() === row.studentId
+													? 'shrink-0 text-muted-foreground transition-transform rotate-180'
+													: 'shrink-0 text-muted-foreground transition-transform'
+											"
+										/>
+										{{ fullName(row) }}
+									</span>
+									<span class="tabular-nums text-sm text-right">{{
+										row.attemptCount
+									}}</span>
+									<span class="tabular-nums text-sm text-right">
+										{{ row.bestCorrect
+										}}<span class="text-muted-foreground">
+											/ {{ row.mostQuestions }}</span
+										>
+									</span>
+									<div class="flex flex-col items-end gap-1">
+										<span class="tabular-nums text-sm font-semibold text-brass"
+											>{{ row.bestAccuracy }}%</span
+										>
+										<span
+											class="h-1 w-full max-w-16 rounded-full bg-brass/20 overflow-hidden"
+											aria-hidden="true"
+										>
+											<span
+												class="block h-full rounded-full bg-brass"
+												[style.width]="accuracyWidth(row)"
+											></span>
+										</span>
+									</div>
+									<span
+										class="tabular-nums text-xs text-muted-foreground text-right"
+										>{{ row.lastAttemptDate }}</span
+									>
+								</button>
+								@if (expandedStudentId() === row.studentId) {
+									<app-attempt-drilldown
+										[assignmentId]="assignment().id"
+										[studentId]="row.studentId"
+									/>
+								}
+							</div>
+						}
+					}
+				</div>
+			</div>
+		}
+	</div>
+</div>
