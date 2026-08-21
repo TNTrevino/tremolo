@@ -151,7 +151,7 @@ export class SettingsControlsComponent {
 			const options: ChoiceOption[] =
 				descriptor.kind === "toggle" ? [] : descriptor.options;
 			const selectedValues = Array.isArray(raw)
-				? (raw as Array<string | number>)
+				? (raw as (string | number)[])
 				: [];
 
 			return {

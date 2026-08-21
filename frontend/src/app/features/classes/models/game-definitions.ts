@@ -1,3 +1,5 @@
+import { GAME_DEFINITIONS } from "@features/identification-game";
+
 import type { GameType } from "../../../shared/models/game.models";
 
 /**
@@ -5,17 +7,13 @@ import type { GameType } from "../../../shared/models/game.models";
  *
  * React's file re-exported the four `GameDefinition` objects themselves so
  * the assignment dialog could render each game's own settings UI and the
- * play page could hand the definition to the identification shell. Those
- * definitions are Phase 5 work (D9 rewrites them) and the note game is
- * Phase 6, so what this slice ports is the half that is pure data: which
- * game types exist, what to call them, and what config a brand-new
- * assignment freezes.
+ * play page could hand the definition to the identification shell. Phase 3
+ * could only port the half that is pure data -- which game types exist and
+ * what to call them -- because the definitions themselves were Phase 5's.
  *
- * **When Phase 5/6 land, `defaultAssignmentConfig()` must be replaced by a
- * read of each definition's own `defaults`** -- the values in `DEFAULTS`
- * below are copied from them, and a copy is exactly the thing that drifts.
- * The spec next to this file pins the copy so the drift is at least
- * visible.
+ * **Phase 5 closed the gap it left:** `defaultAssignmentConfig()` now reads
+ * each game's own `defaults` instead of a copied table. The note game's
+ * defaults are still copied, and are Phase 6's to reclaim.
  */
 
 export const GAME_TYPE_LABELS: Record<GameType, string> = {
@@ -74,105 +72,44 @@ export function isKnownGameType(gameType: string): gameType is GameType {
 	return Object.prototype.hasOwnProperty.call(GAME_TYPE_LABELS, gameType);
 }
 
-// The four identification games' `defaults`, and the note game's
-// `NOTE_DEFAULTS` from CreateAssignmentDialog.tsx. Note that the note
-// game's config is snake_case (it is posted straight to the music service)
-// while the identification games' is camelCase -- that asymmetry is real
-// and the assignment `config` blob is stored verbatim either way.
-const ALL_KEY_SIGNATURES = Array.from({ length: 15 }, (_, i) => i - 7);
-
-const ALL_SCALE_TYPES = [
-	"major",
-	"natural_minor",
-	"harmonic_minor",
-	"melodic_minor",
-];
-
-const ALL_QUALITIES = [
-	"major",
-	"minor",
-	"augmented",
-	"diminished",
-	"dominant7",
-	"major7",
-	"minor7",
-	"half_diminished7",
-	"diminished7",
-	"dominant9",
-	"major9",
-	"minor9",
-];
-
-const ALL_INTERVALS = [
-	"m2",
-	"M2",
-	"m3",
-	"M3",
-	"P4",
-	"A4",
-	"d5",
-	"P5",
-	"m6",
-	"M6",
-	"m7",
-	"M7",
-	"P8",
-];
-
-const DEFAULTS: Record<GameType, Record<string, unknown>> = {
-	note: {
-		low_note: "C4",
-		high_note: "C6",
-		clef: "treble",
-		game_mode: "time",
-		time_limit: 30,
-		note_limit: 25,
-		scale: "C Major",
-		octave: 4,
-	},
-	key_signature: {
-		gameMode: "time",
-		timeLimit: 30,
-		noteLimit: 25,
-		clefs: ["treble"],
-		keySignatures: ALL_KEY_SIGNATURES,
-		noteNames: "letters",
-		answerMode: "major",
-	},
-	scale: {
-		gameMode: "time",
-		timeLimit: 60,
-		noteLimit: 25,
-		clefs: ["treble"],
-		scaleTypes: ALL_SCALE_TYPES,
-		questionMode: "accidentals",
-	},
-	chord: {
-		gameMode: "time",
-		timeLimit: 60,
-		noteLimit: 25,
-		clefs: ["treble"],
-		qualities: ALL_QUALITIES,
-		inversions: false,
-	},
-	interval: {
-		gameMode: "time",
-		timeLimit: 60,
-		noteLimit: 25,
-		clefs: ["treble"],
-		displayMode: "harmonic",
-		requireQuality: true,
-		intervals: ALL_INTERVALS,
-	},
+/**
+ * The note game's `NOTE_DEFAULTS` from React's `CreateAssignmentDialog.tsx`.
+ *
+ * The last copied default table. Its config is snake_case, because it is
+ * posted straight to the music service, where the identification games'
+ * is camelCase -- that asymmetry is real, and the assignment `config` blob
+ * is stored verbatim either way. **Phase 6 should delete this and read the
+ * note game's own defaults**, the way the four below now are.
+ */
+const NOTE_DEFAULTS: Record<string, unknown> = {
+	low_note: "C4",
+	high_note: "C6",
+	clef: "treble",
+	game_mode: "time",
+	time_limit: 30,
+	note_limit: 25,
+	scale: "C Major",
+	octave: 4,
 };
 
 /**
- * The config a new assignment freezes for a given game. A fresh object
- * every call, so the dialog can patch it without writing through to the
- * table (React got the same isolation from its `{ ...defaults }` spread).
+ * The config a new assignment freezes for a given game.
+ *
+ * **No longer a copy.** The four identification games' defaults are read
+ * off their own `GameDefinition`, which is what the header above asked
+ * Phase 5 to do: a duplicated table is exactly the thing that drifts, and
+ * "settings live in the definition" is the feature's whole premise.
+ *
+ * A fresh object every call, so the dialog can patch it without writing
+ * through to the definition (React got the same isolation from its
+ * `{ ...defaults }` spread).
  */
 export function defaultAssignmentConfig(
 	gameType: GameType,
 ): Record<string, unknown> {
-	return structuredClone(DEFAULTS[gameType]);
+	if (gameType === "note") return structuredClone(NOTE_DEFAULTS);
+	// `defaults` is a game's settings *interface*, which has no index
+	// signature; the assignment `config` blob is the same object seen as
+	// opaque JSON, which is what the Go service stores and returns.
+	return structuredClone({ ...GAME_DEFINITIONS[gameType].defaults });
 }
