@@ -111,4 +111,16 @@ describe("AssignmentPlayPageComponent", () => {
 		expect(link.getAttribute("href")).toBe("/assignments");
 		expect(link.textContent).toContain("Back to assignments");
 	});
+
+	// `game_type` is filled by the Go service, so the `GameType` union is a
+	// claim about the wire rather than a guarantee from it. React fell
+	// through to not-found when its definition lookup missed; without the
+	// same guard the host renders a game with a blank name.
+	it("shows not-found for a game type this build does not know", async () => {
+		await render("3");
+		await flush([{ ...ASSIGNMENT, game_type: "theremin" }]);
+
+		expect(el().textContent).toContain("Assignment not found");
+		expect(el().querySelector("app-assignment-game-host")).toBeNull();
+	});
 });

@@ -11,10 +11,11 @@ import type { GameType } from "../../../shared/models/game.types";
  * game types exist, what to call them, and what config a brand-new
  * assignment freezes.
  *
- * **When Phase 5/6 land, `DEFAULT_ASSIGNMENT_CONFIGS` must be replaced by a
- * read of each definition's own `defaults`** -- the values below are copied
- * from them, and a copy is exactly the thing that drifts. The spec next to
- * this file pins the copy so the drift is at least visible.
+ * **When Phase 5/6 land, `defaultAssignmentConfig()` must be replaced by a
+ * read of each definition's own `defaults`** -- the values in `DEFAULTS`
+ * below are copied from them, and a copy is exactly the thing that drifts.
+ * The spec next to this file pins the copy so the drift is at least
+ * visible.
  */
 
 export const GAME_TYPE_LABELS: Record<GameType, string> = {
@@ -50,6 +51,20 @@ export function isGenericGameType(
 	gameType: GameType,
 ): gameType is GenericGameType {
 	return gameType !== "note";
+}
+
+/**
+ * Whether a `game_type` off the wire is one this build can render.
+ *
+ * `GameType` is a compile-time claim about a runtime value: the Go service
+ * fills `game_type`, so an assignment created against a newer backend can
+ * carry a type this build has never heard of. React guarded that case --
+ * `GENERIC_GAME_DEFINITIONS[gameType]` came back `undefined` and the play
+ * page fell through to its not-found panel -- and this predicate is what
+ * lets the port do the same without a definition registry to miss in.
+ */
+export function isKnownGameType(gameType: string): gameType is GameType {
+	return Object.prototype.hasOwnProperty.call(GAME_TYPE_LABELS, gameType);
 }
 
 // The four identification games' `defaults`, and the note game's

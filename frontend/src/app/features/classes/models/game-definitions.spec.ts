@@ -5,6 +5,7 @@ import {
 	GAME_TYPE_OPTIONS,
 	GENERIC_GAME_TYPES,
 	isGenericGameType,
+	isKnownGameType,
 } from "./game-definitions";
 
 /**
@@ -52,6 +53,21 @@ describe("game type registry", () => {
 		expect(GAME_TYPE_OPTIONS.map((o) => o.label)).toEqual(
 			ALL_TYPES.map((t) => GAME_TYPE_LABELS[t]),
 		);
+	});
+
+	// The runtime half of the type union. `isGenericGameType` narrows a value
+	// already known to be a `GameType`; this one is what a `game_type` string
+	// off the wire has to pass first.
+	it("recognises every known game type and nothing else", () => {
+		for (const gameType of ALL_TYPES) {
+			expect(isKnownGameType(gameType)).toBe(true);
+		}
+
+		expect(isKnownGameType("theremin")).toBe(false);
+		expect(isKnownGameType("")).toBe(false);
+		// Inherited object properties are not game types.
+		expect(isKnownGameType("toString")).toBe(false);
+		expect(isKnownGameType("constructor")).toBe(false);
 	});
 });
 
