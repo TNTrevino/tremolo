@@ -2,7 +2,8 @@
 
 Built 2026-08-20 in an isolated worktree off `feature/angular-migration`
 at **`10cfbfb`** (Phase 3 `done`, Phase 4 `done`). Commit range
-**`fd84777..<this doc's commit>`**. Not pushed.
+**`fd84777..ab2e6ff`**, plus the one commit that pins these hashes — the
+same shape as Phase 1's `c410602`. Not pushed.
 
 The four identification games are playable, from their own routes and from
 an assignment. `classes.spec.ts` is **4 / 4** for the first time in the
@@ -421,4 +422,4 @@ now passes on.
 
 ## 8. Ledger line for `STATE.md`
 
-> | 5 | Identification-game engine | built | 2026-08-20 | `fd84777..<doc commit>` | Engine redesigned as Angular/RxJS per PLAN.md §5.5–§5.7, not translated: the queue's `generationRef` is `switchMap`, its debounce a cancellable `timer` with the first emission exempt, its `inflightRef` an `exhaustMap`; constants preserved (low water 2, batch 2, 300ms). All four games playable from their routes and from an assignment; `keySignature` is a `.ts` and no JSX-shaped data is left in `games/`. build/lint/test:run/format:check all exit 0 — **439 tests in 54 files** (+45 in 5 new files). Parity, unmodified: `classes.spec.ts` **4/4** — Phase 3's single residual, closed; `navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4; `games.spec.ts` **4/6** and `settings.spec.ts` **2/3**, every residual the note game and so **Phase 6's**. Screenshots **20/20** across the four game routes and assignment-play, at two viewports and both themes, staff masked — including the four `assignment-play` shots Phase 3 recorded as failing against the deferred-game stub. 16 deviations below. `e2e/`, `.migration/baselines/` and `frontend-react/` byte-untouched. **Not to be marked `done`** — a verifier owns that. |
+> | 5 | Identification-game engine | built | 2026-08-20 | `fd84777..ab2e6ff` (this pin commit follows) | Engine redesigned as Angular/RxJS per PLAN.md §5.5–§5.7, not translated: the queue's `generationRef` is `switchMap`, its debounce a cancellable `timer` with the first emission exempt, its `inflightRef` an `exhaustMap`; constants preserved (low water 2, batch 2, 300ms). All four games playable from their routes and from an assignment; `keySignature` is a `.ts` and no JSX-shaped data is left in `games/`. build/lint/test:run/format:check all exit 0 — **439 tests in 54 files** (+45 in 5 new files). Parity, unmodified: `classes.spec.ts` **4/4** — Phase 3's single residual, closed; `navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4; `games.spec.ts` **4/6** and `settings.spec.ts` **2/3**, every residual the note game and so **Phase 6's**. Screenshots **20/20** across the four game routes and assignment-play, at two viewports and both themes, staff masked — including the four `assignment-play` shots Phase 3 recorded as failing against the deferred-game stub. 16 deviations below. `e2e/`, `.migration/baselines/` and `frontend-react/` byte-untouched. **Not to be marked `done`** — a verifier owns that. |
