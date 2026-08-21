@@ -87,6 +87,7 @@
 						"buildTarget": "tremolo-frontend:build:development",
 						"tsConfig": "tsconfig.spec.json",
 						"runner": "vitest",
+						"isolate": true,
 						"setupFiles": ["src/test-setup.ts"]
 					}
 				},

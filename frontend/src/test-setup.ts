@@ -5,6 +5,19 @@
  * React app's `src/test/setup.ts` there is nothing to bootstrap here. It is
  * the single seam for global test configuration -- custom matchers and DOM
  * shims for the APIs jsdom does not implement.
+ *
+ * **`angular.json` sets `"isolate": true` on this target, and it is
+ * load-bearing.** The builder's own default is `false` ("to align with the
+ * Karma/Jasmine experience"), which gives every spec file a worker picks up
+ * one shared module registry. Under that default a third-party module is
+ * evaluated once per *worker*, so whichever spec happens to be scheduled
+ * first decides what binding every later spec in that worker sees -- and a
+ * `vi.mock()` in a spec that is not first silently does nothing. That is
+ * what made `sheet-music-display.component.spec.ts` fail about one full-suite
+ * run in four once four more specs began importing `SheetMusicComponent`
+ * (Phase 5's F1; `.migration/phase-5-handoff.md`, fix addendum). With
+ * isolation on, each spec file gets its own module registry and its own
+ * mocks always apply. Do not turn it off without re-reading that addendum.
  */
 
 /**
