@@ -87,8 +87,16 @@ export class GameStateService {
 	 * moves to Playing, stamps the start time and fires `onGameStart`, which
 	 * is where the page starts the countdown and persists the settings the
 	 * player is about to play with.
+	 *
+	 * A guess that arrives after the game is over is dropped, the other half
+	 * of `endGame`'s idempotence (Phase 6's deviation 5): every answer path
+	 * is gated on the state already -- the pad unmounts, the keyboard stream
+	 * detaches -- so this only closes the race where a click and the
+	 * countdown land on the same tick.
 	 */
 	answer(guess: string): void {
+		if (this._state() === GameState.GameOver) return;
+
 		const config = this.require();
 		const settings = config.settings();
 

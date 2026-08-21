@@ -244,6 +244,18 @@ describe("GameStateService", () => {
 			expect(onGameEnd).toHaveBeenCalledTimes(1);
 		});
 
+		it("ignores an answer that arrives after the game is over", () => {
+			configure();
+			game.syncCurrentAnswer("C");
+			game.answer("C");
+			game.endGame();
+
+			game.answer("C");
+
+			expect(game.answers()).toHaveLength(1);
+			expect(onGameEnd).toHaveBeenCalledTimes(1);
+		});
+
 		it("ends again after a reset, because that is a new game", () => {
 			configure();
 			game.endGame();

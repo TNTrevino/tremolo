@@ -133,6 +133,13 @@ export class QuestionQueueService<TQuestion> {
 			.pipe(
 				filter((value) => value !== null),
 				distinctUntilChanged((a, b) => a.key === b.key),
+				// Emptied the moment the payload changes, *before* the debounce,
+				// which is React's own note on the same line: "the queue is
+				// already cleared above, so no stale question can be served in
+				// the meantime". Deferring it to when the debounce fires leaves
+				// a 300ms window in which `pop()` still hands out a question
+				// generated for the settings the player just changed.
+				tap(() => this.discard()),
 				switchMap((value, index) =>
 					index === 0
 						? of(value)
@@ -159,6 +166,12 @@ export class QuestionQueueService<TQuestion> {
 		return item;
 	}
 
+	/** Drops every buffered question and puts the board back on its overlay. */
+	private discard(): void {
+		this.queue = [];
+		this._isInitializing.set(true);
+	}
+
 	/**
 	 * One payload's worth of queue life: clear, hydrate once, then hydrate
 	 * again on every refill until a new payload switches this whole stream
@@ -168,8 +181,10 @@ export class QuestionQueueService<TQuestion> {
 		request: TRequest,
 		fetch: (request: TRequest) => Observable<TQuestion>,
 	): Observable<unknown> {
-		this.queue = [];
-		this._isInitializing.set(true);
+		// Already discarded when the payload changed; repeated here because a
+		// generation can also start from the initial emission, which does not
+		// go through the debounce.
+		this.discard();
 
 		return merge(of(true), this.refill$.pipe(map(() => false))).pipe(
 			exhaustMap((isInitial) =>
