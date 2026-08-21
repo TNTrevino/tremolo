@@ -1,6 +1,48 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">Class</h1>
-	<p class="text-muted-foreground">
-		Route parameter: <span class="font-mono">{{ id() }}</span>
-	</p>
-</section>
+<div class="min-h-screen py-8 px-4">
+	<div class="container mx-auto max-w-4xl space-y-6">
+		<a
+			routerLink="/classes"
+			class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+		>
+			<ng-icon name="lucideArrowLeft" size="1rem" aria-hidden="true" />
+			All classes
+		</a>
+
+		@if (classes.status() === "loading") {
+			<div class="flex items-center justify-center h-40">
+				<ng-icon
+					name="lucideLoader2"
+					size="1.5rem"
+					aria-hidden="true"
+					class="animate-spin text-muted-foreground"
+				/>
+			</div>
+		} @else if (classItem(); as classItemValue) {
+			<app-class-header [classItem]="classItemValue" />
+			<app-roster-list
+				[classId]="classId()"
+				(rosterChanged)="onRosterChanged()"
+			/>
+			<app-class-assignments-list
+				[classId]="classId()"
+				[selectedId]="selected()?.id ?? null"
+				(assignmentSelected)="onSelect($event)"
+				(selectionCleared)="selected.set(null)"
+			/>
+			@if (selected(); as assignment) {
+				<app-assignment-results-grid [assignment]="assignment" />
+			}
+		} @else {
+			<div
+				class="flex flex-col items-center justify-center h-40 gap-2 text-center"
+			>
+				<p class="text-sm font-medium text-muted-foreground">
+					Class not found, or you don’t have access to it.
+				</p>
+				<a routerLink="/classes" class="text-sm text-primary underline"
+					>Back to my classes</a
+				>
+			</div>
+		}
+	</div>
+</div>
