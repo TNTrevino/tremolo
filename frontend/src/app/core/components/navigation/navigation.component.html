@@ -100,8 +100,19 @@
 				}
 			</div>
 
-			<!-- Right section: theme toggle, friends, account -->
-			<div class="flex items-center space-x-2">
+			<!--
+				Right section: theme toggle, friends, account.
+
+				`gap-2`, not React's `space-x-2`: every control in this cluster
+				is an `<app-button>`, whose host is `display: contents`, and
+				`space-x-*` works by setting `margin-left` on `> * + *` -- which
+				is that host element, and margins on a `display: contents` box
+				are ignored (sub-feature 1's handoff 7.3). The friends toggle
+				and the mobile-menu button each lost their 8px. Flex `gap`
+				works because the contents host's own child is what becomes the
+				flex item.
+			-->
+			<div class="flex items-center gap-2">
 				<app-button
 					variant="ghost"
 					size="icon"
