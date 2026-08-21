@@ -128,9 +128,18 @@ export class NoteGamePageComponent {
 		stream: () => this.users.getKeyboardBindings(),
 	});
 
-	/** Note -> key, for the answer-pad hints and the bindings dialog. */
+	/**
+	 * Note -> key, for the answer-pad hints and the bindings dialog.
+	 *
+	 * `value()` **rethrows** on a failed resource, and this computed is read
+	 * during template evaluation, so an unguarded read turns a bindings-fetch
+	 * failure into a crashed game screen. Custom bindings are a convenience;
+	 * falling back to the defaults is what React did with `data ?? undefined`.
+	 */
 	protected readonly noteToKeyMap = computed(() => {
-		const saved = this.savedBindings.value();
+		const saved = this.savedBindings.error()
+			? null
+			: this.savedBindings.value();
 		return saved
 			? keyBindingsToNoteMap(saved.keyBindings)
 			: DEFAULT_NOTE_TO_KEY_MAP;
@@ -167,9 +176,13 @@ export class NoteGamePageComponent {
 				this.saver.save(stats, "note", this.assignment()?.id),
 			);
 
-		// Custom bindings feed the keydown stream.
+		// Custom bindings feed the keydown stream. Same guard as
+		// `noteToKeyMap` above, and for the same reason: this is a view
+		// effect, so a rethrow from `value()` aborts the render too.
 		effect(() => {
-			const saved = this.savedBindings.value();
+			const saved = this.savedBindings.error()
+				? null
+				: this.savedBindings.value();
 			untracked(() =>
 				this.game.keyBindings.set(
 					saved ? keyBindingsToNoteMap(saved.keyBindings) : undefined,

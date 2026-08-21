@@ -184,6 +184,39 @@ describe("NoteGamePageComponent", () => {
 		);
 	});
 
+	// `resource.value()` rethrows once the resource has errored, and
+	// `noteToKeyMap` is read three times in the template -- so an unguarded
+	// read makes a failed bindings fetch a crashed game screen rather than a
+	// missing convenience.
+	it("still renders, on the default bindings, when the bindings fetch fails", async () => {
+		await render();
+		backend
+			.expectOne(SETTINGS_URL)
+			.flush(null, { status: 404, statusText: "Not Found" });
+		backend
+			.expectOne(BINDINGS_URL)
+			.flush({ message: "boom" }, { status: 500, statusText: "Server Error" });
+		await fixture.whenStable();
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		// The whole screen is up: settings bar, answer pad, staff.
+		expect(el().textContent).toContain("time");
+		expect(el().querySelectorAll("button").length).toBeGreaterThanOrEqual(22);
+		// And the hints under the answer buttons are the defaults, not blank:
+		// "a" under C, "j" under B.
+		const padButton = (label: string): Element | undefined =>
+			[...el().querySelectorAll("app-button")].find(
+				(b) => b.querySelector("span")?.textContent?.trim() === label,
+			);
+		expect(padButton("C")?.textContent?.replace(/\s+/g, "")).toBe("Ca");
+		expect(padButton("B")?.textContent?.replace(/\s+/g, "")).toBe("Bj");
+
+		noteRequests().forEach((r) =>
+			r.flush({}, { status: 500, statusText: "x" }),
+		);
+	});
+
 	describe("a legacy saved row", () => {
 		it("loads without breaking, and the range is what plays", async () => {
 			await render();
