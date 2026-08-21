@@ -1,0 +1,33 @@
+<div appCard className="shadow-lg">
+	<div appCardHeader>
+		<h3 appCardTitle className="text-2xl">Teacher Dashboard</h3>
+	</div>
+	<div appCardContent className="space-y-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<div>
+				<p class="mb-1 text-sm text-muted-foreground">Name</p>
+				<p class="font-medium">{{ fullName() }}</p>
+			</div>
+			<div>
+				<p class="mb-1 text-sm text-muted-foreground">Number of Students</p>
+				<p class="font-medium text-primary">{{ studentCountLabel() }}</p>
+			</div>
+		</div>
+		<div class="flex items-center justify-between gap-4">
+			<p class="text-sm text-muted-foreground">
+				Create classes, hand out join codes, assign exercises, and track results
+				per assignment.
+			</p>
+			<!--
+				React's `<Button asChild>` ignores `asChild` and always renders a
+				real <button> wrapping its children, so this is a <button> around
+				an <a> there too. Reproduced rather than "corrected": the
+				baselines were captured from that markup, and the parity suite
+				reaches the link by its role either way.
+			-->
+			<app-button variant="brass">
+				<a routerLink="/classes">My Classes</a>
+			</app-button>
+		</div>
+	</div>
+</div>

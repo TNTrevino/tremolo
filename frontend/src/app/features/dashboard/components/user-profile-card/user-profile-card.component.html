@@ -1,0 +1,44 @@
+<div appCard className="shadow-lg">
+	<div appCardContent className="p-6">
+		<div class="flex flex-col items-center gap-6 md:flex-row md:items-start">
+			<!-- Avatar -->
+			<div class="flex-shrink-0">
+				<div
+					class="flex h-24 w-24 items-center justify-center rounded-full bg-primary text-3xl font-bold text-primary-foreground"
+				>
+					{{ initials() }}
+				</div>
+			</div>
+
+			<!-- User info -->
+			<div class="flex-1 space-y-2 text-center md:text-left">
+				<h1 class="text-3xl font-bold">{{ fullName() }}</h1>
+				<div
+					class="flex flex-wrap items-center justify-center gap-2 md:justify-start"
+				>
+					<span
+						class="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+						>{{ roleDisplay() }}</span
+					>
+					<span class="text-sm text-muted-foreground"
+						>Joined {{ joinDate() }}</span
+					>
+				</div>
+			</div>
+
+			<!-- Quick stats -->
+			<div class="grid grid-cols-2 gap-4">
+				<div class="text-center">
+					<div class="text-3xl font-bold text-primary">
+						{{ totalSessions() }}
+					</div>
+					<div class="text-xs text-muted-foreground">total sessions</div>
+				</div>
+				<div class="text-center">
+					<div class="text-3xl font-bold text-brass">{{ timeReading() }}</div>
+					<div class="text-xs text-muted-foreground">time reading</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
