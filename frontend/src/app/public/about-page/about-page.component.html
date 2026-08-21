@@ -1,3 +1,119 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">About</h1>
-</section>
+<!--
+	Port of frontend-react/src/pages/AboutPage.tsx, section for section.
+
+	Card overrides go through `className` (tailwind-merge), never `class` --
+	see card.directive.ts. Icons are sized with `<ng-icon size="…">` and are
+	`aria-hidden`, because the host carries `role="img"` and each one sits
+	beside the heading it decorates.
+-->
+<div class="min-h-screen py-12 px-4">
+	<div class="container mx-auto max-w-4xl space-y-12">
+		<!-- Mission Statement -->
+		<section class="space-y-6 animate-fade-in">
+			<h1 class="text-5xl font-bold">About Tremolo</h1>
+
+			<div appCard className="border-primary/50 shadow-lg">
+				<div appCardHeader>
+					<h3 appCardTitle className="text-2xl">Our Mission</h3>
+				</div>
+				<div appCardContent className="space-y-4 text-lg text-muted-foreground">
+					<p>
+						Tremolo was born from real classroom experience as a percussion
+						director who witnessed a fundamental problem: students were
+						memorizing sheet music instead of actually learning to read it.
+					</p>
+					<p>
+						We believe in building genuine skills over memorization tricks.
+						That's why every exercise in Tremolo is dynamically generated—no two
+						practice sessions are ever the same. Students can't memorize their
+						way through; they have to actually learn to read music.
+					</p>
+					<p>
+						From beginner fundamentals to advanced concepts, Tremolo adapts to
+						every skill level. Whether you're a 6th grader just starting your
+						musical journey or a seasoned musician preparing for an important
+						audition, we have the tools to help you improve.
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- For Music Educators -->
+		<section class="space-y-6">
+			<h2 class="text-4xl font-bold">For Music Educators</h2>
+
+			<div class="space-y-6">
+				@for (item of educatorHighlights; track item.title) {
+					<div class="flex gap-4 items-start">
+						<div [class]="item.tileClass">
+							<ng-icon
+								size="1.5rem"
+								aria-hidden="true"
+								[name]="item.icon"
+								[class]="item.iconClass"
+							/>
+						</div>
+						<div class="flex-1">
+							<h3 class="text-2xl font-bold mb-2">{{ item.title }}</h3>
+							<p class="text-muted-foreground text-lg">
+								{{ item.description }}
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</section>
+
+		<!-- For Developing Musicians -->
+		<section class="space-y-6">
+			<h2 class="text-4xl font-bold">For Developing Musicians</h2>
+
+			<div class="space-y-6">
+				@for (item of musicianHighlights; track item.title) {
+					<div class="flex gap-4 items-start">
+						<div [class]="item.tileClass">
+							<ng-icon
+								size="1.5rem"
+								aria-hidden="true"
+								[name]="item.icon"
+								[class]="item.iconClass"
+							/>
+						</div>
+						<div class="flex-1">
+							<h3 class="text-2xl font-bold mb-2">{{ item.title }}</h3>
+							<p class="text-muted-foreground text-lg">
+								{{ item.description }}
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</section>
+
+		<!-- Vision Statement -->
+		<section class="space-y-6">
+			<div
+				appCard
+				className="border-primary/50 shadow-lg bg-gradient-to-br from-primary/5 to-brass/5"
+			>
+				<div appCardHeader>
+					<h3 appCardTitle className="text-3xl">The Vision</h3>
+				</div>
+				<div appCardContent className="text-lg text-muted-foreground">
+					<p>
+						We're building a comprehensive solution that covers everything from
+						beginner fundamentals to advanced concepts. Whether you're a 6th
+						grader learning your first notes or a seasoned musician preparing
+						for a professional audition, Tremolo will have the tools and
+						exercises you need to succeed.
+					</p>
+					<p class="mt-4">
+						Our goal is simple: make sight-reading practice effective, engaging,
+						and accessible to everyone. Real skills. Real progress. Real
+						results.
+					</p>
+				</div>
+			</div>
+		</section>
+	</div>
+</div>
