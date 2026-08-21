@@ -1,4 +1,13 @@
-import { GAME_DEFINITIONS } from "@features/identification-game";
+// Deep-imported rather than taken from the feature barrel: the barrel
+// re-exports `GameStaffComponent`, which reaches `opensheetmusicdisplay`, and
+// this module is read by four class specs that have no business loading a
+// 1 MB engraver into jsdom. That is Phase 5's F1 addendum, §9 "not taken" --
+// taken here. `games/index.ts` is definitions only.
+import { GAME_DEFINITIONS } from "@features/identification-game/games";
+import {
+	NOTE_GAME_DEFAULTS,
+	toNoteAssignmentConfig,
+} from "@features/note-game/models/note-game.models";
 
 import type { GameType } from "../../../shared/models/game.models";
 
@@ -11,9 +20,10 @@ import type { GameType } from "../../../shared/models/game.models";
  * could only port the half that is pure data -- which game types exist and
  * what to call them -- because the definitions themselves were Phase 5's.
  *
- * **Phase 5 closed the gap it left:** `defaultAssignmentConfig()` now reads
- * each game's own `defaults` instead of a copied table. The note game's
- * defaults are still copied, and are Phase 6's to reclaim.
+ * **Phases 5 and 6 closed the gap it left:** `defaultAssignmentConfig()` now
+ * reads each game's own `defaults` -- the identification games' off their
+ * `GameDefinition`, the note game's off `NOTE_GAME_DEFAULTS` -- instead of
+ * copied tables. No default is duplicated here any more.
  */
 
 export const GAME_TYPE_LABELS: Record<GameType, string> = {
@@ -73,32 +83,20 @@ export function isKnownGameType(gameType: string): gameType is GameType {
 }
 
 /**
- * The note game's `NOTE_DEFAULTS` from React's `CreateAssignmentDialog.tsx`.
- *
- * The last copied default table. Its config is snake_case, because it is
- * posted straight to the music service, where the identification games'
- * is camelCase -- that asymmetry is real, and the assignment `config` blob
- * is stored verbatim either way. **Phase 6 should delete this and read the
- * note game's own defaults**, the way the four below now are.
- */
-const NOTE_DEFAULTS: Record<string, unknown> = {
-	low_note: "C4",
-	high_note: "C6",
-	clef: "treble",
-	game_mode: "time",
-	time_limit: 30,
-	note_limit: 25,
-	scale: "C Major",
-	octave: 4,
-};
-
-/**
  * The config a new assignment freezes for a given game.
  *
- * **No longer a copy.** The four identification games' defaults are read
- * off their own `GameDefinition`, which is what the header above asked
- * Phase 5 to do: a duplicated table is exactly the thing that drifts, and
- * "settings live in the definition" is the feature's whole premise.
+ * **Nothing here is a copy any more.** The four identification games' defaults
+ * are read off their own `GameDefinition` (Phase 5), and the note game's off
+ * `NOTE_GAME_DEFAULTS`, the same constant its own page starts from (Phase 6) --
+ * which is what the header above asked for. A duplicated table is exactly the
+ * thing that drifts, and "settings live in the definition" is the feature's
+ * whole premise.
+ *
+ * The note game's blob stays **snake_case** while the other four are
+ * camelCase. That asymmetry is React's and is load-bearing: the note config is
+ * shaped like the `note_game_settings` row and is posted straight at the music
+ * service. `toNoteAssignmentConfig` is the one place the conversion happens,
+ * and `mapNoteAssignmentConfig` reads it back when a student plays.
  *
  * A fresh object every call, so the dialog can patch it without writing
  * through to the definition (React got the same isolation from its
@@ -107,7 +105,7 @@ const NOTE_DEFAULTS: Record<string, unknown> = {
 export function defaultAssignmentConfig(
 	gameType: GameType,
 ): Record<string, unknown> {
-	if (gameType === "note") return structuredClone(NOTE_DEFAULTS);
+	if (gameType === "note") return toNoteAssignmentConfig(NOTE_GAME_DEFAULTS);
 	// `defaults` is a game's settings *interface*, which has no index
 	// signature; the assignment `config` blob is the same object seen as
 	// opaque JSON, which is what the Go service stores and returns.

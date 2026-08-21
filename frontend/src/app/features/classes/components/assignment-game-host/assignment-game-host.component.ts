@@ -13,6 +13,8 @@ import {
 	scaleGame,
 } from "@features/identification-game";
 
+import { NoteGamePageComponent } from "@features/note-game/components/note-game-page/note-game-page.component";
+
 import type { GameType } from "../../../../shared/models/game.models";
 import { GAME_TYPE_LABELS } from "../../models/game-definitions";
 import type { AssignmentLaunch } from "../../models/assignment-launch";
@@ -31,9 +33,10 @@ import type { AssignmentLaunch } from "../../models/assignment-launch";
  *   : <IdentificationGamePage definition={…} assignment={gameConfig} />
  * ```
  *
- * Phase 5 fills in the four identification games. **The note game is still
- * Phase 6's**, so `"note"` keeps the placeholder notice -- replacing that
- * one branch is all Phase 6 owes this file.
+ * Phase 5 filled in the four identification games and Phase 6 the note game,
+ * so all five branches are real. The `@default` notice survives for a
+ * `game_type` this build has never heard of -- an assignment created against
+ * a newer backend -- which `isKnownGameType` normally catches upstream.
  *
  * The `@switch` is four explicit bindings rather than a lookup in
  * `GAME_DEFINITIONS`, deliberately: the shell is generic, and a concrete
@@ -47,7 +50,7 @@ import type { AssignmentLaunch } from "../../models/assignment-launch";
  */
 @Component({
 	selector: "app-assignment-game-host",
-	imports: [IdentificationGameComponent],
+	imports: [IdentificationGameComponent, NoteGamePageComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `
 		:host {
@@ -57,6 +60,9 @@ import type { AssignmentLaunch } from "../../models/assignment-launch";
 	`,
 	template: `
 		@switch (gameType()) {
+			@case ("note") {
+				<app-note-game-page [assignment]="launch()" />
+			}
 			@case ("key_signature") {
 				<app-identification-game
 					[definition]="keySignatureGame"
