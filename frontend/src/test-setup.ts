@@ -46,4 +46,39 @@ class ResizeObserverStub implements ResizeObserver {
 
 globalThis.ResizeObserver ??= ResizeObserverStub;
 
+/**
+ * jsdom ships no `window.matchMedia`, and `BreakpointService` opens three of
+ * them in its constructor -- so any spec that renders a component reading a
+ * breakpoint (the game boards, the score bar, the settings bar) dies on
+ * "matchMedia is not a function" before it renders anything.
+ *
+ * The stub reports **no** match, which lands `BreakpointService` on its own
+ * declared default: not mobile, not phone-landscape, desktop. That is the
+ * layout the golden E2E specs run at, so a unit test and a Playwright run
+ * exercise the same branch.
+ *
+ * A spec that needs another breakpoint overrides `window.matchMedia` itself
+ * before `TestBed.inject(BreakpointService)` -- the service reads the queries
+ * once, in its constructor.
+ */
+function matchMediaStub(query: string): MediaQueryList {
+	const listeners = new Set<EventListener>();
+	return {
+		matches: false,
+		media: query,
+		onchange: null,
+		addEventListener: (_: string, listener: EventListener) => {
+			listeners.add(listener);
+		},
+		removeEventListener: (_: string, listener: EventListener) => {
+			listeners.delete(listener);
+		},
+		addListener: () => undefined,
+		removeListener: () => undefined,
+		dispatchEvent: () => false,
+	} as unknown as MediaQueryList;
+}
+
+window.matchMedia ??= matchMediaStub;
+
 export { ResizeObserverStub };
