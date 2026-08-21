@@ -105,7 +105,15 @@
 							/>
 						</app-form-field>
 
-						<app-button type="submit">
+						<!--
+							`self-start` restores what `space-y-4` gave for free.
+							React's button was an `inline-flex` box in block flow, so
+							it was shrink-to-fit; as a column flex item it would
+							stretch to the card's full width instead. The form fields
+							above *should* stretch, so `items-start` on the form is
+							not the fix -- only the button opts out.
+						-->
+						<app-button type="submit" className="self-start">
 							<ng-icon
 								name="lucideKey"
 								size="1rem"
