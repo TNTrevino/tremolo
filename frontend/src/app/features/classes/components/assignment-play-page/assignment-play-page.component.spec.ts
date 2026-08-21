@@ -58,6 +58,11 @@ describe("AssignmentPlayPageComponent", () => {
 	}
 
 	afterEach(() => {
+		// Since Phase 5 the host renders a real game, and a real game
+		// immediately prefetches two questions from the music service. Those
+		// are the engine's business, not this page's; draining them keeps
+		// `verify()` meaning "no stray *assignment* request".
+		backend.match((request) => request.url.startsWith(environment.musicApi));
 		backend.verify();
 		vi.restoreAllMocks();
 	});
@@ -86,6 +91,10 @@ describe("AssignmentPlayPageComponent", () => {
 		expect(el().textContent).toContain("Back to assignments");
 		expect(el().querySelector("app-assignment-game-host")).toBeTruthy();
 		expect(el().textContent).not.toContain("Assignment not found");
+		// The host resolves `key_signature` to the real shell, in assignment
+		// mode. Before Phase 5 this was a placeholder notice.
+		expect(el().querySelector("app-identification-game")).toBeTruthy();
+		expect(el().textContent).not.toContain("not available in this build");
 	});
 
 	it("shows not-found when the id is not in the student's list", async () => {

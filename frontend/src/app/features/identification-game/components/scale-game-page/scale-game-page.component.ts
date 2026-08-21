@@ -1,13 +1,15 @@
-import { Component } from "@angular/core";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
 
-/**
- * Phase 1 placeholder. It exists so `/scale-game` resolves, so its guard runs,
- * and so the phase that owns this page has a component already wired into
- * the route table to fill in. See .migration/phase-1-handoff.md.
- */
+import { scaleGame } from "../../games/scale.game";
+import { IdentificationGameComponent } from "../identification-game/identification-game.component";
 
+/** `/scale-game`. Port of frontend-react/src/pages/ScaleGamePage.tsx. */
 @Component({
 	selector: "app-scale-game-page",
-	templateUrl: "./scale-game-page.component.html",
+	imports: [IdentificationGameComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `<app-identification-game [definition]="definition" />`,
 })
-export class ScaleGamePageComponent {}
+export class ScaleGamePageComponent {
+	protected readonly definition = scaleGame;
+}

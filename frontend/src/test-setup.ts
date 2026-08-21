@@ -46,4 +46,25 @@ class ResizeObserverStub implements ResizeObserver {
 
 globalThis.ResizeObserver ??= ResizeObserverStub;
 
+/**
+ * jsdom ships no `matchMedia` either, and `BreakpointService` builds three
+ * media-query lists in its constructor -- so any spec whose component tree
+ * reaches a game board, a score bar or the nav bar would throw on
+ * injection rather than on anything it meant to test.
+ *
+ * Every query reports `false`, which is `BreakpointService`'s own initial
+ * state: not mobile, not phone-landscape. A spec that needs a viewport
+ * overrides this or provides its own `BreakpointService`.
+ */
+globalThis.matchMedia ??= ((query: string) => ({
+	matches: false,
+	media: query,
+	onchange: null,
+	addEventListener: () => undefined,
+	removeEventListener: () => undefined,
+	addListener: () => undefined,
+	removeListener: () => undefined,
+	dispatchEvent: () => false,
+})) as typeof globalThis.matchMedia;
+
 export { ResizeObserverStub };
