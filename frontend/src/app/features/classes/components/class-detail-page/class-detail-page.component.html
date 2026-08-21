@@ -17,6 +17,8 @@
 					class="animate-spin text-muted-foreground"
 				/>
 			</div>
+		} @else if (classes.error()) {
+			<app-error [error]="classes.error()" />
 		} @else if (classItem(); as classItemValue) {
 			<app-class-header [classItem]="classItemValue" />
 			<app-roster-list

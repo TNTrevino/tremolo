@@ -10,6 +10,7 @@ import { rxResource } from "@angular/core/rxjs-interop";
 import { RouterLink } from "@angular/router";
 import { NgIcon } from "@ng-icons/core";
 
+import { AppErrorComponent } from "../../../../core/components/app-error/app-error.component";
 import type { Assignment, Class } from "../../models/classes.models";
 import { ClassesService } from "../../services/classes.service";
 import { AssignmentResultsGridComponent } from "../assignment-results-grid/assignment-results-grid.component";
@@ -42,6 +43,7 @@ import { RosterListComponent } from "../roster-list/roster-list.component";
 @Component({
 	selector: "app-class-detail-page",
 	imports: [
+		AppErrorComponent,
 		AssignmentResultsGridComponent,
 		ClassAssignmentsListComponent,
 		ClassHeaderComponent,
@@ -64,10 +66,17 @@ export class ClassDetailPageComponent {
 		defaultValue: [] as Class[],
 	});
 
+	/**
+	 * `value()` rethrows on a failed resource, so a failed list would take
+	 * the whole page down through the template. The error arm renders
+	 * `<app-error>`; this keeps the computed from throwing before it gets
+	 * there.
+	 */
 	readonly classItem = computed(() => {
 		const id = this.classId();
 		if (Number.isNaN(id)) return undefined;
-		return this.classes.value().find((c) => c.id === id);
+		const classes = this.classes.error() ? [] : this.classes.value();
+		return classes.find((c) => c.id === id);
 	});
 
 	readonly selected = signal<Assignment | null>(null);

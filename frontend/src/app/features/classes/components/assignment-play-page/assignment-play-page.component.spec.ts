@@ -121,6 +121,27 @@ describe("AssignmentPlayPageComponent", () => {
 		expect(link.textContent).toContain("Back to assignments");
 	});
 
+	// The list failing is not the same thing as the assignment being missing,
+	// and `value()` rethrows once the resource has errored -- so without the
+	// error arm this page throws out of its own template instead of saying
+	// anything.
+	it("shows the error panel, not 'not found', when the list fails", async () => {
+		await render("3");
+		backend
+			.expectOne(ASSIGNMENTS_URL)
+			.flush({ message: "boom" }, { status: 500, statusText: "Server Error" });
+		await fixture.whenStable();
+
+		expect(el().querySelector("app-error")).toBeTruthy();
+		// Read directly too: the ladder reaches the error arm first, so this
+		// is what pins the computed's own guard rather than the arm's order.
+		expect(fixture.componentInstance.playable()).toBeUndefined();
+		expect(el().textContent).not.toContain("Assignment not found");
+		expect(el().querySelector("app-assignment-game-host")).toBeNull();
+		// Still a way out.
+		expect(el().textContent).toContain("Back to assignments");
+	});
+
 	// `game_type` is filled by the Go service, so the `GameType` union is a
 	// claim about the wire rather than a guarantee from it. React fell
 	// through to not-found when its definition lookup missed; without the

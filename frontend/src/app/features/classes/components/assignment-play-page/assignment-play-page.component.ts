@@ -9,6 +9,7 @@ import { rxResource } from "@angular/core/rxjs-interop";
 import { RouterLink } from "@angular/router";
 import { NgIcon } from "@ng-icons/core";
 
+import { AppErrorComponent } from "../../../../core/components/app-error/app-error.component";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { SkeletonDirective } from "../../../../shared/components/ui/skeleton.directive";
 import type { GameType } from "../../../../shared/models/game.models";
@@ -40,6 +41,7 @@ import { AssignmentGameHostComponent } from "../assignment-game-host/assignment-
 @Component({
 	selector: "app-assignment-play-page",
 	imports: [
+		AppErrorComponent,
 		AssignmentGameHostComponent,
 		ButtonComponent,
 		NgIcon,
@@ -61,10 +63,19 @@ export class AssignmentPlayPageComponent {
 		defaultValue: [] as StudentAssignment[],
 	});
 
+	/**
+	 * `value()` rethrows on a failed resource, so a failed list would take
+	 * the whole page down through the template. The error arm renders
+	 * `<app-error>`; this keeps the computed from throwing before it gets
+	 * there.
+	 */
 	private readonly assignment = computed(() => {
 		const id = this.assignmentId();
 		if (Number.isNaN(id)) return undefined;
-		return this.assignments.value().find((a) => a.id === id);
+		const assignments = this.assignments.error()
+			? []
+			: this.assignments.value();
+		return assignments.find((a) => a.id === id);
 	});
 
 	/**

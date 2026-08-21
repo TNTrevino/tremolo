@@ -155,6 +155,27 @@ describe("ClassDetailPageComponent", () => {
 		backend.expectNone(ROSTER_URL);
 	});
 
+	// A failed list is not a missing class, and `value()` rethrows once the
+	// resource has errored -- so without the error arm this page throws out
+	// of its own template rather than saying anything.
+	it("shows the error panel, not 'not found', when the class list fails", async () => {
+		render("1");
+		backend
+			.expectOne(CLASSES_URL)
+			.flush({ message: "boom" }, { status: 500, statusText: "Server Error" });
+		await settle();
+
+		expect(el().querySelector("app-error")).toBeTruthy();
+		// Read directly too: the ladder reaches the error arm first, so this
+		// is what pins the computed's own guard rather than the arm's order.
+		expect(fixture.componentInstance.classItem()).toBeUndefined();
+		expect(el().textContent).not.toContain("Class not found");
+		// No children, so no child requests: the roster and assignments are
+		// only reachable through the found-class arm.
+		backend.expectNone(ROSTER_URL);
+		backend.expectNone(ASSIGNMENTS_URL);
+	});
+
 	it("archives the class and returns to the list", async () => {
 		render("1");
 		await loadAll();
