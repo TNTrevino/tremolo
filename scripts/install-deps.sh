@@ -162,15 +162,14 @@ setup_music_api() {
   cd "$SCRIPT_DIR"
 }
 
-# Setup Husky hooks
-setup_husky() {
-  print_header "Setting up Git Hooks (Husky)"
+# Setup git hooks (core.hooksPath -> .githooks)
+setup_hooks() {
+  print_header "Setting up Git Hooks"
 
-  print_info "Installing precommit hooks..."
+  print_info "Pointing git at .githooks/ via make hooks..."
 
   cd "$ROOT_DIR"
-  print_info "Running npm i in root directory..."
-  npm i
+  make hooks
 
   print_success "Git hooks configured"
 }
@@ -189,7 +188,7 @@ main() {
   # Setup services
   setup_frontend
   setup_music_api
-  setup_husky
+  setup_hooks
 
   # Summary
   echo -e "\n${BLUE}╔════════════════════════════════════════════╗${NC}"
