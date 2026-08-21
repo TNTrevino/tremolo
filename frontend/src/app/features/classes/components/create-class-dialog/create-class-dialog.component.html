@@ -1,0 +1,32 @@
+<app-dialog [(open)]="open">
+	<div appDialogContent class="max-w-md">
+		<form (submit)="submit($event)">
+			<div appDialogHeader>
+				<h2 appDialogTitle class="font-display">New class</h2>
+			</div>
+			<div class="p-6">
+				<app-form-field
+					label="Class name"
+					htmlFor="class-name"
+					[required]="true"
+					[field]="createForm.name"
+				>
+					<input
+						appFormInput
+						id="class-name"
+						placeholder="Symphonic Band"
+						[formField]="createForm.name"
+					/>
+				</app-form-field>
+			</div>
+			<div appDialogFooter>
+				<app-button variant="outline" [disabled]="pending()" (click)="close()">
+					Cancel
+				</app-button>
+				<app-button type="submit" variant="brass" [loading]="pending()">
+					Create class
+				</app-button>
+			</div>
+		</form>
+	</div>
+</app-dialog>

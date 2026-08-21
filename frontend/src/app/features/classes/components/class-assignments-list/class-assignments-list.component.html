@@ -1,0 +1,78 @@
+<div appCard>
+	<div
+		appCardHeader
+		className="flex-row items-center justify-between space-y-0"
+	>
+		<h3 appCardTitle className="font-display text-xl">Assignments</h3>
+		<app-button variant="brass" size="sm" (click)="isCreateOpen.set(true)">
+			<ng-icon name="lucidePlus" size="1rem" aria-hidden="true" class="mr-2" />
+			New assignment
+		</app-button>
+	</div>
+	<div appCardContent className="p-2">
+		@if (assignments.status() === "loading") {
+			<div class="flex items-center justify-center h-24">
+				<ng-icon
+					name="lucideLoader2"
+					size="1.5rem"
+					aria-hidden="true"
+					class="animate-spin text-muted-foreground"
+				/>
+			</div>
+		} @else if (assignments.error()) {
+			<app-error [error]="assignments.error()" />
+		} @else if (assignments.value().length === 0) {
+			<div
+				class="flex flex-col items-center justify-center h-24 gap-1 text-center"
+			>
+				<p class="text-sm font-medium text-muted-foreground">
+					No assignments yet — create one to start tracking practice.
+				</p>
+			</div>
+		} @else {
+			@for (assignment of assignments.value(); track assignment.id) {
+				<div
+					role="button"
+					tabindex="0"
+					[class]="rowClasses(assignment)"
+					(click)="assignmentSelected.emit(assignment)"
+					(keydown)="onRowKeydown($event, assignment)"
+				>
+					<div class="flex-1 min-w-0">
+						<span class="text-sm font-medium truncate block">{{
+							assignment.title
+						}}</span>
+						<p [class]="subtitleClasses(assignment)">
+							{{ subtitle(assignment) }}
+						</p>
+					</div>
+					<app-button
+						variant="ghost"
+						size="icon"
+						[ariaLabel]="'Delete ' + assignment.title"
+						[className]="deleteButtonClasses(assignment)"
+						(click)="$event.stopPropagation(); confirming.set(assignment)"
+					>
+						<ng-icon name="lucideTrash2" size="1rem" aria-hidden="true" />
+					</app-button>
+				</div>
+			}
+		}
+	</div>
+
+	<app-confirm-dialog
+		[open]="confirming() !== null"
+		(openChange)="confirmOpenChange($event)"
+		title="Delete assignment?"
+		[description]="confirmDescription()"
+		confirmLabel="Delete"
+		[pending]="pending()"
+		(confirm)="remove()"
+	/>
+
+	<app-create-assignment-dialog
+		[classId]="classId()"
+		[(open)]="isCreateOpen"
+		(created)="onCreated()"
+	/>
+</div>

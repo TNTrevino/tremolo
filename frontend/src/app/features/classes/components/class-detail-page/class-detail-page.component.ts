@@ -1,20 +1,83 @@
-import { Component, input } from "@angular/core";
+import {
+	ChangeDetectionStrategy,
+	Component,
+	computed,
+	inject,
+	input,
+	signal,
+} from "@angular/core";
+import { rxResource } from "@angular/core/rxjs-interop";
+import { RouterLink } from "@angular/router";
+import { NgIcon } from "@ng-icons/core";
+
+import type { Assignment, Class } from "../../models/classes.models";
+import { ClassesService } from "../../services/classes.service";
+import { AssignmentResultsGridComponent } from "../assignment-results-grid/assignment-results-grid.component";
+import { ClassAssignmentsListComponent } from "../class-assignments-list/class-assignments-list.component";
+import { ClassHeaderComponent } from "../class-header/class-header.component";
+import { RosterListComponent } from "../roster-list/roster-list.component";
 
 /**
- * Phase 1 placeholder. It exists so `/classes/:id` resolves, so its guard runs,
- * and so the phase that owns this page has a component already wired into
- * the route table to fill in. See .migration/phase-1-handoff.md.
+ * `/classes/:id` -- one class: its header, roster, assignments, and (once a
+ * teacher picks one) that assignment's results. Port of
+ * frontend-react/src/pages/ClassDetailPage.tsx.
+ *
+ * **There is no GET-by-id for a class**, so this fetches the teacher's list
+ * and finds the row, exactly as React did. That is a real endpoint gap, not
+ * a porting shortcut -- if a by-id endpoint ever lands, this is the page
+ * that should stop over-fetching.
+ *
+ * `id` arrives as a string from `withComponentInputBinding()`; a
+ * non-numeric one produces `NaN`, which matches nothing and lands on the
+ * not-found branch. React had the same `Number.isNaN` guard.
+ *
+ * The template gates its spinner on `status() === "loading"`, **not** on
+ * `isLoading()`. Angular's `isLoading()` is also true while *reloading*,
+ * where TanStack's `isLoading` (`isPending && isFetching`) is first-load
+ * only. Using `isLoading()` here made `onRosterChanged()` tear the whole
+ * body down -- which also destroyed `<app-roster-list>` mid-flight and
+ * cancelled the very roster refetch that triggered it. Every resource in
+ * this feature that something calls `.reload()` on follows the same rule.
  */
-
 @Component({
 	selector: "app-class-detail-page",
+	imports: [
+		AssignmentResultsGridComponent,
+		ClassAssignmentsListComponent,
+		ClassHeaderComponent,
+		NgIcon,
+		RosterListComponent,
+		RouterLink,
+	],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: "./class-detail-page.component.html",
 })
 export class ClassDetailPageComponent {
-	/**
-	 * Bound from the `:id` route parameter by `withComponentInputBinding()`
-	 * -- the half of PLAN.md 5.2's parameterized `rxResource` that the page
-	 * owning this route will read.
-	 */
 	readonly id = input.required<string>();
+
+	private readonly classesService = inject(ClassesService);
+
+	readonly classId = computed(() => Number(this.id()));
+
+	readonly classes = rxResource({
+		stream: () => this.classesService.getTeacherClasses(),
+		defaultValue: [] as Class[],
+	});
+
+	readonly classItem = computed(() => {
+		const id = this.classId();
+		if (Number.isNaN(id)) return undefined;
+		return this.classes.value().find((c) => c.id === id);
+	});
+
+	readonly selected = signal<Assignment | null>(null);
+
+	onSelect(assignment: Assignment): void {
+		this.selected.set(assignment);
+	}
+
+	/** The roll changed, so the header's `student_count` is stale. */
+	onRosterChanged(): void {
+		this.classes.reload();
+	}
 }

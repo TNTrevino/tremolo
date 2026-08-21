@@ -1,0 +1,50 @@
+<a [routerLink]="['/classes', classItem().id]" class="block">
+	<div appCard className="h-full transition-colors hover:bg-accent/50">
+		<div appCardContent className="p-4 space-y-4">
+			<div class="flex items-start justify-between gap-2">
+				<h3
+					appCardTitle
+					className="font-display text-lg font-semibold truncate"
+				>
+					{{ classItem().name }}
+				</h3>
+				<span
+					class="flex items-center gap-1 text-xs text-muted-foreground shrink-0"
+				>
+					<ng-icon name="lucideUsers" size="0.875rem" aria-hidden="true" />
+					<span class="tabular-nums">{{ classItem().studentCount }}</span>
+				</span>
+			</div>
+
+			<div
+				class="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-secondary px-3 py-2"
+			>
+				<div>
+					<p class="text-[10px] uppercase tracking-wide text-muted-foreground">
+						Join code
+					</p>
+					<p class="font-display text-xl font-semibold tracking-widest">
+						{{ classItem().joinCode }}
+					</p>
+				</div>
+				<app-button
+					variant="ghost"
+					size="icon"
+					ariaLabel="Copy join code"
+					(click)="copy($event)"
+				>
+					@if (copied()) {
+						<ng-icon
+							name="lucideCheck"
+							size="1rem"
+							aria-hidden="true"
+							class="text-correct"
+						/>
+					} @else {
+						<ng-icon name="lucideCopy" size="1rem" aria-hidden="true" />
+					}
+				</app-button>
+			</div>
+		</div>
+	</div>
+</a>
