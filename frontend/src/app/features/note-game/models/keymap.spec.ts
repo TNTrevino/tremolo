@@ -16,7 +16,7 @@ import {
  */
 
 /** note -> lowercase key, in the order the three rows are laid out. */
-const SHARPS: ReadonlyArray<readonly [string, string]> = [
+const SHARPS: readonly (readonly [string, string])[] = [
 	["C#", "q"],
 	["D#", "w"],
 	["E#", "e"],
@@ -25,7 +25,7 @@ const SHARPS: ReadonlyArray<readonly [string, string]> = [
 	["A#", "y"],
 	["B#", "u"],
 ];
-const NATURALS: ReadonlyArray<readonly [string, string]> = [
+const NATURALS: readonly (readonly [string, string])[] = [
 	["C", "a"],
 	["D", "s"],
 	["E", "d"],
@@ -34,7 +34,7 @@ const NATURALS: ReadonlyArray<readonly [string, string]> = [
 	["A", "h"],
 	["B", "j"],
 ];
-const FLATS: ReadonlyArray<readonly [string, string]> = [
+const FLATS: readonly (readonly [string, string])[] = [
 	["Cb", "z"],
 	["Db", "x"],
 	["Eb", "c"],
