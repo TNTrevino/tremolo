@@ -10,7 +10,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 0     | Scaffold + parity harness  | done    | 2026-08-20 | `2e94f8a..1421b7b` | React app moved to `frontend-react/`; 7 deviations below. Verified 2026-08-20: build/lint/test green, 47/47 Playwright specs green vs React, 80 baselines confirmed |
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
-| 3     | CRUD features              | built (all six slices) | 2026-08-20 | `2dd1e3d..d6c13ad` (the ledger sync commit follows) | **All six sub-features built and merged.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; **5 (classes) followed as `2a4f61b`**, branched from `7131492` and so carrying none of the other four merges nor Phase 4's. See the two Phase 3 integration notes below. Gates on the fully merged branch all exit 0 -- **394 tests in 49 files** (the union, not the sum: 308/38 before 3.5, whose own 232/32 contributed exactly its 86 new tests in 11 new files). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** -- **30/30, held across the 3.5 merge**. `classes.spec.ts` **3/4**; test 4 reaches the assignment-play route, resolves the game type and renders the host stub, then times out looking for an answer pad -- **Phase 5's**, and the only residual. 34 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6, 8 from 3.5) plus 5 integration deviations. **Not to be marked `done`** -- the consolidated verifier runs next and owns that. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** **Sub-feature 5 (classes)** -- classes list, class detail + roster, assignments, assignment-play plumbing, 20 components, 9 `rxResource`s. build/lint/test:run/format:check all exit 0 on its own base (232 tests, 32 files, +86). `classes.spec.ts` 3/4 and screenshots 12/16 -- both residuals are the Phase 5 game behind `/assignments/:id/play`. 8 deviations below. Resumed after its first agent died with 34 files uncommitted; see handoff §2. **Three defects found and fixed (handoff §7): Angular `isLoading()` is not TanStack's and was tearing pages down mid-refetch, a dropped unknown-game-type guard, and `display: inline` component hosts eating every `space-y-*` gap.** |
+| 3     | CRUD features              | done    | 2026-08-20 | `2dd1e3d..5a83341` (this ledger entry's own commit follows) | **Verified 2026-08-20 by the consolidated verifier -- see the notes at the end of this file.** Gates re-run green at **394/49**; parity **33/34** (`navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4, `classes` 3/4 with the residual pinned to the Phase 5 answer pad); `settings.spec.ts` + `games.spec.ts` run for attribution only -- **9 failures, every one at a game screen, none at a CRUD screen**; seven live flows driven on fresh accounts with **zero console errors**; the recorded chart gap closed with a seeded 10-day play history; **32 of 40 Phase-3 shots inside threshold**, the 8 being the pre-recorded login/signup restyle residual. The baseline, chart-fidelity and `isLoading()` decisions are recorded in the verifier notes. **All six sub-features built and merged.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; **5 (classes) followed as `2a4f61b`**, branched from `7131492` and so carrying none of the other four merges nor Phase 4's. See the two Phase 3 integration notes below. Gates on the fully merged branch all exit 0 -- **394 tests in 49 files** (the union, not the sum: 308/38 before 3.5, whose own 232/32 contributed exactly its 86 new tests in 11 new files). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** -- **30/30, held across the 3.5 merge**. `classes.spec.ts` **3/4**; test 4 reaches the assignment-play route, resolves the game type and renders the host stub, then times out looking for an answer pad -- **Phase 5's**, and the only residual. 34 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6, 8 from 3.5) plus 5 integration deviations. **Not to be marked `done`** -- the consolidated verifier runs next and owns that. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** **Sub-feature 5 (classes)** -- classes list, class detail + roster, assignments, assignment-play plumbing, 20 components, 9 `rxResource`s. build/lint/test:run/format:check all exit 0 on its own base (232 tests, 32 files, +86). `classes.spec.ts` 3/4 and screenshots 12/16 -- both residuals are the Phase 5 game behind `/assignments/:id/play`. 8 deviations below. Resumed after its first agent died with 34 files uncommitted; see handoff §2. **Three defects found and fixed (handoff §7): Angular `isLoading()` is not TanStack's and was tearing pages down mid-refetch, a dropped unknown-game-type guard, and `display: inline` component hosts eating every `space-y-*` gap.** |
 | 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
@@ -114,7 +114,7 @@ could not be followed as written. One row per deviation.
 | 3.6 | PLAN.md §2 sanctioned hand-rolling **the heatmap** only | Both charts are hand-drawn; only the curve interpolator comes from a library | Follows from the same reasoning as the chart decision above, but goes beyond what the plan authorised, so it is recorded. |
 | 3.6 | React rendered recharts' `.recharts-legend-item` `<span>`s | `<ul>/<li>/<button aria-pressed>` -- real controls | A keyboard user can now toggle a series, which they could not before. Verified safe: **no spec in `e2e/` references a legend, a chart, or `recharts`**, and none uses `getByRole("img")`. |
 | 3.6 | React had no accessible name on the interval select or the chart SVGs | `aria-label="Chart interval"` and an `ariaLabel` on each `<svg role="img">` | Two names React does not have. Same class of change as Phase 0's nine names; same verification as the legend row. |
-| 3.6 | React's heatmap tooltip was a hover card on a div grid | A `<title>` element | Makes the cells reachable by screen reader, which React's div grid was not. Visual output unchanged. |
+| 3.6 | ~~React's heatmap tooltip was a hover card on a div grid~~ / ~~A `<title>` element~~ | **Withdrawn by the consolidated verifier: this deviation does not exist.** Both halves of the row are false and the shipped code is a faithful port. | React's `ActivityHeatmap.tsx` is **not** a div grid -- it is `<div class="relative"><svg>…<rect>…</svg><div>(tooltip)</div></div>`, and Angular's `activity-heatmap.component.html` is the same shape. Angular renders **zero** `<title>` elements anywhere on `/dashboard` (React renders 4, in recharts); the heatmap tooltip is an absolutely-positioned `<div>` driven by `(mousemove)`, exactly as in React. Driven live against a seeded 10-entry account, both apps report **369 cells, 10 filled, an identical 1036x151.6 box and the identical tooltip string "1 game on Sun, Aug 16, 2026"**. So there is no behaviour change to record -- and, importantly, **no accessibility improvement either**: the cells are bare `<rect>`s under one `role="img"` `aria-label` in both apps. A later phase wanting them screen-reader-reachable still has that work to do. |
 | 3.6 | React's `TeacherDashboard` passed `<Button asChild>` | The bug is **reproduced on purpose**: a `<button>` wrapping an `<a>` | `asChild` was never honoured, so React shipped that markup and the baselines were captured from it. Flagged for whoever cleans up the kit. |
 | 3.6 | React's `PerformanceChart` used a discriminated union (`isTeacher: true` => `viewMode` required) | Two independent inputs with defaults | Runtime behaviour is identical; the compile-time guarantee is gone. Recorded as a real loss, not a wash. |
 | 3.5 | Packet: port `AssignmentPlayPage.test` | Ported as `models/game-definitions.spec.ts`, and the page got a **new** spec | R5. That file does not test the page despite its name -- it tests `GENERIC_GAME_DEFINITIONS`. React has no component test for the page; 5 were written. |
@@ -925,6 +925,326 @@ between them should know both are load-bearing where they sit.
   frontend-react/` is **empty**, and so is `git log` over those paths.
 - **No `npm install` surprises**: 3.5 adds no dependency. `package.json` is
   untouched by the merge.
+
+---
+
+### Verifier notes (Phase 3, consolidated, 2026-08-20) — Phase 3 is `done`
+
+Every exit criterion in `phase-3.md` passes. Nothing below is taken from a
+handoff or an integration note; all of it was run here, on this checkout, on
+`:4200` (`/proc/302685/cwd` confirmed to be `frontend/`, per Phase 4's env
+note), against the Go service on `:5001` and the Python service on `:8000`.
+The working tree was clean before and after.
+
+**Gates.** `npm run build` / `lint` / `test:run` / `format:check` all exit 0 —
+**394 tests in 49 files**, the ledger's number exactly. The build emits no
+warnings.
+
+**TanStack.** `grep -ri "tanstack\|useQuery\|queryClient" src/` returns **9**
+matches, up from the 5 the four-merge note recorded (3.5 added four). Checked
+mechanically rather than by eye — each hit's own line was re-read and every
+one begins `*`, `//` or `/*`: **zero non-comment hits.** The criterion passes;
+the grep still cannot tell prose from code, and the standing advice to tighten
+the pattern rather than edit the comments stands.
+
+**Parity suite, unmodified — 33 / 34.** `navigation.spec.ts` **21/21**,
+`auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4**,
+`classes.spec.ts` **3/4**, in one run. The single failure is test 4, and its
+captured snapshot was read rather than assumed: it shows the nav, the "Back to
+assignments" link, a level-1 heading reading **"Key Signature practice"** and
+the sentence "This assignment is ready to play. The Key Signature game is not
+available in this build yet." The route, the resource, the assignment lookup,
+the game-type resolution and the handoff to `<app-assignment-game-host>` all
+work; the timeout is on `getByRole("button", { name: "C" })`. **A missing
+answer pad, not a plumbing error. Phase 5's.**
+
+**Phase 5/6 specs, run only to attribute their failures.**
+`settings.spec.ts` + `games.spec.ts`: **9 failed**. Every failure is at a game
+screen — six waiting on `getByRole("button", { name: "Settings" })` or
+`{ name: "notes" }` (the games' own settings controls), one on the music
+staff. **Not one failure is at a CRUD screen**, so none is a Phase 3 finding.
+
+**Live end-to-end, fresh throwaway accounts, driven through the UI.** Seven
+flows, all green, **zero console and zero page errors across the whole run**:
+teacher registers → creates "LiveClass-…" → the detail page shows its real
+join code `M83F2N` (asserted against the code read back from the Go API, not
+against a regex guess); student registers → joins with that code → sees the
+class; the teacher's roster then shows **"Stan Studently — Joined Aug 20,
+2026"** and the assignment; assignment play reaches the **"Key Signature
+practice"** stub; the friends flow searches "Fran", adds Fran Friendly and the
+panel shows her; `/profile` renders the student's real name, email and role and
+`/account` its real email; `/dashboard` renders. One documented wrinkle: the
+student's assignment list does not refresh in place after joining a class, so
+the flow reloads — which is what `classes.spec.ts` does and what
+`student-assignments-list.component.ts` documents. React was *worse* here
+(TanStack cached it until the next page load); nothing to fix.
+
+#### The recorded harness gap, closed: charts with real data
+
+3.6 §5.3 recorded that **no screenshot in any phase had ever exercised a chart
+that draws a line**, because every baseline student has zero games. Closed
+here. Ten entries were POSTed through the real `POST /api/note-game/entry`
+(honouring both DTO quirks — `correct_questions` > 0, `notes_per_minute` <=
+127), then their `created_date` was spread across ten consecutive days
+directly in Postgres. The API has no backdating path; `database/queries/
+seeders.sql` carries `CreateNoteGameEntryWithDate` for exactly this reason, so
+a direct write is the repo's own sanctioned mechanism. The same account was
+then loaded on **both** apps.
+
+**What is identical.** The line draws in both, from the same data, and the
+geometry matches to the pixel: a **28-point path** whose `d` starts
+`M40,…C76,…112,…148,…` in both, the same 972 px plot width at the same
+`x=162`, the same ten `Aug 11 … Aug 20` tick labels, the same `avg 75.0`
+reference line, the same monotone interpolation (`curveMonotoneX` *is* what
+recharts' `type="monotone"` delegates to). The heatmap is indistinguishable —
+**369 cells, 10 filled, 1036 x 151.6, identical tooltip text** — and its
+tooltip appears on hover in both. Stats tiles reflect the entries.
+
+**What differs, measured.**
+
+| | React (recharts) | Angular | 
+| - | ---------------- | ------- |
+| Y ticks | `0 30 60 90 120` | `40 60 80 100 120` |
+| Y domain | `[0,120]` (recharts anchors at 0) | `[40,120]` (`niceScale(42,118)`) |
+| Drawn line height | **171 px** | **260 px** (1.52x) |
+| Tooltip at the last point | flips left, 184 px wide, one line | does not flip, squeezed to 125 px, "Notes Per Minute" wraps onto three lines |
+
+**Judgment, recorded honestly: cosmetic-acceptable, not must-fix — but with
+the numbers, so nobody has to re-derive them.**
+
+- **F1 is real and its recorded direction is backwards.** 3.6 predicted "In
+  React the line touched the top and bottom of the plot box; here it floats
+  inside a padded box." The opposite happens: recharts' default anchors the
+  axis at **0**, `niceScale` does not, and the Angular line is therefore
+  **taller**, not flatter. 3.6's instinct that this "would change every
+  dashboard that has data" was right; its explanation was not. Corrected here.
+- **F2 does not arise on the dashboard.** `PerformanceChart` passes no
+  `yDomain`, so the fixed-domain tick divergence F2 describes has no live
+  case; the tick difference above is purely F1's consequence. Both charts
+  render exactly 5 ticks.
+- **F3 is real** and slightly worse than recorded: the tooltip does not merely
+  overhang, it re-wraps. It is **not** clipped by the viewport at 1280 (box
+  right edge 1269 of 1280), so no information is lost — it is ugly, not
+  broken.
+- **Why not must-fix.** Every packet exit criterion passes with these present;
+  the plan's own instrument carves chart interiors out of pixel parity
+  (§1, "Dynamic-content carve-out"); the data, the marks, the x-scale, the
+  reference line and the whole heatmap are faithful; and both renderings are
+  valid readings of the same numbers. Failing a phase that met every stated
+  criterion over an axis-anchoring choice would be the wrong call.
+- **Handed forward.** F1 and F3 are the two things a side-by-side reviewer
+  will notice at cutover. **Phase 7 should decide them deliberately** —
+  anchoring the auto-domain at 0 for all-non-negative series is a one-line
+  change to `yScale` in `tremolo-line-chart.component.ts:281-292` that would
+  restore recharts' default exactly, and F3 is a clamp on `tooltipPosition`
+  at `:471`. Note `tremolo-line-chart.component.spec.ts:154` **pins the
+  current tick values**, so either change breaks that spec on purpose.
+- **F5 still stands:** `performance-chart` has no spec. Not a Phase 3
+  criterion; recorded so it is not lost.
+
+#### The baseline judgment — accepted, and deliberately **not** re-captured
+
+The question handed over was whether to re-baseline the four `dashboard-*`
+shots now that Angular renders a real "Joined 20 Aug 2026" where React
+photographs "Joined Invalid Date".
+
+**The date is correct.** `GET /api/users/:id/general-info` returns
+`"created_date":"Joined 20 Aug 2026"` — already formatted, already carrying
+the word "Joined" — for an account created today, and
+`user-profile-card.component.ts:59` renders that string verbatim. React's
+`new Date(user.createdAt)` reads a field the Go service has never sent
+(`DTOs/general_user_info_dto.go` serialises six fields, and `created_at` is
+not one). So this is a React bug photographed into the baseline, and Angular
+is right.
+
+**But there is nothing to re-capture, because the baselines still pass.** All
+four `dashboard-*` shots were captured here the way `baselines.spec.ts`
+captures them and diffed against the committed PNGs:
+
+| Shot | diff | ratio | vs 0.01 threshold |
+| ---- | ---- | ----- | ----------------- |
+| `dashboard-desktop-dark` | 581 px | 0.00038 | **PASS** |
+| `dashboard-desktop-light` | 668 px | 0.00044 | **PASS** |
+| `dashboard-mobile-dark` | 1,276 px | 0.00190 | **PASS** |
+| `dashboard-mobile-light` | 1,596 px | 0.00238 | **PASS** |
+
+Decomposed into connected regions (max-channel Δ > 20, 9x9 dilation), the join
+date is one region — **95x22 at (371,172), 580-611 px** on desktop; at 390 px
+it wraps and becomes the 228x36 / 144x22+65x20 regions at y≈320-355. The only
+other regions anywhere in the four shots are the nav Moon (56 px, light only,
+0 px in dark) and 1 px of noise.
+
+**Decision: accept the improvement, change no baseline.** Re-capturing would
+spend the migration's first sanctioned baseline update on a divergence the
+harness already tolerates, and would replace a React-captured reference with an
+Angular-captured one for the *whole* dashboard — including the chart empty
+state and a throwaway account's identity — to fix a region that is not
+failing. The conservative move is to leave all 80 baselines exactly as Phase 0
+captured them and write the measurement down instead, which is what this table
+is. **`.migration/baselines/` is byte-untouched across the entire Phase 3
+range** (`git log 2dd1e3d~1..5a83341 -- frontend/e2e/
+frontend/.migration/baselines/ frontend-react/` is empty).
+
+#### Screenshot sweep — 32 of 40 Phase-3 shots inside threshold
+
+All ten Phase-3 routes x 2 viewports x 2 themes, same seeding, same helpers,
+same mask, same 0.01 threshold as `baselines.spec.ts`, but with a soft
+assertion per route so one run reports all of them.
+
+**Failing: 8, and all 8 are login and signup** — 17,433 / 17,414 px desktop
+(ratio 0.02) and 13,537 / 13,518 px mobile (0.04) for login, 16,887 / 16,866
+and 12,991 / 12,970 for signup. These reproduce **3.1's figures to the pixel**
+and are deviation 3.1/9's residual: the brass CTA fill and the `font-display`
+heading, two deliberate Phase-2 restyles newer than the baselines.
+
+**Passing: 32** — `home`, `about`, `account`, `profile`, `classes`,
+`class-detail`, `assignments`, `dashboard`, all four ways. Six of them were
+region-decomposed rather than merely trusted, and **every region resolves to a
+known**:
+
+- **3.2's lucide glyph finding — confirmed three independent ways.** The nav
+  Moon is one 23x23 region of **56 px, in light only, and exactly 0 px in
+  dark** (where the Sun is drawn) on every route that has it —
+  `(1140,20)` desktop, `(295,20)` mobile, identical position and size to the
+  baseline. `lucideSchool` on Home is a 30x30 region of 76-78 px at
+  `(131,1667)`; `lucideBrain` on About is 30x30 / ~150 px at `(233,995)`.
+  Path data only; no box moved.
+- **The seeded email**, on `account` (272x26, ~2,270 px) and `profile`
+  (239x24, ~1,550 px). This is 3.3's Finding B — the baselines bake in one
+  run's random address, which no later run reproduces. A harness limitation,
+  not a port defect, and it stays well inside threshold; the mobile shots also
+  came back at the baseline's exact dimensions (390x2046, 390x2402), so the
+  two-line-wrap dimension mismatch 3.3 feared does not bite at this length.
+- **`assignments-desktop-dark` differs by 1 pixel.** Essentially perfect.
+
+**V1 is fixed.** The mobile theme toggle no longer shifts: it is now a single
+56 px glyph-redraw region — the *same* signature as the desktop Moon, which
+has no positional component at all — where V1 measured **190 px + 72 px** with
+the toggle sitting 8 px right of its React position. What remains at mobile is
+72 px in two 26x11 bands at `(341,20)` and `(341,33)`: the hamburger's
+top and bottom edges antialiasing, which V1 itself characterised as the same
+glyph at a sub-pixel offset (18x14 → 18x16, same 108 ink px). So: **no layout
+shift anywhere in the nav at either viewport**, which is what "pixel-clean"
+was supposed to mean. Stated precisely rather than as "0 px", because it is
+not 0 px.
+
+#### The `isLoading()` standing trap — accepted, with a corrected inventory
+
+The 3.5 integration note swept the other slices and found **three**
+contingent `isLoading()` sites. **There are five.** The two it missed are both
+inside the classes feature, which the sweep treated as already-clean because
+all five resources that *call* `.reload()` gate on `status() === "loading"`:
+
+| # | Site | Gates | Reloaded today? |
+| - | ---- | ----- | --------------- |
+| 1 | `my-friends-view.component.html:49` | the friend list | no |
+| 2 | `add-friend-view.component.html:42` | the search results | no |
+| 3 | `dashboard-page.component.html:50` | the heatmap | no |
+| 4 | **`assignment-play-page.component.html:1`** | **`<app-assignment-game-host>`** | no |
+| 5 | `assignment-results-grid.component.html:11,14` | the results table + insight tiles | no |
+
+**Decision: accept the risk, do not require a guard now** — but the rationale
+is stronger than "nothing reloads them", and the inventory above is the part
+that was missing.
+
+- Sites 1-3 gate **leaf subtrees only**. `app-friend-card` and
+  `app-activity-heatmap` own no `rxResource` (checked: neither appears in the
+  15 `rxResource` call sites). So even with a `.reload()` added, the worst
+  outcome there is a spinner flicker during refetch — not 3.5's defect, which
+  was a *parent* tearing down *fetching children* and cancelling their
+  requests.
+- **Site 4 is the one that matters, and it is Phase 5's first file.**
+  `assignment-play-page.component.html:1` gates the entire
+  `<app-assignment-game-host>` subtree on `assignments.isLoading()`. That is
+  exactly the shape 3.5 fixed, sitting in front of the component Phase 5 is
+  about to fill with game state and fetches. It is safe today only because
+  nothing reloads `assignments` — and "reload the assignment after an attempt
+  is saved" is a natural thing for Phase 5 to add.
+
+**So, as a requirement on Phases 5 and 6 rather than a fix for Phase 3:**
+adding a `.reload()` to any of the five resources above obliges you to switch
+that template to `status() === "loading"` in the same commit. If a builder
+wants it pinned mechanically, the cheap version is a spec asserting those five
+templates key on `status()`; nothing enforces it today. Recorded rather than
+built, because the defect does not exist yet and inventing a guard for it is
+not a verifier's change to make.
+
+#### Policy checks
+
+- **`rxResource` on every fetch-displaying page.** 15 call sites across 
+  friends (`my-friends-view`, `add-friend-view`), dashboard, sheet-music,
+  google-callback, `user.service`, `classes.service` and nine classes
+  components. `account` and `profile` carry `rxResource` only in a *comment*
+  saying they deliberately have none — which matches deviation 3.3/1 and is
+  true: neither page fetches, and the live run confirms both render straight
+  off `AuthStore`.
+- **No caching or dedup.** `shareReplay` appears as code in exactly one file,
+  `refresh.interceptor.ts` (D6's sanctioned request dedup); the two other hits
+  are doc comments, one of which says there isn't one.
+- **§5.6 hygiene, clean.** No `@NgModule`. No `zone.js` (`npm ls zone.js`
+  empty). No stored `Subscription` field, no `.unsubscribe()`, no
+  `takeUntil(destroy$)` — the only `takeUntil*` hits are `takeUntilDestroyed`,
+  the sanctioned API, in `toast-item` and `clipboard.service`. The one real
+  `ngOnDestroy` in `src/` is `SheetMusicComponent`'s, which §5.6 names as the
+  legitimate non-RxJS case.
+- **The two host-`display` conventions are disjoint — confirmed by
+  enumeration, not assertion.** `:host { display: block }` in styles: **11**
+  components, all in `features/classes` (3.5's). `host: { class: "block" }`:
+  **8** — both charts, five dashboard components, and the kit's `select`
+  (3.6's plus Phase 2's). `display: contents`: **15**, the kit parts, both
+  dialogs, the friends views and both sheet-music components. **No component
+  is claimed by two.** Both spellings stay load-bearing where they sit.
+
+#### Deviation spot-checks (8, across five slices)
+
+1. **3.3's four dead endpoints — all four re-probed live, not two.**
+   `PATCH /api/users/:id` → **404**, `POST /api/users/:id/change-password` →
+   **404**, `DELETE /api/users/:id` → **404**,
+   `GET /api/users/:id/data-export` → **404**, with
+   `GET /api/users/:id/general-info` → **200** as the control, all on a real
+   token. Dropping the four methods was correct.
+2. **3.5's unknown-game-type guard — mutation-tested.** Neutering
+   `isKnownGameType` in `game-definitions.ts:73` fails **exactly 2 tests, one
+   in each of its two specs**, and nothing else (13 still pass):
+   `game-definitions.spec.ts` → "expected true to be false", and
+   `assignment-play-page.component.spec.ts` →
+   `expected ' Back to assignments   practice  This…' to contain 'Assignment
+   not found'`. That second message *is* the bug the guard prevents — the
+   heading rendering as a bare `" practice"`. Restored; `git diff` empty.
+3. **3.2's lucide glyph finding — holds**, measured three ways above (Moon,
+   School, Brain), plus the reveal-toggle eye that Phase 4's verifier cleared.
+   Light-only, 0 px in dark, no box moved.
+4. **3.4's friends-store disposition — holds.** `friends.store.ts` holds
+   `isPanelOpen` and `searchQuery` and nothing else; the server data lives in
+   `rxResource` on the two views. Exactly "both at once: no *new* store, and
+   Phase 2's `FriendsUiStore` stays".
+5. **3.6's legend-as-real-controls — holds.** The legend is
+   `<ul>/<li>/<button [attr.aria-pressed]>`, not recharts' `<span>`s.
+6. **3.6's two new accessible names — hold.** `ariaLabel="Chart interval"` on
+   the interval select and `ariaLabel="Performance over time"` on the chart
+   `<svg role="img">`. Names React does not have.
+7. **3.6's heatmap-`<title>` row — does NOT hold. Withdrawn above**; it is the
+   one deviation in the table that describes a change nobody made. The code is
+   fine; the ledger was wrong.
+8. **3.5's single-confirm-dialog roster — holds.** One `confirming` signal on
+   `RosterListComponent` (`:69`), one dialog, no per-row component.
+
+#### Notes for the next agent
+
+- **Both backends stayed up throughout and nothing else was listening on
+  `:4200`** — the serving process's `/proc/<pid>/cwd` was checked before any
+  live measurement was believed, per Phase 4's env note. React was served on
+  `:5173` for the side-by-side comparison.
+- **A stale scratch directory from an earlier agent's run was picked up by a
+  glob** on the first sweep attempt and silently contributed extra results.
+  If you point a Playwright `testDir` at a scratchpad, scope `testMatch` to
+  your own file or you will read someone else's numbers as yours.
+- **The seeded-history fixture is worth keeping.** The recipe is: register a
+  student, POST 8-10 entries through `/api/note-game/entry`, then
+  `update tremolo.note_game_entries set created_date = current_date -
+  interval 'N day' where id = …`. It is the only way any instrument in this
+  migration has ever seen a chart with a line in it, and Phases 5-7 will want
+  it again.
 
 ---
 
