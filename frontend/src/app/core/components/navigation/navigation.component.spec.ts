@@ -188,6 +188,46 @@ describe("NavigationComponent", () => {
 		});
 	});
 
+	/**
+	 * Phase 3's verifier finding V1. The theme toggle, the friends toggle and
+	 * the mobile-menu button are all `<app-button>`, whose host is
+	 * `display: contents` -- and `space-x-*` works by putting `margin-left`
+	 * on `> * + *`, which is that host element, where margins are ignored
+	 * (sub-feature 1's handoff 7.3). React's `<Button>` *was* the button, so
+	 * its `space-x-2` spaced them; ours silently dropped 8px per control,
+	 * worst at mobile where the account menu is hidden and the mobile-menu
+	 * button lands straight against the toggles.
+	 *
+	 * A class assertion, deliberately: this is a CSS mechanism, jsdom applies
+	 * no Tailwind, and the whole point is that no behavioural test can see
+	 * the defect.
+	 */
+	describe("the right-hand control cluster (finding V1)", () => {
+		function cluster(): HTMLElement {
+			const toggle = el().querySelector('[aria-label^="Switch to "]');
+			return toggle?.closest("app-button")?.parentElement as HTMLElement;
+		}
+
+		it("spaces its display:contents children with flex gap, not space-x", () => {
+			const classes = cluster().className.split(/\s+/);
+
+			expect(classes).toContain("flex");
+			expect(classes).toContain("gap-2");
+			expect(classes.filter((c) => c.startsWith("space-x-"))).toEqual([]);
+		});
+
+		it("holds every control whose spacing depended on it", async () => {
+			await signInAs("STUDENT");
+
+			const labels = [...cluster().querySelectorAll("[aria-label]")].map((n) =>
+				n.getAttribute("aria-label"),
+			);
+			expect(labels).toContain("Switch to light theme");
+			expect(labels).toContain("Open friends");
+			expect(labels).toContain("Open menu");
+		});
+	});
+
 	describe("mobile menu", () => {
 		it("names the action it performs and mounts its links only when open", async () => {
 			expect(byLabel("Open menu")).not.toBeNull();
