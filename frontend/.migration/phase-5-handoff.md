@@ -423,3 +423,165 @@ now passes on.
 ## 8. Ledger line for `STATE.md`
 
 > | 5 | Identification-game engine | built | 2026-08-20 | `fd84777..ab2e6ff` (this pin commit follows) | Engine redesigned as Angular/RxJS per PLAN.md §5.5–§5.7, not translated: the queue's `generationRef` is `switchMap`, its debounce a cancellable `timer` with the first emission exempt, its `inflightRef` an `exhaustMap`; constants preserved (low water 2, batch 2, 300ms). All four games playable from their routes and from an assignment; `keySignature` is a `.ts` and no JSX-shaped data is left in `games/`. build/lint/test:run/format:check all exit 0 — **439 tests in 54 files** (+45 in 5 new files). Parity, unmodified: `classes.spec.ts` **4/4** — Phase 3's single residual, closed; `navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4; `games.spec.ts` **4/6** and `settings.spec.ts` **2/3**, every residual the note game and so **Phase 6's**. Screenshots **20/20** across the four game routes and assignment-play, at two viewports and both themes, staff masked — including the four `assignment-play` shots Phase 3 recorded as failing against the deferred-game stub. 16 deviations below. `e2e/`, `.migration/baselines/` and `frontend-react/` byte-untouched. **Not to be marked `done`** — a verifier owns that. |
+
+---
+
+## 9. Fix addendum — verifier finding F1 (2026-08-21)
+
+The Phase 5 verifier held the phase at `built` on one blocking finding:
+`npm run test:run` failed about one run in four, always the same four tests
+in Phase 4's `sheet-music-display.component.spec.ts`, whose
+`vi.mock("opensheetmusicdisplay")` intermittently did not apply. This
+addendum records the root cause as it was actually established, the fix, and
+the proof. **Nothing outside test configuration changed** — no product code,
+no `e2e/`, no baselines.
+
+### The flake, reproduced first
+
+Twelve serial `npm run test:run` executions on `155650f`, nothing else
+running: **9 green, 3 red** (runs 6, 9 and 12), every failure the same four
+tests. That is the verifier's number, reproduced exactly.
+
+### Root cause
+
+Two things had to be true at once, and Phase 5 supplied the second.
+
+**1. The test runner shares one module registry per worker.**
+`@angular/build:unit-test` runs vitest with **`isolate: false`** — its own
+default, and the builder says why in
+`node_modules/@angular/build/src/builders/unit-test/runners/vitest/plugins.js`:
+
+```js
+// Default to `false` to align with the Karma/Jasmine experience.
+isolate: false,
+```
+
+Under that default, every spec file a worker picks up shares one module
+graph. A module is therefore evaluated **once per worker**, and whichever
+spec file reaches it first fixes the binding for every spec that follows it
+in that worker. A `vi.mock()` in a spec that is not first silently does
+nothing, because there is nothing left to intercept.
+
+**2. Phase 5 gave four non-mocking specs a static import of the real OSMD.**
+Deviation 11 pointed `defaultAssignmentConfig()` at each definition's own
+`defaults`, which added one line to `features/classes/models/game-definitions.ts`:
+
+```ts
+import { GAME_DEFINITIONS } from "@features/identification-game";
+```
+
+That barrel re-exports `GameStaffComponent`, which imports
+`SheetMusicComponent`, which imports `opensheetmusicdisplay`. At `f022dfd`
+(immediately pre-merge) `game-definitions.ts` imported nothing but a type,
+and the **only** spec files whose graphs reached `opensheetmusicdisplay`
+were the two that mock it. After the merge there are six:
+
+| Spec | Mocks OSMD? | How it reaches the module |
+| ---- | ----------- | ------------------------- |
+| `sheet-music.component.spec.ts` | yes | directly |
+| `sheet-music-display.component.spec.ts` | yes | via `sheet-music.component.ts` |
+| `game-definitions.spec.ts` | **no** | `game-definitions.ts` → barrel → `GameStaffComponent` |
+| `assignment-play-page.component.spec.ts` | **no** | same, via the page |
+| `class-detail-page.component.spec.ts` | **no** | same, via `class-assignments-list` |
+| `create-assignment-dialog.component.spec.ts` | **no** | same |
+
+So the outcome became a scheduling lottery: if one of the four non-mocking
+specs was the first file in that worker to touch the chain, the worker's
+single evaluation of `sheet-music.component.ts` bound the **real** library,
+and the display spec's fake was never used.
+
+### How it was proved, not inferred
+
+A temporary probe recorded, on the shared `globalThis`, the `.name` of the
+`OpenSheetMusicDisplay` binding each time `sheet-music.component.ts` was
+evaluated, and the display spec printed the array. Across six full-suite
+runs the array had **length 1 every time** — one evaluation per worker, as
+predicted — and its contents tracked the outcome exactly:
+
+```
+run 1 RED   :: [DIAG] osmd loads: ["w"]            <- minified real OSMD
+run 2 green :: [DIAG] osmd loads: ["FakeOsmd2"]
+run 3 green :: [DIAG] osmd loads: ["FakeOsmd2"]
+run 4 green :: [DIAG] osmd loads: ["FakeOsmd2"]
+run 5 green :: [DIAG] osmd loads: ["FakeOsmd2"]
+run 6 RED   :: [DIAG] osmd loads: ["w"]
+```
+
+`w` is the real library's minified class; `FakeOsmd2` is esbuild's name for
+the display spec's own fake. Red runs are exactly the runs where the real
+class won the race. The probe was reverted; `git status` is clean of it.
+
+### Two candidate fixes that were tried and rejected
+
+- **Stubbing `SheetMusicComponent`/`GameStaffComponent` in the play page's
+  TestBed.** This cannot work, and it is worth writing down so nobody tries
+  it again: a TestBed override replaces a component in a *template*, long
+  after the spec's `import` graph has been evaluated. The module — and with
+  it the real `opensheetmusicdisplay` — is loaded either way. It also would
+  have addressed only one of the four non-mocking specs.
+- **Hoisting one shared `FakeOsmd` and its `vi.mock` into `src/test-setup.ts`.**
+  Built and measured: **still red** (`1 failed | 53 passed`), and the probe
+  said why. Setup files are modules too, so under `isolate: false` the setup
+  module is cached and its body runs **once per worker** (`setup run #1`,
+  fifteen times, once per worker — never `#2`). Its `vi.mock` registration
+  is therefore live for the worker's *first* spec file only. Reverted.
+
+### The fix
+
+One line, in the test target of `angular.json`:
+
+```json
+"isolate": true,
+```
+
+This is the builder's own supported option for exactly this. With isolation
+on, each spec file gets its own module registry, so a spec's `vi.mock()`
+always applies before that spec's imports are evaluated — the race is not
+won more reliably, it no longer exists. Both sheet-music specs are left
+**byte-identical**; the fix is deliberately not spread across six spec files
+that would each have to keep agreeing with the others forever.
+
+`angular.json` cannot hold a comment, so the reasoning lives at the top of
+`src/test-setup.ts` — the file the option names — with a pointer back here.
+
+Cost, stated plainly: the suite goes from ~6s to ~9s wall clock (54 files,
+439 tests). Bought with that: determinism, and the same protection for every
+future module-level mock rather than for this one library.
+
+**Not taken (Phase 6's call, and product code, so out of scope here):**
+`game-definitions.ts` needs `GAME_DEFINITIONS`, not `GameStaffComponent`.
+Deep-importing `@features/identification-game/games` instead of the feature
+barrel would stop four specs pulling a 1 MB music engraver into jsdom at
+all. That is a real cleanup, but it narrows the blast radius rather than
+removing the hazard, and it is not what F1 asked for.
+
+### Proof
+
+**Twelve consecutive `npm run test:run` executions, serially, nothing else
+running** (no concurrent build — the verifier documented CPU contention as a
+false-failure source):
+
+| Run | Result | Run | Result |
+| --- | ------ | --- | ------ |
+| 1 | 54 files / 439 tests passed | 7 | 54 / 439 passed |
+| 2 | 54 files / 439 tests passed | 8 | 54 / 439 passed |
+| 3 | 54 files / 439 tests passed | 9 | 54 / 439 passed |
+| 4 | 54 files / 439 tests passed | 10 | 54 / 439 passed |
+| 5 | 54 files / 439 tests passed | 11 | 54 / 439 passed |
+| 6 | 54 files / 439 tests passed | 12 | 54 / 439 passed |
+
+**12 green in 12.** Three further runs were re-run capturing `npm`'s own
+exit status rather than the pipeline's: `exit=0`, `exit=0`, `exit=0`.
+
+Single files, in isolation, three times each:
+`sheet-music-display.component.spec.ts` **5/5, 5/5, 5/5**;
+`assignment-play-page.component.spec.ts` **6/6, 6/6, 6/6**.
+
+Gates: `npm run build`, `npm run lint` and `npm run format:check` all exit
+0. Test count is unchanged at **439 in 54 files** — this fix adds no test
+and deletes none. An `--isolate` run also emits **zero** `stderr` blocks,
+where a red run under the old default emitted real-OSMD XHR failures and
+`NG0953` warnings.
+
+No E2E was run: this is a unit-test determinism fix and it touches nothing
+the browser sees.
