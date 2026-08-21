@@ -37,6 +37,11 @@ import { ClassesService } from "../../services/classes.service";
 	selector: "app-attempt-drilldown",
 	imports: [AppErrorComponent, NgIcon],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	template: `
 		<div class="rounded-lg bg-muted/30 px-2 py-3">
 			@if (attempts.isLoading()) {

@@ -96,6 +96,11 @@ export type CreateAssignmentFormData = z.infer<typeof createAssignmentSchema>;
 		...DIALOG_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: contents;
+		}
+	`,
 	templateUrl: "./create-assignment-dialog.component.html",
 })
 export class CreateAssignmentDialogComponent {

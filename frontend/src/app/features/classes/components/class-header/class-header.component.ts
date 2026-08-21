@@ -37,6 +37,17 @@ import { ClassesService } from "../../services/classes.service";
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	// React rendered this card's <div> straight into the page stack; Angular
+	// interposes an <app-class-header> that React never had, and an unstyled
+	// custom element is `display: inline` -- where vertical margins simply do
+	// not apply. That silently ate the `space-y-6` between every card on
+	// /classes/:id and /assignments. Same family as sub-feature 1's handoff
+	// 7.3; every stacked component in this feature carries this.
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	providers: [ClipboardService],
 	templateUrl: "./class-header.component.html",
 })

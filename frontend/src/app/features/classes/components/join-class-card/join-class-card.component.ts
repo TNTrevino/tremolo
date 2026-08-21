@@ -57,6 +57,11 @@ export type JoinClassFormData = z.infer<typeof joinClassSchema>;
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	templateUrl: "./join-class-card.component.html",
 })
 export class JoinClassCardComponent {

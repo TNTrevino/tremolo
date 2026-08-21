@@ -54,6 +54,11 @@ export function computeClassInsightStats(
 	selector: "app-class-insight-tiles",
 	imports: [SkeletonDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	template: `
 		@if (isLoading()) {
 			<div class="flex gap-6 px-1 pb-3">

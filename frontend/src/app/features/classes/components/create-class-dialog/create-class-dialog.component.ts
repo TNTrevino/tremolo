@@ -54,6 +54,11 @@ export type CreateClassFormData = z.infer<typeof createClassSchema>;
 		...DIALOG_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: contents;
+		}
+	`,
 	templateUrl: "./create-class-dialog.component.html",
 })
 export class CreateClassDialogComponent {

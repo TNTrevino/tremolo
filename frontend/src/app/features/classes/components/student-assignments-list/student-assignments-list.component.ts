@@ -29,6 +29,11 @@ import { AssignmentCardComponent } from "../assignment-card/assignment-card.comp
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	template: `
 		<div appCard>
 			<div appCardHeader>

@@ -37,6 +37,11 @@ import type { AssignmentLaunch } from "../../models/assignment-launch";
 	selector: "app-assignment-game-host",
 	imports: [],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	template: `
 		<div
 			class="flex h-full flex-col items-center justify-center gap-2 px-4 text-center"

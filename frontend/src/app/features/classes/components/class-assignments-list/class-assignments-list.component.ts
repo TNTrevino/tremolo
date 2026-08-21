@@ -50,6 +50,11 @@ import { CreateAssignmentDialogComponent } from "../create-assignment-dialog/cre
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	templateUrl: "./class-assignments-list.component.html",
 })
 export class ClassAssignmentsListComponent {

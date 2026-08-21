@@ -44,6 +44,11 @@ import { ClassesService } from "../../services/classes.service";
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	templateUrl: "./roster-list.component.html",
 })
 export class RosterListComponent {

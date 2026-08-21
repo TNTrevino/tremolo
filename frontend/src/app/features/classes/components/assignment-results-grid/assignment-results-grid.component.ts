@@ -43,6 +43,11 @@ const COLS = "grid grid-cols-[1.6fr_repeat(4,1fr)] gap-2 items-center";
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	templateUrl: "./assignment-results-grid.component.html",
 })
 export class AssignmentResultsGridComponent {

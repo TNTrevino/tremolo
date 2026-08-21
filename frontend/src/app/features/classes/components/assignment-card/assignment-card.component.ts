@@ -50,6 +50,11 @@ function formatDueDate(dueAt: string | null): string | null {
 	selector: "app-assignment-card",
 	imports: [ButtonComponent, RouterLink],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	template: `
 		<div
 			class="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent/50"

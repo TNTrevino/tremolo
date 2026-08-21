@@ -29,6 +29,11 @@ import type { Class } from "../../models/classes.models";
 	selector: "app-class-card",
 	imports: [ButtonComponent, NgIcon, RouterLink, ...CARD_DIRECTIVES],
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	styles: `
+		:host {
+			display: block;
+		}
+	`,
 	providers: [ClipboardService],
 	templateUrl: "./class-card.component.html",
 })
