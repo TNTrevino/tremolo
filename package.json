@@ -1,8 +1,0 @@
-{
-  "name": "sight-reading-app",
-  "version": "1.0.0",
-  "private": true,
-  "devDependencies": {
-    "lint-staged": "^16.2.4"
-  }
-}
