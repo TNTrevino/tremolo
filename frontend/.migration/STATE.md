@@ -11,7 +11,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 1     | Core plumbing              | done    | 2026-08-20 | `fc19c37..5d82d9d` | HTTP, auth, guards, 20 routes; login wired end to end. 8 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20: build/lint/test:run/format:check all exit 0 (27 tests, 8 files); all 20 paths navigate with **zero** console errors as anonymous, student and teacher; login persists across reload and clears on logout; dedup and `finalize` both mutation-tested. One verifier note below. |
 | 2     | Shared UI kit              | done    | 2026-08-20 | `6de4be4..df5677f` | 9 UI primitives + 5 form components + nav, toast, theme store, icons, `/dev/kit`. 15 deviations below; the range's last commit is this ledger entry's own doc commit. Verified 2026-08-20 (held at `built` on finding F1, then re-verified): **F1 verified fixed** -- logout on `/dashboard` lands on `/login` with `tremolo-auth` cleared, logout on `/about` stays put, and Back after the bounce redirects to `/login` rather than re-rendering the guarded page. All seven signed-in-only routes carry `runGuardsAndResolvers: "always"`; the guest/public routes do not. `app.routes.spec.ts` mutation-tested independently. build/lint/test:run/format:check all exit 0 (109 tests, 17 files). See the re-verification note below. |
 | 3     | CRUD features              | built (3.1) | 2026-08-20 | `2dd1e3d..` (3.1) | **Sub-feature 1 (auth screens) only** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** Sub-features 2-6 not started. |
-| 4     | Sheet music / OSMD         | built   | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. |
+| 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
 | 5     | Identification-game engine | pending | —    | —       |       |
 | 6     | Note game                  | pending | —    | —       |       |
 | 7     | Cutover                    | pending | —    | —       |       |
@@ -494,7 +494,179 @@ against the merged branch. `important: "html"` is a global cascade change
 that landed on a branch whose baselines were last diffed without it, and
 Phase 4's 8/8 and 12/12 numbers were measured on separate bases. The nav's
 `space-x-2` mobile shift (V1 above) is also still open, and sub-feature 4
-owns it.
+owns it. **All of this is closed by the verification below, except V1, which
+sub-feature 4 still owns.**
+
+### Verifier notes (Phase 4, 2026-08-20) — Phase 4 is `done`
+
+Verified on the **integrated** branch at `1e1fc5e`, not on Phase 4's own
+base. Nothing below is taken from `phase-4-handoff.md`; every number was
+re-measured here, because the handoff's were measured at `24a3bba`.
+
+**Gates.** `npm run build` / `lint` / `test:run` / `format:check` all exit 0,
+**183 tests in 25 files**. The build emits **no warnings** — the
+`allowedCommonJsDependencies` entry (deviation 14) is doing its job.
+
+**Live, against the Python service on :8000** (`ng serve` on `:4300` from
+this checkout; the serving process's `/proc/<pid>/cwd` was confirmed to be
+`frontend/`, not a worktree). `/sheet-music`, Bb Major → **Generate Mary**:
+
+| Generation | Request body | `<svg>` |
+| ---------- | ------------ | ------- |
+| 1 (Mary)   | `{"tonic":"B-","octave":4}` | `908 × 318`, laid-out box `908 × 318` |
+| 2 (16th rhythm) | `{"rhythm":"112","rhythmType":16,"tonic":"B-"}` | `908 × 318` |
+| 3 (Mary)   | `{"tonic":"B-","octave":4}` | `908 × 318` |
+
+So the boundary really converts on the wire (`"Bb"` in the UI's option list,
+`"B-"` in the POST body) and **no generation ships a `width="0"` staff** —
+the F1 case React loses twice in three.
+
+- **Error path, from a clean page:** a 400 from `/mary` renders
+  **"Error: The note Cannot make a step out of 'Z' is not currently
+  supported, reconsider you root note"** — the service's own body, verbatim —
+  with "Please try again with different options" beneath it, and **no staff
+  container in the DOM at all**. A good generation from that same page then
+  recovers to `908 × 318`.
+- **`/convert`:** a real `/mary` response uploaded as a file shows
+  "Uploaded: mary.musicxml" and draws at `780 × 318`. XML that passes the
+  page's own checks and fails OSMD's parser shows the error panel —
+  **"Failed to render sheet music: given music sheet was incomplete or could
+  not be loaded."** — and again no staff, not a blank one.
+- **`/dev/kit`:** `zoom` 1 → 2.2 grows the drawn staff `318px` → `699.6px`
+  with **zero navigations** (no reload, no refetch); `clear()` takes the SVG
+  from 3 children to 0 and leaves the OSMD shell; broken XML sets both the
+  status output and the `error` signal.
+- Every console error across the whole run (5) was a deliberately triggered
+  error path. Zero unexpected console or page errors.
+
+**Mapper leak.** `grep -rE '"[A-G]-"|Music21NoteName|music21' src/` returns
+`music.mapper.ts`, `music.mapper.spec.ts`, `music.service.ts`,
+`music.service.spec.ts`, and four doc comments. No `-` spelling reaches a
+component or a template. `music.mapper.spec.ts` run alone: **7/7**.
+
+**The open risk — screenshot sweep on the merged branch. Closed.** All four
+routes with real content, 2 viewports × 2 themes, full page, staff masked,
+against `.migration/baselines/`, then every diff decomposed into connected
+regions (threshold: max-channel Δ > 20, 9×9 dilation). Captured twice, on two
+different ports, byte-identical both times.
+
+| Route | Desktop light | Desktop dark | Mobile light | Mobile dark |
+| ----- | ------------- | ------------ | ------------ | ----------- |
+| `/sheet-music` | 56 px | **0 px** | 297 px | 272 px |
+| `/convert`     | 56 px | **0 px** | 297 px | 272 px |
+| `/login`       | 19,610 px | 19,545 px | 15,891 px | 15,857 px |
+| `/signup`      | 19,315 px | 19,279 px | 15,596 px | 15,591 px |
+
+Every region resolves to a known:
+
+- **Phase 4's own two routes are pixel-clean.** Desktop dark is **exactly
+  zero**; desktop light differs only by the nav moon (below); mobile only by
+  the nav. Nothing on either page body moved. This is the direct evidence
+  that `important: "html"` restored React's cascade rather than inventing a
+  new one.
+- **Nav moon**, desktop light, 56 px, one 23×23 region. Ink box is
+  `(1142,23)-(1160,41)`, **18×18 and identical in position and size** to the
+  baseline; 114 → 111 ink px. A glyph redraw by the newer lucide in
+  `@ng-icons` (3.2's known), not a size or position change. Dark theme shows
+  the Sun instead and diffs **0 px**.
+- **Mobile nav**, 272–297 px in three regions: the theme toggle 18×18 sitting
+  **8 px right** (`(297,23)` → `(305,23)`) and the hamburger at the same x
+  going 18×14 → 18×16 with the **same 108 ink px**. That is V1 exactly —
+  Phase 2's `space-x-2` on a `display: contents` host. **Still sub-feature
+  4's.**
+- **`/login` and `/signup`:** the brass CTA fill (404×52, ~17.2k px desktop /
+  314×52, ~13.1k px mobile) and the `font-display` heading (~293×32, ~2.3k
+  px) — the two deliberate DESIGN.md restyles, unchanged in size from 3.1's
+  measurement.
+- One region 3.1's sweep did not name, checked and cleared: an **8–11 px**
+  region per password field (one on `/login`, two on `/signup`, at
+  `(811,493)-(825,503)` and friends). Ink box is **14×10 in both baseline and
+  actual, same position**, 80 → 81 / 77 → 74 ink px. It is the reveal-toggle
+  eye — the same lucide glyph-redraw class as the moon, not a layout or size
+  change.
+
+**No region anywhere in the sweep falls outside those knowns.**
+
+**E2E on the merged branch, unmodified specs, `E2E_BASE_URL=…:4300`.**
+`navigation.spec.ts` **21/21**. `auth.spec.ts` **4/5** — the one failure is
+`signs in and lands on the dashboard`, waiting on the signed-in user's full
+name, which sub-feature 6 owns. Exactly the expected split.
+
+**`SheetMusicComponent` API contract — matches the handoff §3 document
+exactly.** Selector, `display: contents` host, all four inputs with their
+declared types and defaults (`zoom` 1, `options` undefined, `ariaLabel`
+`"Sheet music display"`, `containerClass` `""`), both outputs
+(`renderComplete: void`, `renderError: Error`), and all five public members
+(`loadAndRender` returning `Promise<void>` and never rejecting — the `catch`
+records and emits, the `finally` clears `isLoading`; `clear()` resetting
+`error` and **not** touching `isLoading`; `isLoading` / `error` as readonly
+signals; `instance` a getter, null until the first `loadAndRender`). No
+drift. `SheetMusicDisplayComponent` matches §3's short form too: `musicXml`
+required, `className`, both outputs, no `zoom` passthrough. **Phases 5 and 6
+may build against the document as written.**
+
+**Zoneless honesty.** No `detectChanges`, `ApplicationRef.tick` or
+`markForCheck` anywhere outside tests — in fact nowhere in `src/` at all. The
+ResizeObserver fix is genuinely one-shot: the callback returns early while
+`clientWidth` is 0, and otherwise calls `stopWatchingVisibility()`
+(`disconnect()` + null) **before** re-rendering, so it never re-arms;
+`watchVisibility()` also refuses to create a second observer, and both
+`clear()` and `ngOnDestroy` tear it down.
+
+**Deviation spot-checks (8 of 16).**
+
+1. **Deviation 8 (ResizeObserver / F1) — the React race is real, in React's
+   own code.** `frontend-react/.../SheetMusicDisplay.tsx:120` puts `hidden`
+   on the container while `isLoading`, and `useOSMD.ts` sets `isLoading` true
+   at :128 then calls `osmd.render()` at :144 *inside* `load().then(...)`,
+   settling `isLoading` only at :157. So whether OSMD measures a laid-out box
+   depends on which promise resolves first. Confirmed by reading; the Angular
+   side's three-generation run above shows the fix holding.
+2. **The amended icon-sizing row (3.1 dev. 6) — the amendment is correct and
+   the original rationale was wrong.** `@ng-icons/core`'s compiled component
+   declares `host: { properties: { "style.--ng-icon__size": "size()" } }` and
+   a stylesheet of `:host{display:inline-block;width:var(--ng-icon__size,1em);
+   height:var(--ng-icon__size,1em)…}`. So `size=` writes **only the custom
+   property** inline; the `width`/`height` reading it are a `[_nghost-…]`
+   rule at (0,1,0), which `important: "html"`'s `html .h-6` (0,1,1) beats.
+   The `:root ng-icon` display rule is (0,1,1) for the same reason and does
+   outrank `[_nghost-…]`. Both mechanisms are live, as the row says.
+3. **Deviation 3 (page holds UI spelling) — holds.** `SCALES` in
+   `sheet-music-page.component.ts` is `{ label: "Bb Major", tonic: "Bb" }`;
+   the `"B-"` appears only on the wire, as the live run shows.
+4. **Deviation 5 (two endpoints only) — holds.** `music.service.ts` posts
+   `/mary` and `/random` and nothing else.
+5. **Deviation 11 (`flex flex-col gap-2`) — holds.** All three button columns
+   on `/sheet-music` use it; no `space-y-*` around a kit component on that
+   page. Corroborated by the page's 0 px desktop-dark diff.
+6. **Deviation 12 (file-input name) — holds.** `aria-label="Select a MusicXML
+   file"` is on `/convert`'s `input[type="file"]`.
+7. **Deviation 14 (CommonJS) — holds.** `angular.json` carries
+   `"allowedCommonJsDependencies": ["opensheetmusicdisplay"]` and the build
+   is warning-free.
+8. **Deviation 15 (`/dev/kit` OSMD section) — holds.** Load / Load broken XML
+   / Clear / zoom select all present and all four exercised live above.
+
+**Hygiene.** `shareReplay` still only in `refresh.interceptor.ts` (D6). No
+`@NgModule`, no `zone.js` (`npm ls zone.js` → empty), no stored
+`Subscription`, no `takeUntil`. The only `ngOnDestroy` in `src/` is
+`SheetMusicComponent`'s, which PLAN.md §5.6 names as the legitimate case, and
+there is no subscription in that file. `git log 7131492..1e1fc5e --
+frontend/e2e/ frontend/.migration/baselines/ frontend-react/` is **empty**,
+and the working tree was clean before and after this verification.
+
+**Env note for the next agent — the port locks are not honoured by everyone.**
+`/tmp/tremolo-port-4300.lock` was held by this verifier from 18:30, yet a
+parallel worktree's `ng serve` bound `:4300` at 18:35 the moment this one
+exited, and an E2E run went silently against *that* build (it reported
+`auth.spec.ts` 5/5, which is not this branch's number). **Before trusting any
+live measurement, read `/proc/<pid>/cwd` for whatever is listening on your
+port** — `ss -lntp | grep :<port>`. Both backends' `ALLOWED_ORIGINS` still
+cover only `:5173`, `:4200`, `:4300`, so a fourth port is not an escape
+hatch: an origin outside those three gets no
+`Access-Control-Allow-Origin` from either service (verified against both
+on :8000 and :5001). A port not in the list is still fine for a
+screenshot-only run, which needs no backend.
 
 ---
 
