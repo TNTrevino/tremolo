@@ -7,10 +7,8 @@ import {
 } from "@angular/core";
 import { Subject } from "rxjs";
 
-import {
-	GameStateService,
-	type GameStats,
-} from "@features/identification-game";
+import type { GameStats } from "@features/identification-game/data";
+import { GameStateService } from "@features/identification-game";
 
 import { buildKeyToNoteMap } from "../models/keymap";
 import {

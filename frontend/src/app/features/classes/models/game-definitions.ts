@@ -1,9 +1,9 @@
-// Deep-imported rather than taken from the feature barrel: the barrel
+// From the data-only entry point, not the feature barrel: the barrel
 // re-exports `GameStaffComponent`, which reaches `opensheetmusicdisplay`, and
 // this module is read by four class specs that have no business loading a
-// 1 MB engraver into jsdom. That is Phase 5's F1 addendum, §9 "not taken" --
-// taken here. `games/index.ts` is definitions only.
-import { GAME_DEFINITIONS } from "@features/identification-game/games";
+// 1 MB engraver into jsdom. `frontend/CLAUDE.md`, "Barrel vs data entry
+// point".
+import { GAME_DEFINITIONS } from "@features/identification-game/data";
 import {
 	NOTE_GAME_DEFAULTS,
 	toNoteAssignmentConfig,

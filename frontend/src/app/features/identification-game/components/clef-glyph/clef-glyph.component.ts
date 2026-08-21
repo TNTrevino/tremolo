@@ -7,6 +7,8 @@ import {
 
 import type { StaffClef } from "@shared/models/music.models";
 
+import { CLEF_LABELS, CLEF_UNICODE } from "../../game.utils";
+
 /**
  * A clef drawn on a mini five-line staff, for settings chips and pickers.
  *
@@ -15,31 +17,11 @@ import type { StaffClef } from "@shared/models/music.models";
  * The SVG geometry is unchanged; only the layout tables move from module
  * scope in a `.tsx` to module scope in a `.ts`.
  *
- * `CLEF_LABELS` and `CLEF_UNICODE` are exported from here and re-exported
- * by the feature barrel, exactly as React did. **Phase 6 imports them from
- * `@features/identification-game`; nothing redeclares them.**
+ * `CLEF_LABELS` and `CLEF_UNICODE` used to live here. Phase 7 moved them to
+ * `game.utils.ts` so that a caller wanting a clef *string* -- the note
+ * game's staff-range picker does -- can take it from `data.ts` without
+ * loading an Angular component. Same values, same single declaration.
  */
-
-export const CLEF_LABELS: Record<StaffClef, string> = {
-	treble: "Treble Clef",
-	bass: "Bass Clef",
-	alto: "Alto Clef",
-	tenor: "Tenor Clef",
-	soprano: "Soprano Clef",
-	mezzo_soprano: "Mezzo-soprano Clef",
-	baritone: "Baritone Clef",
-};
-
-/** Unicode codepoint per clef (shared by other staff renderers). */
-export const CLEF_UNICODE: Record<StaffClef, string> = {
-	treble: "\u{1D11E}",
-	bass: "\u{1D122}",
-	alto: "\u{1D121}",
-	tenor: "\u{1D121}",
-	soprano: "\u{1D121}",
-	mezzo_soprano: "\u{1D121}",
-	baritone: "\u{1D122}",
-};
 
 // Which staff line (0 = bottom) each clef centers on, plus a per-glyph
 // font size (the three glyphs have very different metrics).

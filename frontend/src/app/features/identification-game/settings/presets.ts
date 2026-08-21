@@ -1,6 +1,6 @@
 import type { StaffClef } from "@shared/models/music.models";
 
-import { CLEF_LABELS } from "../components/clef-glyph/clef-glyph.component";
+import { CLEF_LABELS } from "../game.utils";
 import type { MultiChoiceSetting } from "../models/setting-descriptor.models";
 
 /**

@@ -10,10 +10,9 @@ import {
 import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { NgTemplateOutlet } from "@angular/common";
 
+import { GameMode, GameState } from "@features/identification-game/data";
 import {
-	GameMode,
 	GameScoreSaverService,
-	GameState,
 	GameStateService,
 	GameTimerService,
 	ScoreBarComponent,

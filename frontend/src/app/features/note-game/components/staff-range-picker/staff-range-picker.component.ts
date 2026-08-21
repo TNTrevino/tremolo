@@ -11,7 +11,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import type { RangeClef } from "../../../../shared/models/music.models";
-import { CLEF_UNICODE } from "@features/identification-game";
+import { CLEF_UNICODE } from "@features/identification-game/data";
 import {
 	BOTTOM_LINE_INDEX,
 	indexToNote,

@@ -3,28 +3,25 @@
  *
  * The note game's own settings shape, its option lists, its defaults and the
  * two mappers that cross the assignment `config` boundary. Everything the
- * engine owns comes from `@features/identification-game` -- nothing here
+ * engine owns comes from the identification-game feature -- nothing here
  * redeclares `NATURAL_NOTES`, `TIME_LIMITS` or `NOTE_LIMITS`.
  *
- * **The two engine imports below are deep rather than through the feature
- * barrel, and that is deliberate.** The barrel re-exports
- * `GameStaffComponent`, which reaches `opensheetmusicdisplay`; this module is
- * pure data and is read by `classes/models/game-definitions.ts`, so going
- * through the barrel would drag a 1 MB engraver into four class specs' jsdom
- * for a string table. That is the cleanup Phase 5's F1 addendum left open
- * (`phase-5-handoff.md` §9, "not taken"). Both targets are leaf modules that
- * import nothing themselves, and neither symbol is redeclared -- the "shared
- * constants live once" invariant is about declaration, not path.
+ * The engine import below goes to `@features/identification-game/data`, the
+ * feature's **data-only** entry point, not to its barrel: the barrel
+ * re-exports `GameStaffComponent`, which reaches `opensheetmusicdisplay`, and
+ * this module is pure data read by `classes/models/game-definitions.ts`, so
+ * the barrel would drag a 1 MB engraver into four class specs' jsdom for a
+ * string table. `frontend/CLAUDE.md`, "Barrel vs data entry point".
  */
 
 import type { RangeClef } from "../../../shared/models/music.models";
 import type { NoteGameSettingsDto } from "../../../shared/models/game.models";
 import {
 	GameMode,
+	NATURAL_NOTES,
 	type BaseGameSettings,
 	type GameStats,
-} from "@features/identification-game/models/game-state.models";
-import { NATURAL_NOTES } from "@features/identification-game/game.utils";
+} from "@features/identification-game/data";
 import { DEFAULT_RANGE } from "./range.utils";
 
 /** `GameStats` plus the note game's extra summary fields (`statsExtras`). */

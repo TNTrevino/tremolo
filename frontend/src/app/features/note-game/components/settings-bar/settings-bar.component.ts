@@ -19,7 +19,7 @@ import {
 	GameMode,
 	NOTE_LIMITS,
 	TIME_LIMITS,
-} from "@features/identification-game";
+} from "@features/identification-game/data";
 import { type GameSettings, SCALES } from "../../models/note-game.models";
 import { KeyboardBindingsDialogComponent } from "../keyboard-bindings-dialog/keyboard-bindings-dialog.component";
 import { MobileSettingsDrawerComponent } from "../mobile-settings-drawer/mobile-settings-drawer.component";

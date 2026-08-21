@@ -11,7 +11,7 @@ import { filter, fromEvent } from "rxjs";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CardDirective } from "../../../../shared/components/ui/card.directive";
 import { cn } from "../../../../shared/utils/cn";
-import { NATURAL_NOTES } from "@features/identification-game";
+import { NATURAL_NOTES } from "@features/identification-game/data";
 import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
 
 /**

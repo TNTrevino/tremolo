@@ -10,11 +10,11 @@
  */
 
 import type { RangeClef } from "../../../shared/models/music.models";
-// Deep-imported rather than taken from the feature barrel, which re-exports
-// `GameStaffComponent` and so reaches `opensheetmusicdisplay`; this module is
-// arithmetic and its spec has no business loading an engraver. See the header
-// of `note-game.models.ts`. `game.utils.ts` is a leaf and imports nothing.
-import { NATURAL_NOTES as LETTERS } from "@features/identification-game/game.utils";
+// From the data-only entry point, not the feature barrel: the barrel
+// re-exports `GameStaffComponent` and so reaches `opensheetmusicdisplay`, and
+// this module is arithmetic whose spec has no business loading an engraver.
+// `frontend/CLAUDE.md`, "Barrel vs data entry point".
+import { NATURAL_NOTES as LETTERS } from "@features/identification-game/data";
 
 /** Convert a natural note name like "F3" to its diatonic index. */
 export function noteToIndex(note: string): number {

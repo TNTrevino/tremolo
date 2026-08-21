@@ -15,7 +15,7 @@ import {
 	GameMode,
 	NOTE_LIMITS,
 	TIME_LIMITS,
-} from "@features/identification-game";
+} from "@features/identification-game/data";
 import { type GameSettings, SCALES } from "../../models/note-game.models";
 import { NoteRangeSettingComponent } from "../note-range-setting/note-range-setting.component";
 

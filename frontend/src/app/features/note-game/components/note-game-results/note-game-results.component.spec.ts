@@ -10,7 +10,7 @@ import { provideIcons } from "@ng-icons/core";
 import { environment } from "../../../../../environments/environment";
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { TREMOLO_ICONS } from "../../../../core/icons";
-import { GameMode } from "@features/identification-game";
+import { GameMode } from "@features/identification-game/data";
 import type { NoteGameStats } from "../../models/note-game.models";
 import { NoteGameResultsComponent } from "./note-game-results.component";
 
