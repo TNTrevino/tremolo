@@ -13,7 +13,7 @@ Status values: `pending` → `built` (builder finished, Verify green) → `done`
 | 3     | CRUD features              | done    | 2026-08-20 | `2dd1e3d..5a83341` (this ledger entry's own commit follows) | **Verified 2026-08-20 by the consolidated verifier -- see the notes at the end of this file.** Gates re-run green at **394/49**; parity **33/34** (`navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4, `classes` 3/4 with the residual pinned to the Phase 5 answer pad); `settings.spec.ts` + `games.spec.ts` run for attribution only -- **9 failures, every one at a game screen, none at a CRUD screen**; seven live flows driven on fresh accounts with **zero console errors**; the recorded chart gap closed with a seeded 10-day play history; **32 of 40 Phase-3 shots inside threshold**, the 8 being the pre-recorded login/signup restyle residual. The baseline, chart-fidelity and `isLoading()` decisions are recorded in the verifier notes. **All six sub-features built and merged.** 2, 3, 4 and 6 were built in parallel worktrees off three different bases and merged 2026-08-20 as `b132e0e`, `1f96692`, `de54a7d` and `99ef609`; **5 (classes) followed as `2a4f61b`**, branched from `7131492` and so carrying none of the other four merges nor Phase 4's. See the two Phase 3 integration notes below. Gates on the fully merged branch all exit 0 -- **394 tests in 49 files** (the union, not the sum: 308/38 before 3.5, whose own 232/32 contributed exactly its 86 new tests in 11 new files). Parity suite unmodified on `:4200`: `navigation.spec.ts` **21/21**, `auth.spec.ts` **5/5**, `friends-and-theme.spec.ts` **4/4** -- **30/30, held across the 3.5 merge**. `classes.spec.ts` **3/4**; test 4 reaches the assignment-play route, resolves the game type and renders the host stub, then times out looking for an answer pad -- **Phase 5's**, and the only residual. 34 further deviations below (4 from 3.2, 8 from 3.3, 8 from 3.4, 6 from 3.6, 8 from 3.5) plus 5 integration deviations. **Not to be marked `done`** -- the consolidated verifier runs next and owns that. Sub-feature 1's own entry follows. **Sub-feature 1 (auth screens)** -- login at full React parity, signup on Signal Forms + zod, Google callback + OAuth service, one-shot notices on `AuthStore`. `phase-3-subfeature-1-handoff.md` is the pattern sub-features 2-6 copy. build/lint/test:run/format:check all exit 0 (146 tests, 21 files); `navigation.spec.ts` 21/21, `auth.spec.ts` 4/5 and `friends-and-theme.spec.ts` 3/4 (both failures owned by sub-features 6 and 4, and both reproduced before this slice). 9 deviations below. **3.1 verified 2026-08-20** -- gates re-run green, parity numbers reproduced exactly, both residual failures reproduced at `24a3bba` (pre-range), live auth flows driven against the Go service, the 12-shot screenshot residual read pixel by pixel, all three §7 kit fixes confirmed and four deviations spot-checked. One non-blocking finding (V1) below. **Sub-features 2-6 are cleared to fan out.** **Sub-feature 5 (classes)** -- classes list, class detail + roster, assignments, assignment-play plumbing, 20 components, 9 `rxResource`s. build/lint/test:run/format:check all exit 0 on its own base (232 tests, 32 files, +86). `classes.spec.ts` 3/4 and screenshots 12/16 -- both residuals are the Phase 5 game behind `/assignments/:id/play`. 8 deviations below. Resumed after its first agent died with 34 files uncommitted; see handoff §2. **Three defects found and fixed (handoff §7): Angular `isLoading()` is not TanStack's and was tearing pages down mid-refetch, a dropped unknown-game-type guard, and `display: inline` component hosts eating every `space-y-*` gap.** |
 | 4     | Sheet music / OSMD         | done    | 2026-08-20 | `64fb283..ce2ff23` | OSMD wrapper + card chrome, MusicService with the notation boundary, both pages, `/dev/kit` OSMD section. 146 tests in 21 files **on its own base**; 183 in 25 on the merged branch. 8/8 baseline screenshots pass; navigation.spec 21/21 unmodified on :4300. **Three inherited defects fixed, two of them global** -- React's zero-width staff race (F1), Tailwind utilities losing to Angular component hosts so all 47 `<ng-icon>`s rendered at 1em (F2, Phase 2's), and `<ng-icon>` missing preflight's `svg` rule (F3). 16 deviations below. **Built in a parallel worktree branched off `24a3bba` (Phase 2's last commit, pre-3.1), so the range contains none of 3.1's work; merged into this branch 2026-08-20 as `dd80abe`.** See the integration note below -- 3.1 and Phase 4 fixed the same icon defect independently and the overlap was reconciled in `3e92b99`. **Verified on the integrated branch 2026-08-20** (`1e1fc5e`, not Phase 4's own base): gates green at 183/25, live against the Python service on :8000, the open screenshot risk closed route by route, E2E 21/21 + 4/5 re-measured here, and the documented `SheetMusicComponent` API diffed against the source. See the verifier notes below. |
 | 5     | Identification-game engine | done    | 2026-08-20 | `fd84777..f5e9e6a`, merged as `ff67321`; **F1 fix `3377975` + its docs `8758590`** (this ledger entry's own commit closes the range) | Engine **redesigned** as Angular/RxJS per PLAN.md §5.5-§5.7, not translated: the queue's `generationRef` is a `switchMap` on the keyed payload, its reset debounce a cancellable `timer` with the first emission exempt, its `inflightRef` an `exhaustMap`; the constants are preserved exactly (low water 2, hydrate batch 2, 300ms). All four identification games play from their own routes and from an assignment; `keySignature` is a `.ts` and no JSX-shaped data is left in `games/`. **Measured on the merged branch, not taken from the handoff:** build/lint/test:run/format:check all exit 0 -- **439 tests in 54 files** (+45 in 5 new files over Phase 3's 394/49), which reproduces the builder's own numbers exactly. Parity suite unmodified on `:4300`, own server, cwd-verified: `classes.spec.ts` **4/4** -- **Phase 3's single residual, closed and reproduced at the merge**; golden three **30/30** (`navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4); `games.spec.ts` **4/6** and `settings.spec.ts` **2/3**, and all three residuals are the note game, so **Phase 6's** -- attribution re-confirmed at the merge, including that "renders a staff on every game" iterates `/note-game` first and never reaches the four that work. 16 deviations below. The builder's screenshot sweep (**20/20**, including the four `assignment-play` shots Phase 3 recorded as failing against the deferred-game stub) is **carried over unverified** -- `baselines.spec.ts` cannot report it and the integrator did not re-run the scratch sweep; the verifier owns that. `e2e/`, `.migration/baselines/`, `frontend-react/` and `package.json` byte-identical across the merge. See the Phase 5 integration note below, and `phase-5-handoff.md` for the verbatim `GameDefinition`. **Verified 2026-08-20 on the integrated branch (`56b657f`) and HELD at `built` on one blocking finding -- see the Phase 5 verifier findings at the end of this file.** Everything in the packet's Exit criteria passes except "test exit 0": **`npm run test:run` is flaky, 9 green in 12 clean runs**, always the same four tests in Phase 4's `sheet-music-display.component.spec.ts`, whose `vi.mock("opensheetmusicdisplay")` intermittently fails to apply so the real OSMD is used. **It is Phase 5's**: the identical treatment at `f022dfd` (this branch immediately before the merge) is 8/8 green, and the spec passes 5/5 in isolation every time. F1 below. Everything else re-measured and green: the **screenshot sweep the integrator carried unverified reproduces exactly at 20/20** (four game routes + assignment-play x 2 viewports x 2 themes, staff masked *and* asserted non-empty on all 20, harness negative-controlled, baselines byte-identical after); E2E unmodified on `:4300` with a cwd-verified server -- `classes` **4/4**, golden three **30/30**, `games` **4/6**, `settings` **2/3**, all three residuals confirmed as `/note-game` **by reading a failure snapshot**; **all four games played live end to end on a fresh student with 0 loading-overlay sightings across 40 question transitions** (D8 prefetch), Game Over scoring, both save toasts truthful, and scores reaching both the database and the dashboard's Total Sessions; settings persist/rehydrate/sanitize across a reload; queue debounce and low-water and `endGame`'s idempotence each mutation-tested and each caught; the handoff's `GameDefinition` diffs **character-for-character** against `types.ts`. One non-blocking finding (**V1**): the integration deviation's `ngOnDestroy` "correction" is wrong -- there is **one**, not two, and the builder's original claim was right. **F1 fixed 2026-08-21 (`3377975`), still `built` pending re-verification -- see the builder's response at the end of this file.** Root cause was `@angular/build:unit-test`'s **`isolate: false`** default (one module registry shared by every spec a worker picks up, so the first spec to reach a module fixes its binding for all the rest) meeting Phase 5's new `game-definitions.ts` -> identification-game barrel -> `GameStaffComponent` -> `SheetMusicComponent` -> `opensheetmusicdisplay` import, which put **four non-mocking specs** into the race against the two that mock it. Proved with a probe, not inferred. Fix is one line of test config -- `"isolate": true` -- with both sheet-music specs left byte-identical and **no product code touched**; new deviation row below. **12 consecutive `npm run test:run` executions green**, 439/54 unchanged; `build`/`lint`/`format:check` still exit 0. **V1 corrected too**: deviation 5/17 is struck. **Re-verified 2026-08-20 and marked `done` — `F1 verified fixed: 8/8 deterministic`.** Eight consecutive serial `npm run test:run` executions, nothing else running, **all eight `exit 0` at 54 files / 439 tests** with zero failure lines in any log; `build`, `lint` and `format:check` each exit 0; `sheet-music-display.component.spec.ts` **5/5** and `assignment-play-page.component.spec.ts` **6/6** in isolation. The fix's entire scope across `155650f^..8758590` is four files — `angular.json` (+1 line, `"isolate": true`), `src/test-setup.ts` (+13 lines, comment only), and the two `.migration` docs — with `e2e/`, `.migration/baselines/`, `frontend-react/`, `package.json` and `package-lock.json` **all byte-identical**, exactly as the addendum claims and nothing more. The struck 5/17 row's grep truth re-confirmed. See the re-verification note at the end of this file. |
-| 6     | Note game                  | pending | —    | —       |       |
+| 6     | Note game                  | built   | 2026-08-21 | `896c1a3..44664d8`, merged as `9b5bb74`; reconciliation `96ac329`, `d1a6f4e`, `be81f62` (this ledger entry's own commit closes the range) | The note game **composes** Phase 5's engine rather than forking one, and after the merge that is literal: `NoteGameService` owns the settings, the audio and the keyboard stream and forwards everything else to `GameStateService` -- the same machine the four identification games run on. Built in a parallel worktree beside Phase 5 off `10cfbfb`, so it shipped same-semantics stand-ins for the whole engine behind one `models/engine.models.ts`; **that seam is collapsed, not carried**. Deleted in favour of Phase 5's: `engine.models.ts`, `identification-game.engine.ts`, `question-queue.ts` + `note-queue.ts`, `game-timer.service.ts`, `save-game-on-end.service.ts`, `components/score-bar/`, `components/game-over-card/` -- 11 files, 4 of them specs. `GameMode`/`GameState` reconciled to Phase 5's **TS enums** (Phase 6's const-object-plus-union reads identically at every call site but is not interchangeable in a type position, and the barrel owns them); `note-staff` draws through Phase 5's `<app-game-staff>` rather than a second port of React's `NoteGameDisplay`, which is the hand-off the Phase 5 integration note wrote to this merge. **Measured on the merged branch, not taken from the handoff:** build/lint/test:run/format:check all exit 0 -- **517 tests in 60 files**, the union after the duplicate specs came out (439/54 and 510/58 on their own bases), and **3 consecutive serial `test:run` runs at 517/60 with zero failure lines**, so Phase 5's `isolate: true` determinism held across the merge. **Parity: the complete golden suite is green for the first time in the migration -- 43/43** on `:4300`, own server, cwd-verified, specs unmodified: `navigation` 21/21, `auth` 5/5, `friends-and-theme` 4/4, `classes` 4/4, **`games` 6/6** and **`settings` 3/3**. The three residuals Phase 5 handed over are closed and nothing regressed. Screenshots: `baselines.spec.ts` still aborts each pass at `/login` (its assertion is hard), so a soft-assertion sweep of the same spec reported all 80 -- **68 pass, 12 fail, and the 12 are `login`, `signup` and `google-callback` (which redirects to login) x 2 viewports x 2 themes**, i.e. the login/signup restyle residual Phase 3.1 recorded as 12, unchanged; every game route, `assignment-play`, `/note-game` and `/` are inside threshold. Live on the running app: the note game played to Game Over **by keyboard** (8/10) and **by clicking the pad** (4/10), each saving its score, and an instrumented `AudioBufferSourceNode.start()` fired **exactly once per correct answer** with one `AudioContext` and zero decode errors; both entries reached the database and the dashboard read **total sessions: 2**; a key-signature game still plays to Game Over, so the seam did not regress. **Audio decision: the Web Audio API, no dependency** -- see the deferred-decisions row and handoff §4; `use-sound` absent from `package.json`, no dependency added. **One defect Phase 6 found by driving the real app, and three the merge found**, all below. 18 Phase 6 deviations plus 6 integration deviations. `e2e/`, `.migration/baselines/`, `frontend-react/`, `package.json` and `package-lock.json` byte-identical across the whole range. See the Phase 6 integration note at the end of this file. **Not to be marked `done`** -- a verifier owns that. |
 | 7     | Cutover                    | pending | —    | —       |       |
 
 ---
@@ -25,7 +25,7 @@ Recorded here when made, so later phases and future readers can find them.
 | Decision                           | Phase | Choice      | Rationale |
 | ---------------------------------- | ----- | ----------- | --------- |
 | Chart library (replaces recharts)  | 3     | `d3-shape@3.2.0` (curve only; marks hand-drawn in SVG) | Rejected `@swimlane/ngx-charts@25` and `ng2-charts@10` -- both pass R6 on the Angular range, but both peer `@angular/cdk`, which Phase 2 declined (its deviation 8). Weight: `d3-shape` 247 KB unpacked vs 2,292 KB and 6,235 KB. `d3-shape` declares **no peerDependencies at all**, so it cannot fail R6 on a future Angular bump -- unlike `lucide-angular` (D12) and `ngx-toastr` (D13), which already have. React's `<Line type="monotone">` *is* `curveMonotoneX` (recharts delegates to it), so the port is the same interpolation, not a lookalike. Cost, stated plainly: ~700 lines of chart code maintained in-repo. `phase-3-subfeature-6-handoff.md` §2. |
-| Audio library (replaces use-sound) | 6     | _undecided_ |           |
+| Audio library (replaces use-sound) | 6     | Web Audio API (no dependency) | `howler@2.2.4` passes R6 -- MIT, **no `peerDependencies`** (so, like `d3-shape` above, it cannot fail R6 on a future Angular bump the way `lucide-angular` and `ngx-toastr` already have), no runtime dependencies, 318 KB unpacked -- and was still declined. React's actual use is one correct-answer sound from twelve preloaded mp3s at volume 0.5, and every feature howler adds over that (sprites, spatial audio, format fallbacks, HTML5 streaming, its own autoplay shim) is unused. Two packages, since `@types/howler` ships separately, for ~60 lines of `AudioBufferSourceNode` code. The only two behaviours that mattered survive: overlapping notes (each play gets a fresh source node) and eager preloading (the twelve files are fetched eagerly and decoded lazily, so no `AudioContext` is constructed before a user gesture). `use-sound` absent from `package.json`. `phase-6-handoff.md` §4. **Measured live at the merge**: one `AudioContext`, `AudioBufferSourceNode.start()` called exactly once per correct answer (8/8 and 4/4 in two games), zero decode errors. |
 
 ---
 
@@ -147,6 +147,30 @@ could not be followed as written. One row per deviation.
 | 5 | PLAN.md §4 draws the feature as `{components,games,settings,services,models}` | Plus `game.utils.ts` and `index.ts` at the feature root | Mirrors React's own `utils.ts` and `index.ts`, and adds no folder. |
 | 5 (F1 fix) | Nothing about the unit-test runner's isolation | `"isolate": true` on the `test` target in `angular.json` | The builder defaults it to `false` "to align with the Karma/Jasmine experience", which gives every spec file in a worker **one shared module registry** — so a third-party module is evaluated once per worker and the first spec to reach it fixes the binding for all the rest. Phase 5's deviation 11 made `game-definitions.ts` import the identification-game barrel, which reaches `opensheetmusicdisplay`, so four non-mocking specs joined the two that mock it and the mock became a scheduling lottery (verifier F1). Isolation removes the race rather than winning it more often, and protects every future module-level mock. Costs ~3s on a ~6s suite. Test configuration only; no product code. `phase-5-handoff.md` §9 has the probe output and the two rejected alternatives. |
 | 5 | React's `GameOverCard` took three `ReactNode` props | Three `<ng-content select="[…]">` slots -- `[gameOverSections]`, `[gameOverSummary]`, `[gameOverActions]` | Same three seams (React's `children` / `summaryExtras` / `actions`); the note game fills them in Phase 6. |
+| 6 | Worktree rule: base on `feature/angular-migration` | The worktree came up on **bare `main` (`b2a52b7`)**; reset onto `10cfbfb` | The trap 3.4, Phase 4 and Phase 5 all hit. Recorded a **fourth** time because it is clearly systemic, not bad luck. Local `feature/angular-migration` (`10cfbfb`) was one commit *ahead* of `origin/feature/angular-migration` (`5a83341`), so resetting onto the origin ref as the prompt suggested would have silently dropped the "Phase 3 done" commit. |
+| 6 | Packet: record the audio decision in `STATE.md`'s deferred-decisions table | Recorded in `phase-6-handoff.md` §4; `STATE.md` untouched by the phase | The orchestrator made `STATE.md` read-only for that phase. The row was written out verbatim in §4 and is now in the table above, with the merge's own live measurement appended. |
+| 6 | Packet: shared constants are "imported from the identification-game barrel" | Imported from `models/engine.models.ts`, a local mirror | Phase 5 owned that barrel and was building it in parallel. Handoff §3.1 was the one-file redirect, and the merge took it -- see integration deviation 6/1. |
+| 6 | React's `GameMode` / `GameState` are TS `enum`s | Const object + matching union type | Call sites read identically (`GameMode.Time`) and the value is the string the wire already carries, so `game_mode` needed no conversion. **Flagged in the handoff as the one seam symbol that is not structurally interchangeable**, and reconciled at the merge to Phase 5's enums -- integration deviation 6/1. |
+| 6 | React's `endGame` could be called twice | The engine's `endGame` returns early once the game is over; `handleAnswer` ignores answers after game over | `onGameEnd` is what posts the score, so a second call posts a second entry. React relied on nothing calling it twice, and its `useGameTimer` carries a comment about a StrictMode double-invoke that **did** save duplicates once. Phase 5 had the first half; the merge carried the second half into `GameStateService` (`96ac329`) so it was not lost with the duplicate. |
+| 6 | React's `utils.ts` exports `calculateNPM`; `types/index.ts` exports `ACCIDENTALS` | Neither ported | Dead code -- nothing in the React app imports either. Same call Phase 4 made for `isValidNote`/`isValidRhythm`. |
+| 6 | React's `KeyboardBindingsEditor` declares its own `NATURAL_NOTES` | Imports the shared one; only `SHARP_NOTES` and `FLAT_NOTES` stay local | `frontend/CLAUDE.md` names `NATURAL_NOTES` as a constant that lives once. The two accidental rows exist nowhere else, so they stay. |
+| 6 | React's `GameBoard`/`GameBoardLandscape` share a `useGameBoardCore` hook | Two components sharing `<app-note-staff>` | They cannot be one component with two `@if` branches: a template may project a given `<ng-content>` slot **once**, whichever arm it sits in. The shared core is now a component rather than a hook, which is a better home for it. |
+| 6 | React's `NoteGameDisplay` set `EngravingRules` in its constructor | Set on the first successful load, then re-rendered | Phase 4's `<app-sheet-music>` creates the OSMD instance lazily inside `loadAndRender`, and engraving rules are not `IOSMDOptions`. Only the first question pays for the second render. **Superseded at the merge**: this is `GameStaffComponent`'s `prepare()` now, which does the same thing -- integration deviation 6/3. |
+| 6 | React wrapped both boards in `ComponentErrorBoundary` + `GameBoardFallback` | Not ported | Phase 2 handoff §5 replaced boundaries with error signals. The failure the boundary actually guarded -- MusicXML that will not render -- is handled inside `<app-note-staff>` by the text fallback, which React's boundary never saw because `useQuestionLoader` swallowed the error itself. |
+| 6 | React's `useNoteAudio` used `use-sound` | Web Audio API, no dependency | The deferred-decisions row above, and handoff §4. Two consequences worth knowing: **jsdom has no `AudioContext`**, so playback degrades to a no-op there rather than throwing (asserted, and it is why the game is testable without an audio fake); and **four answerable notes have no sample** -- `Cb`, `Fb`, `E#`, `B#` are on the pad but there are only twelve marimba files. React logged a warning and moved on; so does this, pinned in `note-audio.service.spec.ts` so nobody "fixes" it by accident. |
+| 6 | React's `KeyboardBindingsEditor` used `document.addEventListener(..., { capture: true })` | A `fromEvent(document, "keydown", { capture: true })` stream under `takeUntilDestroyed` | The capture phase is load-bearing: `stopPropagation()` there is what lets Escape cancel a pending rebind without also closing the dialog. An Angular `(document:keydown)` host binding is bubble-phase and would fire *after* `<app-dialog>`'s. |
+| 6 | Phase 2's `SelectComponent` takes no `className` | Added one, merged through `cn()` | React put `className` on the `<select>` element, and the note game's settings bar sizes its scale picker `w-28 h-9` -- which is in the captured baselines. A `class` on `<app-select>` reaches the wrapper, a different box. Additive; no existing caller changes. |
+| 6 | React's desktop bar wraps the picker in `[&>div]:w-auto` | `[&>app-select]:w-auto` | The Angular wrapper *is* the `<app-select>` host element, not a nested `<div>`. Same rule, correct selector. |
+| 6 | `src/test-setup.ts` shims only `ResizeObserver` | Added a `matchMedia` stub | jsdom has none and `BreakpointService` opens three in its constructor, so any spec rendering a component that reads a breakpoint died before rendering. Phase 5 needed the same thing (deviation 5/12) and wrote its own; the merge kept one -- integration deviation 6/5. |
+| 6 | Packet: wire the note game into assignment mode | `NoteGamePageComponent` supports it; `AssignmentGameHostComponent` was left untouched | Both game shells land in that one file, so editing it in a parallel worktree guaranteed a conflict with Phase 5 over the same three lines. **Wired at the merge** (`be81f62`), which is where the snake_case defect below surfaced. |
+| 6 | STATE.md's `isLoading()` rule (Phase 3.5 §7.1) | No `isLoading()` anywhere in this feature | `savedBindings.reload()` is called after saving new bindings, which is exactly the case the rule is about -- but no template reads that resource's loading state at all, so there was nothing to switch. Recorded so a verifier grepping for the pair does not think it was missed. **Still true after the merge**; the standing requirement is met. |
+| 6 | React's `GameOverCard` interpolated `Score: {correct}/{total}` inline | Built in a `computed()` | **A defect found by driving the real app, not a style preference.** `e2e/support/app.ts`'s `correctCount()` reads the line with the anchored regex `/^Score: \d+\/\d+$/` and Playwright does not trim before matching a regex; JSX drops the whitespace around a newline, so React rendered exactly `"Score: 2/10"` while Angular rendered `" Score: 2/10 "` and the locator matched **0** elements with the number plainly on screen. Handoff §9.1. The general lesson, for Phase 7: any text an unmodified spec matches with an anchored regex must be a single interpolation or a single literal. Accessible names are unaffected -- name computation trims. |
+| 6 (integration) | Handoff §3.1: replace `engine.models.ts`'s body with re-exports from Phase 5's barrel | The file is **deleted**; every note-game file imports from `@features/identification-game` directly | `frontend/CLAUDE.md`'s invariant names the barrel as the import site, and a surviving one-file shim would have been a second name for it that a later reader has to chase. Same outcome, one fewer file. `GameMode`/`GameState` reconciled to Phase 5's **TS enums**, which is the half the handoff flagged as not structurally interchangeable; every call site already read `GameMode.Time`, and the two places that took a string (`mapSavedSettings`, `mapNoteAssignmentConfig`) already cast. |
+| 6 (integration) | Handoff §3.2: `QuestionQueue` is a plain class taking `Signal<TRequest \| null>` | Phase 5's `QuestionQueueService`, provided per board, taking `request` + a separate `enabled` gate | Both key on `JSON.stringify(request)`, so the invariant that only a payload-affecting setting resets the queue is unchanged and is still what `note-game-page.component.spec.ts` checks. `<app-note-staff>` now gates on `staff().isReady()` the way `QuestionBoardComponent` does, rather than its own `afterNextRender` flag. |
+| 6 (integration) | Handoff §3.2: `note-staff` folds React's `NoteGameDisplay` in itself | It draws through Phase 5's `<app-game-staff>`; the OSMD options, engraving rules, recolour and `getBBox`→`viewBox` crop are deleted | The hand-off the Phase 5 integration note wrote to this merge, and the one Phase 5's deviation 7 predicted. `note-staff` keeps what is note-game-specific: the card chrome, the request mapping and the huge text fallback. **One behaviour changes as a consequence**: the error path no longer swaps the card out for the fallback but overlays it, because unmounting the staff would take the queue's readiness gate with it and wedge the game. That is Phase 5's deviation 8, arrived at independently. No baseline photographs the error path. |
+| 6 (integration) | Handoff §3.2: `SaveGameOnEndService` adds a second, independent guard against a concurrent POST | Phase 5's `GameScoreSaverService` survives and has no such guard | It is root-provided and already handled `gameType: "note"`, and the guarantee it was doubling up on -- `endGame` is idempotent, so `onGameEnd` fires once per game -- is now structural on both halves (see the deviation above). `reset()` has no port either: the saver clears `saveError` when the next save starts, and the results screen that reads it is unmounted on Play Again. |
+| 6 (integration) | Phases 5 and 6 each wrote a `matchMedia` stub in `src/test-setup.ts` | One survives -- HEAD's -- with the useful half of Phase 6's prose folded in | Not "keep both halves": they are the same stub written twice, and a second `??=` assignment would be dead code. Phase 5's `isolate: true` doc comment is untouched. |
+| 6 (integration) | Phase 5 §9 named the `game-definitions.ts` import-depth cleanup and left it as "a standing invitation, not a defect" | Taken, and generalised to two note-game model modules | `game-definitions.ts` now imports `@features/identification-game/games`, and `note-game.models.ts` / `range.utils.ts` deep-import `game.utils.ts` and `models/game-state.models.ts`. The barrel re-exports `GameStaffComponent`, which reaches `opensheetmusicdisplay`; these four modules are pure data, and going through the barrel drags a 1 MB engraver into jsdom for a table of strings -- which is exactly what caused F1. The rule, stated once: **the barrel is the import site for anything that needs the feature's components or services; a pure-data module deep-imports the leaf it needs and says why in its header.** Nothing is redeclared either way, which is what the "shared constants live once" invariant is actually about. |
 | 5 (integration) | ~~The handoff's hygiene sweep says "the only `ngOnDestroy` in `src/` is still `SheetMusicComponent`'s"~~ | ~~There are **two**: `SheetMusicComponent` and `ToastItemComponent`~~ **Struck: this deviation does not exist. The handoff's sweep was right — there is exactly one.** | **Corrected 2026-08-21 on the Phase 5 verifier's finding V1, and re-checked before striking.** `grep -rn "ngOnDestroy" src/` returns five hits and only **one** is an implementation: `sheet-music.component.ts:204`. The `toast-item.component.ts` hit is line 47 of a comment, and what it says is "no `ngOnDestroy`" — the integrator read a grep count instead of the lines. The other three hits are prose in `sheet-music.component.ts` explaining why its hook is legitimate. Kept as a struck row rather than deleted so the false claim is not re-derived from a raw grep. The half that still holds: Phase 5 itself added no `ngOnDestroy`, no stored `Subscription` and no `takeUntil(destroy$)`. |
 
 ### Verifier notes (Phase 1, 2026-08-20)
@@ -1956,3 +1980,246 @@ Phase 5 is **`done`**. Phase 6 (note game) is next, and inherits three things
 from this phase deliberately: `GameStaffComponent` to reuse rather than
 re-port, `NOTE_DEFAULTS` as the last copied defaults table to reclaim, and
 the `game-definitions.ts` import-depth cleanup described above.
+
+---
+
+### Integration note (Phase 6 — 2026-08-21) — merged, **not** verified
+
+Merged as `9b5bb74` (`--no-ff`) from `worktree-agent-abb9039f68e79fc92`,
+range `896c1a3..44664d8`, 8 commits, plus three reconciliation commits.
+Phase 6 is `built`. A verifier owns `done`; nothing below is a verification.
+
+This was the most semantic merge of the migration: Phase 6 was built beside
+Phase 5 and could not see it, so it shipped a working copy of the whole
+engine. Git merged all of it cleanly — the duplicates live in a different
+folder — which is precisely why the map in `phase-6-handoff.md` §3 mattered
+more than the conflict list.
+
+#### The two textual conflicts, and what the merge actually had to do
+
+`git merge` reported exactly two: `src/test-setup.ts` (the same `matchMedia`
+stub written twice) and `shared/services/music.service.ts` (two phases adding
+endpoints to one import list and one class). Both are integration deviations
+above; neither took five minutes.
+
+Everything the merge really had to reconcile, git could not see. Eleven files
+were deleted in favour of Phase 5's, four of them specs:
+
+| Phase 6's | Replaced by | Note |
+| --------- | ----------- | ---- |
+| `models/engine.models.ts` | `@features/identification-game` | The seam file. Deleted rather than collapsed to a re-export — deviation 6/1. |
+| `services/identification-game.engine.{ts,spec.ts}` | `GameStateService` | The settings move out of the engine into `NoteGameService`, which is what keeps the service non-generic (Phase 5's deviation 4). `scale` still reaches the stats through `statsExtras`. |
+| `services/question-queue.{ts,spec.ts}`, `services/note-queue.ts` | `QuestionQueueService` | Both key on the serialized request. |
+| `services/game-timer.service.{ts,spec.ts}` | `GameTimerService` | Method names differ (`start`/`reset`/`format`/`remaining`); behaviour does not. |
+| `services/save-game-on-end.service.{ts,spec.ts}` | `GameScoreSaverService` | Root-provided, already handled `gameType: "note"`. |
+| `components/score-bar/` | `ScoreBarComponent` | Identical API. |
+| `components/game-over-card/` | `GameOverCardComponent` | Projection slots renamed at the two call sites. |
+
+**The composition invariant is intact, and is now literal.**
+`frontend/CLAUDE.md`: *"the note game composes the engine: `useNoteGame`
+delegates to `useIdentificationGame`."* Before the merge that was true of a
+copy; after it, the note game runs the same `GameStateService` the four
+identification games run.
+
+#### The enum risk was real, and cost one word per call site
+
+Phase 6 shipped `GameMode`/`GameState` as a frozen object plus a union type;
+Phase 5 shipped TS `enum`s. Those are **not** interchangeable in a type
+position, which the handoff flagged. Reconciled to Phase 5's enums — the
+barrel owns them, `sanitizeConfig` and four game definitions already depend on
+them, and every Phase 6 call site already read `GameMode.Time`. The only two
+places that took a raw string (`mapSavedSettings` and the new
+`mapNoteAssignmentConfig`) already cast. `tsc` found nothing to fix.
+
+#### Three fixes carried into the surviving engine before the duplicates died
+
+`96ac329`. Each was in a Phase 6 file being deleted, so each had to move first
+or be lost.
+
+1. **`GameOverCardComponent`'s `Score:` line.** Phase 6's copy carried the
+   §9.1 fix; Phase 5's did not, and rendered the line as a template
+   interpolation that Prettier happened to have kept on one line. That is not
+   a fix, it is luck: the same line one character longer wraps, gains a
+   leading and trailing space, and `e2e/support/app.ts`'s anchored
+   `/^Score: \d+\/\d+$/` matches nothing. The `computed()` moved across.
+   **Proof it survived**: `games.spec.ts` is 6/6, which reads that line for
+   all five games, and a key-signature game driven by hand reports
+   `"Score: 0/10"` off the same locator.
+2. **The post-game-over answer guard.** Phase 6's engine dropped a guess
+   arriving after `GameOver`; Phase 5's did not. Moved into
+   `GameStateService.answer()` with a test.
+3. **`QuestionQueueService` clears its buffer on the payload change, not on
+   the debounce.** Found because Phase 6's queue spec asserted it and Phase
+   5's queue failed the assertion. React's own comment on that line says why:
+   *"the queue is already cleared above, so no stale question can be served in
+   the meantime."* Phase 5 deferred the clear until the 300ms debounce fired,
+   which left a window in which `pop()` still handed out a question generated
+   for the settings the player had just changed. **This is a parity defect in
+   Phase 5's engine that the merge found, and it affected all four
+   identification games.**
+
+#### The defect wiring the assignment host surfaced
+
+`AssignmentGameHostComponent`'s `@default` branch became `@case ("note")`,
+which is the three lines Phase 6 predicted. Doing it exposed something the
+seam had hidden: **the note game's assignment `config` is snake_case and its
+hydration read camelCase.** A teacher's frozen assignment would have loaded as
+the plain defaults, silently, with no error anywhere.
+
+React needed one mapper because *its* saved settings also came off the wire
+snake_case. Phase 3's `UserService` maps that row at the API boundary, so this
+port needs two: `toNoteAssignmentConfig` (write) and `mapNoteAssignmentConfig`
+(read, with React's per-field guards). `note-game.models.spec.ts` round-trips
+them against what `defaultAssignmentConfig("note")` actually freezes, which is
+the assertion that keeps the two in step.
+
+That constant is also the `NOTE_DEFAULTS` reclaim: `defaultAssignmentConfig`
+now reads `NOTE_GAME_DEFAULTS`, the same constant the note game's own page
+starts from. **No defaults table is duplicated anywhere in the app any more.**
+
+#### The import-depth cleanup Phase 5 left open — taken
+
+`game-definitions.ts` imports `@features/identification-game/games`, and
+`note-game.models.ts` / `range.utils.ts` deep-import `game.utils.ts` and
+`models/game-state.models.ts`. Integration deviation 6/6 states the rule. It
+is small — four import lines — and it is the difference between four class
+specs loading `opensheetmusicdisplay` and not. It narrows the blast radius
+that caused F1; `isolate: true` is still what removes the hazard, and is
+untouched.
+
+#### What was measured on the merged branch
+
+Gates, `nvm use 24`, from `frontend/`:
+
+| Gate | Result |
+| ---- | ------ |
+| `npm run build` | exit 0, no warnings |
+| `npm run lint` | exit 0 (`--max-warnings 0`) |
+| `npm run test:run` | exit 0 — **517 tests, 60 files** |
+| `npm run format:check` | exit 0 |
+
+**517/60 is the union, not the sum.** Phase 5's base was 439/54 and Phase 6's
+510/58, both over Phase 3's 394/49; the two phases' new tests add to 555 in
+63, and deleting Phase 6's four duplicate service specs takes 42 of them back
+out. The 4 net additions are the three fixes' pins plus
+`note-game.models.spec.ts`.
+
+**Determinism: three consecutive serial `npm run test:run` executions**,
+nothing else running, `npm`'s own exit status captured per run — `exit=0` at
+**60 files / 517 tests** all three times, with **zero** `FAIL` lines in any
+log. Phase 5's `isolate: true` held across a merge that added 9 spec files and
+removed 4.
+
+E2E, specs unmodified, `E2E_BASE_URL=http://localhost:4300`, on a server this
+integrator started from **this** checkout — `/proc/454776/cwd` read as
+`/home/noetrevino/projects/tremolo/frontend` before any result was believed.
+`/tmp/tremolo-port-4300.lock` held for the run and released after. Go on
+`:5001`, Python on `:8000`.
+
+| Spec | Result |
+| ---- | ------ |
+| `navigation.spec.ts` | 21 / 21 |
+| `auth.spec.ts` | 5 / 5 |
+| `friends-and-theme.spec.ts` | 4 / 4 |
+| `classes.spec.ts` | 4 / 4 |
+| `games.spec.ts` | **6 / 6** |
+| `settings.spec.ts` | **3 / 3** |
+| | **43 / 43** |
+
+**The complete golden suite is green for the first time in the migration.**
+Phase 5 handed over three residuals, all `/note-game`; all three are closed
+and nothing regressed.
+
+#### Screenshots — 68 of 80, and the 12 are the recorded residual
+
+`baselines.spec.ts` run as-is still fails 4/4: it photographs 20 routes inside
+*one* test per viewport/theme and `toHaveScreenshot` is a hard assertion, so
+each pass aborts at `/login` — route 4 — and never reaches the rest. That is
+Phase 3.1 deviation 9, still open, and it is why every phase since has needed
+a sweep to report anything.
+
+The sweep here was `baselines.spec.ts` copied verbatim with its one assertion
+made `expect.soft`, run through a scratch config pointing
+`snapshotPathTemplate` at the real `.migration/baselines/`, same mask
+(`staff(page)`), same `settle`, same `maxDiffPixelRatio: 0.01`, same seeding.
+All 80 shots reported in one run:
+
+| Result | Shots |
+| ------ | ----- |
+| Inside threshold | **68** |
+| Outside | **12** — `login`, `signup` and `google-callback`, x 2 viewports x 2 themes |
+
+`google-callback` with no code redirects to `/login`, and its diffs are
+pixel-for-pixel identical to `login`'s (17433, 17414, 13537, 13518), so the
+12 are one defect on three route slugs: **the login/signup restyle residual
+Phase 3.1 recorded as 12 shots**, unchanged and untouched by this phase. The
+consolidated Phase 3 verifier counted 8 of them because its own route set was
+10 routes wide. Every other route — all four game routes, `/note-game`, `/`,
+`assignment-play`, the dashboard, classes, profile, account, sheet-music,
+convert — is inside threshold.
+
+The scratch config and spec were deleted after the run. `git status` on
+`.migration/baselines/` is clean and all 80 PNGs are byte-identical: a
+missing baseline makes Playwright *fail while writing it*, and the 68 passes
+are comparisons.
+
+#### Live, on the running app
+
+Driven through a scratch Playwright script (deleted after), against
+`:4300` with both backends up, on a freshly seeded student.
+
+- **The note game played to Game Over on the physical keyboard**, ten
+  questions, `Score: 8/10`, "Game results saved successfully!".
+- **And again by clicking the answer pad**, `Score: 4/10`, same toast.
+- **Audio fires on correct answers, measured rather than assumed.** The page
+  was instrumented before load to count `AudioBufferSourceNode.start()`,
+  `AudioContext` constructions and `decodeAudioData` failures. Keyboard game:
+  **1 context, 8 starts, 4 samples decoded, 0 errors** — one marimba note per
+  correct answer, and one context, created inside the first answer's gesture,
+  never before it. Click game: **1 context, 4 starts, 0 errors**. The
+  decode/start ratio is the enharmonic table doing its job.
+- **The scores reached the database and the dashboard.**
+  `GET /api/note-game/recent?game_type=note` returns 2 entries, and
+  `/dashboard` reads **total sessions: 2**.
+- **No seam regression.** A key-signature game plays to Game Over from its own
+  route and its results screen reports `Score: 0/10` — read through
+  `e2e/support/app.ts`'s anchored regex, which is the `GameOverCardComponent`
+  fix proving itself on the identification side. (A 0 is the expected outcome:
+  the harness clicks "C" without knowing the answer, which `games.spec.ts`
+  documents.)
+
+#### Hygiene
+
+- `shareReplay` appears as **code** in one file, `refresh.interceptor.ts`
+  (D6). The other hit is a comment in `user.service.ts` saying there is none.
+- `grep -n "use-sound\|howler" package.json` → nothing. **No dependency was
+  added**; `package.json` and `package-lock.json` are byte-identical across
+  the whole range, so R6 was not exercised.
+- `NATURAL_NOTES`, `TIME_LIMITS`, `NOTE_LIMITS`, `CLEF_UNICODE` and
+  `CLEF_LABELS` each have exactly **one** declaration, all in
+  `features/identification-game/`.
+- No `@NgModule`, no `zone.js`, no `takeUntil` that is not
+  `takeUntilDestroyed`. One `ngOnDestroy` implementation in `src/` —
+  `SheetMusicComponent`'s; the other grep hits are comments, two of them now
+  in `note-game/services/keyboard-input.ts` saying there is none.
+- `e2e/`, `.migration/baselines/` and `frontend-react/` are **byte-untouched**
+  across `10cfbfb..HEAD` (`git diff --stat` over those paths is empty).
+- Phase 6's worktree and branch were removed after the push; its `:5173`
+  server was already gone.
+
+#### What Phase 7 inherits
+
+1. **The login/signup restyle residual is the last open screenshot item**, and
+   `baselines.spec.ts` cannot report a clean run until it is closed —
+   12 shots, one page, three route slugs.
+2. **Anchored-regex text matching is a real trap in Angular templates.** Any
+   text an unmodified spec matches with `^…$` must be one interpolation or one
+   literal; multi-line interpolated text silently gains a leading and trailing
+   space that JSX did not have. Accessible names are unaffected.
+3. **`e2e/support/app.ts` paces answers at 1200ms** because the Go DTO types
+   `notes_per_minute` as `int8`. Nothing in the app enforces that, so a fast
+   human can still lose a score to a 400. The Go service is out of scope for
+   this migration, but it is a real bug and it is worth writing down once more.
+4. The docs update Phase 7 owns should take the `GameDefinition` interface
+   from `phase-5-handoff.md` §2 and the note-game invariants from
+   `phase-6-handoff.md` §7, both of which still hold after this merge.
