@@ -246,12 +246,18 @@ describe("UserService", () => {
 				noteLimit: 25,
 				scale: "C",
 				octave: 4,
-				lowNote: "C",
-				highNote: "B",
+				lowNote: "C4",
+				highNote: "B5",
 				clef: "treble",
 			});
 		});
 
+		/**
+		 * The body below is byte-for-byte what the live Go service accepted
+		 * during this slice's endpoint probe. Note the range endpoints:
+		 * `low_note`/`high_note` are validated against `^[A-G][0-9]$`, so a
+		 * bare `"C"` comes back 400.
+		 */
 		it("sends the note-game PUT snake_cased, without id or user_id", () => {
 			service
 				.saveNoteGameSettings({
@@ -260,8 +266,8 @@ describe("UserService", () => {
 					noteLimit: 25,
 					scale: "C",
 					octave: 4,
-					lowNote: "C",
-					highNote: "B",
+					lowNote: "C4",
+					highNote: "B5",
 					clef: "treble",
 				})
 				.subscribe();
@@ -274,8 +280,8 @@ describe("UserService", () => {
 				note_limit: 25,
 				scale: "C",
 				octave: 4,
-				low_note: "C",
-				high_note: "B",
+				low_note: "C4",
+				high_note: "B5",
 				clef: "treble",
 			});
 			req.flush(NOTE_ROW);
@@ -357,8 +363,8 @@ const NOTE_ROW = {
 	note_limit: 25,
 	scale: "C",
 	octave: 4,
-	low_note: "C",
-	high_note: "B",
+	low_note: "C4",
+	high_note: "B5",
 	clef: "treble" as const,
 };
 
