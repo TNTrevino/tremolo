@@ -1,13 +1,15 @@
-import { Component } from "@angular/core";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
 
-/**
- * Phase 1 placeholder. It exists so `/interval-game` resolves, so its guard runs,
- * and so the phase that owns this page has a component already wired into
- * the route table to fill in. See .migration/phase-1-handoff.md.
- */
+import { intervalGame } from "../../games/interval.game";
+import { IdentificationGameComponent } from "../identification-game/identification-game.component";
 
+/** `/interval-game`. Port of frontend-react/src/pages/IntervalGamePage.tsx. */
 @Component({
 	selector: "app-interval-game-page",
-	templateUrl: "./interval-game-page.component.html",
+	imports: [IdentificationGameComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `<app-identification-game [definition]="definition" />`,
 })
-export class IntervalGamePageComponent {}
+export class IntervalGamePageComponent {
+	protected readonly definition = intervalGame;
+}

@@ -13,6 +13,8 @@
  * defaults -- no shared UI change, ever.
  */
 
+import type { StaffClef } from "@shared/models/music.models";
+
 /**
  * How a chip draws its option.
  *
@@ -25,7 +27,7 @@
 export type OptionGlyph =
 	| { kind: "text" }
 	| { kind: "keySignature"; fifths: number }
-	| { kind: "clef"; clef: string };
+	| { kind: "clef"; clef: StaffClef };
 
 export interface ChoiceOption {
 	value: string | number;

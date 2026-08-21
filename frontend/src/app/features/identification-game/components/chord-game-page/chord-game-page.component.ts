@@ -1,13 +1,15 @@
-import { Component } from "@angular/core";
+import { ChangeDetectionStrategy, Component } from "@angular/core";
 
-/**
- * Phase 1 placeholder. It exists so `/chord-game` resolves, so its guard runs,
- * and so the phase that owns this page has a component already wired into
- * the route table to fill in. See .migration/phase-1-handoff.md.
- */
+import { chordGame } from "../../games/chord.game";
+import { IdentificationGameComponent } from "../identification-game/identification-game.component";
 
+/** `/chord-game`. Port of frontend-react/src/pages/ChordGamePage.tsx. */
 @Component({
 	selector: "app-chord-game-page",
-	templateUrl: "./chord-game-page.component.html",
+	imports: [IdentificationGameComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `<app-identification-game [definition]="definition" />`,
 })
-export class ChordGamePageComponent {}
+export class ChordGamePageComponent {
+	protected readonly definition = chordGame;
+}
