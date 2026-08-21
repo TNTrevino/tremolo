@@ -1,0 +1,68 @@
+<div class="p-4 border-b-2 border-border flex items-center justify-between">
+	<div class="flex items-center gap-2">
+		<h2 class="text-lg font-bold">Friends</h2>
+		<span
+			class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium"
+			>{{ allFriends().length }}</span
+		>
+		<app-button
+			variant="ghost"
+			size="icon"
+			className="rounded-full h-8 w-8"
+			ariaLabel="Add friend"
+			(click)="addFriend.emit()"
+		>
+			<ng-icon size="1rem" name="lucideUserPlus" aria-hidden="true" />
+		</app-button>
+	</div>
+	<app-button
+		variant="ghost"
+		size="icon"
+		className="rounded-full h-8 w-8"
+		ariaLabel="Close friends"
+		(click)="closed.emit()"
+	>
+		<ng-icon size="1rem" name="lucideX" aria-hidden="true" />
+	</app-button>
+</div>
+
+<div class="p-4 border-b-2 border-border">
+	<div class="relative">
+		<ng-icon
+			size="1rem"
+			name="lucideSearch"
+			aria-hidden="true"
+			class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+		/>
+		<input
+			appInput
+			type="text"
+			placeholder="Search friends..."
+			class="pl-9"
+			[value]="ui.searchQuery()"
+			(input)="onSearch($event)"
+		/>
+	</div>
+</div>
+
+<div class="flex-1 overflow-y-auto p-2">
+	@if (friends.isLoading()) {
+		<app-spinner label="Loading friends" />
+	} @else if (friends.error()) {
+		<app-error [error]="friends.error()" fallback="Failed to load friends" />
+	} @else if (filteredFriends().length > 0) {
+		@for (friend of filteredFriends(); track friend.id) {
+			<app-friend-card [user]="friend" />
+		}
+	} @else {
+		<div class="flex flex-col items-center justify-center h-32 gap-1">
+			<p class="text-sm font-medium text-muted-foreground">
+				{{
+					ui.searchQuery().trim()
+						? "No friends found"
+						: "Looks lonely in here. Add some friends!"
+				}}
+			</p>
+		</div>
+	}
+</div>

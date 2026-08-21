@@ -1,0 +1,87 @@
+<div class="flex flex-col h-full">
+	<div class="p-4 border-b-2 border-border flex items-center gap-2">
+		<app-button
+			variant="ghost"
+			size="icon"
+			className="rounded-full h-8 w-8"
+			ariaLabel="Back to friends"
+			(click)="back.emit()"
+		>
+			<ng-icon size="1rem" name="lucideArrowLeft" aria-hidden="true" />
+		</app-button>
+		<h2 class="text-lg font-bold">Add Friend</h2>
+	</div>
+
+	<div class="p-4 border-b-2 border-border">
+		<div class="relative">
+			<ng-icon
+				size="1rem"
+				name="lucideSearch"
+				aria-hidden="true"
+				class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+			/>
+			<input
+				#searchInput
+				appInput
+				type="text"
+				placeholder="Search by name..."
+				class="pl-9 pr-9"
+				[value]="query()"
+				(input)="onSearch($event)"
+			/>
+		</div>
+	</div>
+
+	<div class="flex-1 overflow-y-auto p-2">
+		@if (results.error()) {
+			<div class="flex flex-col items-center justify-center h-32 gap-1">
+				<p class="text-sm text-destructive text-center py-4">
+					Search failed. Check your connection and try again.
+				</p>
+			</div>
+		} @else if (results.isLoading()) {
+			<app-spinner label="Searching" />
+		} @else if (results.value().length > 0) {
+			@for (user of results.value(); track user.id) {
+				<app-friend-card [user]="user">
+					<app-button
+						[variant]="addedIds().has(user.id) ? 'ghost' : 'outline'"
+						size="icon"
+						className="rounded-full h-8 w-8 shrink-0"
+						[disabled]="addedIds().has(user.id) || addingId() === user.id"
+						[ariaLabel]="
+							addedIds().has(user.id)
+								? fullName(user) + ' added'
+								: 'Add ' + fullName(user)
+						"
+						(click)="add(user)"
+					>
+						@if (addingId() === user.id) {
+							<ng-icon
+								size="1rem"
+								name="lucideLoader2"
+								aria-hidden="true"
+								class="animate-spin"
+							/>
+						} @else if (addedIds().has(user.id)) {
+							<ng-icon
+								size="1rem"
+								name="lucideCheck"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						} @else {
+							<ng-icon size="1rem" name="lucideUserPlus" aria-hidden="true" />
+						}
+					</app-button>
+				</app-friend-card>
+			}
+		} @else {
+			<div class="flex flex-col items-center justify-center h-32 gap-1">
+				<p class="text-sm font-medium text-muted-foreground">
+					{{ hasQuery() ? "No users found" : "Search for someone by name" }}
+				</p>
+			</div>
+		}
+	</div>
+</div>
