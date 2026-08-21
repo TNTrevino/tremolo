@@ -38,7 +38,7 @@ Ground the palette in the subject's own material. Engraved notation is
 
 ## Tokens
 
-Semantic tokens live in `src/index.css` as shadcn-style HSL variables.
+Semantic tokens live in `src/styles.css` as shadcn-style HSL variables.
 Two token changes beyond re-valuing:
 
 1. `--accent` returns to its shadcn meaning: a **quiet hover/selected
@@ -95,8 +95,9 @@ figure/ground flip musictheory.net's keyboard uses.
   game titles, hero, big stats. Characterful without being a toy.
 - **Body** (`font-sans`): **Inter** — everything else. Inter is fine as
   a body face once the display face carries the personality.
-- Both are self-hosted via `@fontsource-variable/*` packages imported
-  in `main.tsx` — never a Google Fonts `<link>` (no third-party request,
+- Both are self-hosted via `@fontsource-variable/*` packages, `@import`ed
+  at the top of `src/styles.css` — never a Google Fonts `<link>` (no
+  third-party request,
   versioned with the app). The old config _named_ fonts it never
   loaded; if a face isn't imported, don't list it.
 - Timer, score, and NPM figures use `tabular-nums` so they don't jitter
@@ -124,9 +125,17 @@ figure/ground flip musictheory.net's keyboard uses.
 
 ## Rollout
 
+**Status: shipped.** All three steps are in the Angular app. Step 3 is the
+one partial: `font-display` is on the HomePage hero and the auth card
+titles, but not on every heading — the screenshot baselines were captured
+from React before the restyle, and extending it costs a page its diff
+threshold. That is a recorded, human-reviewed residual, not an oversight;
+see `.migration/parity-report/`. The plan is kept below as the record of
+what was decided and why.
+
 Phased so each commit is visually reviewable:
 
-1. **Tokens + fonts + quiet answers** — re-value `index.css`, add
+1. **Tokens + fonts + quiet answers** — re-value `styles.css`, add
    `--brass`/`--correct` + Tailwind mappings, load fonts, strip button
    shadows, convert AnswerPad/NoteButtonGrid to the quiet style,
    repoint chart/stat `accent` usages at `brass`.

@@ -1,0 +1,47 @@
+@if (assignments.isLoading()) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-3xl space-y-4">
+			<div appSkeleton class="h-6 w-40"></div>
+			<div appSkeleton class="h-64 w-full"></div>
+		</div>
+	</div>
+} @else if (assignments.error()) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-3xl space-y-4">
+			<app-error [error]="assignments.error()" />
+			<a routerLink="/assignments">
+				<app-button variant="default">Back to assignments</app-button>
+			</a>
+		</div>
+	</div>
+} @else if (playable(); as ready) {
+	<div class="flex h-[calc(100vh-4rem)] flex-col">
+		<div class="px-4 pt-2 sm:px-6">
+			<a
+				routerLink="/assignments"
+				class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+			>
+				<ng-icon name="lucideArrowLeft" size="1rem" aria-hidden="true" />
+				Back to assignments
+			</a>
+		</div>
+		<div class="min-h-0 flex-1">
+			<app-assignment-game-host
+				[gameType]="ready.gameType"
+				[launch]="ready.launch"
+			/>
+		</div>
+	</div>
+} @else {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-3xl space-y-4">
+			<h1 class="font-display text-2xl font-bold">Assignment not found</h1>
+			<p class="text-sm text-muted-foreground">
+				This assignment doesn't exist or is no longer assigned to you.
+			</p>
+			<a routerLink="/assignments">
+				<app-button variant="default">Back to assignments</app-button>
+			</a>
+		</div>
+	</div>
+}

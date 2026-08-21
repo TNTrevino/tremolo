@@ -1,6 +1,7 @@
 # Tremolo
 
 <!--toc:start-->
+
 - [Tremolo](#tremolo)
   - [Goal](#goal)
   - [Current Progress (DEPLOYMENT IS BEHIND):](#current-progress-deployment-is-behind)
@@ -15,6 +16,7 @@
   - [Technologies Used](#technologies-used)
     - [Frontend](#frontend-1)
     - [Backend](#backend)
+
 <!--toc:end-->
 
 ## Goal
@@ -31,9 +33,16 @@ This also be a technical exercise for myself as I will be learning a huge amount
 
 ## Run the Project Locally
 
+Once per clone, activate the git pre-commit hook (formats staged files per
+service — Prettier / Black / gofmt):
+
+```bash
+make hooks
+```
+
 ### Database
 
-Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./backend/main/database/schema.sql` file. 
+Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./backend/main/database/schema.sql` file.
 
 Make the tables, then association.
 
@@ -41,13 +50,10 @@ TODO: automate this plz
 
 ### Environment Setup
 
-``` bash
+```bash
   export DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
   export DATABASE_USER="<username>"
   export DATABASE_PW="<password>"
-
-  export VITE_BACKEND_MAIN="http://localhost:5001" # default local setup
-  export VITE_BACKEND_MUSIC="http://localhost:8000" # default local setup
 
   export LOG_LEVEL=DEBUG # or WARN/ERROR/DEBUG
   export LOG_FORMAT=json # or text
@@ -60,8 +66,13 @@ TODO: automate this plz
   export MAX_LOGIN_ATTEMPTS=5 # max failed login attempts before account lockout
   export ACCOUNT_LOCKOUT_DURATION_MINUTES=15 # duration to lock account after max failed attempts
 
-  export ALLOWED_ORIGINS="http://localhost:5173,http://localhost:5173" # comma-separated list
+  export ALLOWED_ORIGINS="http://localhost:4200,http://localhost:4300" # comma-separated list
 ```
+
+The frontend needs **none** of these. It is an Angular app and reads its
+config from `frontend/src/environments/environment.ts`, a source file — there
+is no `.env` for it locally. `ALLOWED_ORIGINS` must list whichever port you
+serve it on, though, or the Go service rejects the preflight.
 
 ### Serve it locally
 
@@ -71,15 +82,27 @@ TODO: automate this plz
 
 #### Frontend
 
-``` bash
+Angular 22 requires Node `^22.22.3 || ^24.15.0 || >=26.0.0`. `frontend/.nvmrc`
+pins 24, and on this project nvm lives at `~/.config/nvm`, not `~/.nvm`:
+
+```bash
+export NVM_DIR="$HOME/.config/nvm" && . "$NVM_DIR/nvm.sh" && nvm use 24
+
 cd frontend
 
-npm install && npm run dev
+npm install && npm run dev     # ng serve on http://localhost:4200
 ```
+
+Add `-- --port 4300` for a second server. Both 4200 and 4300 are in the Go
+service's default `ALLOWED_ORIGINS` above.
+
+The end-to-end suite (`npm run e2e`) needs both backends running and a server
+already up; point it with `E2E_BASE_URL=http://localhost:4300`. See
+`frontend/e2e/README.md`.
 
 #### Music generation microservice
 
-``` bash
+```bash
 
 cd backend/music
 
@@ -89,14 +112,13 @@ source env/bin/activate
 
 pip install -r requirements.txt
 
-fastapi dev main.py 
+fastapi dev main.py
 
 ```
 
 #### User tracking microservice
 
-
-``` bash
+```bash
 
 cd backend/main
 go run main.go
@@ -107,25 +129,28 @@ go run main.go
 
 Install dependencies script, nice if you use worktrees/different directories:
 
-``` bash
+```bash
 chmod +x ./scripts/install-deps.sh
 ./scripts/install-deps.sh
 ```
 
 TODO: add tmux script we made
 
-
 ## Technologies Used
 
 ### Frontend
 
-React
+Angular 22 - standalone components, zoneless change detection, signals for
+state and RxJS for streams. Migrated from React in 2026; the migration record
+lives in `frontend/.migration/`.
 
 TypeScript
 
-Material UI - Beautiful UI components
+TailwindCSS - the design system lives in `frontend/DESIGN.md`
 
 OpenSheetMusicDisplay - Display the musical files on the web browser
+
+Playwright + vitest - the E2E parity suite and the unit tests
 
 ### Backend
 

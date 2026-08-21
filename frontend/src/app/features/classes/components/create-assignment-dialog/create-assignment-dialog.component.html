@@ -1,0 +1,96 @@
+<app-dialog [(open)]="open">
+	<div appDialogContent class="max-h-[90vh] overflow-y-auto">
+		<form (submit)="submit($event)">
+			<div appDialogHeader>
+				<h2 appDialogTitle class="font-display">New assignment</h2>
+			</div>
+
+			<div class="p-6 space-y-4">
+				<app-form-field
+					label="Title"
+					htmlFor="assignment-title"
+					[required]="true"
+					[field]="assignmentForm.title"
+				>
+					<input
+						appFormInput
+						id="assignment-title"
+						placeholder="Week 1: Treble Notes"
+						[formField]="assignmentForm.title"
+					/>
+				</app-form-field>
+
+				<app-form-field label="Game" htmlFor="assignment-game-type">
+					<app-select
+						selectId="assignment-game-type"
+						[value]="gameType()"
+						(valueChange)="changeGameType($event)"
+					>
+						@for (option of gameTypeOptions; track option.value) {
+							<option [value]="option.value">{{ option.label }}</option>
+						}
+					</app-select>
+				</app-form-field>
+
+				<!--
+					Where React rendered the chosen game's own settings controls.
+					Those belong to the game engine (Phase 5) and the note game
+					(Phase 6); until they exist the assignment freezes the game's
+					defaults, which is what React froze when a teacher changed
+					nothing. See the component header.
+				-->
+				<div class="rounded-lg border-2 border-border p-4">
+					<p class="text-sm text-muted-foreground">
+						Uses the {{ gameLabel() }} game's default settings.
+					</p>
+				</div>
+
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					<app-form-field label="Due date" htmlFor="assignment-due">
+						<input
+							appFormInput
+							id="assignment-due"
+							type="datetime-local"
+							[formField]="assignmentForm.dueAt"
+						/>
+					</app-form-field>
+					<app-form-field
+						label="Target questions"
+						htmlFor="assignment-target-q"
+						[field]="assignmentForm.targetQuestions"
+					>
+						<input
+							appFormInput
+							id="assignment-target-q"
+							type="number"
+							placeholder="Optional"
+							[formField]="assignmentForm.targetQuestions"
+						/>
+					</app-form-field>
+					<app-form-field
+						label="Target accuracy %"
+						htmlFor="assignment-target-a"
+						[field]="assignmentForm.targetAccuracy"
+					>
+						<input
+							appFormInput
+							id="assignment-target-a"
+							type="number"
+							placeholder="Optional"
+							[formField]="assignmentForm.targetAccuracy"
+						/>
+					</app-form-field>
+				</div>
+			</div>
+
+			<div appDialogFooter>
+				<app-button variant="outline" [disabled]="pending()" (click)="close()">
+					Cancel
+				</app-button>
+				<app-button type="submit" variant="brass" [loading]="pending()">
+					Create assignment
+				</app-button>
+			</div>
+		</form>
+	</div>
+</app-dialog>

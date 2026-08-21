@@ -1,0 +1,89 @@
+<div class="flex h-[calc(100vh-4rem)] flex-col px-2 py-2 sm:px-4 sm:py-4">
+	<div class="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col">
+		@if (game.isGameOver() && game.stats(); as stats) {
+			<app-game-over-card [gameStats]="stats" (playAgain)="playAgain()" />
+		} @else {
+			<div class="flex min-h-0 flex-1 flex-col gap-2 sm:gap-4">
+				<div class="flex-shrink-0">
+					@if (game.isPlaying()) {
+						<app-score-bar
+							[answers]="game.answers()"
+							[gameMode]="settings().gameMode"
+							[timeRemaining]="timer.remaining()"
+							[noteLimit]="settings().noteLimit"
+							[formatTime]="formatTime"
+						/>
+					} @else {
+						<div class="flex items-center justify-between gap-2">
+							<h1 class="font-display text-lg font-bold sm:text-xl">
+								{{ definition().title }}
+							</h1>
+							<app-button
+								variant="outline"
+								size="sm"
+								(click)="settingsOpen.set(true)"
+							>
+								<ng-icon name="lucideSettings" class="mr-1.5 h-4 w-4" />
+								Settings
+							</app-button>
+						</div>
+					}
+				</div>
+
+				@if (isConfigurable()) {
+					<app-dialog [(open)]="settingsOpen">
+						<div appDialogContent class="max-w-lg">
+							<div appDialogHeader>
+								<h2 appDialogTitle>Settings</h2>
+								<p class="text-sm text-muted-foreground">
+									{{ definition().description }}
+								</p>
+							</div>
+
+							<div class="max-h-[60vh] space-y-5 overflow-y-auto p-6">
+								<app-game-mode-limit-controls
+									[settings]="settings()"
+									(changed)="updateSettings($event)"
+								/>
+								<app-settings-controls
+									[schema]="definition().settingsSchema"
+									[settings]="settings()"
+									(changed)="updateSettings($event)"
+								/>
+							</div>
+
+							<div appDialogFooter>
+								<app-button (click)="settingsOpen.set(false)">Done</app-button>
+							</div>
+						</div>
+					</app-dialog>
+				}
+
+				<app-question-board
+					[answers]="game.answers()"
+					[request]="request()"
+					[fetch]="fetchQuestion"
+					[getAnswer]="getAnswer"
+					[currentAnswerLabel]="game.currentAnswer()"
+					[zoom]="zoom()"
+					(questionLoaded)="onQuestionLoaded($event)"
+				>
+					<div class="flex-shrink-0 space-y-2">
+						@if (prompt(); as text) {
+							<div
+								class="text-center text-lg font-medium text-muted-foreground"
+							>
+								{{ text }}
+							</div>
+						}
+						<app-answer-pad
+							[options]="answerOptions()"
+							[columnsClassName]="columnsClassName()"
+							(answered)="onAnswer($event)"
+						/>
+					</div>
+				</app-question-board>
+			</div>
+		}
+	</div>
+</div>

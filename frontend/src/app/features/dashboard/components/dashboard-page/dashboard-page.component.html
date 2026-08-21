@@ -1,0 +1,94 @@
+@if (showSkeleton()) {
+	<app-dashboard-skeleton />
+} @else if (failure(); as message) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-6xl">
+			<div appCard className="shadow-lg">
+				<div appCardContent className="p-6">
+					<div class="space-y-4 text-center">
+						<h2 class="text-2xl font-bold text-destructive">
+							Error Loading Dashboard
+						</h2>
+						<p class="text-muted-foreground">{{ message }}</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+} @else if (profile.value(); as user) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-6xl space-y-6">
+			@if (notice(); as pending) {
+				<div
+					role="status"
+					class="rounded-md border-2 border-primary bg-primary/10 p-3 text-sm font-medium"
+				>
+					{{ pending.message }}
+				</div>
+			}
+
+			<app-user-profile-card
+				[user]="user"
+				[totalSessions]="stats().totalSessions"
+				[timeReading]="timeReading()"
+			/>
+
+			<app-performance-chart
+				[chartData]="displayChartData()"
+				[interval]="interval()"
+				[isTeacher]="isTeacher()"
+				[viewMode]="viewMode()"
+				(intervalChange)="interval.set($event)"
+				(viewModeChange)="viewMode.set($event)"
+			/>
+
+			<!--
+				The heatmap is fetched separately and so has its own three
+				states, exactly as React's `useActivityHeatmap` did -- the
+				dashboard skeleton deliberately does not cover this card.
+			-->
+			@if (activity.isLoading()) {
+				<div appCard className="shadow-lg">
+					<div appCardHeader>
+						<h3 appCardTitle className="text-2xl">Activity</h3>
+					</div>
+					<div appCardContent className="p-6">
+						<div class="h-32 animate-pulse rounded bg-muted"></div>
+					</div>
+				</div>
+			} @else if (activity.error()) {
+				<div appCard className="shadow-lg">
+					<div appCardHeader>
+						<h3 appCardTitle className="text-2xl">Activity</h3>
+					</div>
+					<div
+						appCardContent
+						className="p-6 text-center text-sm text-muted-foreground"
+					>
+						Activity data unavailable. Try refreshing.
+					</div>
+				</div>
+			} @else {
+				<div appCard className="shadow-lg">
+					<div appCardHeader>
+						<h3 appCardTitle className="text-2xl">Activity</h3>
+					</div>
+					<div appCardContent className="overflow-x-auto">
+						<app-activity-heatmap [data]="activity.value()" />
+					</div>
+				</div>
+			}
+
+			<app-dashboard-stats
+				[avgNPM]="stats().avgNPM"
+				[avgAccuracy]="stats().avgAccuracy"
+				[timeReading]="timeReading()"
+				[totalSessions]="stats().totalSessions"
+			/>
+
+			@if (isTeacher()) {
+				<app-teacher-dashboard [user]="user" />
+			}
+		</div>
+	</div>
+}

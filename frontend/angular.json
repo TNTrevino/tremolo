@@ -1,0 +1,108 @@
+{
+	"$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+	"version": 1,
+	"cli": {
+		"packageManager": "npm",
+		"schematicCollections": ["angular-eslint"]
+	},
+	"newProjectRoot": "projects",
+	"schematics": {
+		"@schematics/angular:component": {
+			"type": "component",
+			"style": "css"
+		},
+		"@schematics/angular:directive": { "type": "directive" },
+		"@schematics/angular:service": { "type": "service" },
+		"@schematics/angular:guard": { "typeSeparator": "." },
+		"@schematics/angular:interceptor": { "typeSeparator": "." }
+	},
+	"projects": {
+		"tremolo-frontend": {
+			"projectType": "application",
+			"schematics": {},
+			"root": "",
+			"sourceRoot": "src",
+			"prefix": "app",
+			"architect": {
+				"build": {
+					"builder": "@angular/build:application",
+					"options": {
+						"browser": "src/main.ts",
+						"index": "src/index.html",
+						"tsConfig": "tsconfig.app.json",
+						"assets": [
+							{
+								"glob": "**/*",
+								"input": "public"
+							}
+						],
+						"styles": ["src/styles.css"],
+						"allowedCommonJsDependencies": ["opensheetmusicdisplay"]
+					},
+					"configurations": {
+						"production": {
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "500kB",
+									"maximumError": "1MB"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "4kB",
+									"maximumError": "8kB"
+								}
+							],
+							"outputHashing": "all",
+							"fileReplacements": [
+								{
+									"replace": "src/environments/environment.ts",
+									"with": "src/environments/environment.prod.ts"
+								}
+							]
+						},
+						"development": {
+							"optimization": false,
+							"extractLicenses": false,
+							"sourceMap": true
+						}
+					},
+					"defaultConfiguration": "production"
+				},
+				"serve": {
+					"builder": "@angular/build:dev-server",
+					"configurations": {
+						"production": {
+							"buildTarget": "tremolo-frontend:build:production"
+						},
+						"development": {
+							"buildTarget": "tremolo-frontend:build:development"
+						}
+					},
+					"defaultConfiguration": "development"
+				},
+				"test": {
+					"builder": "@angular/build:unit-test",
+					"options": {
+						"buildTarget": "tremolo-frontend:build:development",
+						"tsConfig": "tsconfig.spec.json",
+						"runner": "vitest",
+						"isolate": true,
+						"setupFiles": ["src/test-setup.ts"]
+					}
+				},
+				"lint": {
+					"builder": "@angular-eslint/builder:lint",
+					"options": {
+						"lintFilePatterns": [
+							"src/**/*.ts",
+							"src/**/*.html",
+							"e2e/**/*.ts",
+							"playwright.config.ts"
+						]
+					}
+				}
+			}
+		}
+	}
+}

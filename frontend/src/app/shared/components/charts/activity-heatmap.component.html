@@ -1,0 +1,77 @@
+<div class="relative">
+	<svg
+		[attr.viewBox]="'0 0 ' + svgWidth() + ' ' + svgHeight"
+		class="block h-auto w-full"
+		role="img"
+		aria-label="Activity heatmap showing games played per day"
+		(mousemove)="onMouseMove($event)"
+		(mouseleave)="onMouseLeave()"
+	>
+		<!-- Month labels -->
+		@for (month of monthLabels(); track month.key) {
+			<text
+				[attr.x]="month.x"
+				[attr.y]="monthLabelY"
+				class="fill-muted-foreground"
+				font-size="10"
+			>
+				{{ month.label }}
+			</text>
+		}
+
+		<!-- Day-of-week labels (Mon, Wed, Fri) -->
+		@for (day of dayLabels(); track day.key) {
+			<text
+				[attr.x]="0"
+				[attr.y]="day.y"
+				class="fill-muted-foreground"
+				font-size="10"
+			>
+				{{ day.label }}
+			</text>
+		}
+
+		<!-- One square per day -->
+		@for (cell of cells(); track cell.date) {
+			<rect
+				[attr.data-date]="cell.date"
+				[attr.x]="cell.x"
+				[attr.y]="cell.y"
+				[attr.width]="cellSize"
+				[attr.height]="cellSize"
+				[attr.rx]="cellRadius"
+				[attr.ry]="cellRadius"
+				[attr.fill]="cell.fill"
+				class="transition-colors duration-100"
+			/>
+		}
+	</svg>
+
+	@if (tooltip(); as tip) {
+		<div
+			class="pointer-events-none absolute z-10 rounded-md border border-border bg-card/95 px-2 py-1 text-xs shadow-lg backdrop-blur-sm"
+			[style.left.px]="tip.x"
+			[style.top.px]="tip.y"
+			style="transform: translate(-50%, -100%)"
+		>
+			<span class="font-semibold text-foreground">{{ tip.games }}</span>
+			<span class="ml-1 text-muted-foreground">{{ tip.on }}</span>
+		</div>
+	}
+
+	<!-- Less … More ramp -->
+	<div
+		class="mt-2 flex items-center justify-end gap-1.5 text-xs text-muted-foreground"
+	>
+		<span>Less</span>
+		@for (color of colorLevels; track color) {
+			<span
+				class="inline-block rounded-sm"
+				[style.width.px]="cellSize"
+				[style.height.px]="cellSize"
+				[style.background-color]="color"
+			></span>
+		}
+		<span>More</span>
+	</div>
+</div>

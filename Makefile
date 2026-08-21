@@ -14,14 +14,14 @@ banner = printf '\033[1m\033[36m[ %s ]\033[0m %s\n' '$(STEP)' '$(1)'
 
 help:
 	@echo "Targets:"
-	@echo "  test                   run all test suites (frontend, music, go)"
-	@echo "  test-frontend          vitest single run"
+	@echo "  test                   run all suites (frontend, music, go)"
+	@echo "  test-frontend          ng test single run (frontend/)"
 	@echo "  test-music             pytest (backend/music)"
 	@echo "  test-go                go test ./... -race (backend/main)"
 	@echo "  test-api               kulala HTTP smoke tests (needs the service running)"
 	@echo ""
 	@echo "  lint                   run all linters"
-	@echo "  lint-frontend          eslint --max-warnings 0"
+	@echo "  lint-frontend          ng lint --max-warnings 0"
 	@echo "  lint-music             flake8"
 	@echo "  lint-go                go vet + golangci-lint"
 	@echo ""
@@ -38,14 +38,17 @@ help:
 	@echo "  check-music            format-check + lint + test"
 	@echo "  check-go               format-check + vet + golangci-lint + test"
 
-# ---- frontend ----
+# ---- frontend (Angular -- frontend/) ----
+# The app. It was migrated from React in 2026; frontend/.migration/ holds the
+# plan, the phase ledger and the parity report, and frontend/e2e/ holds the
+# regression suite that migration left behind.
 
 test-frontend:
 	@$(call banner,Testing frontend (vitest)...)
 	cd frontend && npm run test:run
 
 lint-frontend:
-	@$(call banner,Linting frontend (eslint)...)
+	@$(call banner,Linting frontend (ng lint)...)
 	cd frontend && npm run lint
 
 format-frontend:
@@ -57,7 +60,7 @@ format-check-frontend:
 	cd frontend && npm run format:check
 
 build-frontend:
-	@$(call banner,Building frontend (tsc + vite)...)
+	@$(call banner,Building frontend (ng build)...)
 	cd frontend && npm run build
 
 check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
@@ -137,24 +140,29 @@ test-api:
 test:
 	@$(MAKE) --no-print-directory test-frontend STEP=1/3
 	@$(MAKE) --no-print-directory test-music    STEP=2/3
-	@$(MAKE) --no-print-directory test-go        STEP=3/3
+	@$(MAKE) --no-print-directory test-go       STEP=3/3
 
 lint:
 	@$(MAKE) --no-print-directory lint-frontend STEP=1/3
 	@$(MAKE) --no-print-directory lint-music    STEP=2/3
-	@$(MAKE) --no-print-directory lint-go        STEP=3/3
+	@$(MAKE) --no-print-directory lint-go       STEP=3/3
 
 format:
 	@$(MAKE) --no-print-directory format-frontend STEP=1/3
 	@$(MAKE) --no-print-directory format-music    STEP=2/3
-	@$(MAKE) --no-print-directory format-go        STEP=3/3
+	@$(MAKE) --no-print-directory format-go       STEP=3/3
 
 format-check:
 	@$(MAKE) --no-print-directory format-check-frontend STEP=1/3
 	@$(MAKE) --no-print-directory format-check-music    STEP=2/3
-	@$(MAKE) --no-print-directory format-check-go        STEP=3/3
+	@$(MAKE) --no-print-directory format-check-go       STEP=3/3
 
 check:
 	@$(MAKE) --no-print-directory check-frontend STEP=1/3
 	@$(MAKE) --no-print-directory check-music    STEP=2/3
-	@$(MAKE) --no-print-directory check-go        STEP=3/3
+	@$(MAKE) --no-print-directory check-go       STEP=3/3
+
+## hooks: point git at the repo's pre-commit hook (run once per clone)
+hooks:
+	git config core.hooksPath .githooks
+	@echo "pre-commit hook active from .githooks/"

@@ -1,0 +1,64 @@
+<div appCard>
+	<div appCardContent className="p-6 space-y-4">
+		<div class="flex flex-wrap items-start justify-between gap-4">
+			<div class="min-w-0">
+				<h1 class="font-display text-3xl font-bold truncate">
+					{{ classItem().name }}
+				</h1>
+				<span
+					class="mt-1 flex items-center gap-1 text-sm text-muted-foreground"
+				>
+					<ng-icon name="lucideUsers" size="1rem" aria-hidden="true" />
+					<span class="tabular-nums">{{ classItem().studentCount }}</span>
+					{{ studentLabel() }}
+				</span>
+			</div>
+			<app-button
+				variant="outline"
+				className="text-destructive hover:bg-destructive/10"
+				(click)="confirmOpen.set(true)"
+			>
+				Archive class
+			</app-button>
+		</div>
+
+		<div
+			class="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-secondary px-4 py-3 sm:max-w-xs"
+		>
+			<div>
+				<p class="text-[10px] uppercase tracking-wide text-muted-foreground">
+					Join code
+				</p>
+				<p class="font-display text-2xl font-semibold tracking-widest">
+					{{ classItem().joinCode }}
+				</p>
+			</div>
+			<app-button
+				variant="ghost"
+				size="icon"
+				ariaLabel="Copy join code"
+				(click)="copy()"
+			>
+				@if (copied()) {
+					<ng-icon
+						name="lucideCheck"
+						size="1rem"
+						aria-hidden="true"
+						class="text-correct"
+					/>
+				} @else {
+					<ng-icon name="lucideCopy" size="1rem" aria-hidden="true" />
+				}
+			</app-button>
+		</div>
+	</div>
+
+	<app-confirm-dialog
+		[(open)]="confirmOpen"
+		title="Archive class?"
+		[description]="archiveDescription()"
+		confirmLabel="Archive class"
+		[pending]="pending()"
+		(confirm)="archive()"
+	/>
+</div>

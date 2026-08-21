@@ -1,0 +1,149 @@
+<div class="min-h-screen py-8 px-4">
+	<div class="container mx-auto max-w-4xl space-y-6">
+		<div class="text-center space-y-2">
+			<h1 class="text-4xl font-bold">Sheet Music Converter</h1>
+			<p class="text-muted-foreground text-lg">
+				Upload and preview MusicXML files
+			</p>
+		</div>
+
+		<!-- File Upload Section -->
+		<div appCard class="p-6">
+			<div class="space-y-4">
+				<div>
+					<h2 class="text-lg font-semibold mb-2">Select a MusicXML file</h2>
+					<p class="text-sm text-muted-foreground mb-4">
+						Choose a .xml, .musicxml, or .mxl file to preview
+					</p>
+				</div>
+
+				<div class="flex flex-col sm:flex-row gap-4 items-start">
+					<input
+						#fileInput
+						appInput
+						type="file"
+						accept=".xml,.musicxml,.mxl"
+						aria-label="Select a MusicXML file"
+						class="flex-1"
+						[error]="error()"
+						(change)="onFileUpload($event)"
+					/>
+					<app-button
+						size="lg"
+						[disabled]="isProcessing()"
+						className="w-full sm:w-auto"
+						(click)="browse()"
+					>
+						<ng-icon
+							name="lucideUpload"
+							aria-hidden="true"
+							class="mr-2 h-5 w-5"
+						/>
+						{{ isProcessing() ? "Processing..." : "Browse Files" }}
+					</app-button>
+				</div>
+
+				<!-- Error Display -->
+				@if (error()) {
+					<div
+						class="bg-destructive/10 border-2 border-destructive/50 rounded-lg p-4"
+					>
+						<div class="flex items-start gap-3">
+							<ng-icon
+								name="lucideAlertCircle"
+								aria-hidden="true"
+								class="h-5 w-5 text-destructive flex-shrink-0 mt-0.5"
+							/>
+							<div class="flex-1">
+								<h3 class="font-semibold text-destructive mb-1">
+									Upload Error
+								</h3>
+								<p class="text-sm text-destructive/80">{{ error() }}</p>
+							</div>
+						</div>
+					</div>
+				}
+
+				<!-- File Info -->
+				@if (uploadedFileName() && !error()) {
+					<div class="bg-primary/10 border-2 border-primary/20 rounded-lg p-4">
+						<div class="flex items-center gap-2">
+							<ng-icon
+								name="lucideUpload"
+								aria-hidden="true"
+								class="h-5 w-5 text-primary"
+							/>
+							<p class="text-sm font-medium">
+								Uploaded:
+								<span class="text-primary">{{ uploadedFileName() }}</span>
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+
+		<!-- Sheet Music Display Section -->
+		@if (musicXml() && !error()) {
+			<div>
+				<h2 class="text-lg font-semibold mb-4">Preview</h2>
+				<app-sheet-music-display
+					[musicXml]="musicXml()"
+					(renderError)="onRenderError($event)"
+				/>
+			</div>
+		}
+
+		<!-- Empty State - Only show when no file uploaded -->
+		@if (!musicXml() && !error()) {
+			<div
+				appCard
+				class="p-12 min-h-[300px] flex items-center justify-center bg-gradient-to-br from-background to-muted/30"
+			>
+				<div class="text-center space-y-4">
+					<div class="flex justify-center">
+						<div class="rounded-lg bg-muted/50 p-6">
+							<ng-icon
+								name="lucideUpload"
+								aria-hidden="true"
+								class="h-16 w-16 text-muted-foreground"
+							/>
+						</div>
+					</div>
+					<div class="space-y-2">
+						<h3 class="text-xl font-bold">No File Selected</h3>
+						<p class="text-muted-foreground">
+							Upload a MusicXML file to see the sheet music preview
+						</p>
+					</div>
+				</div>
+			</div>
+		}
+
+		<!-- Info Cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div appCard class="p-6 bg-primary/5 border-primary/20">
+				<div class="space-y-2">
+					<h3 class="font-bold text-lg">Supported Formats</h3>
+					<ul class="space-y-1 text-sm text-muted-foreground">
+						<li>• .xml - MusicXML files</li>
+						<li>• .musicxml - MusicXML files</li>
+						<li>• .mxl - Compressed MusicXML</li>
+					</ul>
+				</div>
+			</div>
+
+			<div appCard class="p-6 bg-brass/5 border-brass/20">
+				<div class="space-y-2">
+					<h3 class="font-bold text-lg">Use Cases</h3>
+					<ul class="space-y-1 text-sm text-muted-foreground">
+						<li>• Preview exercises from teachers</li>
+						<li>• Convert digital sheet music</li>
+						<li>• Check file compatibility</li>
+						<li>• Quick viewing before practice</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,48 @@
+import type {
+	ActivatedRouteSnapshot,
+	RouterStateSnapshot,
+} from "@angular/router";
+
+import type { UserRole } from "../app/auth/models/auth.models";
+import type { AuthStore } from "../app/auth/services/auth.store";
+
+/**
+ * Shared test fixtures. `src/testing/` is in tsconfig.spec.json's root file
+ * set and out of tsconfig.app.json's.
+ *
+ * That split is a **convention, not a compile-time barrier** -- the Phase 1
+ * verifier proved it by importing this file from `auth.store.ts` and
+ * building clean. TypeScript's `exclude` only trims the root file set; a
+ * file reached through an import is still compiled. Enforcing it would take
+ * an ESLint `no-restricted-imports` rule, which `eslint.config.js` does not
+ * have. Today only `.spec.ts` files import from here; keep it that way.
+ */
+
+/**
+ * The guards read one thing off these snapshots -- `state.url` -- and
+ * nothing off the route, so the stubs stay this thin on purpose.
+ */
+export function snapshots(url: string): {
+	route: ActivatedRouteSnapshot;
+	state: RouterStateSnapshot;
+} {
+	return {
+		route: {} as ActivatedRouteSnapshot,
+		state: { url } as RouterStateSnapshot,
+	};
+}
+
+/** Puts a signed-in user of the given role into the store. */
+export function signIn(store: AuthStore, role: UserRole): void {
+	store.setAuthFromLogin({
+		user: {
+			id: 1,
+			email: "user@tremolo.test",
+			first_name: "Test",
+			last_name: "User",
+			role,
+		},
+		access_token: "access-token",
+		refresh_token: "refresh-token",
+	});
+}

@@ -1,0 +1,324 @@
+@if (user(); as currentUser) {
+	<div class="min-h-screen px-4 py-8">
+		<div class="container mx-auto max-w-4xl space-y-6">
+			<div class="space-y-2 text-center">
+				<h1 class="text-4xl font-bold">Account Settings</h1>
+				<p class="text-lg text-muted-foreground">
+					Manage your security, privacy, and account preferences
+				</p>
+			</div>
+
+			<!-- Account security -->
+			<div appCard className="shadow-lg">
+				<div appCardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-lg bg-primary/10 p-2">
+							<ng-icon
+								name="lucideShield"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<div>
+							<h3 appCardTitle>Account Security</h3>
+							<p appCardDescription>Manage your password and authentication</p>
+						</div>
+					</div>
+				</div>
+				<div appCardContent>
+					<!--
+						`flex flex-col gap-4`, where React wrote `space-y-4`: the
+						children are `<app-form-field>` and `<app-button>`, whose
+						hosts are `display: contents`, and a margin on a contents
+						box is ignored. Flex `gap` lays out the real elements.
+						phase-3-subfeature-1-handoff.md 7.3.
+					-->
+					<form
+						class="flex flex-col gap-4"
+						(submit)="submitPasswordChange($event)"
+					>
+						<app-form-field
+							label="Current Password"
+							htmlFor="currentPassword"
+							[field]="passwordForm.currentPassword"
+						>
+							<div class="relative">
+								<input
+									appFormInput
+									id="currentPassword"
+									class="pr-10"
+									autocomplete="current-password"
+									placeholder="Enter current password"
+									[type]="showPasswords() ? 'text' : 'password'"
+									[formField]="passwordForm.currentPassword"
+								/>
+								<!--
+									Unnamed on purpose: `getByLabel("Password")` in the
+									parity suite is a substring match, so any accessible
+									name containing "password" would match this button as
+									well as the three fields. React leaves it unnamed for
+									the same reason.
+								-->
+								<button
+									type="button"
+									class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+									(click)="togglePasswords()"
+								>
+									<ng-icon
+										size="1rem"
+										[name]="showPasswords() ? 'lucideEyeOff' : 'lucideEye'"
+										aria-hidden="true"
+										class="h-4 w-4"
+									/>
+								</button>
+							</div>
+						</app-form-field>
+
+						<app-form-field
+							label="New Password"
+							htmlFor="newPassword"
+							[field]="passwordForm.newPassword"
+						>
+							<input
+								appFormInput
+								id="newPassword"
+								autocomplete="new-password"
+								placeholder="Enter new password"
+								[type]="showPasswords() ? 'text' : 'password'"
+								[formField]="passwordForm.newPassword"
+							/>
+						</app-form-field>
+
+						<app-form-field
+							label="Confirm New Password"
+							htmlFor="confirmPassword"
+							[field]="passwordForm.confirmPassword"
+						>
+							<input
+								appFormInput
+								id="confirmPassword"
+								autocomplete="new-password"
+								placeholder="Confirm new password"
+								[type]="showPasswords() ? 'text' : 'password'"
+								[formField]="passwordForm.confirmPassword"
+							/>
+						</app-form-field>
+
+						<!--
+							`self-start` restores what `space-y-4` gave for free.
+							React's button was an `inline-flex` box in block flow, so
+							it was shrink-to-fit; as a column flex item it would
+							stretch to the card's full width instead. The form fields
+							above *should* stretch, so `items-start` on the form is
+							not the fix -- only the button opts out.
+						-->
+						<app-button type="submit" className="self-start">
+							<ng-icon
+								name="lucideKey"
+								size="1rem"
+								aria-hidden="true"
+								class="mr-2 h-4 w-4"
+							/>
+							Update Password
+						</app-button>
+					</form>
+				</div>
+			</div>
+
+			<!-- Email management -->
+			<div appCard className="shadow-lg">
+				<div appCardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-lg bg-brass/10 p-2">
+							<ng-icon
+								name="lucideMail"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-brass"
+							/>
+						</div>
+						<div>
+							<h3 appCardTitle>Email Management</h3>
+							<p appCardDescription>Update your email address</p>
+						</div>
+					</div>
+				</div>
+				<div appCardContent className="space-y-4">
+					<div class="space-y-2">
+						<p class="text-sm font-medium">Current Email</p>
+						<div class="text-lg font-medium">{{ currentUser.email }}</div>
+					</div>
+					<p class="text-sm text-muted-foreground">
+						Email change functionality coming soon. You'll be able to update
+						your email address and verify the new address before the change
+						takes effect.
+					</p>
+				</div>
+			</div>
+
+			<!-- Privacy settings -->
+			<div appCard className="shadow-lg">
+				<div appCardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-lg bg-primary/10 p-2">
+							<ng-icon
+								name="lucideShield"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<div>
+							<h3 appCardTitle>Privacy Settings</h3>
+							<p appCardDescription>Control your data visibility</p>
+						</div>
+					</div>
+				</div>
+				<div appCardContent className="space-y-4">
+					<p class="text-sm text-muted-foreground">
+						Privacy controls will allow you to manage:
+					</p>
+					<ul class="space-y-2 text-sm text-muted-foreground">
+						<li>&bull; Teacher access to your performance data</li>
+						<li>&bull; Parent visibility of practice sessions</li>
+						<li>&bull; Inclusion in class leaderboards</li>
+						<li>&bull; Email notification preferences</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Data & privacy -->
+			<div appCard className="shadow-lg">
+				<div appCardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-lg bg-brass/10 p-2">
+							<ng-icon
+								name="lucideDownload"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-brass"
+							/>
+						</div>
+						<div>
+							<h3 appCardTitle>Data &amp; Privacy</h3>
+							<p appCardDescription>Download or delete your data</p>
+						</div>
+					</div>
+				</div>
+				<div appCardContent className="space-y-4">
+					<div>
+						<h4 class="mb-2 font-medium">Download Your Data</h4>
+						<p class="mb-4 text-sm text-muted-foreground">
+							Get a copy of all your practice data, statistics, and account
+							information in JSON format.
+						</p>
+						<app-button variant="outline" (click)="downloadData()">
+							<ng-icon
+								name="lucideDownload"
+								size="1rem"
+								aria-hidden="true"
+								class="mr-2 h-4 w-4"
+							/>
+							Download All My Data
+						</app-button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Danger zone -->
+			<div appCard className="border-destructive/50 shadow-lg">
+				<div appCardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-lg bg-destructive/10 p-2">
+							<ng-icon
+								name="lucideAlertTriangle"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-destructive"
+							/>
+						</div>
+						<div>
+							<h3 appCardTitle className="text-destructive">Danger Zone</h3>
+							<p appCardDescription>Irreversible account actions</p>
+						</div>
+					</div>
+				</div>
+				<div appCardContent className="space-y-4">
+					<div>
+						<h4 class="mb-2 font-medium">Delete Account</h4>
+						<p class="mb-4 text-sm text-muted-foreground">
+							Once you delete your account, there is no going back. All your
+							data will be permanently removed.
+						</p>
+						<app-button variant="destructive" (click)="openDeleteModal()">
+							<ng-icon
+								name="lucideTrash2"
+								size="1rem"
+								aria-hidden="true"
+								class="mr-2 h-4 w-4"
+							/>
+							Delete My Account
+						</app-button>
+					</div>
+				</div>
+			</div>
+
+			@if (showDeleteModal()) {
+				<div
+					class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
+				>
+					<div
+						appCard
+						className="w-full max-w-md border-destructive shadow-2xl"
+					>
+						<div appCardHeader>
+							<h3 appCardTitle className="text-destructive">
+								Confirm Account Deletion
+							</h3>
+							<p appCardDescription>This action cannot be undone</p>
+						</div>
+						<div appCardContent>
+							<form class="flex flex-col gap-4" (submit)="submitDelete($event)">
+								<p class="text-sm">
+									All your practice data, statistics, and account information
+									will be permanently deleted. Type your email address to
+									confirm:
+								</p>
+								<app-form-field
+									htmlFor="emailConfirmation"
+									[field]="deleteForm.emailConfirmation"
+								>
+									<input
+										appFormInput
+										id="emailConfirmation"
+										type="email"
+										[placeholder]="currentUser.email"
+										[formField]="deleteForm.emailConfirmation"
+									/>
+								</app-form-field>
+								<div class="flex gap-2">
+									<app-button
+										type="button"
+										variant="outline"
+										className="flex-1"
+										(click)="closeDeleteModal()"
+									>
+										Cancel
+									</app-button>
+									<app-button
+										type="submit"
+										variant="destructive"
+										className="flex-1"
+									>
+										Permanently Delete Account
+									</app-button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+}
