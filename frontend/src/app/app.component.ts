@@ -26,7 +26,7 @@ import { FriendsPanelComponent } from "./features/friends/components/friends-pan
 		FriendsPanelComponent,
 	],
 	templateUrl: "./app.component.html",
-	styleUrl: "./app.component.css",
+	styleUrl: "./app.component.scss",
 })
 export class AppComponent {
 	/**
