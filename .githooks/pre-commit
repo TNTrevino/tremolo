@@ -17,21 +17,21 @@ if has_staged_files_in "^frontend/"; then
 fi
 
 # Music Service Precommit
-if has_staged_files_in "^backend/music/"; then
+if has_staged_files_in "^music-api/"; then
   echo "Checking Python code formatting..."
 
-  STAGED_PY_FILES=$(staged_files_matching "^backend/music/.*\.py$")
+  STAGED_PY_FILES=$(staged_files_matching "^music-api/.*\.py$")
 
   if [ -n "$STAGED_PY_FILES" ]; then
-    if [ -f "$REPO_ROOT/backend/music/env/bin/activate" ]; then
-      . "$REPO_ROOT/backend/music/env/bin/activate"
+    if [ -f "$REPO_ROOT/music-api/env/bin/activate" ]; then
+      . "$REPO_ROOT/music-api/env/bin/activate"
 
-      RELATIVE_PY_FILES=$(echo "$STAGED_PY_FILES" | sed 's|^backend/music/||')
+      RELATIVE_PY_FILES=$(echo "$STAGED_PY_FILES" | sed 's|^music-api/||')
 
       echo "Running Black on staged Python files..."
       echo "$RELATIVE_PY_FILES" | xargs black --quiet --check 2>/dev/null || {
         echo "Formatting with Black..."
-        echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/backend/music" && xargs black)
+        echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/music-api" && xargs black)
         if [ $? -ne 0 ]; then
           echo "Black formatting failed."
           exit 1
@@ -39,7 +39,7 @@ if has_staged_files_in "^backend/music/"; then
       }
 
       echo "Running flake8 on staged Python files..."
-      echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/backend/music" && xargs flake8 --select=E9,F63,F7,F82)
+      echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/music-api" && xargs flake8 --select=E9,F63,F7,F82)
       if [ $? -ne 0 ]; then
         echo "Flake8 found critical errors."
         exit 1
@@ -51,15 +51,15 @@ if has_staged_files_in "^backend/music/"; then
 
       echo "Python code checks passed."
     else
-      echo "Warning: Virtual environment not found at backend/music/env. Skipping Python checks."
-      echo "  Run: cd backend/music && python3 -m venv env && source env/bin/activate && pip install -r requirements.txt"
+      echo "Warning: Virtual environment not found at music-api/env. Skipping Python checks."
+      echo "  Run: cd music-api && python3 -m venv env && source env/bin/activate && pip install -r requirements.txt"
     fi
   fi
 fi
 
 # User Service Precommit
-if has_staged_files_in "^backend/main/"; then
-  STAGED_GO_FILES=$(staged_files_matching "^backend/main/.*\.go$")
+if has_staged_files_in "^core-api/"; then
+  STAGED_GO_FILES=$(staged_files_matching "^core-api/.*\.go$")
 
   if [ -n "$STAGED_GO_FILES" ]; then
     echo "Running gofmt on staged Go files..."

@@ -16,8 +16,8 @@ help:
 	@echo "Targets:"
 	@echo "  test                   run all suites (frontend, music, go)"
 	@echo "  test-frontend          ng test single run (frontend/)"
-	@echo "  test-music             pytest (backend/music)"
-	@echo "  test-go                go test ./... -race (backend/main)"
+	@echo "  test-music             pytest (music-api)"
+	@echo "  test-go                go test ./... -race (core-api)"
 	@echo "  test-api               kulala HTTP smoke tests (needs the service running)"
 	@echo ""
 	@echo "  lint                   run all linters"
@@ -65,11 +65,11 @@ build-frontend:
 
 check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
 
-# ---- backend/music ----
+# ---- music-api ----
 
 # Activate the venv when present (local dev); CI installs deps into the
 # system environment, where there is no venv to activate.
-MUSIC_RUN = cd backend/music && { [ -f env/bin/activate ] && . env/bin/activate || true; } &&
+MUSIC_RUN = cd music-api && { [ -f env/bin/activate ] && . env/bin/activate || true; } &&
 
 test-music:
 	@$(call banner,Testing music service (pytest)...)
@@ -89,29 +89,29 @@ format-check-music:
 
 check-music: format-check-music lint-music test-music
 
-# ---- backend/main ----
+# ---- core-api ----
 
 test-go:
 	@$(call banner,Testing go service (go test -race + coverage)...)
-	cd backend/main && go test ./... -race -coverprofile=coverage.out
+	cd core-api && go test ./... -race -coverprofile=coverage.out
 	@$(call banner,Go coverage by function...)
-	cd backend/main && go tool cover -func=coverage.out
+	cd core-api && go tool cover -func=coverage.out
 
 vet-go:
 	@$(call banner,Vetting go service (go vet)...)
-	cd backend/main && go vet ./...
+	cd core-api && go vet ./...
 
 lint-go: vet-go
 	@$(call banner,Linting go service (golangci-lint)...)
-	cd backend/main && golangci-lint run
+	cd core-api && golangci-lint run
 
 format-go:
 	@$(call banner,Formatting go service (gofmt)...)
-	cd backend/main && gofmt -s -w .
+	cd core-api && gofmt -s -w .
 
 format-check-go:
 	@$(call banner,Checking go service formatting (gofmt)...)
-	@cd backend/main && \
+	@cd core-api && \
 	files="$$(gofmt -s -l .)" && \
 	if [ -n "$$files" ]; then \
 		echo "gofmt needed on:"; echo "$$files"; exit 1; \
@@ -132,7 +132,7 @@ KULALA ?= npx --yes @mistweaverco/kulala-cli@0.13.1
 
 test-api:
 	@$(call banner,Testing API (kulala smoke tests)...)
-	cd backend/main/apitests && $(KULALA) run --tests --halt --env local .
+	cd core-api/apitests && $(KULALA) run --tests --halt --env local .
 
 # ---- aggregate ----
 # Each leaf runs via a recursive make so we can number the steps ([ 1/3 ] ...).
