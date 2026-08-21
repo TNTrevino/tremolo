@@ -1,3 +1,273 @@
-<section class="mx-auto max-w-4xl p-8">
-	<h1 class="font-display text-3xl font-bold tracking-tight">Home</h1>
-</section>
+<!--
+	Port of frontend-react/src/pages/HomePage.tsx, section for section.
+
+	Card overrides go through `className` (tailwind-merge), never `class` --
+	see card.directive.ts. Icons are sized with `<ng-icon size="…">` because
+	@ng-icons writes its size as an inline style that no `h-*`/`w-*` class
+	can beat, and each one is `aria-hidden` because its host carries
+	`role="img"` and it sits next to its own label.
+-->
+<div class="min-h-screen">
+	<!-- Hero: ink headline set on faint engraved staff lines -->
+	<section class="relative overflow-hidden py-24 px-4">
+		<div
+			aria-hidden="true"
+			class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-7"
+		>
+			@for (line of staffLines; track line) {
+				<div class="h-px w-full bg-foreground/10"></div>
+			}
+		</div>
+		<div class="container mx-auto max-w-6xl relative">
+			<div class="text-center space-y-6 animate-fade-in">
+				<h1
+					class="font-display text-5xl md:text-7xl font-bold leading-tight text-balance"
+				>
+					Master music sight reading
+				</h1>
+				<p class="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
+					Practice reading notes, key signatures, intervals, scales, and chords
+					— built for music students, teachers, and performers
+				</p>
+				<div
+					class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6"
+				>
+					<a routerLink="/note-game">
+						<app-button size="xl" variant="brass" className="w-full sm:w-auto">
+							<ng-icon
+								name="lucideMusic2"
+								size="1.25rem"
+								aria-hidden="true"
+								class="mr-2"
+							/>
+							Start practicing
+						</app-button>
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Features Section -->
+	<section class="py-20 px-4">
+		<div class="container mx-auto max-w-6xl">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div
+					appCard
+					className="group hover:border-primary hover:shadow-lg transition-all"
+				>
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
+							<ng-icon
+								name="lucideMusic2"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<h3 appCardTitle>Note Recognition Game</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Interactive games that help you identify notes quickly and
+							accurately. Track your speed and accuracy in real-time.
+						</p>
+					</div>
+				</div>
+
+				<div
+					appCard
+					className="group hover:border-primary hover:shadow-lg transition-all"
+				>
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
+							<ng-icon
+								name="lucideTarget"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-brass"
+							/>
+						</div>
+						<h3 appCardTitle>Rhythm Practice</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Customizable exercises focusing on specific rhythm patterns.
+							Perfect for UIL preparation and auditions.
+						</p>
+					</div>
+				</div>
+
+				<div
+					appCard
+					className="group hover:border-primary hover:shadow-lg transition-all"
+				>
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
+							<ng-icon
+								name="lucideTrendingUp"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<h3 appCardTitle>Track Progress</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Detailed analytics showing your improvement over time. Set goals
+							and celebrate your musical growth.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- How It Works Section -->
+	<section class="py-20 px-4 bg-muted/30">
+		<div class="container mx-auto max-w-4xl">
+			<h2 class="font-display text-4xl font-bold text-center mb-12">
+				How It Works
+			</h2>
+			<div class="space-y-8">
+				@for (item of steps; track item.step) {
+					<div class="flex gap-6 items-start">
+						<div
+							class="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold"
+						>
+							{{ item.step }}
+						</div>
+						<div class="flex-1">
+							<h3 class="text-2xl font-bold mb-2">{{ item.title }}</h3>
+							<p class="text-muted-foreground text-lg">
+								{{ item.description }}
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</section>
+
+	<!-- Built For Everyone Section -->
+	<section class="py-20 px-4">
+		<div class="container mx-auto max-w-6xl">
+			<h2 class="font-display text-4xl font-bold text-center mb-12">
+				Built For Everyone
+			</h2>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div appCard className="hover:shadow-lg transition-all">
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4"
+						>
+							<ng-icon
+								name="lucideSchool"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<h3 appCardTitle>Music Teachers</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Create custom exercises, track student progress, and assign
+							practice sessions. Perfect for classroom and individual
+							instruction.
+						</p>
+					</div>
+				</div>
+
+				<div appCard className="hover:shadow-lg transition-all">
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4"
+						>
+							<ng-icon
+								name="lucideUser"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-brass"
+							/>
+						</div>
+						<h3 appCardTitle>Students</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Build sight-reading confidence for auditions, competitions, and
+							UIL practice. Work at your own pace and track your improvement.
+						</p>
+					</div>
+				</div>
+
+				<div appCard className="hover:shadow-lg transition-all">
+					<div appCardHeader>
+						<div
+							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4"
+						>
+							<ng-icon
+								name="lucideUsers"
+								size="1.5rem"
+								aria-hidden="true"
+								class="text-primary"
+							/>
+						</div>
+						<h3 appCardTitle>Musicians</h3>
+					</div>
+					<div appCardContent>
+						<p appCardDescription className="text-base">
+							Advanced practice for specific chord structures, scale patterns,
+							and complex rhythms. Take your skills to the next level.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Final CTA Section -->
+	<section class="py-20 px-4 bg-muted/30">
+		<div class="container mx-auto max-w-4xl text-center space-y-6">
+			<h2 class="font-display text-4xl font-bold">
+				Ready to Improve Your Sight Reading?
+			</h2>
+			<p class="text-xl text-muted-foreground">
+				Join students and teachers who are already seeing results
+			</p>
+			<div
+				class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
+			>
+				<a routerLink="/note-game">
+					<app-button size="lg">
+						<ng-icon
+							name="lucideMusic2"
+							size="1.25rem"
+							aria-hidden="true"
+							class="mr-2"
+						/>
+						Start Note Game
+					</app-button>
+				</a>
+				<a routerLink="/sheet-music">
+					<app-button size="lg" variant="outline">
+						<ng-icon
+							name="lucideTarget"
+							size="1.25rem"
+							aria-hidden="true"
+							class="mr-2"
+						/>
+						Try Rhythm Practice
+					</app-button>
+				</a>
+			</div>
+		</div>
+	</section>
+</div>
