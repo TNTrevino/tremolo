@@ -11,7 +11,11 @@ import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { SelectComponent } from "../../../../shared/components/ui/select.component";
-import { GameMode, NOTE_LIMITS, TIME_LIMITS } from "../../models/engine.models";
+import {
+	GameMode,
+	NOTE_LIMITS,
+	TIME_LIMITS,
+} from "@features/identification-game";
 import { type GameSettings, SCALES } from "../../models/note-game.models";
 import { NoteRangeSettingComponent } from "../note-range-setting/note-range-setting.component";
 

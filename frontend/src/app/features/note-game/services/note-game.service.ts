@@ -7,12 +7,17 @@ import {
 } from "@angular/core";
 import { Subject } from "rxjs";
 
-import type { GameStats, NoteAnswer } from "../models/engine.models";
-import { GameMode } from "../models/engine.models";
+import {
+	GameStateService,
+	type GameStats,
+} from "@features/identification-game";
+
 import { buildKeyToNoteMap } from "../models/keymap";
-import type { GameSettings, NoteGameStats } from "../models/note-game.models";
-import { DEFAULT_RANGE } from "../models/range.utils";
-import { IdentificationGameEngine } from "./identification-game.engine";
+import {
+	NOTE_GAME_DEFAULTS,
+	type GameSettings,
+	type NoteGameStats,
+} from "../models/note-game.models";
 import { noteKeyboardInput } from "./keyboard-input";
 import { NoteAudioService } from "./note-audio.service";
 
@@ -21,25 +26,32 @@ import { NoteAudioService } from "./note-audio.service";
  * frontend-react/src/features/note-game/hooks/useNoteGame.ts.
  *
  * **This is the composition `frontend/CLAUDE.md` requires**: the state
- * machine, the answer log and the scoring all live in
- * `IdentificationGameEngine` (the shared engine), and this class adds only
- * the note game's two extras -- marimba feedback on a correct answer, and
- * physical keyboard input. There is no second state machine here; every
- * method below either forwards to the engine or configures it.
+ * machine, the answer log and the scoring all live in Phase 5's
+ * `GameStateService` -- the same engine the four identification games run on
+ * -- and this class adds only the note game's three extras: its settings,
+ * marimba feedback on a correct answer, and physical keyboard input. There is
+ * no second state machine here; every method below either forwards to the
+ * engine or configures it.
  *
- * The engine is a Phase-5 stand-in built to Phase 5's interface (see
- * `identification-game.engine.ts`). When the two branches merge, the only
- * line in this file that changes is the one that constructs it.
+ * **The settings live here rather than in the engine**, which is Phase 5's
+ * deviation 4: `GameStateService` reads only `gameMode` and the two limits,
+ * so keeping the game-specific fields outside is what lets it stay
+ * non-generic and be shared by five games without a generic-DI cast. The
+ * note game's own `scale` reaches the final stats through `statsExtras`,
+ * exactly where React put it.
  *
  * React's `onGameEnd` / `onGameStart` callback props become `ended` /
  * `started` observables. The page subscribes with `takeUntilDestroyed`, and
  * because `Subject.next` is synchronous, `started` still fires *inside* the
  * first answer -- which is what lets the page start the timer and persist
  * the settings the player is about to play with.
+ *
+ * Provided per page, alongside the `GameStateService` it configures.
  */
 @Injectable()
 export class NoteGameService {
 	private readonly audio = inject(NoteAudioService);
+	private readonly engine = inject(GameStateService);
 
 	/**
 	 * The player's saved note-to-key map, or `undefined` for the defaults.
@@ -62,61 +74,53 @@ export class NoteGameService {
 	/** Fires once per game, with the final stats. */
 	readonly ended = this._ended.asObservable();
 
-	private readonly engine = new IdentificationGameEngine<GameSettings>({
-		defaultSettings: {
-			gameMode: GameMode.Time,
-			timeLimit: 30,
-			noteLimit: 25,
-			scale: "C Major",
-			// Legacy persistence; the range is what plays. See GameSettings.
-			octave: 4,
-			clef: "treble",
-			lowNote: DEFAULT_RANGE.treble.low,
-			highNote: DEFAULT_RANGE.treble.high,
-		},
-		onGameStart: () => this._started.next(),
-		onGameEnd: (stats) => this._ended.next(stats),
-		onCorrectAnswer: (note) => this.audio.playNoteSound(note),
-		// `octave` is legacy persistence-only and the range is what the game
-		// actually uses, so the summary reports the scale alone.
-		statsExtras: (settings) => ({ scale: settings.scale }),
-	});
+	private readonly _settings = signal<GameSettings>(NOTE_GAME_DEFAULTS);
+	readonly settings = this._settings.asReadonly();
 
-	readonly gameState = this.engine.gameState;
+	readonly gameState = this.engine.state;
 	readonly currentNote = this.engine.currentAnswer;
-	readonly answers: Signal<NoteAnswer[]> = this.engine.answers;
-	readonly settings = this.engine.settings;
-	readonly questionStartTime = this.engine.questionStartTime;
-	readonly gameStartTime = this.engine.gameStartTime;
+	readonly answers = this.engine.answers;
 
 	/**
-	 * The engine types its stats generically; `statsExtras` above is what
-	 * adds `scale`.
+	 * The engine types its stats game-agnostically; `statsExtras` below is
+	 * what adds `scale`.
 	 */
-	readonly gameStats: Signal<NoteGameStats | null> = this.engine.gameStats;
+	readonly gameStats: Signal<NoteGameStats | null> = this.engine.stats;
 
 	/** Key -> note, from the saved bindings or the default 21-note table. */
 	readonly keyToNoteMap = computed(() => buildKeyToNoteMap(this.keyBindings()));
 
 	constructor() {
+		this.engine.configure({
+			settings: this._settings,
+			onGameStart: () => this._started.next(),
+			onGameEnd: (stats) => this._ended.next(stats),
+			onCorrectAnswer: (note) => this.audio.playNoteSound(note),
+			// `octave` is legacy persistence-only and the range is what the
+			// game actually uses, so the summary reports the scale alone.
+			statsExtras: () => ({ scale: this._settings().scale }),
+		});
+
 		// React's twelve `useSound` calls preloaded at hook mount.
 		this.audio.preload();
 
 		noteKeyboardInput({
 			enabled: computed(
-				() => !this.inputDisabled() && this.engine.isAcceptingAnswers(),
+				() =>
+					!this.inputDisabled() &&
+					(this.engine.isPlaying() || this.engine.isReady()),
 			),
 			keyMap: this.keyToNoteMap,
-			onNote: (note) => this.engine.handleAnswer(note),
+			onNote: (note) => this.engine.answer(note),
 		});
 	}
 
 	updateSettings(patch: Partial<GameSettings>): void {
-		this.engine.updateSettings(patch);
+		this._settings.update((prev) => ({ ...prev, ...patch }));
 	}
 
 	handleAnswer(answer: string): void {
-		this.engine.handleAnswer(answer);
+		this.engine.answer(answer);
 	}
 
 	endGame(): void {
@@ -124,7 +128,7 @@ export class NoteGameService {
 	}
 
 	resetGame(): void {
-		this.engine.resetGame();
+		this.engine.reset();
 	}
 
 	/** React's `syncCurrentNote`: the board reporting what it just drew. */

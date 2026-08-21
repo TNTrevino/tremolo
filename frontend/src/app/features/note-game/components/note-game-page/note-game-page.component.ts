@@ -10,26 +10,35 @@ import {
 import { rxResource, takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { NgTemplateOutlet } from "@angular/common";
 
+import {
+	GameMode,
+	GameScoreSaverService,
+	GameState,
+	GameStateService,
+	GameTimerService,
+	ScoreBarComponent,
+} from "@features/identification-game";
+
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { BreakpointService } from "../../../../shared/services/breakpoint.service";
 import type { NoteGameSettings } from "../../../../shared/models/game.models";
 import { UserService } from "../../../../shared/services/user.service";
-import { GameMode, GameState } from "../../models/engine.models";
 import {
 	keyBindingsToNoteMap,
 	noteMapToKeyBindings,
 	DEFAULT_NOTE_TO_KEY_MAP,
 } from "../../models/keymap";
-import type { GameSettings } from "../../models/note-game.models";
-import { GameTimerService } from "../../services/game-timer.service";
+import {
+	mapNoteAssignmentConfig,
+	type GameSettings,
+	type NoteAssignmentConfig,
+} from "../../models/note-game.models";
 import { NoteGameService } from "../../services/note-game.service";
-import { SaveGameOnEndService } from "../../services/save-game-on-end.service";
 import {
 	NoteGameBoardComponent,
 	NoteGameBoardLandscapeComponent,
 } from "../note-game-board/note-game-board.component";
 import { NoteGameResultsComponent } from "../note-game-results/note-game-results.component";
-import { ScoreBarComponent } from "../score-bar/score-bar.component";
 import { SettingsBarComponent } from "../settings-bar/settings-bar.component";
 
 /**
@@ -62,7 +71,9 @@ import { SettingsBarComponent } from "../settings-bar/settings-bar.component";
 		SettingsBarComponent,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	providers: [NoteGameService, GameTimerService, SaveGameOnEndService],
+	// `GameStateService` is the engine `NoteGameService` composes, and both
+	// are this page's state. `GameScoreSaverService` is root-provided.
+	providers: [GameStateService, NoteGameService, GameTimerService],
 	styles: `
 		:host {
 			display: block;
@@ -74,7 +85,7 @@ export class NoteGamePageComponent {
 	private readonly users = inject(UserService);
 	private readonly auth = inject(AuthStore);
 	private readonly timer = inject(GameTimerService);
-	private readonly saver = inject(SaveGameOnEndService);
+	private readonly saver = inject(GameScoreSaverService);
 
 	protected readonly game = inject(NoteGameService);
 	protected readonly breakpoints = inject(BreakpointService);
@@ -84,21 +95,22 @@ export class NoteGamePageComponent {
 	 * instead of the student's saved row, the settings save-back is
 	 * suppressed, and the finished attempt is tagged with the assignment id.
 	 *
-	 * Nothing routes to this yet -- `AssignmentGameHostComponent` still
-	 * renders its stub, because Phase 5 owns that file too and both game
-	 * shells land in it at the merge. See the handoff.
+	 * `AssignmentGameHostComponent` binds this for `gameType === "note"`, the
+	 * way it binds Phase 5's shell for the other four. The `config` is the
+	 * assignment's opaque JSONB blob, which for this game is **snake_case** --
+	 * see `NoteAssignmentConfig`.
 	 */
 	readonly assignment = input<{
 		id: number;
-		config: Partial<NoteGameSettings>;
+		config: Record<string, unknown>;
 	}>();
 
 	protected readonly states = GameState;
 	protected readonly isAuthenticated = this.auth.isAuthenticated;
 
-	protected readonly timeRemaining = this.timer.timeRemaining;
+	protected readonly timeRemaining = this.timer.remaining;
 	protected readonly formatTime = (seconds: number): string =>
-		this.timer.formatTime(seconds);
+		this.timer.format(seconds);
 	protected readonly saveError = this.saver.saveError;
 
 	/** `null` (or a 404) means "nothing saved yet", not an error. */
@@ -152,7 +164,7 @@ export class NoteGamePageComponent {
 		this.game.ended
 			.pipe(takeUntilDestroyed())
 			.subscribe((stats) =>
-				this.saver.handleGameEnd(stats, "note", this.assignment()?.id),
+				this.saver.save(stats, "note", this.assignment()?.id),
 			);
 
 		// Custom bindings feed the keydown stream.
@@ -166,8 +178,11 @@ export class NoteGamePageComponent {
 		});
 
 		// Hydrate from the assignment's frozen config, or the player's saved
-		// row. Both are the same shape; per-field guards let a partial or
-		// hand-edited config degrade rather than clobber a field with
+		// row. Two mappers, not one, because the two sources disagree on case:
+		// the saved row crossed `UserService`'s DTO boundary and is camelCase,
+		// while the assignment config is opaque JSONB the Go service stores
+		// verbatim and is snake_case. Both use per-field guards, so a partial
+		// or hand-edited source degrades rather than clobbering a field with
 		// undefined.
 		effect(() => {
 			const assignment = this.assignment();
@@ -175,7 +190,9 @@ export class NoteGamePageComponent {
 				if (this.assignmentApplied) return;
 				this.assignmentApplied = true;
 				untracked(() =>
-					this.game.updateSettings(mapSavedSettings(assignment.config)),
+					this.game.updateSettings(
+						mapNoteAssignmentConfig(assignment.config as NoteAssignmentConfig),
+					),
 				);
 				return;
 			}
@@ -199,8 +216,9 @@ export class NoteGamePageComponent {
 	}
 
 	protected onPlayAgain(): void {
-		this.timer.resetTimer();
-		this.saver.reset();
+		// `GameScoreSaverService` clears its own `saveError` when the next
+		// save starts, and the results screen it feeds is unmounted here.
+		this.timer.reset();
 		this.game.resetGame();
 	}
 
@@ -219,7 +237,7 @@ export class NoteGamePageComponent {
 		const settings = this.game.settings();
 
 		if (settings.gameMode === GameMode.Time) {
-			this.timer.startTimer(settings.timeLimit);
+			this.timer.start(settings.timeLimit);
 		}
 
 		// Playing an assignment must never overwrite the student's own
@@ -246,11 +264,12 @@ export class NoteGamePageComponent {
 }
 
 /**
- * A saved (or assignment-frozen) settings row as a settings patch.
+ * The player's saved `note_game_settings` row as a settings patch.
  *
  * Per-field guards, ported from React's `mapNoteConfigToSettings`: a row that
- * predates a field -- or an assignment config someone edited by hand -- must
- * leave that setting at its default rather than set it to `undefined`.
+ * predates a field must leave that setting at its default rather than set it
+ * to `undefined`. The assignment side of the same job is
+ * `mapNoteAssignmentConfig`, which reads the snake_case blob.
  *
  * `octave` is copied through deliberately. It does nothing, and a row saved
  * before the range picker existed still has to load (`frontend/CLAUDE.md`).

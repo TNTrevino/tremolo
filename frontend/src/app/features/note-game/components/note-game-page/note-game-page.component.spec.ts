@@ -193,14 +193,17 @@ describe("NoteGamePageComponent", () => {
 			expect(el().textContent).toContain("C4–C6");
 
 			// The board starts prefetching on the defaults while the saved row
-			// is still in flight. When it lands, the queue resets -- and
-			// PLAN.md §5.5's `switchMap` makes that a real cancellation, where
-			// React let the superseded promises resolve and threw them away.
+			// is still in flight. When it lands, the buffer is emptied at once
+			// -- React's own note, "no stale question can be served in the
+			// meantime" -- and the superseded batch is unsubscribed when the
+			// 300ms reset debounce fires. That last part is PLAN.md §5.5's
+			// `switchMap` making it a real cancellation, where React let the
+			// superseded promises resolve and threw the results away.
 			const initial = noteRequests();
 			expect(initial.length).toBeGreaterThan(0);
-			expect(initial.every((request) => request.cancelled)).toBe(true);
 
 			await settleQueueReset();
+			expect(initial.every((request) => request.cancelled)).toBe(true);
 
 			const requests = noteRequests();
 			expect(requests.length).toBeGreaterThan(0);

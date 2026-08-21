@@ -15,7 +15,11 @@ import { ButtonComponent } from "../../../../shared/components/ui/button.compone
 import { DIALOG_DIRECTIVES } from "../../../../shared/components/ui/dialog.component";
 import { SelectComponent } from "../../../../shared/components/ui/select.component";
 import { BreakpointService } from "../../../../shared/services/breakpoint.service";
-import { GameMode, NOTE_LIMITS, TIME_LIMITS } from "../../models/engine.models";
+import {
+	GameMode,
+	NOTE_LIMITS,
+	TIME_LIMITS,
+} from "@features/identification-game";
 import { type GameSettings, SCALES } from "../../models/note-game.models";
 import { KeyboardBindingsDialogComponent } from "../keyboard-bindings-dialog/keyboard-bindings-dialog.component";
 import { MobileSettingsDrawerComponent } from "../mobile-settings-drawer/mobile-settings-drawer.component";

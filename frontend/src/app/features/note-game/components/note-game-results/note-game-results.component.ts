@@ -20,7 +20,7 @@ import { ButtonComponent } from "../../../../shared/components/ui/button.compone
 import { CardDirective } from "../../../../shared/components/ui/card.directive";
 import { UserService } from "../../../../shared/services/user.service";
 import type { NoteGameStats } from "../../models/note-game.models";
-import { GameOverCardComponent } from "../game-over-card/game-over-card.component";
+import { GameOverCardComponent } from "@features/identification-game";
 
 /**
  * The note game's results screen. Port of
@@ -82,7 +82,7 @@ const NPM_SERIES: readonly TremoloSeries[] = [
 			(playAgain)="playAgain.emit()"
 		>
 			@if (isAuthenticated() && saveError()) {
-				<div gameOverSection appCard className="p-6 border-destructive/50">
+				<div gameOverSections appCard className="p-6 border-destructive/50">
 					<p class="text-sm text-destructive text-center">
 						Your result could not be saved. Please check your connection and try
 						again.
@@ -90,7 +90,7 @@ const NPM_SERIES: readonly TremoloSeries[] = [
 				</div>
 			}
 			@if (isAuthenticated() && recent.error()) {
-				<div gameOverSection appCard className="p-6">
+				<div gameOverSections appCard className="p-6">
 					<p class="text-sm text-muted-foreground text-center">
 						Could not load recent games.
 						@if (!saveError()) {
@@ -100,7 +100,7 @@ const NPM_SERIES: readonly TremoloSeries[] = [
 				</div>
 			}
 			@if (showChart()) {
-				<div gameOverSection appCard className="p-6">
+				<div gameOverSections appCard className="p-6">
 					<div class="mb-4 flex items-baseline justify-between">
 						<h3 class="text-xl font-bold">Recent Games</h3>
 						<span class="text-xs text-muted-foreground">
@@ -121,14 +121,14 @@ const NPM_SERIES: readonly TremoloSeries[] = [
 			}
 
 			@if (gameStats().scale !== undefined) {
-				<ng-container gameOverSummaryExtra>
+				<ng-container gameOverSummary>
 					<span>•</span>
 					<span>Scale: {{ gameStats().scale }}</span>
 				</ng-container>
 			}
 
 			@if (!isAuthenticated()) {
-				<a gameOverAction routerLink="/signup">
+				<a gameOverActions routerLink="/signup">
 					<app-button size="lg" variant="outline">
 						Sign Up to Save Progress
 					</app-button>
