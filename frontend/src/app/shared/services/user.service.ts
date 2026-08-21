@@ -53,9 +53,9 @@ import {
  * - **Observables, not Promises** (D5). Every method returns one, so a page
  *   can hand it straight to `rxResource` and get cancellation for free.
  * - **The mapping moved down a layer.** React returned raw DTOs and mapped
- *   inside `useUserProfile`'s `queryFn`; with TanStack gone the mapping
- *   belongs at the service boundary (phase-3.md, uniform rules), so nothing
- *   above this file ever sees a snake_case key.
+ *   inside `useUserProfile`'s fetch function; with that hook layer gone, the
+ *   mapping belongs at the service boundary (phase-3.md, uniform rules), so
+ *   nothing above this file ever sees a snake_case key.
  * - **The four dead methods are gone** -- `updateProfile`, `changePassword`,
  *   `deleteAccount` and `downloadUserData` addressed
  *   `PATCH/POST/DELETE/GET /api/users/...` routes the Go service does not
