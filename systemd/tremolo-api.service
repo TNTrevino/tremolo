@@ -5,9 +5,9 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=noetrevino
-WorkingDirectory=/opt/tremolo/backend/main
+WorkingDirectory=/opt/tremolo/core-api
 EnvironmentFile=/etc/tremolo/.env
-ExecStart=/opt/tremolo/backend/main/tremolo-api
+ExecStart=/opt/tremolo/core-api/tremolo-api
 Restart=always
 RestartSec=5
 
