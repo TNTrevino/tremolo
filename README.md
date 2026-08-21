@@ -42,7 +42,7 @@ make hooks
 
 ### Database
 
-Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./backend/main/database/schema.sql` file.
+Make sure you have a database named `tremolo` and you have the tables inserted properly. You can see the schema in the `./core-api/database/schema.sql` file.
 
 Make the tables, then association.
 
@@ -104,7 +104,7 @@ already up; point it with `E2E_BASE_URL=http://localhost:4300`. See
 
 ```bash
 
-cd backend/music
+cd music-api
 
 python3 -m venv env
 
@@ -120,7 +120,7 @@ fastapi dev main.py
 
 ```bash
 
-cd backend/main
+cd core-api
 go run main.go
 
 ```

@@ -23,7 +23,7 @@ const ACTIVITY_URL = `${BASE}/api/note-game/activity`;
 
 /**
  * The **live** `general-info` payload -- all six fields the Go service sends
- * and no more (`backend/main/DTOs/general_user_info_dto.go`). React's type
+ * and no more (`core-api/DTOs/general_user_info_dto.go`). React's type
  * declared ten; the other four never arrive. See the stat-grid spec below.
  */
 const PROFILE = {

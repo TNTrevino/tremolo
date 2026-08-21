@@ -1,6 +1,6 @@
 # Tremolo API tests (kulala)
 
-Scripted, assertion-based API tests for the Go service (`backend/main`),
+Scripted, assertion-based API tests for the Go service (`core-api`),
 run with the [kulala CLI](https://github.com/mistweaverco/kulala-cli).
 More readable than a wall of `curl`, and every step asserts.
 
@@ -21,10 +21,10 @@ Start the Go service first (it listens on `:5001` and runs migrations
 on startup):
 
 ```bash
-cd backend/main && go run main.go
+cd core-api && go run main.go
 ```
 
-Then, from this directory (`backend/main/apitests`):
+Then, from this directory (`core-api/apitests`):
 
 ```bash
 kulala run --tests --env local auth.http

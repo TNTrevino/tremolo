@@ -59,7 +59,7 @@ import {
  * - **The four dead methods are gone** -- `updateProfile`, `changePassword`,
  *   `deleteAccount` and `downloadUserData` addressed
  *   `PATCH/POST/DELETE/GET /api/users/...` routes the Go service does not
- *   register (`backend/main/controllers/user_info_controller.go` mounts
+ *   register (`core-api/controllers/user_info_controller.go` mounts
  *   exactly one route). Nothing called them in React either, which is why
  *   the account page answers all three with a "coming soon" toast. See the
  *   handoff.

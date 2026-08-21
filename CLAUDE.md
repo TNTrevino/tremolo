@@ -7,12 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Tremolo (tremolonotes.com) is a music-education practice app (competitor to musictheory.net) for 6th–12th grade students. It is three services in one repo:
 
 - `frontend/` — Angular 22 + TypeScript SPA (standalone components, zoneless change detection, signals, RxJS, Tailwind). Renders MusicXML with OpenSheetMusicDisplay (OSMD). Migrated from React in 2026; the record is in `frontend/.migration/`.
-- `backend/music/` — Python FastAPI "music generation" microservice (port 8000). Uses **music21** to generate exercises and returns MusicXML (plus answer metadata for games). Stateless, no auth.
-- `backend/main/` — Go (Gin) "user tracking" microservice (port 5001). Auth (JWT + Google OAuth), users/teachers/friends, game settings, score entries, dashboard charts. Postgres via **sqlc** (queries in `database/queries/`, generated code in `database/generated/`, goose-style migrations in `database/migrations/`).
+- `music-api/` — Python FastAPI "music generation" microservice (port 8000). Uses **music21** to generate exercises and returns MusicXML (plus answer metadata for games). Stateless, no auth.
+- `core-api/` — Go (Gin) "user tracking" microservice (port 5001). Auth (JWT + Google OAuth), users/teachers/friends, game settings, score entries, dashboard charts. Postgres via **sqlc** (queries in `database/queries/`, generated code in `database/generated/`, goose-style migrations in `database/migrations/`).
 
-The frontend talks to both services directly, through `environment.mainApi` and `environment.musicApi` in `frontend/src/environments/`. The Go and Python services do not talk to each other.
+The frontend talks to both services directly, through `environment.coreApi` and `environment.musicApi` in `frontend/src/environments/`. The Go and Python services do not talk to each other.
 
-Deep per-service docs (read before structural changes in a service): `frontend/ARCHITECTURE.md`, `backend/main/README.md`, `backend/music/README.md`. Each service also has its own `CLAUDE.md` with that service's invariants. The frontend additionally has `frontend/DESIGN.md` (visual source of truth) and `frontend/CLASSES_FRONTEND.md` (the teacher tier).
+Deep per-service docs (read before structural changes in a service): `frontend/ARCHITECTURE.md`, `core-api/README.md`, `music-api/README.md`. Each service also has its own `CLAUDE.md` with that service's invariants. The frontend additionally has `frontend/DESIGN.md` (visual source of truth) and `frontend/CLASSES_FRONTEND.md` (the teacher tier).
 
 ## Commands
 
@@ -28,14 +28,14 @@ Frontend (`cd frontend`). **Node 24 first** — Angular 22 accepts `^22.22.3 || 
 - `npm run build` — `ng build`, output `dist/tremolo-frontend/browser/` (CI runs this; type errors fail it)
 - `npm run e2e` — Playwright against a running server: `E2E_BASE_URL=http://localhost:4300 npm run e2e`. Needs both backends up; not in CI.
 
-Music service (`cd backend/music`, venv lives at `backend/music/env`):
+Music service (`cd music-api`, venv lives at `music-api/env`):
 
 - `source env/bin/activate` (create with `python3 -m venv env && pip install -r requirements.txt`)
 - `fastapi dev main.py` — dev server (port 8000)
 - `pytest` — full suite with coverage (config in `pytest.ini`); single test: `pytest tests/test_api.py -k name --no-cov`
 - `black .` (line length 80) and `flake8` — CI enforces both
 
-Go service (`cd backend/main`):
+Go service (`cd core-api`):
 
 - `go run main.go` — dev server (port 5001); `air` config exists (`.air.toml`)
 - `go test ./...` — tests (CI runs with `-race`); single test: `go test ./tests/ -run TestName`
@@ -54,7 +54,7 @@ Games (key signature / interval / scale / chord identification) are declarative.
 
 1. Python: add a `/music/<name>-game` endpoint (model in `models.py`, logic in `services/music_service.py`, route via the `run_game_endpoint` helper in `routers/api.py`) returning `{ generatedXml, ...answer fields }` + tests.
 2. Frontend: write a `GameDefinition` in `frontend/src/app/features/identification-game/games/` — a plain `.ts` constant, no component. It carries the settings schema, `toRequest`, an **`Observable`**-returning `fetchQuestion(request, music)`, `getAnswer` and the answer-pad options. Export it from `games/index.ts`, then add a thin page component, a route in `src/app/app.routes.ts` (routes are inlined there; there are no `*.routes.ts` files) and a nav link. The question queue keys on `JSON.stringify(toRequest(settings))`, so only payload-affecting settings reset it — a setting that changes the request but skips `toRequest` serves stale questions.
-3. Add the game id to `backend/main/DTOs/game_types.go` (`ValidGameTypes`) and the TS `GameType` union in `frontend/src/app/shared/models/game.models.ts`. To make it assignable by a teacher, add it to `GAME_DEFINITIONS` too.
+3. Add the game id to `core-api/DTOs/game_types.go` (`ValidGameTypes`) and the TS `GameType` union in `frontend/src/app/shared/models/game.models.ts`. To make it assignable by a teacher, add it to `GAME_DEFINITIONS` too.
    Settings UI, JSONB persistence (`game_settings` table), saved-config sanitization, scoring, and game flow all come from the definition — don't touch shared code.
 
 `fetchQuestion` takes `MusicService` as an argument rather than calling `inject()`: the queue invokes it inside a `switchMap`, which is not an injection context, and `inject()` there throws NG0203.
@@ -62,7 +62,7 @@ Games (key signature / interval / scale / chord identification) are declarative.
 ### Exercise/game flow (the core loop)
 
 1. Frontend page (e.g. `NoteGamePageComponent`) calls the music service through `frontend/src/app/shared/services/music.service.ts` → FastAPI endpoint (e.g. `POST /music/note-game`).
-2. FastAPI router (`backend/music/routers/api.py`) delegates to `services/music_service.py` (`MusicService`), which builds a music21 `Stream` and exports it to MusicXML. Game endpoints return JSON `{ generatedXml, ...answer fields }`; the answer stays server-generated and the frontend validates the user's guess against it.
+2. FastAPI router (`music-api/routers/api.py`) delegates to `services/music_service.py` (`MusicService`), which builds a music21 `Stream` and exports it to MusicXML. Game endpoints return JSON `{ generatedXml, ...answer fields }`; the answer stays server-generated and the frontend validates the user's guess against it.
 3. `frontend/src/app/features/sheet-music/` renders the MusicXML: `<app-sheet-music>` wraps the OSMD instance, `<app-sheet-music-display>` is the card around it, and `<app-game-staff>` is the game-side reuse of the wrapper.
 4. Game state and scoring live in `frontend/src/app/features/identification-game/services/` — `GameStateService`, `GameTimerService`, `GameScoreSaverService` and `QuestionQueueService`. The note game **composes** that engine rather than forking it: `NoteGameService` owns the settings, audio and keyboard stream and forwards the rest to `GameStateService`. Results and per-user settings persist to the Go service (`note_game_entries`, `note_game_settings`).
 

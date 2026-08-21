@@ -7,7 +7,7 @@ import type { UserRole } from "../../auth/models/auth.models";
  * Port of frontend-react/src/services/api/types/user.types.ts, **corrected
  * against the Go service** (R5: the repo beats the plan, and a running
  * service beats a stale type). React's `GeneralUserInfo` declared ten
- * fields; `backend/main/DTOs/general_user_info_dto.go` serialises six, and
+ * fields; `core-api/DTOs/general_user_info_dto.go` serialises six, and
  * only these six ever arrive:
  *
  * | React claimed      | Go sends                                   |

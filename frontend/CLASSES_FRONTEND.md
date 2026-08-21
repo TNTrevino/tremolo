@@ -6,7 +6,7 @@ watches the results grid fill in. Students join by code, see their
 assignments, and play them in "assignment mode".
 
 This is not a plan. Everything below exists in `frontend/src/app/features/classes/`
-and in `backend/main/`. Read it before changing the feature, and keep it true
+and in `core-api/`. Read it before changing the feature, and keep it true
 when you do.
 
 Three parts:
@@ -26,9 +26,9 @@ assignment-play route hosts, `CLAUDE.md`'s invariants and
 
 ## Part 1 — The backend contract
 
-All routes are on the **Go service** (`environment.mainApi`, default
+All routes are on the **Go service** (`environment.coreApi`, default
 `http://localhost:5001`) and all require a JWT — every group in
-`backend/main/controllers/class_controller.go` applies
+`core-api/controllers/class_controller.go` applies
 `middleware.AuthMiddleware()`. `authInterceptor` attaches the bearer token and
 `refreshInterceptor` handles the 401; nothing in this feature touches tokens.
 

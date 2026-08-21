@@ -83,13 +83,13 @@ npm ci
 npm run build
 
 # Python
-cd ~/projects/tremolo/backend/music
+cd ~/projects/tremolo/music-api
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 
 # Go
-cd ~/projects/tremolo/backend/main
+cd ~/projects/tremolo/core-api
 go build -o tremolo-api main.go
 ```
 
@@ -109,7 +109,7 @@ EOF
 ### Apply Schema
 
 ```bash
-cd ~/projects/tremolo/backend/main
+cd ~/projects/tremolo/core-api
 psql -U tremolo_user -d tremolo -f database/schema.sql
 ```
 
@@ -177,9 +177,9 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/projects/tremolo/backend/main
+WorkingDirectory=/home/pi/projects/tremolo/core-api
 EnvironmentFile=/home/pi/projects/tremolo/.env
-ExecStart=/home/pi/projects/tremolo/backend/main/tremolo-api
+ExecStart=/home/pi/projects/tremolo/core-api/tremolo-api
 Restart=always
 RestartSec=5
 
@@ -201,9 +201,9 @@ After=network.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/projects/tremolo/backend/music
+WorkingDirectory=/home/pi/projects/tremolo/music-api
 EnvironmentFile=/home/pi/projects/tremolo/.env
-ExecStart=/home/pi/projects/tremolo/backend/music/env/bin/gunicorn main:app \
+ExecStart=/home/pi/projects/tremolo/music-api/env/bin/gunicorn main:app \
     -w 4 \
     -k uvicorn.workers.UvicornWorker \
     -b 127.0.0.1:8000
@@ -428,7 +428,7 @@ journalctl -u tremolo-api -n 50 --no-pager
 cat ~/projects/tremolo/.env
 
 # Test binary manually
-cd ~/projects/tremolo/backend/main
+cd ~/projects/tremolo/core-api
 ./tremolo-api
 ```
 
@@ -667,11 +667,10 @@ school_id int references tremolo.schools (id)
 │   ├── .env                       # Shared environment (NOT committed)
 │   ├── frontend/
 │   │   └── dist/                  # Built static files
-│   ├── backend/
-│   │   ├── main/
-│   │   │   └── tremolo-api        # Built Go binary
-│   │   └── music/
-│   │       └── env/               # Python virtual environment
+│   ├── core-api/
+│   │   └── tremolo-api            # Built Go binary
+│   ├── music-api/
+│   │   └── env/                   # Python virtual environment
 │   └── .github/workflows/
 │       └── deploy.yml             # CI/CD workflow
 └── actions-runner/                # GitHub Actions runner

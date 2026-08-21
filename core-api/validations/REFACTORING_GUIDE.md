@@ -186,7 +186,7 @@ func GetUserChartData(c *gin.Context) {
 All validation helpers have comprehensive unit tests:
 
 ```bash
-cd backend/main
+cd core-api
 go test ./validations/... -v
 ```
 

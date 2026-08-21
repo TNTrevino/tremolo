@@ -41,7 +41,7 @@ Commands (run from `frontend/`; Node 24 — `.nvmrc` pins it and Angular 22 will
 
 Configuration is not where a Vite-era reader expects it: there is **no `vite.config.ts` and no `vitest.config.ts`**. The build, serve, test and lint targets all live in [`angular.json`](./angular.json).
 
-**Environment variables are gone.** `import.meta.env.VITE_*` became [`src/environments/environment.ts`](./src/environments/environment.ts), swapped for `environment.prod.ts` by `angular.json`'s `fileReplacements` on a production build. The two API hosts are `environment.mainApi` (Go, `http://localhost:5001`) and `environment.musicApi` (Python, `http://localhost:8000`); `appName` and `googleClientId` ride along. `environment.prod.ts` ships **empty** API hosts on purpose — the deploy workflow regenerates that file from `/etc/tremolo/.env` on the target machine, and an empty `mainApi` makes a local production bundle visibly non-functional rather than quietly talking to the live service.
+**Environment variables are gone.** `import.meta.env.VITE_*` became [`src/environments/environment.ts`](./src/environments/environment.ts), swapped for `environment.prod.ts` by `angular.json`'s `fileReplacements` on a production build. The two API hosts are `environment.coreApi` (Go, `http://localhost:5001`) and `environment.musicApi` (Python, `http://localhost:8000`); `appName` and `googleClientId` ride along. `environment.prod.ts` ships **empty** API hosts on purpose — the deploy workflow regenerates that file from `/etc/tremolo/.env` on the target machine, and an empty `coreApi` makes a local production bundle visibly non-functional rather than quietly talking to the live service.
 
 Path aliases (from [`tsconfig.json`](./tsconfig.json), with no `baseUrl` — TypeScript 6 deprecates it):
 
@@ -340,14 +340,14 @@ Partial batch failure is survivable by design: `forkJoin` with a per-call `catch
 
 Using "triad spelling" as a stand-in name:
 
-1. **Python endpoint** — add `POST /music/triad-game` to the music service (model in `backend/music/models.py`, logic in `services/music_service.py`, route via the `run_game_endpoint` helper in `routers/api.py`) returning `{ generatedXml, ...answer fields }`, plus tests.
+1. **Python endpoint** — add `POST /music/triad-game` to the music service (model in `music-api/models.py`, logic in `services/music_service.py`, route via the `run_game_endpoint` helper in `routers/api.py`) returning `{ generatedXml, ...answer fields }`, plus tests.
 2. **TS types + service method** — add the request/response types to `shared/models/music.models.ts` and a `generateTriadGame(request): Observable<TriadGameResponse>` method on `MusicService` (`shared/services/music.service.ts`). Any music21 note names convert **there**, at the boundary.
 3. **Game definition** — create `features/identification-game/games/triad.game.ts`: a settings interface extending `BaseGameSettings`, then `defineGame({...})` with `defaults`, `settingsSchema`, `toRequest`, `fetchQuestion`, `getAnswer`, `answerOptions`. Reuse `clefsSetting()` if the game has clefs.
 4. **Register it** — export the definition and its settings type from `games/index.ts`, and add it to `GAME_DEFINITIONS` if it should be assignable by a teacher.
 5. **Thin page** — `features/identification-game/components/triad-game-page/triad-game-page.component.ts`, whose template is `<app-identification-game [definition]="definition" />`.
 6. **Route** — a `loadComponent` entry in `src/app/app.routes.ts`. Public, like the other four.
 7. **Nav link** — add to `gameLinks` in `core/components/navigation/navigation.component.ts` (it needs a `description`; the Games dropdown shows it).
-8. **Game type id** — add `"triad"` to the `GameType` union in `shared/models/game.models.ts` **and** to `ValidGameTypes` in `backend/main/DTOs/game_types.go`. The Go service rejects unknown types for both entries and settings.
+8. **Game type id** — add `"triad"` to the `GameType` union in `shared/models/game.models.ts` **and** to `ValidGameTypes` in `core-api/DTOs/game_types.go`. The Go service rejects unknown types for both entries and settings.
 
 That's it — settings UI, JSONB persistence, sanitization, scoring, prefetching and game flow all come free from the definition. If the new page component ever grows a branch, something game-specific has leaked out of the definition.
 
@@ -373,14 +373,14 @@ That's it — settings UI, JSONB persistence, sanitization, scoring, prefetching
 All HTTP goes through Angular's `HttpClient`. There is no axios and no client wrapper: **routing to the right backend happens by construction**, at the service, because each service interpolates its own base URL.
 
 ```ts
-private readonly base = environment.mainApi;   // or environment.musicApi
+private readonly base = environment.coreApi;   // or environment.musicApi
 ```
 
 ### Interceptors (`core/interceptors/`)
 
 Registered in `app.config.ts` in this order, and the order is deliberate — `authInterceptor` runs first and attaches the bearer token; `refreshInterceptor` sits closer to the backend, so the 401 it catches is the one the token failed on, and its retry re-attaches the refreshed token itself.
 
-- **`auth.interceptor.ts`** — three guards and no RxJS: skip unless `isMainApiRequest(req.url)`, skip if there is no access token, otherwise clone with `Authorization: Bearer <token>`. React had one axios instance per backend; Angular has one `HttpClient`, so the test has to be explicit. **The music service is unauthenticated and must never see the token.**
+- **`auth.interceptor.ts`** — three guards and no RxJS: skip unless `isCoreApiRequest(req.url)`, skip if there is no access token, otherwise clone with `Authorization: Bearer <token>`. React had one axios instance per backend; Angular has one `HttpClient`, so the test has to be explicit. **The music service is unauthenticated and must never see the token.**
 - **`refresh.interceptor.ts`** — catches a _recoverable_ 401 (an `HttpErrorResponse`, status 401, main API, and **not** a session endpoint), refreshes, and retries the original request with the new token. Concurrent 401s all `switchMap` onto one shared refresh, so N failures cause exactly one `POST /api/auth/refresh`:
 
   ```ts
@@ -397,7 +397,7 @@ Registered in `app.config.ts` in this order, and the order is deliberate — `au
 
   `??=` is the dedup and `shareReplay(1)` replays the token to latecomers; **`finalize` is what keeps this from being a cache** — it drops the shared observable the instant the refresh settles, so the replayed token can never be handed to a _later_ 401. This is the one sanctioned `shareReplay` in the app: request dedup, not caching. On refresh failure it logs out, clears `redirectUrl` and navigates to `/login` — replacing React's `auth:logout` window event. Note where the injections happen: `AuthService`, `AuthStore` and `Router` are injected in the interceptor **body**, not inside `catchError`, whose callback runs outside the injection context where `inject()` throws NG0203.
 
-- **`api-url.ts`** — **not an interceptor**; it is the pair of predicates both interceptors ask. `isMainApiRequest(url)` tests `environment.mainApi.length > 0 && url.startsWith(environment.mainApi)` — the length guard is load-bearing, because production ships `mainApi: ""` and every URL `startsWith("")`. `isSessionEndpoint(url)` matches `/api/auth/{login,register,refresh,google/callback}`; a 401 from one of those is a rejected credential, not an expired session. Getting that wrong is the React bug the E2E suite documents, where a wrong password surfaced as "Please log in again". `/api/auth/me` and `/api/auth/google/link` are deliberately _not_ in the list.
+- **`api-url.ts`** — **not an interceptor**; it is the pair of predicates both interceptors ask. `isCoreApiRequest(url)` tests `environment.coreApi.length > 0 && url.startsWith(environment.coreApi)` — the length guard is load-bearing, because production ships `coreApi: ""` and every URL `startsWith("")`. `isSessionEndpoint(url)` matches `/api/auth/{login,register,refresh,google/callback}`; a 401 from one of those is a rejected credential, not an expired session. Getting that wrong is the React bug the E2E suite documents, where a wrong password surfaced as "Please log in again". `/api/auth/me` and `/api/auth/google/link` are deliberately _not_ in the list.
 
 ### Services
 
@@ -410,7 +410,7 @@ Data services return **`Observable<T>`** — never a bare value, never a Promise
 
 ### DTO ↔ domain mapping
 
-Mappers are plain exported arrow functions, co-located in the `*.models.ts` file that declares both shapes (`shared/models/game.models.ts`, `shared/models/user.models.ts`, `auth/models/user.mapper.ts`, `features/classes/models/classes.mappers.ts`). Each file declares the wire shape (`*Dto`, snake_case, exactly what `backend/main/DTOs/` serialises) and the domain shape (camelCase, what the app reads).
+Mappers are plain exported arrow functions, co-located in the `*.models.ts` file that declares both shapes (`shared/models/game.models.ts`, `shared/models/user.models.ts`, `auth/models/user.mapper.ts`, `features/classes/models/classes.mappers.ts`). Each file declares the wire shape (`*Dto`, snake_case, exactly what `core-api/DTOs/` serialises) and the domain shape (camelCase, what the app reads).
 
 **The service layer is the boundary: nothing above `shared/services/` ever sees a snake_case key.** React mapped inside the TanStack fetch function; with that hook layer gone the mapping moved down into the service:
 
