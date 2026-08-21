@@ -16,12 +16,6 @@ if has_staged_files_in "^frontend/"; then
   (cd "$REPO_ROOT/frontend" && npx lint-staged)
 fi
 
-# The outgoing React app, kept runnable until the Angular migration cuts over.
-if has_staged_files_in "^frontend-react/"; then
-  echo "Running Prettier on frontend-react files..."
-  (cd "$REPO_ROOT/frontend-react" && npx lint-staged)
-fi
-
 # Music Service Precommit
 if has_staged_files_in "^backend/music/"; then
   echo "Checking Python code formatting..."
