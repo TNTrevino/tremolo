@@ -20,7 +20,7 @@
 		"e2e:baselines": "playwright test --project=baselines"
 	},
 	"lint-staged": {
-		"*.{js,ts,html,css,md,json}": [
+		"*.{js,ts,html,css,scss,md,json}": [
 			"echo '🧹 Running Prettier on staged files...'",
 			"npx prettier --write"
 		]

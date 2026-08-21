@@ -95,8 +95,8 @@ figure/ground flip musictheory.net's keyboard uses.
   game titles, hero, big stats. Characterful without being a toy.
 - **Body** (`font-sans`): **Inter** — everything else. Inter is fine as
   a body face once the display face carries the personality.
-- Both are self-hosted via `@fontsource-variable/*` packages, `@import`ed
-  at the top of `src/styles.scss` — never a Google Fonts `<link>` (no
+- Both are self-hosted via `@fontsource-variable/*` packages, loaded via
+  `@use` at the top of `src/styles.scss` — never a Google Fonts `<link>` (no
   third-party request,
   versioned with the app). The old config _named_ fonts it never
   loaded; if a face isn't imported, don't list it.
