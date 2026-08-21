@@ -158,10 +158,12 @@ preferences.
 
 - **Component hosts need an explicit display.** Angular's default is
   `display: inline`, which silently eats every `space-y-*` gap; most
-  components here set `:host { display: block }`. Where a host is
-  `display: contents` (the two dialogs), it takes no margin either, so
-  `space-y-*` does nothing at all — use `flex flex-col gap-*` around kit
-  components.
+  components here set `:host { display: block }`. **27 components** go the
+  other way and set `display: contents` — `<app-button>`, the form parts, both
+  dialogs, both sheet-music components — and a `display: contents` box takes
+  no margin at all, so `space-y-*` around one does nothing. That is why the
+  swallowed-gap defect was app-wide rather than dialog-local. Use
+  `flex flex-col gap-*` around kit components.
 
 ## Conventions
 
@@ -170,8 +172,9 @@ preferences.
   `@app/ @core/ @shared/ @features/` (no `baseUrl` — TypeScript 6 errors on
   it). Routes are all inlined in `src/app/app.routes.ts`; there are no
   `*.routes.ts` files.
-- Data services return `Observable<T>`. Reads go through `rxResource` /
-  `httpResource`; mutations are a one-shot `.subscribe()`.
+- Data services return `Observable<T>`. Reads go through `rxResource` (29
+  files; `httpResource` is not used anywhere — services own their URLs);
+  mutations are a one-shot `.subscribe()`.
 - snake_case stops at the mapper. The exceptions are deliberate and
   documented: `GameType` values, `KeyBindings` keys and the contents of
   `GameSettings.config` keep their wire spelling, because they are data rather
