@@ -121,6 +121,32 @@ describe("QuestionQueueService", () => {
 		expect(queue.size).toBe(2);
 	});
 
+	// The window this closes: React's own note on the same line is "the queue
+	// is already cleared above, so no stale question can be served in the
+	// meantime". Clearing on the debounce instead of on the payload change
+	// leaves 300ms in which `pop()` hands out a question generated for the
+	// settings the player just changed. Mutation: delete
+	// `tap(() => this.discard())` from `connect()` and this goes red.
+	it("clears the buffer the moment the request changes, before the debounce", () => {
+		const request = signal<TestRequest>({ clefs: ["treble"] });
+		connect({ request });
+		settle();
+		expect(queue.size).toBe(2);
+		expect(queue.isInitializing()).toBe(false);
+
+		request.set({ clefs: ["bass"] });
+		// No timer advance: we are *inside* the 300ms debounce window, before
+		// the new generation has started.
+		TestBed.tick();
+
+		expect(queue.size).toBe(0);
+		// A question generated for the old payload must never be served.
+		expect(queue.pop()).toBeNull();
+		expect(queue.isInitializing()).toBe(true);
+		// And nothing was refetched yet -- the debounce is still pending.
+		expect(calls).toHaveLength(2);
+	});
+
 	it("does not reset when a setting leaves the payload unchanged", () => {
 		const request = signal<TestRequest>({ clefs: ["treble"] });
 		connect({ request });
