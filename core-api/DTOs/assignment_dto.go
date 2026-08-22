@@ -1,8 +1,8 @@
 package dtos
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 )
@@ -17,33 +17,33 @@ type CreateAssignmentRequest struct {
 	TargetAccuracy  *int `json:"target_accuracy"`
 }
 
-func (r *CreateAssignmentRequest) Validate() error {
-	var errorMessages []string
+func (r CreateAssignmentRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
 
-	if strings.TrimSpace(r.Title) == "" {
-		errorMessages = append(errorMessages, "Title: is required")
-	} else if len(r.Title) > 255 {
-		errorMessages = append(errorMessages, "Title: too long")
+	switch {
+	case strings.TrimSpace(r.Title) == "":
+		problems["title"] = "Title: is required"
+	case len(r.Title) > 255:
+		problems["title"] = "Title: too long"
 	}
 
 	if !ValidGameTypes[r.GameType] {
-		errorMessages = append(errorMessages, "GameType: must be a valid game type")
+		problems["game_type"] = "GameType: must be a valid game type"
 	}
 
 	// Same shape rules as game_settings: the config is a snapshot of one.
-	errorMessages = append(errorMessages, ConfigBlobErrors(r.Config)...)
+	if msg := ConfigBlobProblem(r.Config); msg != "" {
+		problems["config"] = msg
+	}
 
 	if r.TargetQuestions != nil && *r.TargetQuestions <= 0 {
-		errorMessages = append(errorMessages, "TargetQuestions: must be positive")
+		problems["target_questions"] = "TargetQuestions: must be positive"
 	}
 	if r.TargetAccuracy != nil && (*r.TargetAccuracy < 1 || *r.TargetAccuracy > 100) {
-		errorMessages = append(errorMessages, "TargetAccuracy: must be between 1 and 100")
+		problems["target_accuracy"] = "TargetAccuracy: must be between 1 and 100"
 	}
 
-	if len(errorMessages) > 0 {
-		return errors.New(strings.Join(errorMessages, ",\n"))
-	}
-	return nil
+	return problems
 }
 
 type AssignmentResponse struct {

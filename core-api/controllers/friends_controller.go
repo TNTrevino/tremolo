@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"net/http"
 
 	"sight-reading/database"
@@ -79,6 +80,19 @@ type addFriendRequest struct {
 	FriendID int `json:"friend_id"`
 }
 
+// Valid rejects a friend_id of 0 as missing rather than as a friend whose
+// id is 0. A malformed body and an absent, null or zero friend_id all
+// have to produce the same 400.
+func (r addFriendRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	if r.FriendID == 0 {
+		problems["friend_id"] = "Invalid request body"
+	}
+
+	return problems
+}
+
 // @Summary  Add a friend
 // @Tags     friends
 // @Security BearerAuth
@@ -96,13 +110,9 @@ func handleAddFriend(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		// A friend_id of 0 counts as missing, not as a friend whose ID
-		// is 0. httpx.Decode enforces no struct tags, so the check is
-		// here by hand: a malformed body and an absent, null or zero
-		// friend_id all have to produce the identical 400 below.
-		req, err := httpx.Decode[addFriendRequest](r)
-		if err != nil || req.FriendID == 0 {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+		req, problems, err := httpx.DecodeValid[addFriendRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
 			return
 		}
 

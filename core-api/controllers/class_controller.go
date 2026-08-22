@@ -51,9 +51,9 @@ func handleCreateClass(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.CreateClassRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.CreateClassRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -138,9 +138,9 @@ func handleJoinClass(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.JoinClassRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.JoinClassRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -285,9 +285,9 @@ func handleCreateAssignment(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.CreateAssignmentRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.CreateAssignmentRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 

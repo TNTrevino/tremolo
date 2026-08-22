@@ -37,13 +37,6 @@ func GetGameSettings(ctx context.Context, q generated.Querier, userID int, gameT
 
 // UpsertGameSettings saves (or replaces) the settings for one game type.
 func UpsertGameSettings(ctx context.Context, q generated.Querier, userID int, req *dtos.GameSettingsRequest) (*dtos.GameSettingsResponse, error) {
-	if err := req.Validate(); err != nil {
-		logger.Error("Game settings validation failed",
-			"error", err.Error(),
-			"user_id", userID)
-		return nil, err
-	}
-
 	row, err := q.UpsertGameSettings(ctx, generated.UpsertGameSettingsParams{
 		UserID:   int32(userID),
 		GameType: req.GameType,

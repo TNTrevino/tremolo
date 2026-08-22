@@ -78,9 +78,9 @@ func handleUpdateGameSettings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.GameSettingsRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.GameSettingsRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
