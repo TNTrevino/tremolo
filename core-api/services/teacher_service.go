@@ -1,122 +1,94 @@
 package services
 
 import (
+	"context"
 	"database/sql"
-	"net/http"
-	"sight-reading/database"
-	"sight-reading/database/generated"
-	"sight-reading/logger"
-	"strconv"
+	"fmt"
 
 	dtos "sight-reading/DTOs"
-
-	"github.com/gin-gonic/gin"
+	"sight-reading/database/generated"
+	"sight-reading/logger"
 )
 
-func CreateUser(c *gin.Context) {
-	var reqBody dtos.User
-
-	err := c.ShouldBindJSON(&reqBody)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":    true,
-			"message":  "Invalid json body",
-			"scenario": "TS.1",
-		})
-		return
+// CreateUser creates a user (student/teacher/parent) on behalf of an
+// admin. The caller's own admin-role check happens above this (see
+// controllers.adminOnly / RequireAdmin); this function additionally
+// refuses to create ADMIN users -- that's ErrForbidden, which the
+// controller maps to a message specific to this endpoint rather than
+// the generic "Forbidden" body other handlers use.
+//
+// The supplied password is hashed with bcrypt (see HashPassword) before
+// it reaches the database; it is never stored or echoed back in plain
+// text.
+func CreateUser(ctx context.Context, q generated.Querier, req *dtos.CreateUserRequest) (*dtos.UserResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, validationErr(err)
 	}
 
-	err = reqBody.ValidateUser()
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":    reqBody.ValidateUser().Error(),
-			"message":  "Information invalid",
-			"scenario": "TS.2",
-		})
-		return
+	if req.Role == dtos.Admin {
+		return nil, ErrForbidden
 	}
 
-	if reqBody.Role == dtos.Admin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "Creating ADMIN users is not allowed",
-		})
-		return
+	roleID, err := q.GetRoleIDByName(ctx, string(req.Role))
+	if err != nil {
+		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidRole, err)
 	}
 
-	ctx := c.Request.Context()
-
-	roleID, err := database.Queries.GetRoleIDByName(ctx, string(reqBody.Role))
+	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
-		logger.Error("Failed to resolve role", "error", err.Error(), "role", reqBody.Role)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid role",
-			"message": "Role not found",
-		})
-		return
+		return nil, err
 	}
 
 	params := generated.CreateUserParams{
-		FirstName: reqBody.FirstName,
-		LastName:  reqBody.LastName,
-		Email:     sql.NullString{String: reqBody.Email, Valid: reqBody.Email != ""},
-		Password:  sql.NullString{String: reqBody.PasswordHash, Valid: reqBody.PasswordHash != ""},
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Email:     sql.NullString{String: req.Email, Valid: req.Email != ""},
+		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
 	}
 
-	if reqBody.SchoolID != 0 {
-		params.SchoolID = sql.NullInt32{Int32: int32(reqBody.SchoolID), Valid: true}
+	if req.SchoolID != 0 {
+		params.SchoolID = sql.NullInt32{Int32: int32(req.SchoolID), Valid: true}
 	}
 
-	createdUser, err := database.Queries.CreateUser(ctx, params)
+	createdUser, err := q.CreateUser(ctx, params)
 	if err != nil {
 		logger.Error("failed to create user", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-		return
+		return nil, err
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"body":   convertCreateUserRowToUserResponse(createdUser, string(reqBody.Role)),
-		"status": "teacher created sucessfully",
-	})
+	response := convertCreateUserRowToUserResponse(createdUser, string(req.Role))
+	return &response, nil
 }
 
-func GetStudents(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	users, err := database.Queries.GetUsersByRole(ctx, string(dtos.Student))
+// GetStudents returns every user with the STUDENT role.
+func GetStudents(ctx context.Context, q generated.Querier) ([]dtos.User, error) {
+	users, err := q.GetUsersByRole(ctx, string(dtos.Student))
 	if err != nil {
 		logger.Error("failed to get students", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve students"})
-		return
+		return nil, err
 	}
-
-	c.JSON(http.StatusOK, convertGetUsersByRoleRowsToDTO(users))
+	return convertGetUsersByRoleRowsToDTO(users), nil
 }
 
-func GetStudent(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":   true,
-			"message": "Invalid request body",
-		})
-		return
-	}
-
-	ctx := c.Request.Context()
-
+// GetStudent returns a single STUDENT-role user by ID. A missing or
+// wrong-role user is ErrNotFound.
+func GetStudent(ctx context.Context, q generated.Querier, id int) (*dtos.User, error) {
 	params := generated.GetUserByRoleAndIDParams{
 		Name: string(dtos.Student),
 		ID:   int32(id),
 	}
 
-	user, err := database.Queries.GetUserByRoleAndID(ctx, params)
+	user, err := q.GetUserByRoleAndID(ctx, params)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNotFound
+		}
 		logger.Error("failed to get student", "error", err, "id", id)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Student not found"})
-		return
+		return nil, err
 	}
 
-	c.JSON(http.StatusOK, convertGetUserByRoleAndIDRowToDTO(user))
+	result := convertGetUserByRoleAndIDRowToDTO(user)
+	return &result, nil
 }

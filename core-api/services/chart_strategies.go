@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"sight-reading/database"
 	"sight-reading/database/generated"
 )
 
@@ -10,23 +9,23 @@ import (
 // This allows for extensible interval handling without if-else branching
 type IntervalStrategy interface {
 	// FetchUserData fetches chart data for a specific user based on the interval strategy
-	FetchUserData(ctx context.Context, userID int32, days int) ([]generated.FetchChartDataAllRow, error)
+	FetchUserData(ctx context.Context, q generated.Querier, userID int32, days int) ([]generated.FetchChartDataAllRow, error)
 
 	// FetchTeacherData fetches chart data for a teacher's students based on the interval strategy
-	FetchTeacherData(ctx context.Context, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error)
+	FetchTeacherData(ctx context.Context, q generated.Querier, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error)
 }
 
 // AllTimeStrategy fetches all data regardless of time range
 type AllTimeStrategy struct{}
 
 // FetchUserData implements IntervalStrategy for all-time user data
-func (s *AllTimeStrategy) FetchUserData(ctx context.Context, userID int32, days int) ([]generated.FetchChartDataAllRow, error) {
-	return database.Queries.FetchChartDataAll(ctx, userID)
+func (s *AllTimeStrategy) FetchUserData(ctx context.Context, q generated.Querier, userID int32, days int) ([]generated.FetchChartDataAllRow, error) {
+	return q.FetchChartDataAll(ctx, userID)
 }
 
 // FetchTeacherData implements IntervalStrategy for all-time teacher data
-func (s *AllTimeStrategy) FetchTeacherData(ctx context.Context, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error) {
-	teacherRows, err := database.Queries.FetchTeacherChartDataAll(ctx, teacherID)
+func (s *AllTimeStrategy) FetchTeacherData(ctx context.Context, q generated.Querier, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error) {
+	teacherRows, err := q.FetchTeacherChartDataAll(ctx, teacherID)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +37,8 @@ func (s *AllTimeStrategy) FetchTeacherData(ctx context.Context, teacherID int32,
 type RangeBasedStrategy struct{}
 
 // FetchUserData implements IntervalStrategy for range-based user data
-func (s *RangeBasedStrategy) FetchUserData(ctx context.Context, userID int32, days int) ([]generated.FetchChartDataAllRow, error) {
-	inRangeRows, err := database.Queries.FetchChartDataInRange(ctx, generated.FetchChartDataInRangeParams{
+func (s *RangeBasedStrategy) FetchUserData(ctx context.Context, q generated.Querier, userID int32, days int) ([]generated.FetchChartDataAllRow, error) {
+	inRangeRows, err := q.FetchChartDataInRange(ctx, generated.FetchChartDataInRangeParams{
 		UserID:   userID,
 		DaysBack: int32(days),
 	})
@@ -50,8 +49,8 @@ func (s *RangeBasedStrategy) FetchUserData(ctx context.Context, userID int32, da
 }
 
 // FetchTeacherData implements IntervalStrategy for range-based teacher data
-func (s *RangeBasedStrategy) FetchTeacherData(ctx context.Context, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error) {
-	teacherRows, err := database.Queries.FetchTeacherChartDataInRange(ctx, generated.FetchTeacherChartDataInRangeParams{
+func (s *RangeBasedStrategy) FetchTeacherData(ctx context.Context, q generated.Querier, teacherID int32, days int) ([]generated.FetchChartDataAllRow, error) {
+	teacherRows, err := q.FetchTeacherChartDataInRange(ctx, generated.FetchTeacherChartDataInRangeParams{
 		TeacherID: teacherID,
 		DaysBack:  int32(days),
 	})

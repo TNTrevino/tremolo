@@ -2,11 +2,13 @@
 package services
 
 import (
-	"net/http"
-	"sight-reading/logger"
-	"sight-reading/middleware"
+	"context"
+	"database/sql"
+	"fmt"
 
-	"github.com/gin-gonic/gin"
+	dtos "sight-reading/DTOs"
+	"sight-reading/database/generated"
+	"sight-reading/logger"
 )
 
 const (
@@ -17,85 +19,90 @@ const (
 	MinChartDataDays = 1
 )
 
-// GetUserChartData fetches personal metrics for a specific user
-// Query params: interval (day/week/month/year), days (default 30)
-// Protected: Requires JWT authentication, users can only access their own data
-func GetUserChartData(c *gin.Context) {
-	// Step 1: Authenticate and authorize
-	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
+// GetUserChartData fetches personal metrics for a specific user. The
+// controller has already authenticated the caller and parsed
+// requestedUserID/interval/days from the request; this still re-checks
+// that the caller may only see their own data (ErrForbidden) and that
+// interval/days are valid (ErrValidation) so the rule holds for any
+// caller, not just the HTTP handler.
+func GetUserChartData(ctx context.Context, q generated.Querier, authenticatedUserID, requestedUserID int, interval string, days int) (dtos.MultiMetricChartData, error) {
+	if authenticatedUserID != requestedUserID {
+		logger.Info("User attempted to access another user's chart data",
+			"authenticated_user", authenticatedUserID,
+			"requested_user", requestedUserID)
+		return dtos.MultiMetricChartData{}, ErrForbidden
+	}
+
+	strategy, err := resolveIntervalStrategy(interval, days)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+		return dtos.MultiMetricChartData{}, err
 	}
 
-	requestedUserID, ok := validateUserIDParam(c)
-	if !ok {
-		return
+	rows, err := strategy.FetchUserData(ctx, q, int32(requestedUserID), days)
+	if err != nil {
+		logger.Error("Failed to fetch chart data", "error", err.Error(), "user_id", requestedUserID)
+		return dtos.MultiMetricChartData{}, err
 	}
 
-	if !authorizeUserAccess(c, authenticatedUserID, requestedUserID) {
-		return
-	}
-
-	// Step 2: Validate query parameters
-	interval, days, ok := validateChartQueryParams(c, requestedUserID)
-	if !ok {
-		return
-	}
-
-	// Step 3: Get interval strategy
-	strategy, exists := GetIntervalStrategy(interval)
-	if !exists {
-		logger.Error("Unsupported interval strategy", "interval", interval, "user_id", requestedUserID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported interval type"})
-		return
-	}
-
-	// Step 4: Fetch and transform data
-	response, ok := fetchChartDataWithStrategy(c, strategy, int32(requestedUserID), days, false)
-	if !ok {
-		return
-	}
-
-	// Step 5: Return response
-	c.JSON(http.StatusOK, response)
+	return convertRowsToChartData(rows), nil
 }
 
-// GetTeacherClassChartData fetches aggregated metrics for all students of a teacher
-// Query params: interval (day/week/month/year), days (default 30)
-// Protected: Requires JWT authentication AND role=teacher
-func GetTeacherClassChartData(c *gin.Context) {
-	// Step 1: Authenticate and verify teacher role
-	teacherID, err := middleware.GetAuthenticatedUserID(c)
+// RequireTeacherRole verifies the authenticated user has exactly the
+// TEACHER role. Unlike requireTeacher in class_service.go, ADMIN does not
+// qualify here — this preserves the class-metrics endpoint's prior
+// behavior of teachers only.
+func RequireTeacherRole(ctx context.Context, q generated.Querier, teacherID int) error {
+	role, err := q.GetUserRole(ctx, int32(teacherID))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+		if err == sql.ErrNoRows {
+			return ErrNotFound
+		}
+		logger.Error("Failed to verify user role", "error", err.Error(), "user_id", teacherID)
+		return err
 	}
 
-	if !verifyTeacherRole(c, teacherID) {
-		return
+	if role != "TEACHER" {
+		logger.Info("Non-teacher user attempted to access class metrics",
+			"user_id", teacherID,
+			"role", role)
+		return ErrForbidden
 	}
 
-	// Step 2: Validate query parameters
-	interval, days, ok := validateChartQueryParams(c, teacherID)
-	if !ok {
-		return
+	return nil
+}
+
+// GetTeacherClassChartData fetches aggregated metrics for all students of
+// a teacher. Callers must have already established the caller is a
+// teacher (see RequireTeacherRole) — this only validates interval/days
+// and fetches/transforms the data.
+func GetTeacherClassChartData(ctx context.Context, q generated.Querier, teacherID int, interval string, days int) (dtos.MultiMetricChartData, error) {
+	strategy, err := resolveIntervalStrategy(interval, days)
+	if err != nil {
+		return dtos.MultiMetricChartData{}, err
 	}
 
-	// Step 3: Get interval strategy
+	rows, err := strategy.FetchTeacherData(ctx, q, int32(teacherID), days)
+	if err != nil {
+		logger.Error("Failed to fetch teacher chart data", "error", err.Error(), "teacher_id", teacherID)
+		return dtos.MultiMetricChartData{}, err
+	}
+
+	return convertRowsToChartData(rows), nil
+}
+
+// resolveIntervalStrategy validates interval/days and looks up the
+// matching IntervalStrategy. Both endpoints share this validation.
+func resolveIntervalStrategy(interval string, days int) (IntervalStrategy, error) {
+	if err := dtos.ValidateInterval(interval); err != nil {
+		return nil, validationErr(err)
+	}
+	if days < MinChartDataDays {
+		return nil, validationErr(fmt.Errorf("invalid days parameter: must be at least %d", MinChartDataDays))
+	}
+
 	strategy, exists := GetIntervalStrategy(interval)
 	if !exists {
-		logger.Error("Unsupported interval strategy", "interval", interval, "teacher_id", teacherID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported interval type"})
-		return
+		return nil, validationErr(fmt.Errorf("unsupported interval type: %s", interval))
 	}
-
-	// Step 4: Fetch and transform data
-	response, ok := fetchChartDataWithStrategy(c, strategy, int32(teacherID), days, true)
-	if !ok {
-		return
-	}
-
-	// Step 5: Return response
-	c.JSON(http.StatusOK, response)
+	return strategy, nil
 }

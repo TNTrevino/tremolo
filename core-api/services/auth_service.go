@@ -5,9 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 	"os"
-	"sight-reading/database"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
 	"sight-reading/middleware"
@@ -17,7 +15,6 @@ import (
 
 	dtos "sight-reading/DTOs"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -34,163 +31,109 @@ const (
 	DefaultLockoutDurationMinutes = 15
 )
 
-func Login(c *gin.Context) {
-	var reqBody dtos.LoginRequest
-
-	err := c.ShouldBindJSON(&reqBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
-		})
-		return
+// Login verifies an email/password pair and, on success, issues a fresh
+// access/refresh token pair. It also owns the account-lockout bookkeeping:
+// failed attempts are counted per email, and an account that crosses
+// MaxLoginAttempts is locked for getLockoutDuration(). Errors incrementing
+// or reading that bookkeeping are logged and swallowed (not surfaced to
+// the caller) -- that's existing behavior, tracked separately for cleanup.
+func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dtos.LoginResponse, error) {
+	if err := req.ValidateLoginRequest(); err != nil {
+		return nil, validationErr(err)
 	}
 
-	err = reqBody.ValidateLoginRequest()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	normalizedEmail := normalizeEmail(reqBody.Email)
+	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
-	ctx := c.Request.Context()
 
-	lockedUntil, err := database.Queries.CheckAccountLocked(ctx, emailNullStr)
+	lockedUntil, err := q.CheckAccountLocked(ctx, emailNullStr)
 	if err != nil && err != sql.ErrNoRows {
 		logger.Error("Error checking account lock status", "error", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error.",
-			"scenario": "AS.10",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrLockCheckFailed, err)
 	}
 
 	if lockedUntil.Valid {
 		logger.Info("Login attempt on locked account", "email", normalizedEmail)
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":    "Account is locked due to too many failed login attempts",
-			"scenario": "AS.11",
-		})
-		return
+		return nil, ErrAccountLocked
 	}
 
-	user, err := database.Queries.GetUserByEmail(ctx, emailNullStr)
+	user, err := q.GetUserByEmail(ctx, emailNullStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Info("User not found with provided", "email", normalizedEmail)
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid credentials",
-			})
-			return
+			return nil, ErrInvalidCredentials
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error",
-			"scenario": "AS.12",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrUserLookupFailed, err)
 	}
 
 	if user.Password == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid credentials",
-		})
-		return
+		return nil, ErrInvalidCredentials
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqBody.Password))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		logger.Info("Invalid password, incrementing failed attempts", "error", err.Error())
-		if err := database.Queries.IncrementFailedAttempts(ctx, emailNullStr); err != nil {
+		if err := q.IncrementFailedAttempts(ctx, emailNullStr); err != nil {
 			logger.Error("Failed to increment failed attempts", "error", err.Error())
 		}
 
-		attempts, err := database.Queries.GetFailedAttempts(ctx, emailNullStr)
-		if err != nil {
-			logger.Error("Failed to get failed attempts", "error", err.Error())
-		} else {
-			if int(attempts) >= MaxLoginAttempts {
-				lockDuration := getLockoutDuration()
-				lockedUntilTime := time.Now().Add(lockDuration)
-				lockParams := generated.LockAccountParams{
-					LockedUntil: sql.NullTime{Time: lockedUntilTime, Valid: true},
-					Email:       emailNullStr,
-				}
-				if err := database.Queries.LockAccount(ctx, lockParams); err != nil {
-					logger.Error("Failed to lock account", "error", err.Error())
-				} else {
-					logger.Info("Account locked due to failed login attempts", "email", normalizedEmail, "attempts", attempts)
-					c.JSON(http.StatusUnauthorized, gin.H{
-						"error": fmt.Sprintf("Account locked for %d minutes due to too many failed login attempts", int(lockDuration.Minutes())),
-					})
-					return
-				}
+		attempts, attemptsErr := q.GetFailedAttempts(ctx, emailNullStr)
+		if attemptsErr != nil {
+			logger.Error("Failed to get failed attempts", "error", attemptsErr.Error())
+		} else if int(attempts) >= MaxLoginAttempts {
+			lockDuration := getLockoutDuration()
+			lockParams := generated.LockAccountParams{
+				LockedUntil: sql.NullTime{Time: time.Now().Add(lockDuration), Valid: true},
+				Email:       emailNullStr,
+			}
+			if lockErr := q.LockAccount(ctx, lockParams); lockErr != nil {
+				logger.Error("Failed to lock account", "error", lockErr.Error())
+			} else {
+				logger.Info("Account locked due to failed login attempts", "email", normalizedEmail, "attempts", attempts)
+				return nil, &LockoutTriggeredError{Duration: lockDuration}
 			}
 		}
 
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid credentials",
-		})
-		return
+		return nil, ErrInvalidCredentials
 	}
 
-	if err := database.Queries.ResetLockout(ctx, emailNullStr); err != nil {
+	if err := q.ResetLockout(ctx, emailNullStr); err != nil {
 		logger.Error("Failed to reset lockout", "error", err.Error())
 	}
 
 	accessToken, err := middleware.GenerateAccessToken(int(user.ID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to generate access token",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrAccessTokenGeneration, err)
 	}
 
 	refreshToken, err := middleware.GenerateRefreshToken(int(user.ID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to generate refresh token",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrRefreshTokenGeneration, err)
 	}
 
-	response := dtos.LoginResponse{
+	return &dtos.LoginResponse{
 		User:         convertGetUserByEmailRowToUserResponse(user),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-	}
-
-	c.JSON(http.StatusOK, response)
+	}, nil
 }
 
-func GetCurrentUser(c *gin.Context) {
-	uid, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	ctx := c.Request.Context()
-	user, err := database.Queries.GetUserByID(ctx, int32(uid))
+// GetCurrentUser returns the authenticated caller's own user row. A
+// missing row is ErrNotFound (the controller renders this as
+// Unauthorized rather than a generic not-found, since a valid token for
+// a since-deleted user shouldn't leak that distinction).
+func GetCurrentUser(ctx context.Context, q generated.Querier, userID int) (*dtos.UserResponse, error) {
+	user, err := q.GetUserByID(ctx, int32(userID))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			return
+			return nil, ErrNotFound
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error",
-			"scenario": "AS.6",
-		})
-		return
+		return nil, err
 	}
 
 	response := convertGetUserByIDRowToUserResponse(user)
-	c.JSON(http.StatusOK, response)
+	return &response, nil
 }
 
+// HashPassword hashes a plaintext password with bcrypt at BcryptCost.
 func HashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
@@ -199,94 +142,62 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), nil
 }
 
-func Register(c *gin.Context) {
-	var reqBody dtos.RegisterRequest
-
-	err := c.ShouldBindJSON(&reqBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request body",
-		})
-		return
+// Register creates a new email/password user (student/teacher/parent).
+func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest) (*dtos.RegisterResponse, error) {
+	if err := req.ValidateRegisterRequest(); err != nil {
+		return nil, validationErr(err)
 	}
 
-	err = reqBody.ValidateRegisterRequest()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	normalizedEmail := normalizeEmail(reqBody.Email)
+	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
-	ctx := c.Request.Context()
 
-	exists, err := checkIfUserExists(ctx, database.Queries, emailNullStr)
+	exists, err := checkIfUserExists(ctx, q, emailNullStr)
 	if err != nil {
 		logger.Error("Database error. Scenario: AS.7", "error", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error.",
-			"scenario": "AS.8",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrEmailCheckFailed, err)
 	}
 
 	if exists {
-		logger.Info("Attempt to register user with existing email. Scenario: AS.9", "email", reqBody.Email)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Email already exists",
-		})
-		return
+		logger.Info("Attempt to register user with existing email. Scenario: AS.9", "email", req.Email)
+		return nil, ErrEmailTaken
 	}
 
-	passwordHash, err := HashPassword(reqBody.Password)
+	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to process password",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrPasswordHashFailed, err)
 	}
 
-	roleID, err := database.Queries.GetRoleIDByName(ctx, reqBody.Role)
+	roleID, err := q.GetRoleIDByName(ctx, req.Role)
 	if err != nil {
-		logger.Error("Failed to resolve role", "error", err.Error(), "role", reqBody.Role)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid role",
-		})
-		return
+		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidRole, err)
 	}
 
 	createParams := generated.CreateUserParams{
-		FirstName: strings.TrimSpace(reqBody.FirstName),
-		LastName:  strings.TrimSpace(reqBody.LastName),
+		FirstName: strings.TrimSpace(req.FirstName),
+		LastName:  strings.TrimSpace(req.LastName),
 		Email:     emailNullStr,
 		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
 		SchoolID:  sql.NullInt32{Valid: false},
 	}
 
-	createdUser, err := database.Queries.CreateUser(ctx, createParams)
+	createdUser, err := q.CreateUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create user", "error", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create user",
-		})
-		return
+		return nil, fmt.Errorf("%w: %v", ErrUserCreateFailed, err)
 	}
 
-	if err := CreateDefaultKeyboardBindings(ctx, database.Queries, int(createdUser.ID)); err != nil {
+	if err := CreateDefaultKeyboardBindings(ctx, q, int(createdUser.ID)); err != nil {
 		logger.Error("Failed to seed default keyboard bindings for new user",
 			"error", err.Error(),
 			"user_id", createdUser.ID)
 	}
 
-	response := dtos.RegisterResponse{
+	return &dtos.RegisterResponse{
 		Message: "User created successfully",
-		User:    convertCreateUserRowToUserResponse(createdUser, reqBody.Role),
-	}
-
-	c.JSON(http.StatusCreated, response)
+		User:    convertCreateUserRowToUserResponse(createdUser, req.Role),
+	}, nil
 }
 
 func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullString) (bool, error) {
@@ -313,21 +224,12 @@ func getLockoutDuration() time.Duration {
 	return DefaultLockoutDurationMinutes * time.Minute
 }
 
-func RefreshToken(c *gin.Context) {
-	var reqBody struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Refresh token is required",
-		})
-		return
-	}
-
-	// validate refresh token
+// RefreshToken validates a refresh token and, if valid, mints a fresh
+// access token. q is unused today (validation is pure JWT verification)
+// but kept for signature consistency with the rest of the service layer.
+func RefreshToken(refreshToken string) (string, error) {
 	claims := &middleware.Claims{}
-	token, err := jwt.ParseWithClaims(reqBody.RefreshToken, claims, func(token *jwt.Token) (any, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (any, error) {
 		// Verify signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -336,29 +238,18 @@ func RefreshToken(c *gin.Context) {
 	})
 
 	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid refresh token",
-		})
-		return
+		return "", ErrInvalidRefreshToken
 	}
 
-	// Verify its actually a refresh token
+	// Verify it's actually a refresh token
 	if claims.TokenType != "refresh" {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid token type",
-		})
-		return
+		return "", ErrWrongTokenType
 	}
 
 	newAccessToken, err := middleware.GenerateAccessToken(claims.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to generate access token",
-		})
-		return
+		return "", fmt.Errorf("%w: %v", ErrAccessTokenGeneration, err)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token": newAccessToken,
-	})
+	return newAccessToken, nil
 }

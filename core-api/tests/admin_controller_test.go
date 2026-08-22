@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // adminTestRouter builds a router with only the admin routes registered,
@@ -142,11 +143,12 @@ func TestAdminRoutes_CreateUser_AdminRoleForbidden(t *testing.T) {
 	token := testAccessToken(t, callerID)
 	schoolID := testSchoolID(t)
 
-	reqBody := dtos.User{
+	reqBody := dtos.CreateUserRequest{
 		FirstName: "New",
 		LastName:  "Admin",
 		Role:      dtos.Admin,
 		Email:     testutil.UniqueEmail(t, "new_admin_user"),
+		Password:  "ValidPass123!",
 		SchoolID:  int16(schoolID),
 	}
 
@@ -171,11 +173,12 @@ func TestAdminRoutes_CreateUser_TeacherRoleSucceeds(t *testing.T) {
 	schoolID := testSchoolID(t)
 
 	newUserEmail := testutil.UniqueEmail(t, "new_teacher_user")
-	reqBody := dtos.User{
+	reqBody := dtos.CreateUserRequest{
 		FirstName: "New",
 		LastName:  "Teacher",
 		Role:      dtos.Teacher,
 		Email:     newUserEmail,
+		Password:  "ValidPass123!",
 		SchoolID:  int16(schoolID),
 	}
 
@@ -188,6 +191,9 @@ func TestAdminRoutes_CreateUser_TeacherRoleSucceeds(t *testing.T) {
 	stored := testutil.GetTestUserByEmail(t, newUserEmail)
 	require.NotNil(t, stored)
 	t.Cleanup(func() { testutil.DeleteTestUser(t, int(stored.ID)) })
+
+	err := bcrypt.CompareHashAndPassword([]byte(stored.Password), []byte("ValidPass123!"))
+	assert.NoError(t, err, "stored password should be a valid bcrypt hash of the supplied password")
 }
 
 func TestAdminRoutes_CreateUser_NonAdminForbidden(t *testing.T) {
@@ -199,11 +205,12 @@ func TestAdminRoutes_CreateUser_NonAdminForbidden(t *testing.T) {
 	token := testAccessToken(t, callerID)
 	schoolID := testSchoolID(t)
 
-	reqBody := dtos.User{
+	reqBody := dtos.CreateUserRequest{
 		FirstName: "New",
 		LastName:  "Teacher",
 		Role:      dtos.Teacher,
 		Email:     testutil.UniqueEmail(t, "blocked_teacher_user"),
+		Password:  "ValidPass123!",
 		SchoolID:  int16(schoolID),
 	}
 
