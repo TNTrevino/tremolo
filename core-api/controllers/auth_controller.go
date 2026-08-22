@@ -14,10 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupAuthRoutes registers the email/password auth routes. The Google
-// OAuth routes live here too (services.GoogleCallback /
-// services.LinkGoogleAccount are still gin.HandlerFuncs pending their
-// own layering pass, owned separately).
+// SetupAuthRoutes registers the email/password and Google OAuth auth
+// routes.
 func SetupAuthRoutes(router *gin.Engine) {
 	auth := router.Group("/api/auth")
 	{
@@ -28,8 +26,104 @@ func SetupAuthRoutes(router *gin.Engine) {
 		auth.GET("/me", middleware.AuthMiddleware(), GetCurrentUser)
 
 		// Google OAuth
-		auth.POST("/google/callback", services.GoogleCallback)
-		auth.POST("/google/link", middleware.AuthMiddleware(), services.LinkGoogleAccount)
+		auth.POST("/google/callback", GoogleCallback)
+		auth.POST("/google/link", middleware.AuthMiddleware(), LinkGoogleAccount)
+	}
+}
+
+// googleTokenVerifier is the Google OAuth token verifier used by the
+// Google route handlers below. It is wired at startup by InitGoogleOAuth
+// (production) or swapped out by SetGoogleTokenVerifier (tests) -- the
+// controller owns this dependency and passes it explicitly into the
+// service calls, rather than the service layer reading it from a global.
+var googleTokenVerifier services.GoogleTokenVerifier
+
+// InitGoogleOAuth constructs the production Google token verifier from
+// environment configuration and wires it into the Google route handlers.
+// Must be called during application startup.
+func InitGoogleOAuth() {
+	googleTokenVerifier = services.InitGoogleOAuth()
+}
+
+// SetGoogleTokenVerifier allows tests to inject a fake Google token
+// verifier in place of the production one.
+func SetGoogleTokenVerifier(v services.GoogleTokenVerifier) {
+	googleTokenVerifier = v
+}
+
+// GoogleCallback handles POST /api/auth/google/callback.
+func GoogleCallback(c *gin.Context) {
+	var reqBody dtos.GoogleCallbackRequest
+	if err := c.ShouldBindJSON(&reqBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	result, err := services.GoogleCallback(c.Request.Context(), database.Queries, googleTokenVerifier, reqBody)
+	if err != nil {
+		respondGoogleAuthError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// LinkGoogleAccount handles POST /api/auth/google/link.
+// Protected: requires JWT authentication.
+func LinkGoogleAccount(c *gin.Context) {
+	uid, err := middleware.GetAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var reqBody dtos.GoogleCallbackRequest
+	if err := c.ShouldBindJSON(&reqBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if err := services.LinkGoogleAccount(c.Request.Context(), database.Queries, googleTokenVerifier, uid, reqBody); err != nil {
+		respondGoogleAuthError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Google account linked successfully"})
+}
+
+// respondGoogleAuthError maps GoogleCallback's and LinkGoogleAccount's
+// sentinel errors onto the exact response bodies the pre-refactor
+// handlers produced, byte-for-byte -- the frontend matches on these
+// shapes.
+func respondGoogleAuthError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, services.ErrValidation):
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
+		})
+	case errors.Is(err, services.ErrGoogleExchangeFailed):
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization code"})
+	case errors.Is(err, services.ErrGoogleTokenInvalid):
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Google token"})
+	case errors.Is(err, services.ErrGoogleEmailUnverified):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Google email is not verified"})
+	case errors.Is(err, services.ErrGoogleEmailAlreadyLinked):
+		c.JSON(http.StatusConflict, gin.H{"error": "Email is already linked to a different Google account"})
+	case errors.Is(err, services.ErrGoogleLinkFailed):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link Google account"})
+	case errors.Is(err, services.ErrGoogleUserCreateFailed):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+	case errors.Is(err, services.ErrGoogleEmailMismatch):
+		c.JSON(http.StatusForbidden, gin.H{"error": "Google email does not match your account email"})
+	case errors.Is(err, services.ErrGoogleIDConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": "This Google account is already linked to another user"})
+	case errors.Is(err, services.ErrAccessTokenGeneration):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
+	case errors.Is(err, services.ErrRefreshTokenGeneration):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+	default:
+		logger.Error("unexpected google auth error", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 	}
 }
 
