@@ -37,77 +37,88 @@ var ValidRoles = map[Role]bool{
 	Student: true,
 }
 
-func (user *User) ValidateUser() error {
+// userFieldMessages maps a struct field and the validator tag it failed
+// to the message the API has always returned for that pair. User and
+// CreateUserRequest share every field except Password, so they share this
+// table; a field a struct does not have simply never appears in its
+// errors. The "SchooolID" spelling is intentional -- it is the message
+// the API has always sent.
+var userFieldMessages = map[string]map[string]string{
+	"FirstName": {
+		"required": "FirstName: first name is required",
+		"alpha":    "FirstName: must be only alphabetical charaters",
+		"len255":   "FirstName: must be shorter than 255 characters",
+	},
+	"LastName": {
+		"required": "LastName: last name is required",
+		"alpha":    "LastName: must be only alphabetical charaters",
+		"len255":   "LastName: must be shorter than 255 characters",
+	},
+	"Role": {
+		"required": "Role: required when making a user",
+		"role":     "Role: must be one of STUDENT, TEACHER, PARENT, or ADMIN",
+	},
+	"Email": {
+		"required": "Email: email is required",
+		"email":    "Email: must be correctly formatted",
+		"len255":   "Email: must be shorter than 255 characters",
+	},
+	"Password": {
+		"required":            "Password: password is required",
+		"min":                 "Password: must be at least 8 characters",
+		"password_complexity": "Password: must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
+	},
+	"SchoolID": {
+		"required": "SchoolID: required when making a user",
+		"number":   "SchooolID: must be a number",
+	},
+}
+
+// newUserValidator builds a validator with the custom rules the user
+// shapes rely on.
+func newUserValidator() (*validator.Validate, error) {
 	validate := validator.New()
-	err := validate.RegisterValidation("role", validations.UserRole)
+	for tag, fn := range map[string]validator.Func{
+		"role":                validations.UserRole,
+		"len255":              validations.VarChar255Length,
+		"password_complexity": validations.PasswordComplexity,
+	} {
+		if err := validate.RegisterValidation(tag, fn); err != nil {
+			return nil, err
+		}
+	}
+	return validate, nil
+}
+
+// validateUserShape runs the shared validator over s and renders any
+// field failures through userFieldMessages.
+func validateUserShape(s any) error {
+	validate, err := newUserValidator()
 	if err != nil {
-		// TODO: json response
 		return err
 	}
-	err = validate.RegisterValidation("len255", validations.VarChar255Length)
-	if err != nil {
-		// TODO: json response
-		return err
+
+	err = validate.Struct(s)
+	if err == nil {
+		return nil
 	}
 
-	err = validate.Struct(user)
-	if err != nil {
-		var errorMessage []string
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-
-				case "FirstName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "FirstName: first name is required")
-					case "alpha":
-						errorMessage = append(errorMessage, "FirstName: must be only alphabetical charaters")
-					case "len255":
-						errorMessage = append(errorMessage, "FirstName: must be shorter than 255 characters")
-					}
-
-				case "LastName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "LastName: last name is required")
-					case "alpha":
-						errorMessage = append(errorMessage, "LastName: must be only alphabetical charaters")
-					case "len255":
-						errorMessage = append(errorMessage, "LastName: must be shorter than 255 characters")
-					}
-
-				case "Role":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Role: required when making a user")
-					case "role":
-						errorMessage = append(errorMessage, "Role: must be one of STUDENT, TEACHER, PARENT, or ADMIN")
-					}
-
-				case "Email":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Email: email is required")
-					case "email":
-						errorMessage = append(errorMessage, "Email: must be correctly formatted")
-					case "len255":
-						errorMessage = append(errorMessage, "Email: must be shorter than 255 characters")
-					}
-
-				case "SchoolID":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "SchoolID: required when making a user")
-					case "number":
-						errorMessage = append(errorMessage, "SchooolID: must be a number")
-					}
-				}
+	var errorMessage []string
+	var errs validator.ValidationErrors
+	if errors.As(err, &errs) {
+		for _, fieldErr := range errs {
+			if msg, ok := userFieldMessages[fieldErr.StructField()][fieldErr.Tag()]; ok {
+				errorMessage = append(errorMessage, msg)
 			}
 		}
-		return errors.New(strings.Join(errorMessage, ",\n"))
 	}
-	return nil
+	return errors.New(strings.Join(errorMessage, ",\n"))
+}
+
+// ValidateUser checks a User's field shape. The fake-data generator is
+// its remaining caller; request bodies use CreateUserRequest.
+func (user *User) ValidateUser() error {
+	return validateUserShape(user)
 }
 
 // CreateUserRequest is the request body for POST /user (admin-created
@@ -129,83 +140,5 @@ type CreateUserRequest struct {
 // password complexity rule Register uses (see
 // validations.PasswordComplexity and RegisterRequest.ValidateRegisterRequest).
 func (req *CreateUserRequest) Validate() error {
-	validate := validator.New()
-	if err := validate.RegisterValidation("role", validations.UserRole); err != nil {
-		return err
-	}
-	if err := validate.RegisterValidation("len255", validations.VarChar255Length); err != nil {
-		return err
-	}
-	if err := validate.RegisterValidation("password_complexity", validations.PasswordComplexity); err != nil {
-		return err
-	}
-
-	err := validate.Struct(req)
-	if err != nil {
-		var errorMessage []string
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-
-				case "FirstName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "FirstName: first name is required")
-					case "alpha":
-						errorMessage = append(errorMessage, "FirstName: must be only alphabetical charaters")
-					case "len255":
-						errorMessage = append(errorMessage, "FirstName: must be shorter than 255 characters")
-					}
-
-				case "LastName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "LastName: last name is required")
-					case "alpha":
-						errorMessage = append(errorMessage, "LastName: must be only alphabetical charaters")
-					case "len255":
-						errorMessage = append(errorMessage, "LastName: must be shorter than 255 characters")
-					}
-
-				case "Role":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Role: required when making a user")
-					case "role":
-						errorMessage = append(errorMessage, "Role: must be one of STUDENT, TEACHER, PARENT, or ADMIN")
-					}
-
-				case "Email":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Email: email is required")
-					case "email":
-						errorMessage = append(errorMessage, "Email: must be correctly formatted")
-					case "len255":
-						errorMessage = append(errorMessage, "Email: must be shorter than 255 characters")
-					}
-
-				case "Password":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Password: password is required")
-					case "min":
-						errorMessage = append(errorMessage, "Password: must be at least 8 characters")
-					case "password_complexity":
-						errorMessage = append(errorMessage, "Password: must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character")
-					}
-
-				case "SchoolID":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "SchoolID: required when making a user")
-					case "number":
-						errorMessage = append(errorMessage, "SchooolID: must be a number")
-					}
-				}
-			}
-		}
-		return errors.New(strings.Join(errorMessage, ",\n"))
-	}
-	return nil
+	return validateUserShape(req)
 }
