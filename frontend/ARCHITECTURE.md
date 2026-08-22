@@ -464,7 +464,7 @@ Generated questions arrive as **single-measure MusicXML** by design: each is one
 
 ## Styling
 
-`src/styles.scss` is the only global stylesheet and the only standalone style file besides `app.component.scss`; every other component's styles are inline `styles:` strings. It self-hosts both fonts (`@fontsource-variable/inter`, `@fontsource-variable/bricolage-grotesque` — these were `import`s in React's `main.tsx`, and an Angular `.ts` entry point cannot import CSS), pulls in Tailwind's three layers, and declares the light and dark token sets as bare HSL triplets consumed as `hsl(var(--x))`. Dark mode is class-based (`darkMode: ["class"]`), driven by `ThemeStore` putting `dark`/`light` on `documentElement`. [`DESIGN.md`](./DESIGN.md) is the source of truth for what the tokens _mean_; this file is where they live.
+`src/styles.scss` is the only global stylesheet and the app's only standalone style file; every component's styles are inline `styles:` strings. It self-hosts both fonts (`@fontsource-variable/inter`, `@fontsource-variable/bricolage-grotesque` — these were `import`s in React's `main.tsx`, and an Angular `.ts` entry point cannot import CSS), pulls in Tailwind's three layers, and declares the light and dark token sets as bare HSL triplets consumed as `hsl(var(--x))`. Dark mode is class-based (`darkMode: ["class"]`), driven by `ThemeStore` putting `dark`/`light` on `documentElement`. [`DESIGN.md`](./DESIGN.md) is the source of truth for what the tokens _mean_; this file is where they live.
 
 Three Angular-specific traps are worth knowing before you write a class.
 
