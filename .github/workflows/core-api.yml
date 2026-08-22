@@ -82,3 +82,15 @@ jobs:
 
       - name: Run tests
         run: make test-go
+
+      # The OpenAPI spec is generated from swag annotations on the
+      # controllers plus the general API info in main.go, not hand-written.
+      # The pre-commit hook regenerates it locally, but this is the
+      # backstop for a bypassed hook or a stale checked-in spec.
+      - name: Install swag CLI
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Check OpenAPI spec is up to date
+        run: |
+          make openapi-go
+          git diff --exit-code -- core-api/openapi/

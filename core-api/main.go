@@ -44,6 +44,14 @@ const (
 	shutdownTimeout = 15 * time.Second
 )
 
+// @title                       Tremolo Core API
+// @version                     1.0
+// @description                 Core API for Tremolo (auth, users/teachers/friends, game settings, score entries, classes/assignments, dashboard charts).
+// @BasePath                    /
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 Type "Bearer" followed by a space and the JWT access token.
 func main() {
 	if err := run(context.Background(), os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "core-api: %v\n", err)

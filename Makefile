@@ -4,7 +4,7 @@
 	format format-frontend format-music format-go \
 	format-check format-check-frontend format-check-music format-check-go \
 	check check-frontend check-music check-go \
-	build-frontend
+	build-frontend openapi-go
 
 # ---- pretty output ----
 # $(call banner,MESSAGE) prints "[ STEP ] MESSAGE". STEP is passed down by the
@@ -37,6 +37,8 @@ help:
 	@echo "  check-frontend         format-check + lint + test + build"
 	@echo "  check-music            format-check + lint + test"
 	@echo "  check-go               format-check + vet + golangci-lint + test"
+	@echo ""
+	@echo "  openapi-go             regenerate core-api/openapi/swagger.{json,yaml}"
 
 # ---- frontend (Angular -- frontend/) ----
 # The app. It was migrated from React in 2026; frontend/.migration/ holds the
@@ -120,6 +122,17 @@ format-check-go:
 	fi
 
 check-go: format-check-go lint-go test-go
+
+# Regenerates core-api/openapi/{swagger.json,swagger.yaml} from the swag
+# annotations on each handler (controllers/*.go) plus the general API info
+# in main.go. Requires the swag CLI: go install
+# github.com/swaggo/swag/cmd/swag@latest. Mutates files, like format-go --
+# CI verifies the result is committed via a `git diff --exit-code` step.
+# --parseDependency is needed because DTOs live in a separate package from
+# the handlers that reference them in @Param/@Success/@Failure.
+openapi-go:
+	@$(call banner,Generating core API OpenAPI spec...)
+	cd core-api && swag init -g main.go --output openapi --outputTypes json,yaml --parseDependency
 
 # ---- API smoke tests (kulala) ----
 # End-to-end HTTP tests against a RUNNING service (default :5001). Unlike
