@@ -102,6 +102,11 @@ func CreateUser(c *gin.Context) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Creating ADMIN users is not allowed",
 			})
+		case errors.Is(err, services.ErrInvalidRole):
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid role",
+				"message": "Role not found",
+			})
 		default:
 			logger.Error("failed to create user", "error", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -31,7 +32,7 @@ func CreateUser(ctx context.Context, q generated.Querier, req *dtos.CreateUserRe
 	roleID, err := q.GetRoleIDByName(ctx, string(req.Role))
 	if err != nil {
 		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrInvalidRole, err)
 	}
 
 	passwordHash, err := HashPassword(req.Password)
