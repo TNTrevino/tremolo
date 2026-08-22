@@ -15,22 +15,25 @@ import (
 	"sight-reading/middleware"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// adminTestRouter builds a router with only the admin routes registered,
-// mirroring how main.go wires controllers.SetupAdminRoutes.
-func adminTestRouter() *gin.Engine {
-	router := gin.New()
-	controllers.SetupAdminRoutes(router)
-	return router
+// adminTestRouter builds a mux with only the admin routes registered,
+// mirroring how NewServer wires controllers.RegisterAdminRoutes.
+func adminTestRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	controllers.RegisterAdminRoutes(mux, database.Queries)
+	return mux
 }
 
 // bearerRequest builds an httptest.NewRequest with an optional JSON body
 // and Authorization header.
+//
+// Other test files (tests/user_info_controller_test.go,
+// tests/keyboard_bindings_controller_test.go) call this helper directly,
+// so its name and signature must not change.
 func bearerRequest(t *testing.T, method, path, token string, body any) *http.Request {
 	t.Helper()
 
@@ -50,6 +53,9 @@ func bearerRequest(t *testing.T, method, path, token string, body any) *http.Req
 	return req
 }
 
+// testAccessToken is also called from tests/user_info_controller_test.go
+// and tests/keyboard_bindings_controller_test.go; keep its name and
+// signature stable.
 func testAccessToken(t *testing.T, userID int) string {
 	t.Helper()
 	token, err := middleware.GenerateAccessToken(userID)
@@ -68,6 +74,57 @@ func testSchoolID(t *testing.T) int32 {
 	})
 	require.NoError(t, err)
 	return schoolID
+}
+
+// ---------- every route: auth + admin-role enforcement ----------
+
+// TestAdminRoutes_EveryRoute_RequiresAuthAndAdminRole verifies that each
+// admin route rejects both an anonymous caller and an authenticated
+// non-admin caller. These routes were unauthenticated until recently, so
+// this guards against any converted route losing either
+// middleware.RequireAuth or adminOnly.
+func TestAdminRoutes_EveryRoute_RequiresAuthAndAdminRole(t *testing.T) {
+	t.Parallel()
+
+	routes := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{"GetTeachers", http.MethodGet, "/teachers"},
+		{"GetTeacher", http.MethodGet, "/teacher/1"},
+		{"GetStudents", http.MethodGet, "/students"},
+		{"GetStudent", http.MethodGet, "/student/1"},
+		{"CreateUser", http.MethodPost, "/user"},
+	}
+
+	for _, route := range routes {
+		t.Run(route.name+"_Unauthenticated", func(t *testing.T) {
+			t.Parallel()
+			testutil.SetupTestDB(t)
+
+			router := adminTestRouter()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, bearerRequest(t, route.method, route.path, "", nil))
+
+			assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
+		})
+
+		t.Run(route.name+"_NonAdmin", func(t *testing.T) {
+			t.Parallel()
+			testutil.SetupTestDB(t)
+
+			email := testutil.UniqueEmail(t, "admin_route_nonadmin")
+			userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+			token := testAccessToken(t, userID)
+
+			router := adminTestRouter()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, bearerRequest(t, route.method, route.path, token, nil))
+
+			assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
+		})
+	}
 }
 
 // ---------- GET /teachers ----------

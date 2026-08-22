@@ -29,4 +29,5 @@ func RegisterRoutes(mux *http.ServeMux, q database.Querier) {
 	RegisterFriendsRoutes(mux, q)
 	RegisterClassRoutes(mux, q)
 	RegisterChartRoutes(mux, q)
+	RegisterAdminRoutes(mux, q)
 }

@@ -28,7 +28,6 @@ func ginFallback() http.Handler {
 	router := gin.New()
 
 	controllers.SetupAuthRoutes(router)
-	controllers.SetupAdminRoutes(router)
 
 	return router
 }
