@@ -110,8 +110,9 @@ services in Go after 13 years".
 Controllers call `httpx.DecodeValid[T]`, which decodes the body and runs
 `Valid` in one step. Its `[T Validator]` type constraint is the point: a
 request shape without a `Valid` method is a build error, not a body that
-quietly skips validation. `httpx.Decode[T]` still exists for bodies that
-need no rules.
+quietly skips validation. `httpx.Decode[T]` remains for a body that needs
+no rules at all; no route uses it today, since every request shape has a
+`Valid` method.
 
 A failure comes back as a problems map plus an error. `httpx.DecodeError`
 renders it as the `{"error": "..."}` body the API has always returned,
