@@ -24,12 +24,6 @@ func NewServer(allowedOrigins []string, q database.Querier) http.Handler {
 	mux := http.NewServeMux()
 	controllers.RegisterRoutes(mux, q)
 
-	// Anything the converted routes do not match falls through to gin.
-	// A ServeMux prefers the most specific matching pattern, so a
-	// converted route always wins over this catch-all. Delete both this
-	// line and gin_fallback.go when the last domain converts.
-	mux.Handle("/", ginFallback())
-
 	var handler http.Handler = mux
 	handler = middleware.CORS(allowedOrigins)(handler)
 	handler = middleware.RequestLog(handler)

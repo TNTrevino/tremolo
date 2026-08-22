@@ -8,20 +8,20 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/controllers"
+	"sight-reading/database"
 	"sight-reading/middleware"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // authTestRouter builds a router with only the auth routes registered,
-// mirroring how main.go wires controllers.SetupAuthRoutes.
-func authTestRouter() *gin.Engine {
-	router := gin.New()
-	controllers.SetupAuthRoutes(router)
-	return router
+// mirroring how NewServer wires controllers.RegisterAuthRoutes.
+func authTestRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	controllers.RegisterAuthRoutes(mux, database.Queries)
+	return mux
 }
 
 // ---------- POST /api/auth/login ----------
@@ -161,6 +161,10 @@ func TestRefreshTokenRoute_EmptyToken(t *testing.T) {
 	}))
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Refresh token is required", response["error"])
 }
 
 func TestRefreshTokenRoute_Success(t *testing.T) {
@@ -224,44 +228,60 @@ func TestGetCurrentUserRoute_ValidToken(t *testing.T) {
 	assert.Equal(t, email, response.Email)
 }
 
-// TestGetCurrentUser_NoUserIDInContext exercises controllers.GetCurrentUser's
-// own defensive fallback when middleware.GetAuthenticatedUserID can't find a
-// userID in the gin context. In production AuthMiddleware always runs first
-// and guarantees this, so it isn't reachable through the router -- this
-// calls the handler directly, the way it was tested pre-refactor.
-func TestGetCurrentUser_NoUserIDInContext(t *testing.T) {
+// Note: the pre-refactor suite also had
+// TestGetCurrentUser_NoUserIDInContext and
+// TestGetCurrentUser_InvalidUserIDType, exercising the handler's
+// defensive "no/invalid userID in context" fallback by building a
+// *gin.Context directly and calling the exported gin handler function.
+// That is not expressible at the HTTP level any more: the handler is now
+// an unexported closure only reachable through RegisterAuthRoutes, and
+// every path to it (GET /api/auth/me) is wrapped in
+// middleware.RequireAuth, which never calls through without a valid int
+// userID in the context. The scenario was already unreachable via the
+// router pre-refactor (see the original tests' own comments); now it is
+// unreachable full stop, so there is no HTTP-level request that can
+// exercise it. See the final report for this note instead of silently
+// dropping the coverage.
+
+// ---------- Auth requirement of each route ----------
+
+func TestAuthRoutes_AuthRequirement(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
+	router := authTestRouter()
 
-	// Do not set userID in context
+	publicRoutes := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/api/auth/login"},
+		{http.MethodPost, "/api/auth/register"},
+		{http.MethodPost, "/api/auth/refresh"},
+		{http.MethodPost, "/api/auth/google/callback"},
+	}
+	for _, rt := range publicRoutes {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, bearerRequest(t, rt.method, rt.path, "", map[string]string{}))
+		assert.NotEqual(t, http.StatusUnauthorized, w.Code,
+			"%s %s should not require auth, got 401: %s", rt.method, rt.path, w.Body.String())
+	}
 
-	controllers.GetCurrentUser(c)
+	protectedRoutes := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodGet, "/api/auth/me"},
+		{http.MethodPost, "/api/auth/google/link"},
+	}
+	for _, rt := range protectedRoutes {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, bearerRequest(t, rt.method, rt.path, "", map[string]string{}))
+		assert.Equal(t, http.StatusUnauthorized, w.Code,
+			"%s %s should require auth: %s", rt.method, rt.path, w.Body.String())
 
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-	assert.Equal(t, "Unauthorized", response["error"])
-}
-
-// TestGetCurrentUser_InvalidUserIDType is the same defensive-fallback case
-// as above, for a context value of the wrong type.
-func TestGetCurrentUser_InvalidUserIDType(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
-
-	// Set userID with wrong type
-	c.Set("userID", "not-an-int")
-
-	controllers.GetCurrentUser(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-	assert.Equal(t, "Unauthorized", response["error"])
+		var response map[string]any
+		testutil.ParseJSONResponse(t, w, &response)
+		assert.Equal(t, "Unauthorized", response["error"])
+	}
 }
