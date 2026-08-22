@@ -1,6 +1,6 @@
 # Tremolo — Go User-Tracking Service (`core-api`)
 
-Gin HTTP service (default port **5001**) that handles everything user-related for
+`net/http` service (default port **5001**) that handles everything user-related for
 [Tremolo](https://tremolonotes.com): authentication (JWT + Google OAuth), users /
 teachers / friends, game score entries, per-game settings, keyboard bindings, and
 dashboard chart data. Backed by **Postgres** via **sqlc**.
@@ -53,30 +53,42 @@ The service uses strict layering. Repositories are the **sqlc-generated
 queries** — there is no hand-written repository layer.
 
 ```
-controllers/   Gin handlers: route groups, request binding, HTTP status mapping.
-               Each file exports a Setup*Routes(router) function registered in main.go.
+main.go        run(ctx, args): dependency init, then an http.Server with
+               timeouts and graceful shutdown.
+server.go      NewServer(allowedOrigins, q) http.Handler: the mux plus the
+               middleware chain, outside-in Recover → RequestLog → CORS.
+controllers/   net/http handlers: route registration, request binding, HTTP status mapping.
+               Each file exports a RegisterXRoutes(mux, q) function, listed in
+               controllers/routes.go.
 services/      Business logic: validation, authorization checks, DTO conversion.
                Take a generated.Querier (usually database.Queries) as a parameter.
 DTOs/          Request/response shapes + their Validate() methods (package dtos).
+httpx/         M, JSON and Decode — the request and response helpers shared by
+               every handler.
 database/
   database.go       Opens the connection; exposes DBConn (*sql.DB) and
-                    Queries (*generated.Queries) as package globals.
+                    Queries (*generated.Queries) as package globals, plus the
+                    Querier alias controllers use to name the type.
   migrate.go        Runs embedded goose migrations at startup.
   migrations/       Numbered goose SQL files (00001_..., 00002_...).
   queries/          Hand-written SQL, one file per table/domain.
   generated/        sqlc output — never edit by hand.
-middleware/    JWT auth middleware (token parsing, userID injection).
-validations/   Custom validator functions (e.g. time-length format).
+middleware/    RequireAuth (JWT parsing, typed-context-key userID injection),
+               CORS, Recover, RequestLog.
+validations/   Custom validator functions (e.g. time-length format) and the
+               query-parameter helpers in http_params.go.
 logger/        slog setup.
 generation/    Fake-data generator behind the -fake-it flag.
 tests/         Integration tests + tests/testutil helpers.
 ```
 
-**Rule:** controllers never call generated queries directly. They only pass
-`database.Queries` into service functions
-(`services.Foo(ctx, database.Queries, userID, ...)`); all query calls and
-business logic live in `services/`. Controllers handle HTTP concerns only:
-auth extraction via `middleware.GetAuthenticatedUserID(c)`, JSON binding, and
+**Rule:** controllers never call generated queries directly. A handler maker
+receives a `database.Querier` and passes it straight through
+(`services.Foo(r.Context(), q, userID, ...)`); all query calls and business
+logic live in `services/`. The Querier comes from `NewServer` via
+`controllers.RegisterRoutes`, so no handler reads `database.Queries` as a
+global. Controllers handle HTTP concerns only: auth extraction via
+`middleware.AuthenticatedUserID(r)`, JSON decoding (`httpx.Decode`), and
 mapping service errors (`services.ErrValidation`, `services.ErrUnauthorized`)
 to status codes.
 
@@ -165,7 +177,10 @@ All require a JWT (`Authorization: Bearer <access token>`).
 
 ## Full route map
 
-Registered in `main.go` via one `controllers.Setup*Routes` call per domain.
+Each domain registers its own routes on the `*http.ServeMux` from a
+`RegisterXRoutes(mux, q)` function next to its handlers; `controllers/routes.go`
+is the one place listing which domains exist. Route patterns carry a method
+and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 
 | Method | Path | Auth | Controller file |
 |---|---|---|---|
@@ -174,14 +189,14 @@ Registered in `main.go` via one `controllers.Setup*Routes` call per domain.
 | GET | `/api/auth/me` | JWT | `auth_controller.go` |
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
-| GET | `/teachers`, `/teacher/:id`, `/students`, `/student/:id`; POST `/user` | — | `controller.go` (legacy teacher/user routes) |
-| GET | `/api/charts/user/:userId/metrics?interval=&days=` | JWT | `chart_controller.go` |
+| GET | `/teachers`, `/teacher/{id}`, `/students`, `/student/{id}`; POST `/user` | JWT (ADMIN role) | `admin_controller.go` (legacy teacher/user routes) |
+| GET | `/api/charts/user/{userId}/metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/charts/teacher/class-metrics?interval=&days=` | JWT | `chart_controller.go` |
-| GET | `/api/users/:userId/general-info` | JWT (own data only) | `user_info_controller.go` |
+| GET | `/api/users/{userId}/general-info` | JWT (own data only) | `user_info_controller.go` |
 | GET / POST | `/api/friends`, GET `/api/friends/search?q=` | JWT | `friends_controller.go` |
 | GET / POST | `/api/classes` (teacher's classes / create), POST `/api/classes/join`, GET `/api/classes/joined` | JWT | `class_controller.go` |
-| GET / DELETE | `/api/classes/:id/roster`, DELETE `/api/classes/:id` (archive), `/api/classes/:id/students/:studentId` | JWT (role/ownership in service) | `class_controller.go` |
-| GET / POST | `/api/classes/:id/assignments`; GET `/api/assignments` (student view), `/api/assignments/:id/results` (teacher grid); DELETE `/api/assignments/:id` | JWT | `class_controller.go` |
+| GET / DELETE | `/api/classes/{id}/roster`, DELETE `/api/classes/{id}` (archive), `/api/classes/{id}/students/{studentId}` | JWT (role/ownership in service) | `class_controller.go` |
+| GET / POST | `/api/classes/{id}/assignments`; GET `/api/assignments` (student view), `/api/assignments/{id}/results` (teacher grid), `/api/assignments/{id}/attempts/{studentId}` (one student's attempts); DELETE `/api/assignments/{id}` | JWT | `class_controller.go` |
 | * | game endpoints (table above) | JWT | `note_game_*`, `game_settings_`, `keyboard_bindings_controller.go` |
 
 Chart endpoints accept `interval` = `day`/`week`/`month`/`year` (strategy
@@ -194,10 +209,10 @@ pattern in `services/chart_strategies.go`) and `days` (default 30).
   `ACCOUNT_LOCKOUT_DURATION_MINUTES`. Successful auth returns a short-lived
   **access token** and a long-lived **refresh token** (both HS256 JWTs with a
   `token_type` claim, signed with `JWT_SECRET`).
-- **Middleware** (`middleware/auth_middleware.go`): `AuthMiddleware()` parses
-  the `Bearer` token, verifies HMAC signing + `token_type == "access"`, and
-  puts `userID` on the Gin context; handlers read it with
-  `GetAuthenticatedUserID(c)`.
+- **Middleware** (`middleware/auth_http.go`): `RequireAuth` parses the
+  `Bearer` token, verifies HMAC signing + `token_type == "access"`, and puts
+  the user ID on the request context under an unexported, typed key; handlers
+  read it with `middleware.AuthenticatedUserID(r)`.
 - **Refresh**: `POST /api/auth/refresh` validates a refresh token and mints a
   new access token. (The frontend's `main-client.ts` axios interceptor does
   refresh-on-401 automatically.)
@@ -241,9 +256,9 @@ go test ./tests/ -run TestName         # single test
    [database workflow](#database-workflow) if needed.
 2. Define request/response DTOs (with a `Validate()` method) in `DTOs/`.
 3. Add the handler + route in the relevant `controllers/*_controller.go`
-   `Setup*Routes` group (attach `middleware.AuthMiddleware()` for protected
-   routes). If it's a new domain, create a new controller file and register
-   its `SetupXRoutes(router)` in `main.go`.
+   `RegisterXRoutes` function (wrap the handler with `middleware.RequireAuth`
+   for protected routes). If it's a new domain, create a new controller file
+   and add its `RegisterXRoutes(mux, q)` call to `controllers/routes.go`.
 4. Add tests (service-level in `services/` or `tests/`, using `testutil`).
 
 ### A new identification game type
