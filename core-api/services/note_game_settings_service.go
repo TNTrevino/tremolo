@@ -26,13 +26,6 @@ func GetNoteGameSettings(ctx context.Context, q generated.Querier, userID int) (
 }
 
 func UpsertNoteGameSettings(ctx context.Context, q generated.Querier, userID int, req *dtos.NoteGameSettingsRequest) (*dtos.NoteGameSettingsResponse, error) {
-	if err := req.Validate(); err != nil {
-		logger.Error("Settings validation failed",
-			"error", err.Error(),
-			"user_id", userID)
-		return nil, err
-	}
-
 	params := generated.UpsertNoteGameSettingsParams{
 		UserID:    int32(userID),
 		GameMode:  req.GameMode,

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	dtos "sight-reading/DTOs"
@@ -70,19 +69,14 @@ func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.KeyboardBindingsRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.KeyboardBindingsRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
 		result, err := services.UpsertKeyboardBindings(r.Context(), q, userID, &req)
 		if err != nil {
-			var validationErr *services.ValidationError
-			if errors.As(err, &validationErr) {
-				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": validationErr.Unwrap().Error()})
-				return
-			}
 			logger.Error("failed to update keyboard bindings", "error", err, "userID", userID)
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to update keyboard bindings"})
 			return

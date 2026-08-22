@@ -3,26 +3,11 @@ package services
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
 )
-
-// ValidationError wraps errors caused by invalid client input so controllers
-// can distinguish them from infrastructure failures.
-type ValidationError struct {
-	Err error
-}
-
-func (e *ValidationError) Error() string {
-	return fmt.Sprintf("validation error: %v", e.Err)
-}
-
-func (e *ValidationError) Unwrap() error {
-	return e.Err
-}
 
 // DefaultKeyboardBindings defines the standard QWERTY layout for the note game.
 // Naturals (home row): a,s,d,f,g,h,j  Sharps (top row): q,w,e,r,t,y,u  Flats (bottom row): z,x,c,v,b,n,m
@@ -56,13 +41,6 @@ func GetKeyboardBindings(ctx context.Context, q generated.Querier, userID int) (
 }
 
 func UpsertKeyboardBindings(ctx context.Context, q generated.Querier, userID int, req *dtos.KeyboardBindingsRequest) (*dtos.KeyboardBindingsResponse, error) {
-	if err := req.Validate(); err != nil {
-		logger.Error("Keyboard bindings validation failed",
-			"error", err.Error(),
-			"user_id", userID)
-		return nil, &ValidationError{Err: err}
-	}
-
 	kb := req.KeyBindings
 	params := generated.UpsertKeyboardBindingsParams{
 		UserID:    int32(userID),
