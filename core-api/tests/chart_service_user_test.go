@@ -2,48 +2,32 @@
 package tests
 
 import (
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"strconv"
+	"context"
 	"testing"
 
-	dtos "sight-reading/DTOs"
+	"sight-reading/database"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Auth extraction, path-param parsing, and query-param binding are now
+// controller concerns (controllers/chart_controller.go) and are no longer
+// exercised here — these tests call the service directly with typed args.
 
 // TestGetUserChartData_Success tests that a user can fetch their own chart data
 func TestGetUserChartData_Success(t *testing.T) {
 	testutil.SetupTestDB(t)
 
-	// Create a test user
 	email := testutil.UniqueEmail(t, "chart_success")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
-
-	// Create a note game entry for the user
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
-	// Set up mock context
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID))
-	c.Set("userID", userID)
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-	// Call the handler
-	services.GetUserChartData(c)
-
-	// Assertions
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response dtos.MultiMetricChartData
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	response, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "day", 30)
 	require.NoError(t, err)
 
-	// The response should have arrays for all metrics
 	assert.NotNil(t, response.NPM)
 	assert.NotNil(t, response.Accuracy)
 	assert.NotNil(t, response.SessionCount)
@@ -54,107 +38,15 @@ func TestGetUserChartData_Success(t *testing.T) {
 func TestGetUserChartData_Unauthorized(t *testing.T) {
 	testutil.SetupTestDB(t)
 
-	// Create two users
 	email1 := testutil.UniqueEmail(t, "chart_unauth1")
 	userID1 := testutil.CreateTestUserWithDefaults(t, email1, "STUDENT")
 
 	email2 := testutil.UniqueEmail(t, "chart_unauth2")
 	userID2 := testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
 
-	// Set up mock context where user1 tries to access user2's data
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID2))
-	c.Set("userID", userID1)                                             // Authenticated as user1
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID2)}} // Requesting user2's data
-
-	// Call the handler
-	services.GetUserChartData(c)
-
-	// Assertions
-	assert.Equal(t, http.StatusForbidden, w.Code)
-
-	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-	assert.Equal(t, "Access denied", response["error"])
-}
-
-// TestGetUserChartData_InvalidUserID tests handling of invalid user ID parameter
-// Note: This test only validates parameter parsing, which happens before DB access
-func TestGetUserChartData_InvalidUserID(t *testing.T) {
-	testCases := []struct {
-		name         string
-		userIDParam  string
-		expectedCode int
-		expectedErr  string
-	}{
-		{
-			name:         "non-numeric user ID",
-			userIDParam:  "abc",
-			expectedCode: http.StatusBadRequest,
-			expectedErr:  "Invalid user ID parameter",
-		},
-		{
-			name:         "empty user ID",
-			userIDParam:  "",
-			expectedCode: http.StatusBadRequest,
-			expectedErr:  "Invalid user ID parameter",
-		},
-		{
-			name:         "float user ID",
-			userIDParam:  "1.5",
-			expectedCode: http.StatusBadRequest,
-			expectedErr:  "Invalid user ID parameter",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+tc.userIDParam)
-			c.Set("userID", 1)
-			c.Params = gin.Params{{Key: "userId", Value: tc.userIDParam}}
-
-			services.GetUserChartData(c)
-
-			assert.Equal(t, tc.expectedCode, w.Code)
-
-			var response map[string]string
-			err := json.Unmarshal(w.Body.Bytes(), &response)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedErr, response["error"])
-		})
-	}
-}
-
-// TestGetUserChartData_MissingAuth tests when no userID is in context
-func TestGetUserChartData_MissingAuth(t *testing.T) {
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/1")
-	c.Params = gin.Params{{Key: "userId", Value: "1"}}
-	// Not setting userID in context
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-
-	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-	assert.Equal(t, "Unauthorized", response["error"])
-}
-
-// TestGetUserChartData_InvalidAuthUserID tests when userID in context is not an int
-func TestGetUserChartData_InvalidAuthUserID(t *testing.T) {
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/1")
-	c.Set("userID", "not-an-int") // Wrong type
-	c.Params = gin.Params{{Key: "userId", Value: "1"}}
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-
-	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-	assert.Equal(t, "Unauthorized", response["error"])
+	// userID1 authenticated, requesting userID2's data.
+	_, err := services.GetUserChartData(context.Background(), database.Queries, userID1, userID2, "day", 30)
+	assert.ErrorIs(t, err, services.ErrForbidden)
 }
 
 // TestGetUserChartData_AllIntervals tests that all interval values work correctly
@@ -169,18 +61,9 @@ func TestGetUserChartData_AllIntervals(t *testing.T) {
 
 	for _, interval := range intervals {
 		t.Run("interval_"+interval, func(t *testing.T) {
-			c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval="+interval)
-			c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval="+interval, nil)
-			c.Set("userID", userID)
-			c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-			services.GetUserChartData(c)
-
-			assert.Equal(t, http.StatusOK, w.Code, "Failed for interval: %s", interval)
-
-			var response dtos.MultiMetricChartData
-			err := json.Unmarshal(w.Body.Bytes(), &response)
-			require.NoError(t, err)
+			response, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, interval, 30)
+			require.NoError(t, err, "failed for interval: %s", interval)
+			assert.NotNil(t, response.NPM)
 		})
 	}
 }
@@ -192,19 +75,10 @@ func TestGetUserChartData_InvalidInterval(t *testing.T) {
 	email := testutil.UniqueEmail(t, "chart_invalid_interval")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=invalid")
-	c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=invalid", nil)
-	c.Set("userID", userID)
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	var response map[string]string
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-	assert.Contains(t, response["error"], "invalid interval")
+	_, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "invalid", 30)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, services.ErrValidation)
+	assert.Contains(t, err.Error(), "invalid interval")
 }
 
 // TestGetUserChartData_InvalidDays tests handling of invalid days parameter
@@ -216,28 +90,16 @@ func TestGetUserChartData_InvalidDays(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		days string
+		days int
 	}{
-		{name: "non-numeric days", days: "abc"},
-		{name: "zero days", days: "0"},
-		{name: "negative days", days: "-5"},
+		{name: "zero days", days: 0},
+		{name: "negative days", days: -5},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?days="+tc.days)
-			c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?days="+tc.days, nil)
-			c.Set("userID", userID)
-			c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-			services.GetUserChartData(c)
-
-			assert.Equal(t, http.StatusBadRequest, w.Code)
-
-			var response map[string]string
-			err := json.Unmarshal(w.Body.Bytes(), &response)
-			require.NoError(t, err)
-			assert.Equal(t, "Invalid days parameter", response["error"])
+			_, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "day", tc.days)
+			assert.ErrorIs(t, err, services.ErrValidation)
 		})
 	}
 }
@@ -246,23 +108,12 @@ func TestGetUserChartData_InvalidDays(t *testing.T) {
 func TestGetUserChartData_NoEntries(t *testing.T) {
 	testutil.SetupTestDB(t)
 
-	// Create a user with no entries
 	email := testutil.UniqueEmail(t, "chart_no_entries")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID))
-	c.Set("userID", userID)
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response dtos.MultiMetricChartData
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	response, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "day", 30)
 	require.NoError(t, err)
 
-	// All arrays should be empty (or nil) but response should be valid
 	assert.Empty(t, response.NPM)
 	assert.Empty(t, response.Accuracy)
 	assert.Empty(t, response.SessionCount)
@@ -276,7 +127,6 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 	email := testutil.UniqueEmail(t, "chart_with_entries")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	// Create multiple entries with different values
 	testutil.CreateTestNoteGameEntry(t, testutil.CreateTestNoteGameEntryParams{
 		UserID:           userID,
 		TimeLength:       "00:05:00",
@@ -301,26 +151,14 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 		NotesPerMinute:   5.0,
 	})
 
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=all")
-	c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?interval=all", nil)
-	c.Set("userID", userID)
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response dtos.MultiMetricChartData
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	response, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "all", 30)
 	require.NoError(t, err)
 
-	// Should have 3 entries in each array
 	assert.Len(t, response.NPM, 3)
 	assert.Len(t, response.Accuracy, 3)
 	assert.Len(t, response.SessionCount, 3)
 	assert.Len(t, response.TotalQuestions, 3)
 
-	// Verify data values are reasonable (NPM values)
 	npmValues := make([]float64, len(response.NPM))
 	for i, point := range response.NPM {
 		npmValues[i] = point.Value
@@ -330,7 +168,6 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 	assert.Contains(t, npmValues, float64(4))
 	assert.Contains(t, npmValues, float64(5))
 
-	// Verify total questions values
 	totalQValues := make([]float64, len(response.TotalQuestions))
 	for i, point := range response.TotalQuestions {
 		totalQValues[i] = point.Value
@@ -340,7 +177,8 @@ func TestGetUserChartData_WithEntries(t *testing.T) {
 	assert.Contains(t, totalQValues, float64(15))
 }
 
-// TestGetUserChartData_DefaultQueryParams tests default query parameter values
+// TestGetUserChartData_DefaultQueryParams tests the controller's default
+// query parameter values (interval=day, days=30) applied at the service level
 func TestGetUserChartData_DefaultQueryParams(t *testing.T) {
 	testutil.SetupTestDB(t)
 
@@ -348,20 +186,9 @@ func TestGetUserChartData_DefaultQueryParams(t *testing.T) {
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
-	// Don't provide any query parameters - should use defaults (interval=day, days=30)
-	c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID))
-	c.Set("userID", userID)
-	c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-	services.GetUserChartData(c)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response dtos.MultiMetricChartData
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	response, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "day", 30)
 	require.NoError(t, err)
 
-	// Response should be valid with default params
 	assert.NotNil(t, response.NPM)
 	assert.NotNil(t, response.Accuracy)
 	assert.NotNil(t, response.SessionCount)
@@ -376,30 +203,11 @@ func TestGetUserChartData_CustomDays(t *testing.T) {
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.CreateTestNoteGameEntryWithDefaults(t, userID)
 
-	testCases := []struct {
-		name string
-		days string
-	}{
-		{name: "7 days", days: "7"},
-		{name: "14 days", days: "14"},
-		{name: "30 days", days: "30"},
-		{name: "90 days", days: "90"},
-		{name: "365 days", days: "365"},
-	}
+	daysCases := []int{7, 14, 30, 90, 365}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, w := testutil.CreateGinContext("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?days="+tc.days)
-			c.Request = httptest.NewRequest("GET", "/api/charts/user/"+strconv.Itoa(userID)+"?days="+tc.days, nil)
-			c.Set("userID", userID)
-			c.Params = gin.Params{{Key: "userId", Value: strconv.Itoa(userID)}}
-
-			services.GetUserChartData(c)
-
-			assert.Equal(t, http.StatusOK, w.Code)
-
-			var response dtos.MultiMetricChartData
-			err := json.Unmarshal(w.Body.Bytes(), &response)
+	for _, days := range daysCases {
+		t.Run("", func(t *testing.T) {
+			_, err := services.GetUserChartData(context.Background(), database.Queries, userID, userID, "day", days)
 			require.NoError(t, err)
 		})
 	}

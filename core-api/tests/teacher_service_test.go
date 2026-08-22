@@ -1,11 +1,8 @@
 package tests
 
 import (
-	"bytes"
 	"context"
-	"net/http"
-	"net/http/httptest"
-	"strconv"
+	"errors"
 	"testing"
 
 	dtos "sight-reading/DTOs"
@@ -14,18 +11,15 @@ import (
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// TestCreateUser_Success tests successful user creation with valid data
-func TestCreateUser_Success(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	email := testutil.UniqueEmail(t, "create_user_success")
-
+// createTestSchool creates a school for CreateUserRequest's required
+// SchoolID field and returns its ID.
+func createTestSchool(t *testing.T) int16 {
+	t.Helper()
 	schoolID, err := database.Queries.CreateSchool(context.Background(), generated.CreateSchoolParams{
 		Title:   "Test School",
 		City:    "Austin",
@@ -34,32 +28,43 @@ func TestCreateUser_Success(t *testing.T) {
 		Country: "US",
 	})
 	require.NoError(t, err)
+	return int16(schoolID)
+}
 
-	reqBody := dtos.User{
+// TestCreateUser_Success tests successful user creation with valid data,
+// and proves the supplied password is actually hashed and stored (the
+// bug this refactor fixes: POST /user used to store a NULL password).
+func TestCreateUser_Success(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "create_user_success")
+	schoolID := createTestSchool(t)
+
+	reqBody := &dtos.CreateUserRequest{
 		FirstName: "John",
 		LastName:  "Doe",
 		Role:      dtos.Student,
 		Email:     email,
-		SchoolID:  int16(schoolID),
+		Password:  "ValidPass123!",
+		SchoolID:  schoolID,
 	}
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	result, err := services.CreateUser(context.Background(), database.Queries, reqBody)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, result.ID) })
 
-	services.CreateUser(c)
+	assert.Equal(t, "John", result.FirstName)
+	assert.Equal(t, "Doe", result.LastName)
+	assert.Equal(t, "STUDENT", result.Role)
 
-	assert.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
+	stored := testutil.GetTestUserByEmail(t, email)
+	require.NotNil(t, stored, "expected the created user to be persisted")
+	require.NotEmpty(t, stored.Password, "expected a password hash to be stored")
 
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "teacher created sucessfully", response["status"])
-
-	body, ok := response["body"].(map[string]any)
-	require.True(t, ok, "Expected body field in response")
-
-	assert.Equal(t, "John", body["first_name"])
-	assert.Equal(t, "Doe", body["last_name"])
-	assert.Equal(t, "STUDENT", body["role"])
+	err = bcrypt.CompareHashAndPassword([]byte(stored.Password), []byte("ValidPass123!"))
+	assert.NoError(t, err, "stored password should be a valid bcrypt hash of the supplied password")
 }
 
 // TestCreateUser_ValidationError tests user creation with invalid user data
@@ -67,78 +72,109 @@ func TestCreateUser_ValidationError(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
+	schoolID := createTestSchool(t)
+
 	testCases := []struct {
 		name    string
-		reqBody dtos.User
+		reqBody dtos.CreateUserRequest
 	}{
 		{
 			name: "Missing FirstName",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "",
 				LastName:  "Doe",
 				Role:      dtos.Student,
 				Email:     "test@example.com",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "Missing LastName",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John",
 				LastName:  "",
 				Role:      dtos.Student,
 				Email:     "test@example.com",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "Invalid Role",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John",
 				LastName:  "Doe",
 				Role:      "INVALID_ROLE",
 				Email:     "test@example.com",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "Missing Email",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John",
 				LastName:  "Doe",
 				Role:      dtos.Student,
 				Email:     "",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "Invalid Email Format",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John",
 				LastName:  "Doe",
 				Role:      dtos.Student,
 				Email:     "not-an-email",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "FirstName with numbers",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John123",
 				LastName:  "Doe",
 				Role:      dtos.Student,
 				Email:     "test@example.com",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
 			},
 		},
 		{
 			name: "LastName with numbers",
-			reqBody: dtos.User{
+			reqBody: dtos.CreateUserRequest{
 				FirstName: "John",
 				LastName:  "Doe456",
 				Role:      dtos.Student,
 				Email:     "test@example.com",
-				SchoolID:  1,
+				Password:  "ValidPass123!",
+				SchoolID:  schoolID,
+			},
+		},
+		{
+			name: "Missing Password",
+			reqBody: dtos.CreateUserRequest{
+				FirstName: "John",
+				LastName:  "Doe",
+				Role:      dtos.Student,
+				Email:     "test@example.com",
+				Password:  "",
+				SchoolID:  schoolID,
+			},
+		},
+		{
+			name: "Weak Password",
+			reqBody: dtos.CreateUserRequest{
+				FirstName: "John",
+				LastName:  "Doe",
+				Role:      dtos.Student,
+				Email:     "test@example.com",
+				Password:  "weak",
+				SchoolID:  schoolID,
 			},
 		},
 	}
@@ -147,39 +183,38 @@ func TestCreateUser_ValidationError(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", tc.reqBody)
+			result, err := services.CreateUser(context.Background(), database.Queries, &tc.reqBody)
 
-			services.CreateUser(c)
-
-			assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
-
-			var response map[string]any
-			testutil.ParseJSONResponse(t, w, &response)
-
-			assert.Equal(t, "TS.2", response["scenario"])
-			assert.Equal(t, "Information invalid", response["message"])
+			require.Error(t, err)
+			assert.Nil(t, result)
+			assert.True(t, errors.Is(err, services.ErrValidation), "expected ErrValidation, got: %v", err)
 		})
 	}
 }
 
-// TestCreateUser_InvalidJSON tests user creation with malformed JSON body
-func TestCreateUser_InvalidJSON(t *testing.T) {
+// TestCreateUser_AdminRoleForbidden tests that creating an ADMIN user is
+// rejected regardless of the caller's own role check (which happens
+// above this function, in the controller/adminOnly wrapper).
+func TestCreateUser_AdminRoleForbidden(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	c, w := testutil.CreateGinContext(http.MethodPost, "/")
-	c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("invalid json {")))
-	c.Request.Header.Set("Content-Type", "application/json")
+	schoolID := createTestSchool(t)
 
-	services.CreateUser(c)
+	reqBody := &dtos.CreateUserRequest{
+		FirstName: "New",
+		LastName:  "Admin",
+		Role:      dtos.Admin,
+		Email:     testutil.UniqueEmail(t, "create_user_admin_forbidden"),
+		Password:  "ValidPass123!",
+		SchoolID:  schoolID,
+	}
 
-	assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "Response body: %s", w.Body.String())
+	result, err := services.CreateUser(context.Background(), database.Queries, reqBody)
 
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "TS.1", response["scenario"])
-	assert.Equal(t, "Invalid json body", response["message"])
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrForbidden), "expected ErrForbidden, got: %v", err)
 }
 
 // TestGetStudents_Success tests fetching all students successfully
@@ -194,14 +229,8 @@ func TestGetStudents_Success(t *testing.T) {
 	email2 := testutil.UniqueEmail(t, "get_students_success_2")
 	testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
 
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
-
-	services.GetStudents(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var students []dtos.User
-	testutil.ParseJSONResponse(t, w, &students)
+	students, err := services.GetStudents(context.Background(), database.Queries)
+	require.NoError(t, err)
 
 	// Should have at least the 2 students we created
 	assert.GreaterOrEqual(t, len(students), 2, "Expected at least 2 students")
@@ -219,13 +248,11 @@ func TestGetStudents_NoStudents(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
+	students, err := services.GetStudents(context.Background(), database.Queries)
 
-	services.GetStudents(c)
-
-	// Even if no students exist, it should return 200 OK with an empty or null list
-	// The current implementation returns 200 OK on success
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+	// Even if no students exist, it should succeed with an empty or non-empty list
+	require.NoError(t, err)
+	assert.NotNil(t, students)
 }
 
 // TestGetStudents_VerifyStudentData tests that student data is correctly returned
@@ -242,14 +269,8 @@ func TestGetStudents_VerifyStudentData(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
-
-	services.GetStudents(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var students []dtos.User
-	testutil.ParseJSONResponse(t, w, &students)
+	students, err := services.GetStudents(context.Background(), database.Queries)
+	require.NoError(t, err)
 
 	// Find our created student
 	var found bool
@@ -278,15 +299,9 @@ func TestGetStudent_Success(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	id := strconv.Itoa(userID)
-	c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+id, gin.Params{{Key: "id", Value: id}})
-
-	services.GetStudent(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var student dtos.User
-	testutil.ParseJSONResponse(t, w, &student)
+	student, err := services.GetStudent(context.Background(), database.Queries, userID)
+	require.NoError(t, err)
+	require.NotNil(t, student)
 
 	assert.Equal(t, "SpecificStudent", student.FirstName)
 	assert.Equal(t, "TestLast", student.LastName)
@@ -299,47 +314,22 @@ func TestGetStudent_NotFound(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	// Use a very large ID that is unlikely to exist
-	nonExistentID := "99999999"
+	student, err := services.GetStudent(context.Background(), database.Queries, 99999999)
 
-	c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+nonExistentID, gin.Params{{Key: "id", Value: nonExistentID}})
-
-	services.GetStudent(c)
-
-	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Student not found", response["error"])
+	assert.Nil(t, student)
+	assert.True(t, errors.Is(err, services.ErrNotFound), "expected ErrNotFound, got: %v", err)
 }
 
-// TestGetStudent_InvalidID tests fetching with an invalid ID format
-func TestGetStudent_InvalidID(t *testing.T) {
+// TestGetStudent_NegativeID tests fetching with a negative ID, which is a
+// valid int but can never match a real user.
+func TestGetStudent_NegativeID(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	testCases := []struct {
-		name         string
-		id           string
-		expectStatus int
-	}{
-		{name: "Non-numeric ID", id: "abc", expectStatus: http.StatusUnprocessableEntity},
-		{name: "Special characters", id: "!@#$", expectStatus: http.StatusUnprocessableEntity},
-		{name: "Float ID", id: "1.5", expectStatus: http.StatusUnprocessableEntity},
-		{name: "Negative ID", id: "-1", expectStatus: http.StatusNotFound},
-	}
+	student, err := services.GetStudent(context.Background(), database.Queries, -1)
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+tc.id, gin.Params{{Key: "id", Value: tc.id}})
-
-			services.GetStudent(c)
-
-			assert.Equal(t, tc.expectStatus, w.Code, "Response body: %s", w.Body.String())
-		})
-	}
+	assert.Nil(t, student)
+	assert.True(t, errors.Is(err, services.ErrNotFound), "expected ErrNotFound, got: %v", err)
 }
 
 // TestGetStudent_WrongRole tests fetching by ID where user exists but is not a student
@@ -357,18 +347,11 @@ func TestGetStudent_WrongRole(t *testing.T) {
 		Role:      "TEACHER",
 	})
 
-	id := strconv.Itoa(userID)
-	c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+id, gin.Params{{Key: "id", Value: id}})
+	// Should be ErrNotFound because GetStudent looks for a user with role "STUDENT"
+	student, err := services.GetStudent(context.Background(), database.Queries, userID)
 
-	services.GetStudent(c)
-
-	// Should return 404 because GetStudent looks for a user with role "STUDENT"
-	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Student not found", response["error"])
+	assert.Nil(t, student)
+	assert.True(t, errors.Is(err, services.ErrNotFound), "expected ErrNotFound, got: %v", err)
 }
 
 // TestGetStudent_AdminRole tests that admin users are not returned as students
@@ -385,12 +368,10 @@ func TestGetStudent_AdminRole(t *testing.T) {
 		Role:      "ADMIN",
 	})
 
-	id := strconv.Itoa(userID)
-	c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+id, gin.Params{{Key: "id", Value: id}})
+	student, err := services.GetStudent(context.Background(), database.Queries, userID)
 
-	services.GetStudent(c)
-
-	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
+	assert.Nil(t, student)
+	assert.True(t, errors.Is(err, services.ErrNotFound), "expected ErrNotFound, got: %v", err)
 }
 
 // TestGetStudent_ParentRole tests that parent users are not returned as students
@@ -407,10 +388,8 @@ func TestGetStudent_ParentRole(t *testing.T) {
 		Role:      "PARENT",
 	})
 
-	id := strconv.Itoa(userID)
-	c, w := testutil.CreateGinContextWithParams(http.MethodGet, "/students/"+id, gin.Params{{Key: "id", Value: id}})
+	student, err := services.GetStudent(context.Background(), database.Queries, userID)
 
-	services.GetStudent(c)
-
-	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
+	assert.Nil(t, student)
+	assert.True(t, errors.Is(err, services.ErrNotFound), "expected ErrNotFound, got: %v", err)
 }

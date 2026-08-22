@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"regexp"
 	"sight-reading/database"
 	"sight-reading/services"
@@ -35,8 +34,9 @@ func TestGetGeneralUserInfo_Success(t *testing.T) {
 	assert.Equal(t, "Doe", result.LastName)
 }
 
-// TestGetGeneralUserInfo_UserNotFound verifies that GetGeneralUserInfo returns
-// sql.ErrNoRows for a non-existent user
+// TestGetGeneralUserInfo_UserNotFound verifies that GetGeneralUserInfo maps
+// sql.ErrNoRows to the shared services.ErrNotFound sentinel so controllers
+// can map it to a 404 via errors.Is.
 func TestGetGeneralUserInfo_UserNotFound(t *testing.T) {
 	testutil.SetupTestDB(t)
 
@@ -45,7 +45,7 @@ func TestGetGeneralUserInfo_UserNotFound(t *testing.T) {
 
 	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, nonExistentUserID)
 
-	assert.ErrorIs(t, err, sql.ErrNoRows)
+	assert.ErrorIs(t, err, services.ErrNotFound)
 	assert.Nil(t, result)
 }
 
