@@ -21,6 +21,15 @@ func RegisterKeyboardBindingsRoutes(mux *http.ServeMux, q database.Querier) {
 		middleware.RequireAuth(handleUpdateKeyboardBindings(q)))
 }
 
+// @Summary  Get the keyboard bindings
+// @Tags     keyboard-bindings
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.KeyboardBindingsResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  404 {object} dtos.ErrorResponse "No keyboard bindings found"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/note-game/keyboard-bindings [get]
 func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middleware.AuthenticatedUserID(r)
@@ -45,6 +54,17 @@ func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// @Summary  Update the keyboard bindings
+// @Tags     keyboard-bindings
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    bindings body dtos.KeyboardBindingsRequest true "Bindings to save"
+// @Success  200 {object} dtos.KeyboardBindingsResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/note-game/keyboard-bindings [put]
 func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middleware.AuthenticatedUserID(r)
