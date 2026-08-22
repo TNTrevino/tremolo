@@ -17,12 +17,21 @@ func TestMain(m *testing.M) {
 	// GenerateAccessToken and GenerateRefreshToken read these, and
 	// getEnvInt panics when they are missing.
 	if os.Getenv("JWT_SECRET") == "" {
-		os.Setenv("JWT_SECRET", "middleware-test-secret-at-least-32-characters")
+		mustSetenv("JWT_SECRET", "middleware-test-secret-at-least-32-characters")
 	}
-	os.Setenv("ACCESS_TOKEN_EXPIRY_MINUTES", "15")
-	os.Setenv("REFRESH_TOKEN_EXPIRY_HOURS", "168")
+	mustSetenv("ACCESS_TOKEN_EXPIRY_MINUTES", "15")
+	mustSetenv("REFRESH_TOKEN_EXPIRY_HOURS", "168")
 	InitJWTSecret()
 	os.Exit(m.Run())
+}
+
+// mustSetenv fails the whole package rather than running the token tests
+// against a half-configured environment. t.Setenv is unavailable here:
+// TestMain has no *testing.T, and InitJWTSecret reads these once.
+func mustSetenv(key, value string) {
+	if err := os.Setenv(key, value); err != nil {
+		panic(err)
+	}
 }
 
 // okHandler records that it ran and echoes back the user ID the middleware
