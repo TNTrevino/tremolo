@@ -1,6 +1,7 @@
 package httpx_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -117,4 +118,113 @@ func TestM_MarshalsAsAnObject(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, `{"error":"Unauthorized"}`, string(raw))
+}
+
+// validBody is a request shape whose Valid method fails on an empty Name.
+// It exists only to exercise DecodeValid.
+type validBody struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (b validBody) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+	if b.Name == "" {
+		problems["name"] = "Name: is required"
+	}
+	if b.Age < 0 {
+		problems["age"] = "Age: must not be negative"
+	}
+	return problems
+}
+
+func TestDecodeValid_PassesAValidBody(t *testing.T) {
+	t.Parallel()
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"tremolo","age":3}`))
+	got, problems, err := httpx.DecodeValid[validBody](r)
+
+	require.NoError(t, err)
+	assert.Empty(t, problems)
+	assert.Equal(t, "tremolo", got.Name)
+}
+
+// A body that parses but breaks a rule must come back with the problems
+// map, because the caller renders it into the response.
+func TestDecodeValid_ReturnsProblems(t *testing.T) {
+	t.Parallel()
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":"","age":-1}`))
+	_, problems, err := httpx.DecodeValid[validBody](r)
+
+	require.Error(t, err)
+	assert.Equal(t, map[string]string{
+		"name": "Name: is required",
+		"age":  "Age: must not be negative",
+	}, problems)
+}
+
+// A body that does not parse must produce a nil problems map, because
+// DecodeError uses an empty map to mean "the body did not parse".
+func TestDecodeValid_MalformedBodyHasNoProblems(t *testing.T) {
+	t.Parallel()
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"name":`))
+	_, problems, err := httpx.DecodeValid[validBody](r)
+
+	require.Error(t, err)
+	assert.Nil(t, problems)
+}
+
+// A JSON body of `null` decodes into the zero value rather than failing,
+// so Valid still runs and reports the missing field. This is why Valid
+// uses a value receiver: a pointer receiver would panic here.
+func TestDecodeValid_NullBodyIsValidated(t *testing.T) {
+	t.Parallel()
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`null`))
+	_, problems, err := httpx.DecodeValid[validBody](r)
+
+	require.Error(t, err)
+	assert.Equal(t, "Name: is required", problems["name"])
+}
+
+// Go map order is random. Two identical requests must not produce two
+// different response bodies, so the keys are sorted.
+func TestProblemsError_SortsByKey(t *testing.T) {
+	t.Parallel()
+
+	got := httpx.ProblemsError(map[string]string{
+		"zebra": "Zebra: bad",
+		"apple": "Apple: bad",
+		"mango": "Mango: bad",
+	})
+
+	assert.Equal(t, "Apple: bad, Mango: bad, Zebra: bad", got)
+}
+
+func TestProblemsError_EmptyMapIsEmptyString(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "", httpx.ProblemsError(map[string]string{}))
+}
+
+func TestDecodeError_RendersProblems(t *testing.T) {
+	t.Parallel()
+
+	w := httptest.NewRecorder()
+	httpx.DecodeError(w, map[string]string{"name": "Name: is required"})
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.JSONEq(t, `{"error":"Name: is required"}`, w.Body.String())
+}
+
+func TestDecodeError_EmptyProblemsMeansBadBody(t *testing.T) {
+	t.Parallel()
+
+	w := httptest.NewRecorder()
+	httpx.DecodeError(w, nil)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.JSONEq(t, `{"error":"Invalid request body"}`, w.Body.String())
 }
