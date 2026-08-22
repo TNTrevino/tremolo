@@ -128,7 +128,7 @@ func ProblemsError(problems map[string]string) string {
 	for _, k := range keys {
 		out = append(out, problems[k])
 	}
-	return strings.Join(out, ",\n")
+	return strings.Join(out, ", ")
 }
 
 // DecodeError writes the 400 for a DecodeValid failure. A nil problems
@@ -151,11 +151,11 @@ tags used to supply.
 
 | Old tag | Replacement |
 | --- | --- |
-| `required` on a string | `strings.TrimSpace(s) == ""` |
+| `required` on a string | `s == ""` — the library's `required` does not trim, so neither does this |
 | `required` on an int | `n == 0` |
 | `required` on a nested struct | check the nested fields directly |
 | `alpha` | `validations.IsAlpha(s)` — ASCII letters only, matching the library |
-| `alphanumunicode` | `validations.IsAlphaNumUnicode(s)` — `unicode.IsLetter` or `unicode.IsDigit` |
+| `alphanumunicode` | `validations.IsAlphaNumUnicode(s)` — `unicode.IsLetter` or `unicode.IsNumber`, matching the library's `\p{L}\p{N}` |
 | `email` | `validations.IsEmail(s)` — one regexp |
 | `url` | `validations.IsURL(s)` — `net/url.ParseRequestURI` plus a scheme check |
 | `min=8`, `max=20`, `len255` | `len(s)` comparisons |
@@ -209,6 +209,13 @@ comments kept, and fixed in separate later work:
   unaffected and stays.
 - `entry_dto.go:23` — `required` on `CorrectQuestions` rejects a score of
   0, so a player who got nothing right cannot save the attempt.
+- `district_dto.go` has the same dead-branch family. The `Title` switch
+  tests for the tag `"alphanum"` while the field's tag is
+  `alphanumunicode`, so a non-alphanumeric title produces no message. The
+  `City` field has a tag but no switch case at all, so it produces no
+  message either. Both fields therefore have no effective format rule
+  today. The rewrite reproduces that and marks each with a FIXME. `School`
+  is reachable only from the fake-data generator, not from HTTP.
 
 ### Behavior that does change
 
@@ -232,7 +239,19 @@ Three effects are accepted, not accidental.
    detail, which is what the auth routes already do. The frontend renders
    `body.error` directly (`frontend/src/app/shared/utils/error.utils.ts:19`),
    so a user sees "Clef: must be 'treble' or 'bass'" in place of
-   "Failed to update settings". The status stays 400.
+   "Failed to update settings". Statuses do not change.
+
+   `POST /user` is the exception. It answers **422**, not 400, and its
+   body carries two extra keys:
+   `{"error": "<detail>", "message": "Information invalid", "scenario": "TS.2"}`
+   (`controllers/admin_controller.go:88`). That handler keeps its own
+   mapping and does not call `DecodeError`.
+4. **The message separator becomes `", "` everywhere.** Today the auth
+   DTOs join with `", "` and the user, entry and district DTOs join with
+   `",\n"`. One helper cannot reproduce both. `", "` wins because the
+   frontend renders the string into a toast, where an embedded newline
+   reads badly. A single-field failure has no separator at all, which is
+   the common case.
 
 ### Out of scope
 
@@ -294,6 +313,22 @@ rename. Files that need the new method name:
 `tests/keyboard_bindings_dto_test.go`, `tests/game_settings_service_test.go`,
 `tests/config_validation_dto_test.go`.
 
+Six test functions currently prove a rule by calling a **service** with an
+invalid request. Once the service stops validating, they no longer prove
+anything, so each moves down to a table test on the DTO's `Valid` method.
+Each also drops its `testutil.SetupTestDB(t)` call, because a string rule
+needs no database:
+
+| File | Function |
+| --- | --- |
+| `tests/note_game_service_test.go:75` | `TestCreateNoteGameEntry_ValidationError_TimeFormat` |
+| `tests/note_game_service_test.go:115` | `TestCreateNoteGameEntry_ValidationError_CorrectMoreThanTotal` |
+| `tests/note_game_service_test.go:136` | `TestCreateNoteGameEntry_ValidationError_MissingFields` |
+| `tests/auth_service_test.go:147` | `TestLogin_ValidationErrors` |
+| `tests/auth_service_test.go:316` | `TestRegister_ValidationErrors` |
+| `tests/teacher_service_test.go:71` | `TestCreateUser_ValidationError` |
+| `tests/google_auth_test.go:467` | `TestGoogleCallbackService_ValidationError` |
+
 New tests to write:
 
 - `httpx/httpx_test.go` — `DecodeValid` returns the problems map, returns a
@@ -313,48 +348,34 @@ call would leave the service calling a method that no longer exists.
 
 1. `feat(core-api)`: add `Validator`, `DecodeValid`, `ProblemsError` and
    `DecodeError` to `httpx`, with tests. Nothing calls them yet.
-2. `refactor(core-api)`: move the DTOs that already validate by hand onto
+2. `refactor(core-api)`: rewrite every rule in `validations` as a plain
+   `func(string) bool`, and add the primitives `IsAlpha`,
+   `IsAlphaNumUnicode`, `IsEmail` and `IsURL`, with table tests. The four
+   existing `validator.FieldLevel` functions become private `*Tag`
+   adapters that delegate to the string forms, so the six DTOs still on
+   struct tags keep building. This is the one place the signature clash
+   is handled, rather than once per DTO commit.
+3. `refactor(core-api)`: move the DTOs that already validate by hand onto
    `Valid` — `class_dto.go`, `game_settings_dto.go`, `assignment_dto.go`
    and `addFriendRequest`. No library is involved, so this proves the
    pattern end to end at the lowest risk.
-3. `refactor(core-api)`: `entry_dto.go`. Adds
-   `validations.EntryTimeLength(string)`. Touches
+4. `refactor(core-api)`: `entry_dto.go`. Touches
    `services/note_game_service.go`, `controllers/note_game_controller.go`
    and `generation/insert_data.go`.
-4. `refactor(core-api)`: `auth_dtos.go`. Adds `validations.IsEmail`,
-   `validations.IsURL` and `validations.PasswordComplexity(string)`.
-   Names `refreshTokenRequest`. Touches `services/auth_service.go`,
-   `services/google_auth_service.go` and `controllers/auth_controller.go`.
-5. `refactor(core-api)`: `user_dto.go` and `district_dto.go`. Adds
-   `validations.IsAlpha`, `validations.IsAlphaNumUnicode`,
-   `validations.VarChar255Length(string)` and
-   `validations.UserRole(string)`. Touches
+5. `refactor(core-api)`: `auth_dtos.go`, and name `refreshTokenRequest`.
+   Touches `services/auth_service.go`, `services/google_auth_service.go`
+   and `controllers/auth_controller.go`.
+6. `refactor(core-api)`: `user_dto.go` and `district_dto.go`. Touches
    `controllers/admin_controller.go` and `generation/gen_utilities.go`.
-6. `refactor(core-api)`: `keyboard_bindings_dto.go` and
+7. `refactor(core-api)`: `keyboard_bindings_dto.go` and
    `note_game_settings_dto.go`. This removes the last library import from
    the DTO package.
-7. `chore(core-api)`: delete the leftover `validator.FieldLevel` adapters
-   from `validations`, run `go mod tidy`, update `core-api/CLAUDE.md` and
-   `core-api/README.md`.
-
-### One signature clash to handle
-
-`validations.PasswordComplexity` has two callers: `auth_dtos.go` (commit
-4) and `user_dto.go` (commit 5). Commit 4 changes its signature to take a
-`string`, which would break `user_dto.go`.
-
-Commit 4 therefore also renames the `validator.FieldLevel` form to a
-private `passwordComplexityTag` adapter that delegates to the new string
-form, and points `newUserValidator` in `user_dto.go:84` at it. That is a
-one-line change. Commit 7 deletes the adapter.
-
-`VarChar255Length` has the same two callers, but both move in commit 5, so
-it needs no adapter. `EntryTimeLength` and `UserRole` each have one
-caller.
+8. `chore(core-api)`: delete the `*Tag` adapters from `validations`, run
+   `go mod tidy`, update `core-api/CLAUDE.md` and `core-api/README.md`.
 
 ## Verification
 
 - `make check-go` after every commit.
 - `go test ./... -race` for the full suite.
-- `grep -rn 'validate:"' core-api` returns nothing after commit 6.
-- `grep -r "go-playground" core-api` returns nothing after commit 7.
+- `grep -rn 'validate:"' core-api` returns nothing after commit 7.
+- `grep -r "go-playground" core-api` returns nothing after commit 8.
