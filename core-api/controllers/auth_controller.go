@@ -48,6 +48,18 @@ func SetGoogleTokenVerifier(v services.GoogleTokenVerifier) {
 }
 
 // handleGoogleCallback handles POST /api/auth/google/callback.
+// @Summary  Complete Google OAuth sign-in
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    callback body dtos.GoogleCallbackRequest true "Authorization code and redirect URI"
+// @Success  200 {object} dtos.LoginResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid authorization code or Google token"
+// @Failure  403 {object} dtos.ErrorResponse "Google email is not verified"
+// @Failure  409 {object} dtos.ErrorResponse "Email already linked to a different Google account"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/google/callback [post]
 func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
@@ -68,6 +80,19 @@ func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 
 // handleLinkGoogleAccount handles POST /api/auth/google/link.
 // Protected: requires JWT authentication.
+// @Summary  Link a Google account
+// @Tags     auth
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    callback body dtos.GoogleCallbackRequest true "Authorization code and redirect URI"
+// @Success  200 {object} map[string]interface{} "message"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid authorization code, Google token, or unauthenticated"
+// @Failure  403 {object} dtos.ErrorResponse "Email mismatch or unverified Google email"
+// @Failure  409 {object} dtos.ErrorResponse "Google account already linked elsewhere"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/google/link [post]
 func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := authedUserID(w, r)
@@ -127,6 +152,16 @@ func respondGoogleAuthError(w http.ResponseWriter, err error) {
 }
 
 // handleLogin handles POST /api/auth/login.
+// @Summary  Log in
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    credentials body dtos.LoginRequest true "Email and password"
+// @Success  200 {object} dtos.LoginResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or credentials"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid credentials or locked account"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/login [post]
 func handleLogin(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqBody, err := httpx.Decode[dtos.LoginRequest](r)
@@ -186,6 +221,15 @@ func respondLoginError(w http.ResponseWriter, err error) {
 }
 
 // handleRegister handles POST /api/auth/register.
+// @Summary  Register a new account
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    account body dtos.RegisterRequest true "New account details"
+// @Success  201 {object} dtos.RegisterResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or email already registered"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/register [post]
 func handleRegister(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqBody, err := httpx.Decode[dtos.RegisterRequest](r)
@@ -233,6 +277,14 @@ func respondRegisterError(w http.ResponseWriter, err error) {
 
 // handleGetCurrentUser handles GET /api/auth/me.
 // Protected: Requires JWT authentication
+// @Summary  Get the current user
+// @Tags     auth
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.UserResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/me [get]
 func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := authedUserID(w, r)
@@ -258,6 +310,16 @@ func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 }
 
 // handleRefreshToken handles POST /api/auth/refresh.
+// @Summary  Refresh an access token
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body object true "Refresh token" example({"refresh_token": "..."})
+// @Success  200 {object} map[string]interface{} "access_token"
+// @Failure  400 {object} dtos.ErrorResponse "Refresh token is required"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid or expired refresh token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/refresh [post]
 func handleRefreshToken() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqBody, err := httpx.Decode[struct {

@@ -15,6 +15,13 @@ func RegisterHealthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", handleHealthCheck())
 }
 
+// handleHealthCheck handles GET /health.
+// @Summary  Service health check
+// @Tags     health
+// @Produce  json
+// @Success  200 {object} map[string]interface{}
+// @Failure  503 {object} map[string]interface{}
+// @Router   /health [get]
 func handleHealthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		status := "healthy"
