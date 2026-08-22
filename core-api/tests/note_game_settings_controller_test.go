@@ -35,7 +35,7 @@ func validNoteGameSettingsBody() map[string]any {
 }
 
 // TestGetNoteGameSettingsRoute_Unauthorized verifies the GET route rejects a
-// request with no bearer token, the same as the gin AuthMiddleware did.
+// request with no bearer token.
 func TestGetNoteGameSettingsRoute_Unauthorized(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -82,8 +82,7 @@ func TestGetNoteGameSettingsRoute_NoneSaved(t *testing.T) {
 }
 
 // TestUpdateNoteGameSettingsRoute_InvalidBody verifies a request body that
-// fails to decode as JSON still returns 400, the same as gin's
-// ShouldBindJSON failure did.
+// fails to decode as JSON returns 400 with "Invalid request body".
 func TestUpdateNoteGameSettingsRoute_InvalidBody(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

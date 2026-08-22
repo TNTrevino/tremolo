@@ -1,10 +1,11 @@
 // Package httpx holds the small JSON request/response helpers the
-// controllers share. It replaces the parts of gin.Context the handlers
-// actually used: c.JSON and c.ShouldBindJSON.
+// controllers share: writing a JSON response and decoding a JSON request
+// body.
 //
-// The wire format is deliberately identical to gin's. JSON writes the same
-// Content-Type and the same json.Marshal bytes gin's render.WriteJSON
-// wrote, so the migration off gin does not change a single response body.
+// The wire format is fixed: JSON writes a single json.Marshal-produced
+// body with a fixed Content-Type and no trailing newline. Deployed
+// clients and the test suite both depend on that exact format, so it
+// must not drift.
 package httpx
 
 import (
@@ -15,20 +16,19 @@ import (
 	"sight-reading/logger"
 )
 
-// contentTypeJSON is the exact Content-Type gin's c.JSON set. Keeping it
-// byte-for-byte avoids a client noticing the swap.
+// contentTypeJSON is the exact Content-Type value clients receive today.
+// Keep it byte-for-byte: the frontend and the tests both depend on it.
 const contentTypeJSON = "application/json; charset=utf-8"
 
-// M is a JSON object literal. It is the drop-in replacement for gin.H, and
-// exists so handler bodies read the same after the migration.
+// M is a JSON object literal, used for ad-hoc response bodies that don't
+// warrant a named type.
 type M map[string]any
 
 // JSON writes v as a JSON body with the given status code.
 //
-// Like gin's c.JSON it does not return an error: a handler has no useful
-// recovery once it has decided on a response. An encoding failure is
-// logged and downgraded to a 500, which is the same outcome gin produced
-// (gin panicked into its recovery middleware; this is quieter).
+// JSON does not return an error: a handler has no useful recovery once
+// it has decided on a response. An encoding failure is logged and
+// downgraded to a 500 rather than left to panic.
 //
 // Call JSON at most once per request, and return immediately after.
 func JSON(w http.ResponseWriter, status int, v any) {
@@ -46,19 +46,19 @@ func JSON(w http.ResponseWriter, status int, v any) {
 	_, _ = w.Write(body)
 }
 
-// NoContent writes a bare status code with no body, the way gin's
-// c.AbortWithStatus did.
+// NoContent writes a bare status code with no body.
 func NoContent(w http.ResponseWriter, status int) {
 	w.WriteHeader(status)
 }
 
 // Decode reads a JSON request body into a fresh T.
 //
-// It replaces c.ShouldBindJSON. One difference matters: gin also ran the
-// `binding:"required"` struct tags during the bind, and this does not.
-// Two request shapes relied on that tag (the refresh-token body and the
-// friend-request body); both check the field explicitly after decoding.
-// Everything else validates in the service layer already.
+// Decode does not enforce struct-tag validation (e.g. a "required"
+// field) during the decode; only field presence and JSON syntax are
+// checked. Two request shapes need a required field (the refresh-token
+// body and the friend-request body); both check the field explicitly
+// after decoding. Everything else validates in the service layer
+// already.
 func Decode[T any](r *http.Request) (T, error) {
 	var v T
 	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {

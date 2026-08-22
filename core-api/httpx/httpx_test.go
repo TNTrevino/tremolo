@@ -21,9 +21,9 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-// The migration off gin must not change a single byte of any response, so
-// the header and the body are both asserted exactly.
-func TestJSON_MatchesGinWireFormat(t *testing.T) {
+// The response format is fixed byte-for-byte, so the header and the body
+// are both asserted exactly.
+func TestJSON_WireFormatIsExact(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
@@ -31,7 +31,7 @@ func TestJSON_MatchesGinWireFormat(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
-	// No trailing newline: gin used json.Marshal, not a json.Encoder.
+	// No trailing newline: JSON uses json.Marshal, not a json.Encoder.
 	assert.Equal(t, `{"status":"ok"}`, w.Body.String())
 }
 
@@ -93,8 +93,8 @@ func TestDecode_RejectsBadBodies(t *testing.T) {
 	}
 }
 
-// gin's bind ignored unknown fields, so Decode must too -- rejecting them
-// would turn requests the API accepts today into 400s.
+// Unknown fields are ignored deliberately: rejecting them would turn
+// requests the API accepts today into 400s.
 func TestDecode_IgnoresUnknownFields(t *testing.T) {
 	t.Parallel()
 
@@ -109,7 +109,7 @@ func TestDecode_IgnoresUnknownFields(t *testing.T) {
 	assert.Equal(t, "a", got.Name)
 }
 
-// M has to marshal as a plain JSON object, the way gin.H did.
+// M has to marshal as a plain JSON object.
 func TestM_MarshalsAsAnObject(t *testing.T) {
 	t.Parallel()
 

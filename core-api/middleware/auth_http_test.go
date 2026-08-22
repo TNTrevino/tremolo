@@ -78,9 +78,9 @@ func TestRequireAuth_UserIDReachesTheHandler(t *testing.T) {
 	assert.Equal(t, 4242, seen)
 }
 
-// Every rejection has to answer with the same body the gin middleware
-// sent, because the frontend's refresh interceptor branches on the 401.
-func TestRequireAuth_RejectionsMatchTheGinBodies(t *testing.T) {
+// Every rejection has to answer with exactly this body, because the
+// frontend's refresh interceptor branches on the 401.
+func TestRequireAuth_RejectionBodiesAreExact(t *testing.T) {
 	refreshToken, err := GenerateRefreshToken(1)
 	require.NoError(t, err)
 

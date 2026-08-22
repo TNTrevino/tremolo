@@ -192,8 +192,8 @@ Two rules worth naming because they are easy to get wrong:
 
 Class name: required after trim, max 255 bytes.
 
-Validation is hand-rolled `Validate()` methods in the service layer, not gin
-`binding:` tags. A body that parses but fails validation is 400
+Validation is hand-rolled `Validate()` methods in the service layer, not
+struct tags applied at decode time. A body that parses but fails validation is 400
 `{"error":"Invalid request"}`; a body that does not parse is 400
 `{"error":"Invalid request body"}`. Neither message is specific enough to put
 in front of a user.

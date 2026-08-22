@@ -22,7 +22,7 @@ import (
 
 // Server timeouts. net/http sets none by default, which means a single
 // slow or stalled client can hold a connection, and enough of them can
-// hold the service. gin.Engine.Run had the same gap; this closes it.
+// hold the service. These constants close that gap.
 const (
 	// readHeaderTimeout bounds the slowloris window: how long a client
 	// may take to send its request headers.

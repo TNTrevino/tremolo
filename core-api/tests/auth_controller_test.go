@@ -231,8 +231,8 @@ func TestGetCurrentUserRoute_ValidToken(t *testing.T) {
 // Note: the pre-refactor suite also had
 // TestGetCurrentUser_NoUserIDInContext and
 // TestGetCurrentUser_InvalidUserIDType, exercising the handler's
-// defensive "no/invalid userID in context" fallback by building a
-// *gin.Context directly and calling the exported gin handler function.
+// defensive "no/invalid userID in context" fallback by constructing a
+// request context by hand and calling the handler function directly.
 // That is not expressible at the HTTP level any more: the handler is now
 // an unexported closure only reachable through RegisterAuthRoutes, and
 // every path to it (GET /api/auth/me) is wrapped in
@@ -240,8 +240,9 @@ func TestGetCurrentUserRoute_ValidToken(t *testing.T) {
 // userID in the context. The scenario was already unreachable via the
 // router pre-refactor (see the original tests' own comments); now it is
 // unreachable full stop, so there is no HTTP-level request that can
-// exercise it. See the final report for this note instead of silently
-// dropping the coverage.
+// exercise it. TestGetCurrentUserRoute_Unauthenticated and
+// TestGetCurrentUserRoute_ValidToken cover the behaviour that remains
+// reachable instead.
 
 // ---------- Auth requirement of each route ----------
 

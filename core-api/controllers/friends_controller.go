@@ -72,11 +72,10 @@ func handleAddFriend(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		// httpx.Decode does not enforce struct tags the way gin's
-		// ShouldBindJSON did. FriendID used to carry
-		// `binding:"required"`, which gin treats as "zero value is
-		// missing" — checking it by hand here reproduces that,
-		// including for a friend_id of 0.
+		// A friend_id of 0 counts as missing, not as a friend whose ID
+		// is 0. httpx.Decode enforces no struct tags, so the check is
+		// here by hand: a malformed body and an absent, null or zero
+		// friend_id all have to produce the identical 400 below.
 		req, err := httpx.Decode[addFriendRequest](r)
 		if err != nil || req.FriendID == 0 {
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})

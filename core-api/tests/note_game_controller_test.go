@@ -42,8 +42,9 @@ func TestCreateNoteGameEntryRoute_Unauthenticated(t *testing.T) {
 	assert.Equal(t, "Unauthorized", resp["error"])
 }
 
-// TestCreateNoteGameEntryRoute_Success verifies the happy path still
-// returns 201 with the id and message gin used to send.
+// TestCreateNoteGameEntryRoute_Success verifies the happy path returns 201
+// with the new entry's id and the message "Note game entry saved
+// successfully".
 func TestCreateNoteGameEntryRoute_Success(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -110,7 +111,7 @@ func TestCreateNoteGameEntryRoute_Forbidden(t *testing.T) {
 }
 
 // TestCreateNoteGameEntryRoute_InvalidBody verifies a decode failure (a
-// non-JSON body) still returns the same 400 the gin bind failure returned.
+// non-JSON body) returns 400 with error "Invalid request body".
 func TestCreateNoteGameEntryRoute_InvalidBody(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

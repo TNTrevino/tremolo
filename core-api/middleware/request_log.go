@@ -31,10 +31,9 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 // RequestLog writes one line per request through the service's structured
 // logger.
 //
-// gin.Default() logged every request, and losing that on the way to
-// net/http would leave the deployed service with no access log at all.
-// The fields are structured rather than gin's fixed text layout, so they
-// survive LOG_FORMAT=json.
+// Every request must produce a log line, or the deployed service has no
+// access log at all. The fields are structured rather than a fixed text
+// layout, so they survive LOG_FORMAT=json.
 func RequestLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()

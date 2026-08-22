@@ -19,22 +19,21 @@ func TestMain(m *testing.M) {
 
 var testOrigins = []string{"http://localhost:5173"}
 
-// The mounted gin engine has to keep answering every route that has not
-// converted yet, or the migration breaks the service between commits.
-func TestNewServer_UnconvertedRoutesStillReachGin(t *testing.T) {
+// A protected route must reject an anonymous caller rather than 404. The
+// distinction matters: a 404 here would mean the route never registered,
+// which is how a whole domain goes missing without anything failing
+// loudly.
+func TestNewServer_ProtectedRouteRejectsAnonymousCallers(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	// /teachers is still on the gin side. Its auth middleware rejects an
-	// anonymous request, which is enough to prove the request arrived:
-	// an unrouted path would have been a 404.
 	NewServer(testOrigins, nil).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/teachers", nil))
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
-// The converted routes have to answer from the mux, above gin.
-func TestNewServer_ConvertedRoutesAnswerFromTheMux(t *testing.T) {
+// A public route must answer from the handler rather than the middleware.
+func TestNewServer_PublicRouteAnswersFromTheHandler(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
@@ -54,8 +53,8 @@ func TestNewServer_UnknownPathIs404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-// CORS sits above the router, so it must apply to gin-served routes and
-// converted ones alike.
+// CORS is wrapped around the whole router, not attached per route, so it
+// has to apply to every route without any of them opting in.
 func TestNewServer_AppliesCORS(t *testing.T) {
 	t.Parallel()
 
@@ -94,24 +93,16 @@ func TestNewServer_AnswersAPreflight(t *testing.T) {
 	assert.Equal(t, "GET,POST,PUT,PATCH,DELETE,OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
 }
 
-// A converted route must win over the gin catch-all, whatever order they
-// register in. This is the assumption the whole staged migration rests
-// on, so it is asserted rather than trusted.
-func TestNewServer_SpecificPatternBeatsTheGinCatchAll(t *testing.T) {
+// Registering the full route set must not panic. A ServeMux panics at
+// registration on a malformed or conflicting pattern, so building the
+// real server is itself the assertion: a bad pattern fails here rather
+// than silently never matching a request.
+func TestNewServer_RegistersEveryRouteWithoutPanicking(t *testing.T) {
 	t.Parallel()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /converted", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusTeapot)
+	assert.NotPanics(t, func() {
+		NewServer(testOrigins, nil)
 	})
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
-
-	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/converted", nil))
-
-	assert.Equal(t, http.StatusTeapot, w.Code)
 }
 
 // allowedOrigins feeds the CORS allowlist, so a parsing slip here opens

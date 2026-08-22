@@ -6,10 +6,7 @@ import (
 	"strconv"
 )
 
-// The helpers here read query parameters straight off *http.Request. They
-// replace the gin.Context versions in request_validators.go, which go with
-// the gin fallback. Names differ only because Go will not let one package
-// hold two functions with the same name; these are the names that stay.
+// The helpers here read query parameters straight off *http.Request.
 
 // QueryInt reads an integer query parameter, falling back to defaultValue
 // when the caller omitted it. A value below minValue is an error rather

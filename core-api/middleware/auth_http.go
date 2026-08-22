@@ -8,10 +8,10 @@ import (
 	"sight-reading/httpx"
 )
 
-// contextKey is unexported so no other package can construct one. The gin
-// middleware stored the user ID under the string "userID", which any
-// package could read or overwrite by accident; a pointer to an unexported
-// struct cannot collide with a key from another package.
+// contextKey is unexported so no other package can construct one. A
+// plain string key (e.g. "userID") could be read or overwritten by any
+// package by accident; a pointer to an unexported struct cannot collide
+// with a key from another package.
 type contextKey struct{ name string }
 
 var userIDContextKey = &contextKey{"userID"}

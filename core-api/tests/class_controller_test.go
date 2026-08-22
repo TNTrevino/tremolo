@@ -25,7 +25,7 @@ func classTestRouter() *http.ServeMux {
 
 // TestClassAndChartRoutesRegister registers every route this package's two
 // controllers own on a single mux. http.ServeMux panics at registration
-// time on a malformed or conflicting pattern (e.g. a leftover ":id" gin
+// time on a malformed or conflicting pattern (e.g. a leftover ":id"-style
 // param, or a wildcard colliding with a literal segment), so this is a
 // smoke test that the whole converted pattern set is valid - it need not
 // assert anything beyond "did not panic".
@@ -112,7 +112,7 @@ func TestClassRoutes_CreateClass_InvalidBody_ReturnsBadRequest(t *testing.T) {
 }
 
 // TestClassRoutes_GetClassRoster_InvalidIDParam_ReturnsBadRequest exercises
-// the "{id}" path parameter conversion from gin's ":id".
+// the "{id}" path parameter: a non-numeric value must produce a 400.
 func TestClassRoutes_GetClassRoster_InvalidIDParam_ReturnsBadRequest(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

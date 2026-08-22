@@ -111,10 +111,10 @@ func TestFriendsRoutes_AddFriend_Unauthenticated_ReturnsUnauthorized(t *testing.
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 }
 
-// TestFriendsRoutes_AddFriend_MissingFriendID verifies that a body with no
-// friend_id field is rejected exactly like gin's `binding:"required"` used
-// to reject it: 400 with "Invalid request body". httpx.Decode does not
-// enforce struct tags, so the handler checks the zero value by hand.
+// TestFriendsRoutes_AddFriend_MissingFriendID verifies that a missing,
+// zero, or unparseable friend_id must all produce the identical 400 with
+// "Invalid request body". httpx.Decode does not enforce struct tags, so
+// the handler checks the field by hand to guarantee it.
 func TestFriendsRoutes_AddFriend_MissingFriendID_ReturnsBadRequest(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

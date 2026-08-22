@@ -36,18 +36,14 @@ func serveCORS(h http.Handler, method, origin string) *httptest.ResponseRecorder
 	return w
 }
 
-// These are golden values, not invented ones. While gin was still a
-// dependency this test ran gin-contrib/cors and this implementation
-// against the same requests and compared every header; the values below
-// are what that comparison agreed on. They are asserted literally now
-// because gin is gone and the comparison cannot be re-run -- but the
-// browser contract they encode has not changed, so a diff here is a
-// regression rather than a rewrite.
+// These are golden values, not invented ones: they encode the exact
+// browser contract the deployed frontend depends on. They are asserted
+// literally, so a diff here is a regression to investigate, not a value
+// to update to match new output.
 //
-// The comparison found one real difference before it was retired:
-// gin-contrib lowercases the configured origins but compares the
-// request's Origin exactly as sent, so a mixed-case Origin is a 403.
-// That case is kept below.
+// One case is easy to "fix" by accident: the configured origins are
+// lowercased, but the request's Origin is compared exactly as sent, so a
+// mixed-case Origin is still a 403. That case is kept below.
 func TestCORS_GoldenResponses(t *testing.T) {
 	t.Parallel()
 
@@ -141,8 +137,8 @@ func TestCORS_GoldenResponses(t *testing.T) {
 }
 
 // A request whose Origin is the service's own host is not cross-origin,
-// and gin-contrib let it through with no CORS headers at all. A handler
-// that instead answered 403 would break the deployed same-host setup.
+// and passes through with no CORS headers at all. A handler that instead
+// answered 403 would break the deployed same-host setup.
 func TestCORS_SameOriginPassesThroughUntouched(t *testing.T) {
 	t.Parallel()
 

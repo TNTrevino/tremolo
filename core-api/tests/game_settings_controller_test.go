@@ -54,7 +54,7 @@ func TestUpdateGameSettingsRoute_RequiresAuth(t *testing.T) {
 
 // TestGetGameSettingsRoute_InvalidGameType verifies the game_type query
 // parameter reaches the service layer: an unknown game type is rejected
-// with the same 400 the gin handler returned, not silently accepted.
+// with 400 and "Invalid game_type", not silently accepted.
 func TestGetGameSettingsRoute_InvalidGameType(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -75,8 +75,9 @@ func TestGetGameSettingsRoute_InvalidGameType(t *testing.T) {
 }
 
 // TestGetGameSettingsRoute_NoSavedSettings verifies a valid game type with
-// nothing saved yet returns 200 with a null settings field, matching the
-// gin handler's (nil, nil) branch.
+// nothing saved yet returns 200 with a null settings field: the service's
+// "not found" lookup returns (nil, nil) rather than an error, and the
+// handler must pass that through as a successful empty response.
 func TestGetGameSettingsRoute_NoSavedSettings(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -135,8 +136,7 @@ func TestGameSettingsRoute_PutThenGetRoundTrip(t *testing.T) {
 }
 
 // TestUpdateGameSettingsRoute_InvalidBody verifies a body that fails to
-// decode as JSON still returns the same 400 the gin ShouldBindJSON failure
-// returned.
+// decode as JSON returns 400 with "Invalid request body".
 func TestUpdateGameSettingsRoute_InvalidBody(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

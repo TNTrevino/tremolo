@@ -8,9 +8,9 @@ import (
 )
 
 // The three preflight answers. They are constants because the values are
-// fixed by the service, not by the request, and because they must keep
-// matching what gin-contrib/cors sent for the config main.go passed it:
-// the six methods, the four headers, and a 12 hour cache.
+// fixed by the service, not by the request, and because they must not
+// drift: the deployed frontend depends on exactly these values -- the
+// six methods, the four headers, and a 12 hour cache.
 const (
 	corsAllowMethods  = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
 	corsAllowHeaders  = "Origin,Content-Type,Accept,Authorization"
@@ -20,8 +20,8 @@ const (
 // CORS answers cross-origin requests for the origins in allowedOrigins.
 // The list entry "*" allows every origin.
 //
-// This replaces gin-contrib/cors, and copies its decisions on purpose,
-// including the ones a fresh implementation would not make:
+// CORS enforces a specific, deliberate set of decisions, including some
+// a fresh implementation would not make on its own:
 //
 //   - A request with no Origin header passes straight through.
 //   - A request whose Origin is this service's own host passes through
@@ -32,9 +32,9 @@ const (
 //   - A preflight gets 204 and no body.
 //
 // The configured origins are lowercased, but the request's Origin is
-// compared exactly as it was sent. That asymmetry is gin-contrib's, and
-// keeping it matters: it means ALLOWED_ORIGINS is forgiving about case
-// while the request is not, so a mixed-case Origin is still a 403.
+// compared exactly as it was sent. This asymmetry is deliberate: it
+// means ALLOWED_ORIGINS is forgiving about case while the request is
+// not, so a mixed-case Origin is still a 403.
 func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 	allowAll := false
 	allowed := make(map[string]bool, len(allowedOrigins))

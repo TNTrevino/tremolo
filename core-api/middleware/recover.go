@@ -12,9 +12,8 @@ import (
 //
 // net/http already stops a panicking handler from taking the process
 // down, but it does so by dropping the connection, so the caller gets no
-// answer at all. gin.Default() installed its own Recovery for exactly
-// this reason; routes moving off gin need the replacement or they lose
-// that answer.
+// answer at all. Recover exists to close that gap: without it, a route
+// with a panicking handler loses its answer entirely.
 //
 // The panic value never reaches the client. It goes to the log with a
 // stack trace, and the client gets the same body every other unexpected
