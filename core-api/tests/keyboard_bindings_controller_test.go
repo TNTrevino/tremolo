@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	dtos "sight-reading/DTOs"
@@ -14,6 +15,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// keyboardBindingsTestRouter builds a router with only the keyboard
+// bindings routes registered, mirroring how NewServer wires
+// controllers.RegisterKeyboardBindingsRoutes.
+func keyboardBindingsTestRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	controllers.RegisterKeyboardBindingsRoutes(mux, database.Queries)
+	return mux
+}
+
 // ---------- GET /api/note-game/keyboard-bindings ----------
 
 func TestGetKeyboardBindings_Authenticated_WithBindings(t *testing.T) {
@@ -22,9 +32,11 @@ func TestGetKeyboardBindings_Authenticated_WithBindings(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "get_kb_with")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
 
-	c, w := testutil.CreateGinContextWithUserID(http.MethodGet, "/api/note-game/keyboard-bindings", userID)
-	controllers.GetKeyboardBindings(c)
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, "/api/note-game/keyboard-bindings", token, nil))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -46,13 +58,15 @@ func TestGetKeyboardBindings_Authenticated_WithoutBindings(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "get_kb_without")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
 
 	// Delete the auto-seeded bindings so we can test the 404 path
 	err := database.Queries.DeleteKeyboardBindings(context.Background(), int32(userID))
 	require.NoError(t, err, "failed to delete seeded keyboard bindings")
 
-	c, w := testutil.CreateGinContextWithUserID(http.MethodGet, "/api/note-game/keyboard-bindings", userID)
-	controllers.GetKeyboardBindings(c)
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, "/api/note-game/keyboard-bindings", token, nil))
 
 	assert.Equal(t, http.StatusNotFound, w.Code, "Response body: %s", w.Body.String())
 
@@ -65,9 +79,10 @@ func TestGetKeyboardBindings_Unauthenticated(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	// No userID set in context
-	c, w := testutil.CreateGinContext(http.MethodGet, "/api/note-game/keyboard-bindings")
-	controllers.GetKeyboardBindings(c)
+	// No Authorization header set
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, "/api/note-game/keyboard-bindings", "", nil))
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
@@ -94,12 +109,12 @@ func TestUpdateKeyboardBindings_ValidRequest(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "put_kb_valid")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
 
 	body := validCustomBindings()
-	c, w := testutil.CreateGinContextWithBody(http.MethodPut, "/api/note-game/keyboard-bindings", body)
-	c.Set("userID", userID)
-
-	controllers.UpdateKeyboardBindings(c)
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPut, "/api/note-game/keyboard-bindings", token, body))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -119,14 +134,15 @@ func TestUpdateKeyboardBindings_DuplicateKeys(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "put_kb_dup")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
 
 	body := validCustomBindings()
 	// Set two notes to the same key
 	body.KeyBindings.KeyD = "1" // same as KeyC
-	c, w := testutil.CreateGinContextWithBody(http.MethodPut, "/api/note-game/keyboard-bindings", body)
-	c.Set("userID", userID)
 
-	controllers.UpdateKeyboardBindings(c)
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPut, "/api/note-game/keyboard-bindings", token, body))
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
@@ -141,6 +157,7 @@ func TestUpdateKeyboardBindings_MissingKeys(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "put_kb_missing")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
 
 	// Send a body with empty/missing key values
 	body := dtos.KeyboardBindingsRequest{
@@ -149,10 +166,10 @@ func TestUpdateKeyboardBindings_MissingKeys(t *testing.T) {
 			// all others are zero-value (empty string) — should fail validation
 		},
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPut, "/api/note-game/keyboard-bindings", body)
-	c.Set("userID", userID)
 
-	controllers.UpdateKeyboardBindings(c)
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPut, "/api/note-game/keyboard-bindings", token, body))
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 
@@ -166,10 +183,10 @@ func TestUpdateKeyboardBindings_Unauthenticated(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	body := validCustomBindings()
-	// No userID set in context
-	c, w := testutil.CreateGinContextWithBody(http.MethodPut, "/api/note-game/keyboard-bindings", body)
-
-	controllers.UpdateKeyboardBindings(c)
+	// No Authorization header set
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPut, "/api/note-game/keyboard-bindings", "", body))
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
