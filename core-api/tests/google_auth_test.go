@@ -3,11 +3,14 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	dtos "sight-reading/DTOs"
+	"sight-reading/controllers"
 	"sight-reading/database"
 	"sight-reading/database/generated"
 	"sight-reading/services"
@@ -53,13 +56,15 @@ func googleReqBody() dtos.GoogleCallbackRequest {
 	}
 }
 
+// ---------- POST /api/auth/google/callback (router-level) ----------
+
 func TestGoogleCallback_NewUser(t *testing.T) {
 	testutil.SetupTestDB(t)
 
 	email := testutil.UniqueEmail(t, "google_new")
 	sub := fmt.Sprintf("google-sub-%s", email)
 
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           sub,
 		Email:         email,
 		EmailVerified: true,
@@ -67,8 +72,9 @@ func TestGoogleCallback_NewUser(t *testing.T) {
 		FamilyName:    "User",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -101,7 +107,7 @@ func TestGoogleCallback_ReturningUser(t *testing.T) {
 	// Pre-create a user with google_id
 	existingUID := createOAuthTestUser(t, email, sub, "Returning", "Googler")
 
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           sub,
 		Email:         email,
 		EmailVerified: true,
@@ -109,8 +115,9 @@ func TestGoogleCallback_ReturningUser(t *testing.T) {
 		FamilyName:    "Googler",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -138,7 +145,7 @@ func TestGoogleCallback_AccountLinking(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           sub,
 		Email:         email,
 		EmailVerified: true,
@@ -146,8 +153,9 @@ func TestGoogleCallback_AccountLinking(t *testing.T) {
 		FamilyName:    "Me",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -171,17 +179,18 @@ func TestGoogleCallback_AccountLinking(t *testing.T) {
 func TestGoogleCallback_InvalidCode(t *testing.T) {
 	testutil.SetupTestDB(t)
 
-	services.SetTokenVerifier(&testutil.MockGoogleTokenVerifier{
-		ExchangeCodeFn: func(code, redirectURI string) (string, error) {
+	controllers.SetGoogleTokenVerifier(&testutil.MockGoogleTokenVerifier{
+		ExchangeCodeFn: func(ctx context.Context, code, redirectURI string) (string, error) {
 			return "", fmt.Errorf("invalid authorization code")
 		},
-		VerifyIDTokenFn: func(idToken string) (*services.GoogleClaims, error) {
+		VerifyIDTokenFn: func(ctx context.Context, idToken string) (*services.GoogleClaims, error) {
 			return nil, fmt.Errorf("should not be called")
 		},
 	})
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 
@@ -193,9 +202,10 @@ func TestGoogleCallback_InvalidCode(t *testing.T) {
 func TestGoogleCallback_MissingCode(t *testing.T) {
 	testutil.SetupTestDB(t)
 
+	router := authTestRouter()
+	w := httptest.NewRecorder()
 	// POST with empty body
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", dtos.GoogleCallbackRequest{})
-	services.GoogleCallback(c)
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", dtos.GoogleCallbackRequest{}))
 
 	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
 }
@@ -205,14 +215,15 @@ func TestGoogleCallback_UnverifiedEmail(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "google_unverified")
 
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           "unverified-sub",
 		Email:         email,
 		EmailVerified: false,
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
 
@@ -231,10 +242,10 @@ func TestGoogleCallback_ConflictGoogleID(t *testing.T) {
 	// Create a user who already has a different google_id linked
 	createOAuthTestUser(t, email, existingSub, "User", "Conflict")
 
-	// Mock returns a NEW sub for the same email — the google_id lookup for newSub
+	// Mock returns a NEW sub for the same email -- the google_id lookup for newSub
 	// will miss (no user with that sub), then the email lookup finds the user who
 	// already has existingSub set, triggering the 409 conflict.
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           newSub,
 		Email:         email,
 		EmailVerified: true,
@@ -242,59 +253,15 @@ func TestGoogleCallback_ConflictGoogleID(t *testing.T) {
 		FamilyName:    "Conflict",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-	services.GoogleCallback(c)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 	assert.Equal(t, http.StatusConflict, w.Code, "Response body: %s", w.Body.String())
 
 	var resp map[string]any
 	testutil.ParseJSONResponse(t, w, &resp)
 	assert.Equal(t, "Email is already linked to a different Google account", resp["error"])
-}
-
-func TestLinkGoogle_Success(t *testing.T) {
-	testutil.SetupTestDB(t)
-
-	email := testutil.UniqueEmail(t, "link_google")
-	sub := fmt.Sprintf("link-sub-%s", email)
-
-	// Create an email/password user
-	uid := testutil.CreateTestUser(t, testutil.CreateTestUserParams{
-		Email:     email,
-		Password:  "TestPass123!",
-		FirstName: "Link",
-		LastName:  "Test",
-		Role:      "STUDENT",
-	})
-
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
-		Sub:           sub,
-		Email:         email,
-		EmailVerified: true,
-		GivenName:     "Link",
-		FamilyName:    "Test",
-	}))
-
-	// Create an authenticated context with both userID and a JSON body
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/link", googleReqBody())
-	c.Set("userID", uid)
-
-	services.LinkGoogleAccount(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var resp map[string]any
-	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Google account linked successfully", resp["message"])
-
-	// Verify google_id is now set
-	oauthRow, err := database.Queries.GetUserByEmailForOAuth(
-		context.Background(),
-		sql.NullString{String: email, Valid: true},
-	)
-	require.NoError(t, err)
-	assert.True(t, oauthRow.GoogleID.Valid)
-	assert.Equal(t, sub, oauthRow.GoogleID.String)
 }
 
 func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
@@ -304,7 +271,7 @@ func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
 		email := testutil.UniqueEmail(t, "flag_new")
 		sub := fmt.Sprintf("flag-sub-new-%s", email)
 
-		services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 			Sub:           sub,
 			Email:         email,
 			EmailVerified: true,
@@ -312,8 +279,9 @@ func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
 			FamilyName:    "New",
 		}))
 
-		c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-		services.GoogleCallback(c)
+		router := authTestRouter()
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 		require.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -337,7 +305,7 @@ func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
 			Role:      "STUDENT",
 		})
 
-		services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 			Sub:           sub,
 			Email:         email,
 			EmailVerified: true,
@@ -345,8 +313,9 @@ func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
 			FamilyName:    "Link",
 		}))
 
-		c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/callback", googleReqBody())
-		services.GoogleCallback(c)
+		router := authTestRouter()
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
 
 		require.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 
@@ -354,6 +323,62 @@ func TestGoogleCallback_AccountLinkedFlag(t *testing.T) {
 		testutil.ParseJSONResponse(t, w, &resp)
 		assert.True(t, resp.AccountLinked, "linking existing user should have account_linked=true")
 	})
+}
+
+// ---------- POST /api/auth/google/link (router-level) ----------
+
+func TestLinkGoogle_Success(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "link_google")
+	sub := fmt.Sprintf("link-sub-%s", email)
+
+	// Create an email/password user
+	uid := testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "Link",
+		LastName:  "Test",
+		Role:      "STUDENT",
+	})
+
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           sub,
+		Email:         email,
+		EmailVerified: true,
+		GivenName:     "Link",
+		FamilyName:    "Test",
+	}))
+
+	token := testAccessToken(t, uid)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/link", token, googleReqBody()))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Google account linked successfully", resp["message"])
+
+	// Verify google_id is now set
+	oauthRow, err := database.Queries.GetUserByEmailForOAuth(
+		context.Background(),
+		sql.NullString{String: email, Valid: true},
+	)
+	require.NoError(t, err)
+	assert.True(t, oauthRow.GoogleID.Valid)
+	assert.Equal(t, sub, oauthRow.GoogleID.String)
+}
+
+func TestLinkGoogle_Unauthenticated(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/link", "", googleReqBody()))
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
 }
 
 func TestLinkGoogle_EmailMismatch(t *testing.T) {
@@ -373,7 +398,7 @@ func TestLinkGoogle_EmailMismatch(t *testing.T) {
 	})
 
 	// Mock returns a DIFFERENT email than the user's
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           sub,
 		Email:         differentEmail,
 		EmailVerified: true,
@@ -381,10 +406,10 @@ func TestLinkGoogle_EmailMismatch(t *testing.T) {
 		FamilyName:    "Test",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/link", googleReqBody())
-	c.Set("userID", uid)
-
-	services.LinkGoogleAccount(c)
+	token := testAccessToken(t, uid)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/link", token, googleReqBody()))
 
 	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
 
@@ -413,7 +438,7 @@ func TestLinkGoogle_GoogleIDConflict(t *testing.T) {
 	})
 
 	// Mock returns the same sub (already owned by user1) but with user2's email
-	services.SetTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
 		Sub:           sub,
 		Email:         email2,
 		EmailVerified: true,
@@ -421,14 +446,81 @@ func TestLinkGoogle_GoogleIDConflict(t *testing.T) {
 		FamilyName:    "Link",
 	}))
 
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/api/auth/google/link", googleReqBody())
-	c.Set("userID", uid2)
-
-	services.LinkGoogleAccount(c)
+	token := testAccessToken(t, uid2)
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/link", token, googleReqBody()))
 
 	assert.Equal(t, http.StatusConflict, w.Code, "Response body: %s", w.Body.String())
 
 	var resp map[string]any
 	testutil.ParseJSONResponse(t, w, &resp)
 	assert.Equal(t, "This Google account is already linked to another user", resp["error"])
+}
+
+// ---------- Service-level unit tests ----------
+//
+// These call services.GoogleCallback / services.LinkGoogleAccount directly,
+// passing the mock verifier in as a parameter -- no controller wiring or
+// HTTP layer involved, exercising the layering goal directly.
+
+func TestGoogleCallbackService_ValidationError(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	verifier := testutil.NewMockGoogleVerifier(&services.GoogleClaims{})
+
+	_, err := services.GoogleCallback(context.Background(), database.Queries, verifier, dtos.GoogleCallbackRequest{})
+
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, services.ErrValidation))
+}
+
+func TestGoogleCallbackService_UnverifiedEmail(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "service_unverified")
+	verifier := testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           "service-unverified-sub",
+		Email:         email,
+		EmailVerified: false,
+	})
+
+	_, err := services.GoogleCallback(context.Background(), database.Queries, verifier, googleReqBody())
+
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, services.ErrGoogleEmailUnverified))
+}
+
+func TestLinkGoogleAccountService_Success(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "service_link")
+	sub := fmt.Sprintf("service-link-sub-%s", email)
+
+	uid := testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "Service",
+		LastName:  "Link",
+		Role:      "STUDENT",
+	})
+
+	verifier := testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           sub,
+		Email:         email,
+		EmailVerified: true,
+		GivenName:     "Service",
+		FamilyName:    "Link",
+	})
+
+	err := services.LinkGoogleAccount(context.Background(), database.Queries, verifier, uid, googleReqBody())
+	require.NoError(t, err)
+
+	oauthRow, err := database.Queries.GetUserByEmailForOAuth(
+		context.Background(),
+		sql.NullString{String: email, Valid: true},
+	)
+	require.NoError(t, err)
+	assert.True(t, oauthRow.GoogleID.Valid)
+	assert.Equal(t, sub, oauthRow.GoogleID.String)
 }
