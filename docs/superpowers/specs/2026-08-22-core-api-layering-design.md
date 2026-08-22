@@ -96,6 +96,11 @@ Adopt the Ryer structure (Go 1.26 stdlib mux, method+path patterns):
 - The account-lockout log-and-continue behavior in `auth_service.go`.
 - Renaming the `DTOs/` package.
 - Any change to error-response JSON shapes.
+- `locked_until` is `timestamp` without time zone
+  (`00001_initial_schema.sql:23`). The lockout comparison against
+  `now()` silently fails when the app and DB time zones differ. Found
+  while running the phase 1 tests against a UTC Postgres. Needs a
+  `timestamptz` migration (tracked in paso, Default project).
 
 ## Verification
 
