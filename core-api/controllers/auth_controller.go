@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -62,9 +62,9 @@ func SetGoogleTokenVerifier(v services.GoogleTokenVerifier) {
 // @Router   /api/auth/google/callback [post]
 func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.GoogleCallbackRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -100,9 +100,9 @@ func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.GoogleCallbackRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -121,10 +121,6 @@ func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 // shapes.
 func respondGoogleAuthError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrGoogleExchangeFailed):
 		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid authorization code"})
 	case errors.Is(err, services.ErrGoogleTokenInvalid):
@@ -164,9 +160,9 @@ func respondGoogleAuthError(w http.ResponseWriter, err error) {
 // @Router   /api/auth/login [post]
 func handleLogin(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.LoginRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.LoginRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -187,10 +183,6 @@ func respondLoginError(w http.ResponseWriter, err error) {
 	var lockoutErr *services.LockoutTriggeredError
 
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrLockCheckFailed):
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
@@ -232,9 +224,9 @@ func respondLoginError(w http.ResponseWriter, err error) {
 // @Router   /api/auth/register [post]
 func handleRegister(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.RegisterRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.RegisterRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -252,10 +244,6 @@ func handleRegister(q database.Querier) http.HandlerFunc {
 // response bodies the pre-refactor handler produced.
 func respondRegisterError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrEmailCheckFailed):
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
@@ -309,12 +297,22 @@ func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	}
 }
 
-// refreshTokenRequest is the request body for POST /api/auth/refresh. It is
-// a named type (rather than the anonymous struct httpx.Decode was called
-// with before) so swag has a real schema to document instead of a bare
-// "object" with a dropped example.
+// refreshTokenRequest is the POST /api/auth/refresh body. It is a named
+// type rather than an anonymous struct for two reasons: a Valid method
+// cannot hang on an anonymous one, and swag needs a real schema to
+// document instead of a bare "object".
 type refreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
+}
+
+func (r refreshTokenRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	if r.RefreshToken == "" {
+		problems["refresh_token"] = "Refresh token is required"
+	}
+
+	return problems
 }
 
 // handleRefreshToken handles POST /api/auth/refresh.
@@ -330,8 +328,10 @@ type refreshTokenRequest struct {
 // @Router   /api/auth/refresh [post]
 func handleRefreshToken() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[refreshTokenRequest](r)
-		if err != nil || reqBody.RefreshToken == "" {
+		// This handler does not use httpx.DecodeError: a malformed body
+		// and a missing token produce the same message here.
+		reqBody, _, err := httpx.DecodeValid[refreshTokenRequest](r)
+		if err != nil {
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Refresh token is required"})
 			return
 		}

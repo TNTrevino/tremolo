@@ -37,10 +37,6 @@ func InitGoogleOAuth() GoogleTokenVerifier {
 //  2. Links Google to an existing email user (auto-link)
 //  3. Creates a new user with BASIC role
 func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTokenVerifier, req dtos.GoogleCallbackRequest) (*dtos.LoginResponse, error) {
-	if err := req.ValidateGoogleCallbackRequest(); err != nil {
-		return nil, validationErr(err)
-	}
-
 	idTokenStr, err := verifier.ExchangeCode(ctx, req.Code, req.RedirectURI)
 	if err != nil {
 		logger.Error("Failed to exchange Google authorization code", "error", err.Error())
@@ -150,10 +146,6 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 // LinkGoogleAccount allows an authenticated user to link their Google
 // account. userID is the caller's own ID (from the auth middleware).
 func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier GoogleTokenVerifier, userID int, req dtos.GoogleCallbackRequest) error {
-	if err := req.ValidateGoogleCallbackRequest(); err != nil {
-		return validationErr(err)
-	}
-
 	idTokenStr, err := verifier.ExchangeCode(ctx, req.Code, req.RedirectURI)
 	if err != nil {
 		logger.Error("Failed to exchange Google authorization code for link", "error", err.Error())

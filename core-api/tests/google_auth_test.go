@@ -464,17 +464,6 @@ func TestLinkGoogle_GoogleIDConflict(t *testing.T) {
 // passing the mock verifier in as a parameter -- no controller wiring or
 // HTTP layer involved, exercising the layering goal directly.
 
-func TestGoogleCallbackService_ValidationError(t *testing.T) {
-	testutil.SetupTestDB(t)
-
-	verifier := testutil.NewMockGoogleVerifier(&services.GoogleClaims{})
-
-	_, err := services.GoogleCallback(context.Background(), database.Queries, verifier, dtos.GoogleCallbackRequest{})
-
-	require.Error(t, err)
-	assert.True(t, errors.Is(err, services.ErrValidation))
-}
-
 func TestGoogleCallbackService_UnverifiedEmail(t *testing.T) {
 	testutil.SetupTestDB(t)
 
