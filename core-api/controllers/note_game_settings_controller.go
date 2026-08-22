@@ -5,64 +5,65 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/httpx"
 	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
-
-	"github.com/gin-gonic/gin"
 )
 
-func SetupNoteGameSettingsRoutes(router *gin.Engine) {
-	settings := router.Group("/api/note-game/settings")
-	settings.Use(middleware.AuthMiddleware())
-	{
-		settings.GET("", GetNoteGameSettings)
-		settings.PUT("", UpdateNoteGameSettings)
+// RegisterNoteGameSettingsRoutes registers the note game settings routes.
+// All routes are protected with JWT authentication middleware.
+func RegisterNoteGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.Handle("GET /api/note-game/settings", middleware.RequireAuth(handleGetNoteGameSettings(q)))
+	mux.Handle("PUT /api/note-game/settings", middleware.RequireAuth(handleUpdateNoteGameSettings(q)))
+}
+
+func handleGetNoteGameSettings(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := middleware.AuthenticatedUserID(r)
+		if err != nil {
+			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+			return
+		}
+
+		ctx := r.Context()
+		result, err := services.GetNoteGameSettings(ctx, q, userID)
+		if err != nil {
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch settings"})
+			return
+		}
+
+		if result == nil {
+			httpx.JSON(w, http.StatusOK, httpx.M{"settings": nil})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, result)
 	}
 }
 
-func GetNoteGameSettings(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+func handleUpdateNoteGameSettings(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := middleware.AuthenticatedUserID(r)
+		if err != nil {
+			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+			return
+		}
+
+		req, err := httpx.Decode[dtos.NoteGameSettingsRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
+
+		ctx := r.Context()
+		result, err := services.UpsertNoteGameSettings(ctx, q, userID, &req)
+		if err != nil {
+			logger.Error("failed to update note game settings", "error", err, "userID", userID)
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Failed to update settings"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, result)
 	}
-
-	ctx := c.Request.Context()
-	result, err := services.GetNoteGameSettings(ctx, database.Queries, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch settings"})
-		return
-	}
-
-	if result == nil {
-		c.JSON(http.StatusOK, gin.H{"settings": nil})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
-}
-
-func UpdateNoteGameSettings(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	var req dtos.NoteGameSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	ctx := c.Request.Context()
-	result, err := services.UpsertNoteGameSettings(ctx, database.Queries, userID, &req)
-	if err != nil {
-		logger.Error("failed to update note game settings", "error", err, "userID", userID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to update settings"})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
 }
