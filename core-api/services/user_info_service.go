@@ -15,7 +15,7 @@ func GetGeneralUserInfo(ctx context.Context, q generated.Querier, userID int) (*
 	userInfo, err := q.GetUserGeneralInfo(ctx, int32(userID))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, err
+			return nil, ErrNotFound
 		}
 		logger.Error("Failed to fetch general user info",
 			"error", err.Error(),
