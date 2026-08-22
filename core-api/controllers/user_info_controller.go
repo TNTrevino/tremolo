@@ -20,6 +20,18 @@ func RegisterUserInfoRoutes(mux *http.ServeMux, q database.Querier) {
 
 // handleGetGeneralUserInfo fetches general user information including name, join date, and aggregate stats
 // Protected: Requires JWT authentication, users can only access their own data
+// @Summary  Get general user info
+// @Tags     user-info
+// @Security BearerAuth
+// @Produce  json
+// @Param    userId path int true "User ID (must match the authenticated user)"
+// @Success  200 {object} dtos.GeneralUserInfoDTO
+// @Failure  400 {object} dtos.ErrorResponse "Invalid user ID parameter"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  403 {object} dtos.ErrorResponse "Access denied"
+// @Failure  404 {object} dtos.ErrorResponse "User not found"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/users/{userId}/general-info [get]
 func handleGetGeneralUserInfo(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authenticatedUserID, err := middleware.AuthenticatedUserID(r)

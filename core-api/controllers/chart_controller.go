@@ -74,6 +74,19 @@ func chartIntervalAndDays(w http.ResponseWriter, r *http.Request) (string, int, 
 // handleGetUserChartData fetches personal metrics for a specific user
 // Query params: interval (day/week/month/year), days (default 30)
 // Protected: Requires JWT authentication, users can only access their own data
+// @Summary  Get personal chart metrics
+// @Tags     charts
+// @Security BearerAuth
+// @Produce  json
+// @Param    userId path int true "User ID (must match the authenticated user)"
+// @Param    interval query string false "day, week, month, or year"
+// @Param    days query int false "Lookback window in days (default 30)"
+// @Success  200 {object} dtos.MultiMetricChartData
+// @Failure  400 {object} dtos.ErrorResponse "Invalid user ID, interval, or days"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  403 {object} dtos.ErrorResponse "Access denied"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/charts/user/{userId}/metrics [get]
 func handleGetUserChartData(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authenticatedUserID, ok := authedUserID(w, r)
@@ -112,6 +125,18 @@ func handleGetUserChartData(q database.Querier) http.HandlerFunc {
 // handleGetTeacherClassChartData fetches aggregated metrics for all students of a teacher
 // Query params: interval (day/week/month/year), days (default 30)
 // Protected: Requires JWT authentication AND role=teacher
+// @Summary  Get aggregated class chart metrics
+// @Tags     charts
+// @Security BearerAuth
+// @Produce  json
+// @Param    interval query string false "day, week, month, or year"
+// @Param    days query int false "Lookback window in days (default 30)"
+// @Success  200 {object} dtos.MultiMetricChartData
+// @Failure  400 {object} dtos.ErrorResponse "Invalid interval or days"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  403 {object} dtos.ErrorResponse "Only teachers can access class metrics"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/charts/teacher/class-metrics [get]
 func handleGetTeacherClassChartData(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teacherID, ok := authedUserID(w, r)

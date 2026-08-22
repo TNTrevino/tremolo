@@ -18,6 +18,14 @@ func RegisterFriendsRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.Handle("POST /api/friends", middleware.RequireAuth(handleAddFriend(q)))
 }
 
+// @Summary  List friends
+// @Tags     friends
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {array}  dtos.FriendDTO
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/friends [get]
 func handleGetFriends(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middleware.AuthenticatedUserID(r)
@@ -36,6 +44,15 @@ func handleGetFriends(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// @Summary  Search users to add as friends
+// @Tags     friends
+// @Security BearerAuth
+// @Produce  json
+// @Param    q query string false "Search text; an empty query returns an empty list"
+// @Success  200 {array}  dtos.FriendDTO
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/friends/search [get]
 func handleSearchUsers(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middleware.AuthenticatedUserID(r)
@@ -64,6 +81,16 @@ type addFriendRequest struct {
 	FriendID int `json:"friend_id"`
 }
 
+// @Summary  Add a friend
+// @Tags     friends
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    friend body addFriendRequest true "ID of the user to add"
+// @Success  201 {object} map[string]interface{} "message"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid or missing friend_id, or failed to add"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Router   /api/friends [post]
 func handleAddFriend(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middleware.AuthenticatedUserID(r)
