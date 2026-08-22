@@ -36,6 +36,13 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
+	if reqBody.Role == dtos.Admin {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Creating ADMIN users is not allowed",
+		})
+		return
+	}
+
 	ctx := c.Request.Context()
 
 	roleID, err := database.Queries.GetRoleIDByName(ctx, string(reqBody.Role))
