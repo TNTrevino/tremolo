@@ -73,6 +73,33 @@ Template: `controllers/class_controller.go` + `services/class_service.go`.
 
 ## Phase 3: `refactor/stdlib-http`
 
+### How it lands: one domain at a time, not one big swap
+
+Routing is a single seam, so the obvious plan is one commit that moves
+all eleven domains together. Go 1.22 removes that constraint: a specific
+`ServeMux` pattern beats a catch-all `/`. So `NewServer` mounts the gin
+engine at `/` (`gin_fallback.go`) and each domain converts in its own
+commit, winning over the fallback as soon as it registers. Every commit
+builds, serves every route, and passes its tests. The last commit
+deletes the fallback and the gin dependency.
+
+This also makes the pass safe to parallelise: an agent owns one
+controller file and its tests, while the orchestrator owns `routes.go`,
+`gin_fallback.go`, `main.go`, `server.go` and the shared packages.
+
+### Deviations from the article, decided in session
+
+- **Routes stay split per domain.** The article keeps one `routes.go`.
+  With eleven domains and ~1500 lines of controllers, one file would be
+  a merge-conflict magnet. Each controller file exports its own
+  `RegisterXRoutes(mux, q)`; `controllers/routes.go` is a thin list of
+  those calls, so there is still one place to read the whole map.
+- **Validation keeps the current `Validate() error` contract.** The
+  article's `Valid(ctx) map[string]string` would change error-response
+  JSON; that is a separate decision with the frontend.
+
+### Structure
+
 Adopt the Ryer structure (Go 1.26 stdlib mux, method+path patterns):
 
 - `run(ctx, ...)` testable main; `http.Server` with timeouts and
@@ -85,10 +112,21 @@ Adopt the Ryer structure (Go 1.26 stdlib mux, method+path patterns):
 - Middleware becomes `func(http.Handler) http.Handler`; the auth
   middleware stores the user ID under a typed context key.
 - Generic `encode`/`decode` helpers replace `c.JSON` /
-  `ShouldBindJSON`.
-- Validation keeps the current `Validate() error` contract. The
-  article's `Valid(ctx) map[string]string` interface would change
-  error-response JSON; that is a separate decision with the frontend.
+  `ShouldBindJSON` (`httpx.JSON`, `httpx.Decode`). The wire format is
+  copied from gin byte for byte, because the frontend renders these
+  error strings as user-facing copy.
+- `middleware.Recover` and `middleware.RequestLog` replace
+  `gin.Default()`'s Recovery and Logger, which converted routes would
+  otherwise lose.
+- `middleware.CORS` replaces `gin-contrib/cors`. Verified by a test
+  that runs both against the same requests and compares every header.
+
+### Known behaviour changes
+
+- A wrong method on a known path returns 405 where gin returned 404.
+  Nothing in the frontend reads that distinction.
+- `httpx.Decode` does not run `binding:"required"` struct tags. Two
+  request shapes used them and check the field explicitly instead.
 
 ## Out of scope (tracked, not lost)
 
