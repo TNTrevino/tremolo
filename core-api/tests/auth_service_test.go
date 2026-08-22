@@ -1,19 +1,18 @@
 package tests
 
 import (
-	"bytes"
-	"net/http"
-	"net/http/httptest"
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	dtos "sight-reading/DTOs"
+	"sight-reading/database"
 	"sight-reading/middleware"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,25 +32,20 @@ func TestLogin_ValidCredentials(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	reqBody := dtos.LoginRequest{
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
 		Email:    email,
 		Password: password,
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Login(c)
+	require.NoError(t, err)
+	require.NotNil(t, result)
 
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var response dtos.LoginResponse
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, email, response.User.Email)
-	assert.NotEmpty(t, response.AccessToken, "Expected access token to be non-empty")
-	assert.NotEmpty(t, response.RefreshToken, "Expected refresh token to be non-empty")
-	assert.Equal(t, "Test", response.User.FirstName)
-	assert.Equal(t, "User", response.User.LastName)
-	assert.Equal(t, "STUDENT", response.User.Role)
+	assert.Equal(t, email, result.User.Email)
+	assert.NotEmpty(t, result.AccessToken, "Expected access token to be non-empty")
+	assert.NotEmpty(t, result.RefreshToken, "Expected refresh token to be non-empty")
+	assert.Equal(t, "Test", result.User.FirstName)
+	assert.Equal(t, "User", result.User.LastName)
+	assert.Equal(t, "STUDENT", result.User.Role)
 }
 
 func TestLogin_InvalidPassword(t *testing.T) {
@@ -62,40 +56,28 @@ func TestLogin_InvalidPassword(t *testing.T) {
 
 	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	reqBody := dtos.LoginRequest{
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
 		Email:    email,
 		Password: "WrongPassword123!",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Login(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid credentials", response["error"])
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrInvalidCredentials))
 }
 
 func TestLogin_UserNotFound(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	reqBody := dtos.LoginRequest{
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
 		Email:    "nonexistent_user_12345@test.com",
 		Password: "TestPass123!",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Login(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid credentials", response["error"])
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrInvalidCredentials))
 }
 
 func TestLogin_AccountLocked(t *testing.T) {
@@ -107,22 +89,59 @@ func TestLogin_AccountLocked(t *testing.T) {
 	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 	testutil.LockTestUserAccount(t, email, 15*time.Minute)
 
-	reqBody := dtos.LoginRequest{
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
 		Email:    email,
 		Password: "TestPass123!",
+	})
+
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrAccountLocked))
+}
+
+// TestLogin_LockoutTriggered exercises the failed-attempt counting all
+// the way to the threshold: the attempt that crosses MaxLoginAttempts
+// must lock the account and report it via LockoutTriggeredError (not
+// the generic ErrInvalidCredentials the prior attempts return), and a
+// subsequent attempt -- even with the correct password -- must then see
+// the account as locked.
+func TestLogin_LockoutTriggered(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "login_lockout_trigger")
+	password := "TestPass123!"
+	testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  password,
+		FirstName: "Test",
+		LastName:  "User",
+		Role:      "STUDENT",
+	})
+
+	var lastErr error
+	for i := 0; i < services.MaxLoginAttempts; i++ {
+		_, lastErr = services.Login(context.Background(), database.Queries, dtos.LoginRequest{
+			Email:    email,
+			Password: "WrongPassword123!",
+		})
+		require.Error(t, lastErr)
 	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
 
-	services.Login(c)
+	var lockoutErr *services.LockoutTriggeredError
+	require.True(t, errors.As(lastErr, &lockoutErr),
+		"expected the attempt crossing MaxLoginAttempts to return *LockoutTriggeredError, got: %v", lastErr)
+	assert.Greater(t, lockoutErr.Duration, time.Duration(0))
 
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	errMsg, ok := response["error"].(string)
-	require.True(t, ok, "Expected error field in response")
-	assert.NotEmpty(t, errMsg, "Expected error message for locked account")
+	// A subsequent attempt with the CORRECT password is still rejected,
+	// because the account is now locked.
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
+		Email:    email,
+		Password: password,
+	})
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrAccountLocked))
 }
 
 func TestLogin_ValidationErrors(t *testing.T) {
@@ -180,39 +199,14 @@ func TestLogin_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", tc.reqBody)
+			result, err := services.Login(context.Background(), database.Queries, tc.reqBody)
 
-			services.Login(c)
-
-			assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-			var response map[string]any
-			testutil.ParseJSONResponse(t, w, &response)
-
-			errMsg, ok := response["error"].(string)
-			require.True(t, ok, "Expected error field in response")
-			assert.Contains(t, errMsg, tc.expectedError)
+			require.Error(t, err)
+			assert.Nil(t, result)
+			assert.True(t, errors.Is(err, services.ErrValidation))
+			assert.Contains(t, err.Error(), tc.expectedError)
 		})
 	}
-}
-
-func TestLogin_InvalidRequestBody(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("invalid json")))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	services.Login(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid request body", response["error"])
 }
 
 func TestLogin_EmailNormalization(t *testing.T) {
@@ -231,16 +225,13 @@ func TestLogin_EmailNormalization(t *testing.T) {
 	})
 
 	// Login with uppercase email
-	uppercaseEmail := strings.ToUpper(email)
-	reqBody := dtos.LoginRequest{
-		Email:    uppercaseEmail,
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
+		Email:    strings.ToUpper(email),
 		Password: password,
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Login(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+	require.NoError(t, err)
+	require.NotNil(t, result)
 }
 
 func TestRegister_Success(t *testing.T) {
@@ -249,33 +240,24 @@ func TestRegister_Success(t *testing.T) {
 
 	email := testutil.UniqueEmail(t, "register_success")
 
-	reqBody := dtos.RegisterRequest{
+	result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
 		Email:     email,
 		Password:  "TestPass123!",
 		FirstName: "John",
 		LastName:  "Doe",
 		Role:      "STUDENT",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
-
-	services.Register(c)
-
-	assert.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var response dtos.RegisterResponse
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "User created successfully", response.Message)
-	assert.Equal(t, email, response.User.Email)
-	assert.Equal(t, "John", response.User.FirstName)
-	assert.Equal(t, "Doe", response.User.LastName)
-	assert.Equal(t, "STUDENT", response.User.Role)
-	assert.NotZero(t, response.User.ID, "Expected user ID to be non-zero")
-
-	// Cleanup: delete the created user
-	t.Cleanup(func() {
-		testutil.DeleteTestUser(t, response.User.ID)
 	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+	assert.Equal(t, "User created successfully", result.Message)
+	assert.Equal(t, email, result.User.Email)
+	assert.Equal(t, "John", result.User.FirstName)
+	assert.Equal(t, "Doe", result.User.LastName)
+	assert.Equal(t, "STUDENT", result.User.Role)
+	assert.NotZero(t, result.User.ID, "Expected user ID to be non-zero")
 }
 
 func TestRegister_TrimsNames(t *testing.T) {
@@ -286,25 +268,20 @@ func TestRegister_TrimsNames(t *testing.T) {
 
 	// min=2 length validation passes with the padding intact, so a padded
 	// name reaches the insert. It must be trimmed before persisting.
-	reqBody := dtos.RegisterRequest{
+	result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
 		Email:     email,
 		Password:  "TestPass123!",
 		FirstName: "  John  ",
 		LastName:  "  Doe  ",
 		Role:      "STUDENT",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Register(c)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
 
-	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var response dtos.RegisterResponse
-	testutil.ParseJSONResponse(t, w, &response)
-	t.Cleanup(func() { testutil.DeleteTestUser(t, response.User.ID) })
-
-	assert.Equal(t, "John", response.User.FirstName, "leading/trailing whitespace must be trimmed")
-	assert.Equal(t, "Doe", response.User.LastName)
+	assert.Equal(t, "John", result.User.FirstName, "leading/trailing whitespace must be trimmed")
+	assert.Equal(t, "Doe", result.User.LastName)
 
 	// Cross-check the persisted row, not just the echoed response.
 	stored := testutil.GetTestUserByEmail(t, email)
@@ -323,23 +300,17 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
 	// Try to register with same email
-	reqBody := dtos.RegisterRequest{
+	result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
 		Email:     email,
 		Password:  "TestPass123!",
 		FirstName: "Jane",
 		LastName:  "Doe",
 		Role:      "STUDENT",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	})
 
-	services.Register(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Email already exists", response["error"])
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrEmailTaken))
 }
 
 func TestRegister_ValidationErrors(t *testing.T) {
@@ -473,39 +444,14 @@ func TestRegister_ValidationErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", tc.reqBody)
+			result, err := services.Register(context.Background(), database.Queries, tc.reqBody)
 
-			services.Register(c)
-
-			assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-			var response map[string]any
-			testutil.ParseJSONResponse(t, w, &response)
-
-			errMsg, ok := response["error"].(string)
-			require.True(t, ok, "Expected error field in response")
-			assert.Contains(t, errMsg, tc.expectedError)
+			require.Error(t, err)
+			assert.Nil(t, result)
+			assert.True(t, errors.Is(err, services.ErrValidation))
+			assert.Contains(t, err.Error(), tc.expectedError)
 		})
 	}
-}
-
-func TestRegister_InvalidRequestBody(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("invalid json")))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	services.Register(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid request body", response["error"])
 }
 
 func TestRegister_AllRoles(t *testing.T) {
@@ -520,33 +466,24 @@ func TestRegister_AllRoles(t *testing.T) {
 
 			email := testutil.UniqueEmail(t, "register_role_"+role)
 
-			reqBody := dtos.RegisterRequest{
+			result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
 				Email:     email,
 				Password:  "TestPass123!",
 				FirstName: "Test",
 				LastName:  "User",
 				Role:      role,
-			}
-			c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
-
-			services.Register(c)
-
-			assert.Equal(t, http.StatusCreated, w.Code, "Response body for role %s: %s", role, w.Body.String())
-
-			var response dtos.RegisterResponse
-			testutil.ParseJSONResponse(t, w, &response)
-
-			assert.Equal(t, role, response.User.Role)
-
-			// Cleanup
-			t.Cleanup(func() {
-				testutil.DeleteTestUser(t, response.User.ID)
 			})
+
+			require.NoError(t, err, "Response for role %s", role)
+			require.NotNil(t, result)
+			t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+			assert.Equal(t, role, result.User.Role)
 		})
 	}
 }
 
-func TestGetCurrentUser_ValidToken(t *testing.T) {
+func TestGetCurrentUser_ValidUserID(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
@@ -559,73 +496,26 @@ func TestGetCurrentUser_ValidToken(t *testing.T) {
 		Role:      "TEACHER",
 	})
 
-	c, w := testutil.CreateGinContextWithUserID(http.MethodGet, "/", userID)
+	result, err := services.GetCurrentUser(context.Background(), database.Queries, userID)
 
-	services.GetCurrentUser(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var response dtos.UserResponse
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, userID, response.ID)
-	assert.Equal(t, email, response.Email)
-	assert.Equal(t, "Current", response.FirstName)
-	assert.Equal(t, "User", response.LastName)
-	assert.Equal(t, "TEACHER", response.Role)
-}
-
-func TestGetCurrentUser_NoUserIDInContext(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
-
-	// Do not set userID in context
-
-	services.GetCurrentUser(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Unauthorized", response["error"])
-}
-
-func TestGetCurrentUser_InvalidUserIDType(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	c, w := testutil.CreateGinContext(http.MethodGet, "/")
-
-	// Set userID with wrong type
-	c.Set("userID", "not-an-int")
-
-	services.GetCurrentUser(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Unauthorized", response["error"])
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, userID, result.ID)
+	assert.Equal(t, email, result.Email)
+	assert.Equal(t, "Current", result.FirstName)
+	assert.Equal(t, "User", result.LastName)
+	assert.Equal(t, "TEACHER", result.Role)
 }
 
 func TestGetCurrentUser_UserNotFound(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	c, w := testutil.CreateGinContextWithUserID(http.MethodGet, "/", 99999999)
+	result, err := services.GetCurrentUser(context.Background(), database.Queries, 99999999)
 
-	services.GetCurrentUser(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Unauthorized", response["error"])
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrNotFound))
 }
 
 func TestRefreshToken_Valid(t *testing.T) {
@@ -639,57 +529,21 @@ func TestRefreshToken_Valid(t *testing.T) {
 	refreshToken, err := middleware.GenerateRefreshToken(userID)
 	require.NoError(t, err, "Failed to generate refresh token")
 
-	reqBody := map[string]string{
-		"refresh_token": refreshToken,
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	accessToken, err := services.RefreshToken(refreshToken)
 
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	accessToken, ok := response["access_token"].(string)
-	require.True(t, ok, "Expected access_token field in response")
-	assert.NotEmpty(t, accessToken, "Expected non-empty access_token in response")
+	require.NoError(t, err)
+	assert.NotEmpty(t, accessToken, "Expected non-empty access token")
 }
 
 func TestRefreshToken_Invalid(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	reqBody := map[string]string{
-		"refresh_token": "invalid.token.here",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	accessToken, err := services.RefreshToken("invalid.token.here")
 
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid refresh token", response["error"])
-}
-
-func TestRefreshToken_MissingToken(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	reqBody := map[string]string{}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
-
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Refresh token is required", response["error"])
+	require.Error(t, err)
+	assert.Empty(t, accessToken)
+	assert.True(t, errors.Is(err, services.ErrInvalidRefreshToken))
 }
 
 func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
@@ -703,45 +557,9 @@ func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
 	accessToken, err := middleware.GenerateAccessToken(userID)
 	require.NoError(t, err, "Failed to generate access token")
 
-	reqBody := map[string]string{
-		"refresh_token": accessToken,
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
+	newAccessToken, err := services.RefreshToken(accessToken)
 
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
-
-	var response map[string]any
-	testutil.ParseJSONResponse(t, w, &response)
-
-	assert.Equal(t, "Invalid token type", response["error"])
-}
-
-func TestRefreshToken_InvalidRequestBody(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("invalid json")))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
-}
-
-func TestRefreshToken_EmptyToken(t *testing.T) {
-	t.Parallel()
-	testutil.SetupTestDB(t)
-
-	reqBody := map[string]string{
-		"refresh_token": "",
-	}
-	c, w := testutil.CreateGinContextWithBody(http.MethodPost, "/", reqBody)
-
-	services.RefreshToken(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+	require.Error(t, err)
+	assert.Empty(t, newAccessToken)
+	assert.True(t, errors.Is(err, services.ErrWrongTokenType))
 }
