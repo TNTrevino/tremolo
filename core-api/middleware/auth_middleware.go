@@ -116,6 +116,55 @@ func GetJWTSecret() []byte {
 	return jwtSecret
 }
 
+// errWrongTokenType marks a token that parses and verifies but is a
+// refresh token presented where an access token is required. It is the one
+// failure the middleware reports differently, so the two implementations
+// below both need to tell it apart from a plain rejection.
+var errWrongTokenType = errors.New("token is not an access token")
+
+// accessTokenClaims validates an Authorization header and returns the
+// claims it carries. It is the shared core of the gin middleware and the
+// net/http one, so a token accepted by one is accepted by the other.
+//
+// Every failure except errWrongTokenType is deliberately
+// indistinguishable: a missing header, a malformed header, a bad
+// signature and an expired token all return the same error, so nothing
+// about why the token failed leaks to the caller.
+func accessTokenClaims(authHeader string) (*Claims, error) {
+	if authHeader == "" {
+		return nil, errors.New("missing authorization header")
+	}
+
+	// Expected format: "Bearer <token>"
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != BearerTokenParts || parts[0] != "Bearer" {
+		return nil, errors.New("malformed authorization header")
+	}
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(parts[1], claims, func(token *jwt.Token) (any, error) {
+		// Verify signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	// verify its an access and not a refresh token
+	if claims.TokenType != "access" {
+		return nil, errWrongTokenType
+	}
+
+	return claims, nil
+}
+
 // GetAuthenticatedUserID extracts and validates the authenticated user ID from the Gin context
 // This is a helper function to reduce boilerplate in handlers that use AuthMiddleware
 // Returns the user ID or an error if extraction fails
@@ -134,60 +183,20 @@ func GetAuthenticatedUserID(c *gin.Context) (int, error) {
 	return authenticatedUserID, nil
 }
 
-// AuthMiddleware validates JWT tokens and adds user ID to context
+// AuthMiddleware validates JWT tokens and adds user ID to context.
+//
+// Deprecated: this is the gin implementation, kept only while routes are
+// still served by the mounted gin fallback. Converted routes use
+// RequireAuth. Delete it with the fallback.
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		// Expected format: "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != BearerTokenParts || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
-
-		// Parse and validate token
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) { // TODO: what is going on here?
-			// Verify signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok { // if initialization; condition
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
+		claims, err := accessTokenClaims(c.GetHeader("Authorization"))
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		if !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		// verify its an access and not a refresh token
-		if claims.TokenType != "access" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token type",
-			})
+			message := "Unauthorized"
+			if errors.Is(err, errWrongTokenType) {
+				message = "Invalid token type"
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{"error": message})
 			c.Abort()
 			return
 		}
