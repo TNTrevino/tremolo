@@ -60,11 +60,12 @@ server.go      NewServer(allowedOrigins, q) http.Handler: the mux plus the
 controllers/   net/http handlers: route registration, request binding, HTTP status mapping.
                Each file exports a RegisterXRoutes(mux, q) function, listed in
                controllers/routes.go.
-services/      Business logic: validation, authorization checks, DTO conversion.
-               Take a generated.Querier (usually database.Queries) as a parameter.
-DTOs/          Request/response shapes + their Validate() methods (package dtos).
-httpx/         M, JSON and Decode — the request and response helpers shared by
-               every handler.
+services/      Business logic: authorization checks, DTO conversion. Take a
+               generated.Querier (usually database.Queries) as a parameter.
+               Request bodies arrive already validated (see Validation below).
+DTOs/          Request/response shapes + their Valid() methods (package dtos).
+httpx/         M, JSON, Decode and DecodeValid — the request and response
+               helpers shared by every handler.
 database/
   database.go       Opens the connection; exposes DBConn (*sql.DB) and
                     Queries (*generated.Queries) as package globals, plus the
@@ -75,8 +76,9 @@ database/
   generated/        sqlc output — never edit by hand.
 middleware/    RequireAuth (JWT parsing, typed-context-key userID injection),
                CORS, Recover, RequestLog.
-validations/   Custom validator functions (e.g. time-length format) and the
-               query-parameter helpers in http_params.go.
+validations/   Plain func(string) bool rules (e.g. time-length format,
+               password complexity) that the DTOs' Valid() methods call, and
+               the query-parameter helpers in http_params.go.
 logger/        slog setup.
 generation/    Fake-data generator behind the -fake-it flag.
 tests/         Integration tests + tests/testutil helpers.
@@ -91,6 +93,35 @@ global. Controllers handle HTTP concerns only: auth extraction via
 `middleware.AuthenticatedUserID(r)`, JSON decoding (`httpx.Decode`), and
 mapping service errors (`services.ErrValidation`, `services.ErrUnauthorized`)
 to status codes.
+
+
+## Validation
+
+Request bodies validate themselves. Each request DTO carries a
+
+```go
+Valid(ctx context.Context) (problems map[string]string)
+```
+
+method returning its problems keyed by JSON field name. An empty map means
+the body is valid. The pattern is the one in Mat Ryer's "How I write HTTP
+services in Go after 13 years".
+
+Controllers call `httpx.DecodeValid[T]`, which decodes the body and runs
+`Valid` in one step. Its `[T Validator]` type constraint is the point: a
+request shape without a `Valid` method is a build error, not a body that
+quietly skips validation. `httpx.Decode[T]` still exists for bodies that
+need no rules.
+
+A failure comes back as a problems map plus an error. `httpx.DecodeError`
+renders it as the `{"error": "..."}` body the API has always returned,
+sorting the keys so two identical requests cannot answer in two different
+orders. Two routes map their own errors instead, because their responses
+differ: `POST /user` answers 422 with extra `message` and `scenario` keys,
+and `POST /api/auth/refresh` answers one message for both a malformed body
+and a missing token.
+
+Services take already-valid input. They do not re-check request shapes.
 
 ## Database workflow
 
@@ -150,8 +181,8 @@ Two tables:
 - **`note_game_settings`** — typed columns for the note game: game mode,
   time/note limits, scale, octave, and range columns `low_note` / `high_note`
   / `clef` added by migration `00009`. Fully validated field-by-field in
-  `DTOs/note_game_settings_dto.go` (e.g. `oneof=time notes`, natural-note
-  regex `^[A-G][0-9]$`, `oneof=treble bass`).
+  `DTOs/note_game_settings_dto.go` (game mode is `time` or `notes`, the
+  natural-note regex `^[A-G][0-9]$`, clef is `treble` or `bass`).
 
 The tradeoff: JSONB lets a new game ship its settings with zero backend schema
 work (one line in `game_types.go`), at the cost of the server not understanding
@@ -254,7 +285,9 @@ go test ./tests/ -run TestName         # single test
 1. Write the service function in `services/` taking
    `(ctx, q generated.Querier, userID, ...)`; add queries via the
    [database workflow](#database-workflow) if needed.
-2. Define request/response DTOs (with a `Validate()` method) in `DTOs/`.
+2. Define request/response DTOs in `DTOs/`. Give each request body a
+   `Valid(ctx context.Context) map[string]string` method (see Validation
+   below) — `httpx.DecodeValid` will not compile without one.
 3. Add the handler + route in the relevant `controllers/*_controller.go`
    `RegisterXRoutes` function (wrap the handler with `middleware.RequireAuth`
    for protected routes). If it's a new domain, create a new controller file

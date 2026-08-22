@@ -57,12 +57,9 @@ func NoContent(w http.ResponseWriter, status int) {
 
 // Decode reads a JSON request body into a fresh T.
 //
-// Decode does not enforce struct-tag validation (e.g. a "required"
-// field) during the decode; only field presence and JSON syntax are
-// checked. Two request shapes need a required field (the refresh-token
-// body and the friend-request body); both check the field explicitly
-// after decoding. Everything else validates in the service layer
-// already.
+// Decode checks JSON syntax and nothing else. Use DecodeValid for a
+// request body that has rules; it takes the same shape and runs the
+// body's Valid method as part of the decode.
 func Decode[T any](r *http.Request) (T, error) {
 	var v T
 	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {

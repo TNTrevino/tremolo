@@ -10,6 +10,14 @@ Invariants:
   A controller may name `database.Querier` — the alias in
   `core-api/database/database.go` exists precisely so a handler can take one
   as a parameter without importing `database/generated`.
+- Request bodies validate themselves. Every request DTO has a
+  `Valid(ctx context.Context) map[string]string` method returning problems
+  keyed by JSON field name, and controllers call `httpx.DecodeValid`, which
+  decodes and validates in one step. The `[T Validator]` constraint on that
+  function makes a request shape without a `Valid` method a build error.
+  Services take already-valid input and do not re-check request shapes.
+  Rules live in `validations/` as plain `func(string) bool`. There is no
+  validation framework and no `validate:` struct tags — do not add either.
 - Database changes: new numbered goose file in `database/migrations/` (never
   edit an existing one — they run automatically at startup), queries in
   `database/queries/*.sql`, then `sqlc generate`. Never hand-edit

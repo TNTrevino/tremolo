@@ -7,14 +7,10 @@ import (
 	"net/url"
 	"regexp"
 	"unicode"
-
-	"github.com/go-playground/validator/v10"
 )
 
-// The rules below are plain predicates over a string. They each took a
-// validator.FieldLevel until the go-playground dependency started coming
-// out; the *Tag adapters at the bottom of this file are the last users of
-// that signature and go away with the dependency.
+// The rules below are plain predicates over a string. A request DTO calls
+// them from its Valid method; nothing registers them with a framework.
 
 // entryTimePattern is deliberately unanchored, and EntryTimeLength
 // requires exactly one match. That is the rule this service has always
@@ -112,35 +108,6 @@ func IsURL(s string) bool {
 		return false
 	}
 	return u.Scheme != "" && u.Host != ""
-}
-
-// The adapters below let the DTOs that still carry `validate:` struct
-// tags keep building while they are migrated one file at a time. They are
-// deleted together with the go-playground dependency.
-
-func entryTimeLengthTag(fl validator.FieldLevel) bool {
-	return EntryTimeLength(fl.Field().String())
-}
-
-func varChar255LengthTag(fl validator.FieldLevel) bool {
-	return VarChar255Length(fl.Field().String())
-}
-
-func userRoleTag(fl validator.FieldLevel) bool {
-	return UserRole(fl.Field().String())
-}
-
-func passwordComplexityTag(fl validator.FieldLevel) bool {
-	return PasswordComplexity(fl.Field().String())
-}
-
-// TagRules is the tag-name to adapter map the remaining tag-based DTOs
-// register. It is a temporary bridge; see the adapters above.
-var TagRules = map[string]validator.Func{
-	"time":                entryTimeLengthTag,
-	"len255":              varChar255LengthTag,
-	"role":                userRoleTag,
-	"password_complexity": passwordComplexityTag,
 }
 
 // ValidateChartInterval validates chart interval parameter
