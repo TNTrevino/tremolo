@@ -29,8 +29,6 @@ func ginFallback() http.Handler {
 
 	controllers.SetupAuthRoutes(router)
 	controllers.SetupAdminRoutes(router)
-	controllers.SetupChartRoutes(router)
-	controllers.SetupClassRoutes(router)
 
 	return router
 }

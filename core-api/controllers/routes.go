@@ -27,4 +27,6 @@ func RegisterRoutes(mux *http.ServeMux, q database.Querier) {
 	RegisterGameSettingsRoutes(mux, q)
 	RegisterKeyboardBindingsRoutes(mux, q)
 	RegisterFriendsRoutes(mux, q)
+	RegisterClassRoutes(mux, q)
+	RegisterChartRoutes(mux, q)
 }
