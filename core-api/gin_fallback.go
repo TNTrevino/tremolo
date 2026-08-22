@@ -27,11 +27,9 @@ import (
 func ginFallback() http.Handler {
 	router := gin.New()
 
-	controllers.SetupHealthRoutes(router)
 	controllers.SetupAuthRoutes(router)
 	controllers.SetupAdminRoutes(router)
 	controllers.SetupChartRoutes(router)
-	controllers.SetupUserInfoRoutes(router)
 	controllers.SetupNoteGameRoutes(router)
 	controllers.SetupNoteGameSettingsRoutes(router)
 	controllers.SetupGameSettingsRoutes(router)

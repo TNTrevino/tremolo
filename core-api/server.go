@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"sight-reading/controllers"
+	"sight-reading/database"
 	"sight-reading/middleware"
 )
 
@@ -19,9 +20,9 @@ import (
 //  1. Recover, so a panic anywhere below still answers the caller.
 //  2. RequestLog, so the log line records the status Recover produced.
 //  3. CORS, so a rejected origin costs nothing further down.
-func NewServer(allowedOrigins []string) http.Handler {
+func NewServer(allowedOrigins []string, q database.Querier) http.Handler {
 	mux := http.NewServeMux()
-	controllers.RegisterRoutes(mux)
+	controllers.RegisterRoutes(mux, q)
 
 	// Anything the converted routes do not match falls through to gin.
 	// A ServeMux prefers the most specific matching pattern, so a

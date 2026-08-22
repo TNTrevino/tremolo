@@ -11,6 +11,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Querier is the set of database operations sqlc generates, re-exported
+// here so a controller can accept one as a parameter without importing
+// database/generated. Controllers are not allowed to reach into the
+// generated package; they hand a Querier to a service and nothing more.
+type Querier = generated.Querier
+
 var (
 	// DBConn is the standard sql.DB connection
 	DBConn *sql.DB

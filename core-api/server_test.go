@@ -25,9 +25,21 @@ func TestNewServer_UnconvertedRoutesStillReachGin(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	// /health lives on the gin side and reports unhealthy without a
-	// database connection, which is enough to prove the request arrived.
-	NewServer(testOrigins).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health", nil))
+	// /teachers is still on the gin side. Its auth middleware rejects an
+	// anonymous request, which is enough to prove the request arrived:
+	// an unrouted path would have been a 404.
+	NewServer(testOrigins, nil).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/teachers", nil))
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// The converted routes have to answer from the mux, above gin.
+func TestNewServer_ConvertedRoutesAnswerFromTheMux(t *testing.T) {
+	t.Parallel()
+
+	w := httptest.NewRecorder()
+	// Health reports unhealthy with no database connection.
+	NewServer(testOrigins, nil).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health", nil))
 
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	assert.Contains(t, w.Body.String(), "unhealthy")
@@ -37,7 +49,7 @@ func TestNewServer_UnknownPathIs404(t *testing.T) {
 	t.Parallel()
 
 	w := httptest.NewRecorder()
-	NewServer(testOrigins).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/nope", nil))
+	NewServer(testOrigins, nil).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/nope", nil))
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
@@ -51,7 +63,7 @@ func TestNewServer_AppliesCORS(t *testing.T) {
 	r.Header.Set("Origin", "http://localhost:5173")
 	w := httptest.NewRecorder()
 
-	NewServer(testOrigins).ServeHTTP(w, r)
+	NewServer(testOrigins, nil).ServeHTTP(w, r)
 
 	assert.Equal(t, "http://localhost:5173", w.Header().Get("Access-Control-Allow-Origin"))
 }
@@ -63,7 +75,7 @@ func TestNewServer_RejectsAnUnlistedOrigin(t *testing.T) {
 	r.Header.Set("Origin", "http://evil.example.com")
 	w := httptest.NewRecorder()
 
-	NewServer(testOrigins).ServeHTTP(w, r)
+	NewServer(testOrigins, nil).ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
@@ -76,7 +88,7 @@ func TestNewServer_AnswersAPreflight(t *testing.T) {
 	r.Header.Set("Access-Control-Request-Method", http.MethodPost)
 	w := httptest.NewRecorder()
 
-	NewServer(testOrigins).ServeHTTP(w, r)
+	NewServer(testOrigins, nil).ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Equal(t, "GET,POST,PUT,PATCH,DELETE,OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))

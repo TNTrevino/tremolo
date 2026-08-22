@@ -3,63 +3,59 @@ package controllers
 import (
 	"errors"
 	"net/http"
-	"sight-reading/database"
-	"sight-reading/middleware"
-	"sight-reading/services"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"sight-reading/database"
+	"sight-reading/httpx"
+	"sight-reading/middleware"
+	"sight-reading/services"
 )
 
-// SetupUserInfoRoutes initializes all user information routes
-// All routes are protected with JWT authentication middleware
-func SetupUserInfoRoutes(router *gin.Engine) {
-	userInfo := router.Group("/api/users")
-	userInfo.Use(middleware.AuthMiddleware()) // Protect all user info routes
-	{
-		// GET /api/users/:userId/general-info
-		userInfo.GET("/:userId/general-info", GetGeneralUserInfo)
-	}
+// RegisterUserInfoRoutes registers the user information routes.
+// All routes are protected with JWT authentication middleware.
+func RegisterUserInfoRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.Handle("GET /api/users/{userId}/general-info",
+		middleware.RequireAuth(handleGetGeneralUserInfo(q)))
 }
 
-// GetGeneralUserInfo fetches general user information including name, join date, and aggregate stats
+// handleGetGeneralUserInfo fetches general user information including name, join date, and aggregate stats
 // Protected: Requires JWT authentication, users can only access their own data
-func GetGeneralUserInfo(c *gin.Context) {
-	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	// Extract requested user ID from URL parameter
-	requestedUserIDStr := c.Param("userId")
-	requestedUserID, err := strconv.Atoi(requestedUserIDStr)
-	if err != nil || requestedUserID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID parameter"})
-		return
-	}
-
-	// Security: Verify user can only access their own data
-	if authenticatedUserID != requestedUserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-		return
-	}
-	// TODO: Future enhancement - allow teachers to view their students' info
-	// Will require checking teacher_student table relationship
-
-	// Fetch user information
-	ctx := c.Request.Context()
-	userInfo, err := services.GetGeneralUserInfo(ctx, database.Queries, requestedUserID)
-	if err != nil {
-		// Check if user not found
-		if errors.Is(err, services.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+func handleGetGeneralUserInfo(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authenticatedUserID, err := middleware.AuthenticatedUserID(r)
+		if err != nil {
+			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user information"})
-		return
-	}
+		// Extract requested user ID from URL parameter
+		requestedUserID, err := strconv.Atoi(r.PathValue("userId"))
+		if err != nil || requestedUserID <= 0 {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid user ID parameter"})
+			return
+		}
 
-	c.JSON(http.StatusOK, userInfo)
+		// Security: Verify user can only access their own data
+		if authenticatedUserID != requestedUserID {
+			httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Access denied"})
+			return
+		}
+		// TODO: Future enhancement - allow teachers to view their students' info
+		// Will require checking teacher_student table relationship
+
+		// Fetch user information
+		userInfo, err := services.GetGeneralUserInfo(r.Context(), q, requestedUserID)
+		if err != nil {
+			// Check if user not found
+			if errors.Is(err, services.ErrNotFound) {
+				httpx.JSON(w, http.StatusNotFound, httpx.M{"error": "User not found"})
+				return
+			}
+
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to retrieve user information"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, userInfo)
+	}
 }

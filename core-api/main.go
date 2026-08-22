@@ -88,7 +88,7 @@ func run(ctx context.Context, args []string) error {
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           NewServer(origins),
+		Handler:           NewServer(origins, database.Queries),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,

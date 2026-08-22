@@ -7,18 +7,19 @@ import (
 	"testing"
 
 	"sight-reading/controllers"
+	"sight-reading/database"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
 // userInfoTestRouter builds a router with only the user-info routes
-// registered, mirroring how main.go wires controllers.SetupUserInfoRoutes.
-func userInfoTestRouter() *gin.Engine {
-	router := gin.New()
-	controllers.SetupUserInfoRoutes(router)
-	return router
+// registered, mirroring how NewServer wires
+// controllers.RegisterUserInfoRoutes.
+func userInfoTestRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	controllers.RegisterUserInfoRoutes(mux, database.Queries)
+	return mux
 }
 
 // TestGetGeneralUserInfoRoute_UserNotFound verifies that requesting
