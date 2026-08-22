@@ -75,5 +75,21 @@ if has_staged_files_in "^core-api/"; then
     done
 
     echo "Go code formatting applied."
+
+    # Core OpenAPI Precommit
+    # Any staged .go file can affect the generated spec -- a handler's
+    # swag comment, a DTO's fields, or main.go's general API info -- so
+    # this runs whenever Go files are staged, not just controllers/.
+    if command -v swag >/dev/null 2>&1; then
+      echo "Regenerating core-api OpenAPI spec..."
+      (cd "$REPO_ROOT" && make openapi-go) || {
+        echo "OpenAPI generation failed."
+        exit 1
+      }
+      git add "$REPO_ROOT/core-api/openapi/"
+    else
+      echo "Warning: swag CLI not installed. Skipping OpenAPI regeneration."
+      echo "  Run: go install github.com/swaggo/swag/cmd/swag@latest"
+    fi
   fi
 fi
