@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -86,8 +85,18 @@ func idPathParam(w http.ResponseWriter, r *http.Request) (int, bool) {
 // @Router   /user [post]
 func handleCreateUser(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.CreateUserRequest](r)
+		// This handler does not use httpx.DecodeError: it answers 422,
+		// not 400, and its body carries a message and a scenario key.
+		reqBody, problems, err := httpx.DecodeValid[dtos.CreateUserRequest](r)
 		if err != nil {
+			if len(problems) > 0 {
+				httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
+					"error":    httpx.ProblemsError(problems),
+					"message":  "Information invalid",
+					"scenario": "TS.2",
+				})
+				return
+			}
 			httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
 				"error":    true,
 				"message":  "Invalid json body",
@@ -99,12 +108,6 @@ func handleCreateUser(q database.Querier) http.HandlerFunc {
 		result, err := services.CreateUser(r.Context(), q, &reqBody)
 		if err != nil {
 			switch {
-			case errors.Is(err, services.ErrValidation):
-				httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
-					"error":    strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-					"message":  "Information invalid",
-					"scenario": "TS.2",
-				})
 			case errors.Is(err, services.ErrForbidden):
 				httpx.JSON(w, http.StatusForbidden, httpx.M{
 					"error": "Creating ADMIN users is not allowed",
