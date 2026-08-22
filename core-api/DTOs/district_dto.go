@@ -24,7 +24,7 @@ type School struct {
 // TODO: add varchar constraints
 func (school *School) ValidateSchool() error {
 	validate := validator.New()
-	err := validate.RegisterValidation("len255", validations.VarChar255Length)
+	err := validate.RegisterValidation("len255", validations.TagRules["len255"])
 	if err != nil {
 		// TODO: json response
 		return err

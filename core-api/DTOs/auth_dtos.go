@@ -20,7 +20,7 @@ type LoginRequest struct {
 // TODO: move this to the validations package?
 func (req *LoginRequest) ValidateLoginRequest() error {
 	validate := validator.New()
-	err := validate.RegisterValidation("password_complexity", validations.PasswordComplexity)
+	err := validate.RegisterValidation("password_complexity", validations.TagRules["password_complexity"])
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ type RegisterRequest struct {
 // ValidateRegisterRequest validates the registration request
 func (req *RegisterRequest) ValidateRegisterRequest() error {
 	validate := validator.New()
-	err := validate.RegisterValidation("password_complexity", validations.PasswordComplexity)
+	err := validate.RegisterValidation("password_complexity", validations.TagRules["password_complexity"])
 	if err != nil {
 		return err
 	}

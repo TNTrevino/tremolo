@@ -55,7 +55,7 @@ type DailyActivityCount struct {
 
 func (entry *Entry) ValidateEntry() error {
 	validate := validator.New()
-	err := validate.RegisterValidation("time", validations.EntryTimeLength)
+	err := validate.RegisterValidation("time", validations.TagRules["time"])
 	if err != nil {
 		// TODO: json response
 		return err

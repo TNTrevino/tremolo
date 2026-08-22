@@ -78,11 +78,7 @@ var userFieldMessages = map[string]map[string]string{
 // shapes rely on.
 func newUserValidator() (*validator.Validate, error) {
 	validate := validator.New()
-	for tag, fn := range map[string]validator.Func{
-		"role":                validations.UserRole,
-		"len255":              validations.VarChar255Length,
-		"password_complexity": validations.PasswordComplexity,
-	} {
+	for tag, fn := range validations.TagRules {
 		if err := validate.RegisterValidation(tag, fn); err != nil {
 			return nil, err
 		}
