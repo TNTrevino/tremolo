@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"google.golang.org/api/idtoken"
 )
@@ -21,21 +23,46 @@ type GoogleClaims struct {
 
 // GoogleTokenVerifier abstracts Google token operations for testability.
 type GoogleTokenVerifier interface {
-	ExchangeCode(code, redirectURI string) (string, error)
-	VerifyIDToken(idToken string) (*GoogleClaims, error)
+	ExchangeCode(ctx context.Context, code, redirectURI string) (string, error)
+	VerifyIDToken(ctx context.Context, idToken string) (*GoogleClaims, error)
 }
 
-// googleTokenVerifierImpl is the production implementation of GoogleTokenVerifier.
-type googleTokenVerifierImpl struct{}
+// googleTokenVerifierImpl is the production implementation of
+// GoogleTokenVerifier. Its client credentials are fields set via
+// NewGoogleTokenVerifier rather than package globals, so the verifier can
+// be constructed (and swapped out in tests) like any other dependency.
+type googleTokenVerifierImpl struct {
+	clientID     string
+	clientSecret string
+	httpClient   *http.Client
+}
 
-func (g *googleTokenVerifierImpl) ExchangeCode(code, redirectURI string) (string, error) {
-	resp, err := http.PostForm("https://oauth2.googleapis.com/token", map[string][]string{
+// NewGoogleTokenVerifier constructs the production GoogleTokenVerifier for
+// the given OAuth client credentials.
+func NewGoogleTokenVerifier(clientID, clientSecret string) GoogleTokenVerifier {
+	return &googleTokenVerifierImpl{
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		httpClient:   http.DefaultClient,
+	}
+}
+
+func (g *googleTokenVerifierImpl) ExchangeCode(ctx context.Context, code, redirectURI string) (string, error) {
+	form := url.Values{
 		"code":          {code},
-		"client_id":     {googleClientID},
-		"client_secret": {googleClientSecret},
+		"client_id":     {g.clientID},
+		"client_secret": {g.clientSecret},
 		"redirect_uri":  {redirectURI},
 		"grant_type":    {"authorization_code"},
-	})
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://oauth2.googleapis.com/token", strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("failed to build token exchange request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := g.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to exchange code: %w", err)
 	}
@@ -60,8 +87,8 @@ func (g *googleTokenVerifierImpl) ExchangeCode(code, redirectURI string) (string
 	return tokenResp.IDToken, nil
 }
 
-func (g *googleTokenVerifierImpl) VerifyIDToken(idTokenStr string) (*GoogleClaims, error) {
-	payload, err := idtoken.Validate(context.Background(), idTokenStr, googleClientID)
+func (g *googleTokenVerifierImpl) VerifyIDToken(ctx context.Context, idTokenStr string) (*GoogleClaims, error) {
+	payload, err := idtoken.Validate(ctx, idTokenStr, g.clientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify id token: %w", err)
 	}

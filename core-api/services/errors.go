@@ -65,6 +65,32 @@ var (
 	ErrAccessTokenGeneration = errors.New("failed to generate access token")
 	// ErrRefreshTokenGeneration means minting a JWT refresh token failed.
 	ErrRefreshTokenGeneration = errors.New("failed to generate refresh token")
+
+	// ErrGoogleExchangeFailed means exchanging a Google authorization code
+	// for an ID token failed (bad code, wrong redirect URI, network error).
+	ErrGoogleExchangeFailed = errors.New("failed to exchange google authorization code")
+	// ErrGoogleTokenInvalid means the Google ID token failed signature or
+	// audience verification.
+	ErrGoogleTokenInvalid = errors.New("invalid google id token")
+	// ErrGoogleEmailUnverified means the Google account's email address
+	// has not been verified with Google.
+	ErrGoogleEmailUnverified = errors.New("google email is not verified")
+	// ErrGoogleEmailAlreadyLinked means the OAuth callback's email belongs
+	// to a user who already has a *different* Google account linked.
+	ErrGoogleEmailAlreadyLinked = errors.New("email already linked to a different google account")
+	// ErrGoogleLinkFailed means persisting a Google ID onto a user row
+	// failed, whether from the auto-link path in the OAuth callback or
+	// from the explicit LinkGoogleAccount flow.
+	ErrGoogleLinkFailed = errors.New("failed to link google account")
+	// ErrGoogleUserCreateFailed means inserting a new OAuth user row
+	// failed.
+	ErrGoogleUserCreateFailed = errors.New("failed to create oauth user")
+	// ErrGoogleEmailMismatch means the authenticated caller's email does
+	// not match the Google account's email during LinkGoogleAccount.
+	ErrGoogleEmailMismatch = errors.New("google email does not match account email")
+	// ErrGoogleIDConflict means the Google account being linked is already
+	// linked to a different user.
+	ErrGoogleIDConflict = errors.New("google account already linked to another user")
 )
 
 // LockoutTriggeredError is returned by Login when a failed attempt is
