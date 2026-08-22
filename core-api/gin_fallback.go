@@ -30,7 +30,6 @@ func ginFallback() http.Handler {
 	controllers.SetupAuthRoutes(router)
 	controllers.SetupAdminRoutes(router)
 	controllers.SetupChartRoutes(router)
-	controllers.SetupGameSettingsRoutes(router)
 	controllers.SetupKeyboardBindingsRoutes(router)
 	controllers.SetupFriendsRoutes(router)
 	controllers.SetupClassRoutes(router)

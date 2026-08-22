@@ -6,75 +6,74 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/httpx"
 	"sight-reading/middleware"
 	"sight-reading/services"
-
-	"github.com/gin-gonic/gin"
 )
 
-// SetupGameSettingsRoutes initializes the generic per-game settings routes
+// RegisterGameSettingsRoutes registers the generic per-game settings routes
 // (key signature / scale / chord identification games).
-func SetupGameSettingsRoutes(router *gin.Engine) {
-	settings := router.Group("/api/game-settings")
-	settings.Use(middleware.AuthMiddleware())
-	{
-		settings.GET("", GetGameSettings)
-		settings.PUT("", UpdateGameSettings)
-	}
+func RegisterGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.Handle("GET /api/game-settings", middleware.RequireAuth(handleGetGameSettings(q)))
+	mux.Handle("PUT /api/game-settings", middleware.RequireAuth(handleUpdateGameSettings(q)))
 }
 
-// GetGameSettings returns the saved settings for the game type given in
+// handleGetGameSettings returns the saved settings for the game type given in
 // the game_type query parameter.
 // Protected: Requires JWT authentication
-func GetGameSettings(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	gameType := c.Query("game_type")
-
-	ctx := c.Request.Context()
-	result, err := services.GetGameSettings(ctx, database.Queries, userID, gameType)
-	if err != nil {
-		if errors.Is(err, services.ErrValidation) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game_type"})
+func handleGetGameSettings(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := middleware.AuthenticatedUserID(r)
+		if err != nil {
+			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch settings"})
-		return
-	}
 
-	if result == nil {
-		c.JSON(http.StatusOK, gin.H{"settings": nil})
-		return
-	}
+		gameType := r.URL.Query().Get("game_type")
 
-	c.JSON(http.StatusOK, result)
+		ctx := r.Context()
+		result, err := services.GetGameSettings(ctx, q, userID, gameType)
+		if err != nil {
+			if errors.Is(err, services.ErrValidation) {
+				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid game_type"})
+				return
+			}
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch settings"})
+			return
+		}
+
+		if result == nil {
+			httpx.JSON(w, http.StatusOK, httpx.M{"settings": nil})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, result)
+	}
 }
 
-// UpdateGameSettings upserts the settings for one game type.
+// handleUpdateGameSettings upserts the settings for one game type.
 // Protected: Requires JWT authentication
-func UpdateGameSettings(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+func handleUpdateGameSettings(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := middleware.AuthenticatedUserID(r)
+		if err != nil {
+			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+			return
+		}
 
-	var req dtos.GameSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+		req, err := httpx.Decode[dtos.GameSettingsRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	ctx := c.Request.Context()
-	result, err := services.UpsertGameSettings(ctx, database.Queries, userID, &req)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+		ctx := r.Context()
+		result, err := services.UpsertGameSettings(ctx, q, userID, &req)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": err.Error()})
+			return
+		}
 
-	c.JSON(http.StatusOK, result)
+		httpx.JSON(w, http.StatusOK, result)
+	}
 }
