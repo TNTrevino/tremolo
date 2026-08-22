@@ -2,10 +2,11 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
-	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
 
@@ -28,9 +29,10 @@ func SetupAdminRoutes(router *gin.Engine) {
 }
 
 // adminOnly restricts a handler to authenticated callers with the ADMIN
-// role. The JWT only carries a user ID, so the role is a DB lookup on every
-// call. Errors (missing user ID, lookup failure) and a non-admin role all
-// respond the same way, so nothing about the caller's account leaks.
+// role via services.RequireAdmin. A missing user ID and a non-admin role
+// both respond with an identical 403, so nothing about the caller's
+// account leaks; an unexpected lookup failure is logged and reported as
+// a 500 so a DB outage is not mistaken for a permissions problem.
 func adminOnly(h gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := middleware.GetAuthenticatedUserID(c)
@@ -39,13 +41,13 @@ func adminOnly(h gin.HandlerFunc) gin.HandlerFunc {
 			return
 		}
 
-		role, err := database.Queries.GetUserRole(c.Request.Context(), int32(userID))
-		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
-			return
-		}
-		if role != string(dtos.Admin) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		if err := services.RequireAdmin(c.Request.Context(), database.Queries, userID); err != nil {
+			if errors.Is(err, services.ErrForbidden) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+				return
+			}
+			logger.Error("failed to check admin role", "error", err, "userID", userID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
 			return
 		}
 
