@@ -60,7 +60,7 @@ func main() {
 
 	controllers.SetupHealthRoutes(router)
 	controllers.SetupAuthRoutes(router)
-	controllers.SetupTeacherRoutes(router)
+	controllers.SetupAdminRoutes(router)
 	controllers.SetupChartRoutes(router)
 	controllers.SetupUserInfoRoutes(router)
 	controllers.SetupNoteGameRoutes(router)
