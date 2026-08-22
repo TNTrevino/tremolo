@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"sight-reading/database"
 	"sight-reading/middleware"
@@ -51,7 +52,7 @@ func GetGeneralUserInfo(c *gin.Context) {
 	userInfo, err := services.GetGeneralUserInfo(ctx, database.Queries, requestedUserID)
 	if err != nil {
 		// Check if user not found
-		if err.Error() == "user not found with ID: "+requestedUserIDStr {
+		if errors.Is(err, services.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
