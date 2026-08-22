@@ -17,7 +17,7 @@ import {
 
 import { AuthService } from "../../auth/services/auth.service";
 import { AuthStore } from "../../auth/services/auth.store";
-import { isMainApiRequest, isSessionEndpoint } from "./api-url";
+import { isCoreApiRequest, isSessionEndpoint } from "./api-url";
 
 /**
  * The 401-refresh interceptor (PLAN.md 5.4).
@@ -77,7 +77,7 @@ function isRecoverable401(err: unknown, req: HttpRequest<unknown>): boolean {
 	return (
 		err instanceof HttpErrorResponse &&
 		err.status === 401 &&
-		isMainApiRequest(req.url) &&
+		isCoreApiRequest(req.url) &&
 		!isSessionEndpoint(req.url)
 	);
 }

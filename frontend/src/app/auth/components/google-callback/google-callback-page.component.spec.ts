@@ -17,7 +17,7 @@ import { AuthStore } from "../../services/auth.store";
 import { GoogleOAuthService } from "../../services/google-oauth.service";
 import { GoogleCallbackPageComponent } from "./google-callback-page.component";
 
-const CALLBACK_URL = `${environment.mainApi}/api/auth/google/callback`;
+const CALLBACK_URL = `${environment.coreApi}/api/auth/google/callback`;
 
 const LOGIN_RESPONSE = {
 	user: {

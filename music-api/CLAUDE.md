@@ -1,4 +1,4 @@
-# backend/music — agent notes
+# music-api — agent notes
 
 Stateless FastAPI + music21 MusicXML generator. **Read `README.md` here before
 structural changes** — it has the full endpoint reference and architecture.
@@ -21,7 +21,7 @@ Invariants (violating these breaks rendering or the frontend contract):
   `services/music_service.py` → route via `run_game_endpoint` → test file per
   endpoint. `/scale-game` is the template.
 
-Python 3.14 — matches CI (`music-microservice.yml`) and the deploy runner
+Python 3.14 — matches CI (`music-api.yml`) and the deploy runner
 (`deploy.yml`); build the venv with a 3.14 interpreter so local dev doesn't
 drift from prod.
 

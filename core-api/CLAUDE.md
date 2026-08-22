@@ -1,4 +1,4 @@
-# backend/main — agent notes
+# core-api — agent notes
 
 Gin + Postgres user-tracking service. **Read `README.md` here before
 structural changes** — full route map, env vars, and games-domain details.

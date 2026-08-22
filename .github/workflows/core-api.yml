@@ -1,11 +1,11 @@
-name: Go Backend CI
+name: Core API CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "backend/main/**"
-      - ".github/workflows/backend-go.yml"
+      - "core-api/**"
+      - ".github/workflows/core-api.yml"
       - "Makefile"
   # Reusable, and the only path this runs on a PR: the CI gate calls it
   # for the services a PR touches, and the deploy workflows call it as a
@@ -63,7 +63,7 @@ jobs:
         with:
           go-version: "1.26.0"
           cache: true
-          cache-dependency-path: backend/main/go.sum
+          cache-dependency-path: core-api/go.sum
 
       # gofmt/vet/tests live in the Makefile so CI and local dev can't
       # drift; golangci-lint stays an action because it installs and
@@ -78,7 +78,7 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.10
-          working-directory: backend/main
+          working-directory: core-api
 
       - name: Run tests
         run: make test-go

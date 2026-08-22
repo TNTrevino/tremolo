@@ -13,7 +13,7 @@ import { AppComponent } from "./app.component";
 import { AuthStore } from "./auth/services/auth.store";
 import { TREMOLO_ICONS } from "./core/icons";
 
-const FRIENDS_URL = `${environment.mainApi}/api/friends`;
+const FRIENDS_URL = `${environment.coreApi}/api/friends`;
 
 describe("AppComponent", () => {
 	let fixture: ComponentFixture<AppComponent>;

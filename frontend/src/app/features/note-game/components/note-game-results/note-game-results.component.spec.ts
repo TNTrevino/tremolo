@@ -14,7 +14,7 @@ import { GameMode } from "@features/identification-game/data";
 import type { NoteGameStats } from "../../models/note-game.models";
 import { NoteGameResultsComponent } from "./note-game-results.component";
 
-const RECENT_URL = `${environment.mainApi}/api/note-game/recent`;
+const RECENT_URL = `${environment.coreApi}/api/note-game/recent`;
 
 const STATS: NoteGameStats = {
 	npm: 12,

@@ -40,7 +40,7 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
  * Five cards and a confirmation modal, of which **nothing talks to the
  * server**: React answered the password form, the data download and the
  * deletion with toasts, because the Go service registers no route for any
- * of them (`backend/main/controllers/user_info_controller.go` mounts one
+ * of them (`core-api/controllers/user_info_controller.go` mounts one
  * GET). That is ported as-is -- the strings below are the product's current
  * promises, not placeholders someone forgot. There is therefore **no
  * `rxResource` on this page**; see phase-3-subfeature-3-handoff.md.

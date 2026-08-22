@@ -12,7 +12,7 @@ import { NotificationService } from "../../../../core/services/notification.serv
 import type { FriendResponse } from "../../models/friends.models";
 import { AddFriendViewComponent } from "./add-friend-view.component";
 
-const FRIENDS_URL = `${environment.mainApi}/api/friends`;
+const FRIENDS_URL = `${environment.coreApi}/api/friends`;
 const SEARCH_URL = `${FRIENDS_URL}/search`;
 
 /** Longer than the component's 120ms debounce. */

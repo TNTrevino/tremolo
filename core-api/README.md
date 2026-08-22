@@ -1,4 +1,4 @@
-# Tremolo — Go User-Tracking Service (`backend/main`)
+# Tremolo — Go User-Tracking Service (`core-api`)
 
 Gin HTTP service (default port **5001**) that handles everything user-related for
 [Tremolo](https://tremolonotes.com): authentication (JWT + Google OAuth), users /
@@ -8,13 +8,13 @@ dashboard chart data. Backed by **Postgres** via **sqlc**.
 It is one of three services in this repo (see the root `CLAUDE.md`):
 
 - `frontend/` — React SPA; talks to this service via `VITE_BACKEND_MAIN`.
-- `backend/music/` — Python FastAPI music-generation service (port 8000, stateless, no auth).
-- `backend/main/` — **this service**. The Go and Python services do not talk to each other.
+- `music-api/` — Python FastAPI music-generation service (port 8000, stateless, no auth).
+- `core-api/` — **this service**. The Go and Python services do not talk to each other.
 
 ## Running locally
 
 ```bash
-cd backend/main
+cd core-api
 go run main.go          # serves on :5001 (override with USER_SERVICE_PORT)
 # or use air (config in .air.toml) for hot reload
 ```
@@ -95,7 +95,7 @@ To add a column or a new query:
    (e.g. `alter table tremolo.note_game_entries ...`).
 2. **Query** — add or edit SQL in the matching `database/queries/*.sql` file
    using sqlc annotations (`-- name: GetFoo :one`).
-3. **Regenerate** — run `sqlc generate` from `backend/main/`. This rewrites
+3. **Regenerate** — run `sqlc generate` from `core-api/`. This rewrites
    `database/generated/` (models, per-file `*.sql.go`, and `querier.go`).
 4. Use the new method through the `generated.Querier` interface in a service.
 5. Migrations apply automatically the next time the service (or a DB-backed
@@ -228,7 +228,7 @@ go test ./tests/ -run TestName         # single test
   - `CreateTestNoteGameEntry(t, params)` — seed a game entry
     (`GameType` defaults to `"note"`).
 - Tests live both next to services (`services/*_test.go`) and under `tests/`.
-- CI (`.github/workflows/backend-go.yml`) spins up Postgres 16 and runs
+- CI (`.github/workflows/core-api.yml`) spins up Postgres 16 and runs
   `gofmt -s` (fails on any unformatted file), `go vet ./...`, `golangci-lint`,
   and `go test -race` with coverage.
 

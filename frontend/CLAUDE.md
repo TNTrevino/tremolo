@@ -188,11 +188,11 @@ preferences.
 
 ## Adding an identification game
 
-1. Python: a `/music/<name>-game` endpoint (`backend/music/`).
+1. Python: a `/music/<name>-game` endpoint (`music-api/`).
 2. Angular: a `GameDefinition` in `features/identification-game/games/`,
    exported from `games/index.ts`; a thin page component; a route in
    `app.routes.ts`; a nav link.
-3. Register the id in three places: `backend/main/DTOs/game_types.go`
+3. Register the id in three places: `core-api/DTOs/game_types.go`
    (`ValidGameTypes`), the `GameType` union in
    `@shared/models/game.models`, and — if it should be assignable —
    `GAME_DEFINITIONS`.

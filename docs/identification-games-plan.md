@@ -73,7 +73,7 @@ instead of one fixed octave. Return `noteOctave` from the actual chosen pitch.
 - Also return `clef` in the XML (bass clef support falls out for free — the
   competitor has treble + bass ranges).
 
-Tests: one test file per endpoint under `backend/music/tests/` mirroring
+Tests: one test file per endpoint under `music-api/tests/` mirroring
 `test_note_game_endpoint.py` (validation errors, response shape, XML parses,
 answer consistent with XML content).
 

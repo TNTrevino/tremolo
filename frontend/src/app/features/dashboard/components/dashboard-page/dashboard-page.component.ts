@@ -142,7 +142,7 @@ export class DashboardPageComponent {
 	 *
 	 * `GET /api/users/:id/general-info` sends **six** fields, not the ten
 	 * React's `user.types.ts` declared (sub-feature 3 probed it live and
-	 * `backend/main/DTOs/general_user_info_dto.go` confirms it). Of the four
+	 * `core-api/DTOs/general_user_info_dto.go` confirms it). Of the four
 	 * numbers this grid wants, only the session count has a source:
 	 * `total_entries`. `total_questions`, `average_npm` and `average_accuracy`
 	 * are **never sent by any endpoint**.

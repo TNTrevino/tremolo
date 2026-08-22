@@ -16,9 +16,9 @@ import { TokenStorage } from "../../auth/services/token.storage";
 import { authInterceptor } from "./auth.interceptor";
 import { refreshInterceptor, resetRefreshState } from "./refresh.interceptor";
 
-const ME = `${environment.mainApi}/api/auth/me`;
-const REFRESH = `${environment.mainApi}/api/auth/refresh`;
-const LOGIN = `${environment.mainApi}/api/auth/login`;
+const ME = `${environment.coreApi}/api/auth/me`;
+const REFRESH = `${environment.coreApi}/api/auth/refresh`;
+const LOGIN = `${environment.coreApi}/api/auth/login`;
 
 describe("refreshInterceptor", () => {
 	let http: HttpClient;

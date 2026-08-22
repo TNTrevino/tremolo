@@ -201,7 +201,7 @@ All validators return descriptive error messages suitable for API responses:
 Test any handler using these validators:
 
 ```bash
-cd backend/main
+cd core-api
 go test ./validations/... -v
 ```
 

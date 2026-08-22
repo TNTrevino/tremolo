@@ -13,7 +13,7 @@ import { TREMOLO_ICONS } from "../../../core/icons";
 import { AuthStore } from "../../services/auth.store";
 import { SignupPageComponent } from "./signup-page.component";
 
-const REGISTER_URL = `${environment.mainApi}/api/auth/register`;
+const REGISTER_URL = `${environment.coreApi}/api/auth/register`;
 
 /**
  * The signup page's contract, as `e2e/specs/auth.spec.ts` drives it: six

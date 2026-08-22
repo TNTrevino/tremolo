@@ -12,7 +12,7 @@ import { environment } from "../../../../../environments/environment";
 import { TREMOLO_ICONS } from "../../../../core/icons";
 import { ClassDetailPageComponent } from "./class-detail-page.component";
 
-const CLASSES_URL = `${environment.mainApi}/api/classes`;
+const CLASSES_URL = `${environment.coreApi}/api/classes`;
 const ROSTER_URL = `${CLASSES_URL}/1/roster`;
 const ASSIGNMENTS_URL = `${CLASSES_URL}/1/assignments`;
 
@@ -238,7 +238,7 @@ describe("ClassDetailPageComponent", () => {
 
 		expect(el().querySelector("app-assignment-results-grid")).toBeTruthy();
 		backend
-			.expectOne(`${environment.mainApi}/api/assignments/3/results`)
+			.expectOne(`${environment.coreApi}/api/assignments/3/results`)
 			.flush([]);
 		fixture.detectChanges();
 	});

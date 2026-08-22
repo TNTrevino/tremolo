@@ -8,8 +8,8 @@ import { environment } from "../../../environments/environment";
  * auth interceptor must never leak a bearer token to the music service, so
  * every attach decision runs through here.
  */
-export function isMainApiRequest(url: string): boolean {
-	return environment.mainApi.length > 0 && url.startsWith(environment.mainApi);
+export function isCoreApiRequest(url: string): boolean {
+	return environment.coreApi.length > 0 && url.startsWith(environment.coreApi);
 }
 
 /**

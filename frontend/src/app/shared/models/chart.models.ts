@@ -2,7 +2,7 @@
  * Chart and analytics shapes.
  *
  * Port of frontend-react/src/services/api/types/chart.types.ts, verbatim --
- * `backend/main/DTOs/chart_dtos.go` already tags these keys camelCase
+ * `core-api/DTOs/chart_dtos.go` already tags these keys camelCase
  * (`npm`, `accuracy`, `sessionCount`, `totalQuestions`, and `x`/`y` on each
  * point), so this is the one Go payload with nothing to translate at the
  * boundary.

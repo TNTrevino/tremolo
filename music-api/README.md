@@ -21,7 +21,7 @@ There are two kinds of endpoints:
 ## Layout
 
 ```
-backend/music/
+music-api/
 ├── main.py                  # FastAPI app, CORS, mounts router at /music
 ├── models.py                # Pydantic request/response models
 ├── routers/api.py           # Endpoints + run_game_endpoint error mapping
@@ -39,7 +39,7 @@ backend/music/
 ## Running locally
 
 ```bash
-cd backend/music
+cd music-api
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
@@ -69,7 +69,7 @@ to every run and enforces `--strict-markers`. Registered markers: `unit`,
 
 ### Formatting / linting
 
-CI (`.github/workflows/music-microservice.yml`) fails a PR if `black --check .`
+CI (`.github/workflows/music-api.yml`) fails a PR if `black --check .`
 fails, and runs flake8 (the E9/F63/F7/F82 syntax-error pass is blocking). A
 husky pre-commit hook auto-runs Black + flake8 on staged files.
 

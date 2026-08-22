@@ -11,7 +11,7 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import { defaultAssignmentConfig } from "../../models/game-definitions";
 import { CreateAssignmentDialogComponent } from "./create-assignment-dialog.component";
 
-const CREATE_URL = `${environment.mainApi}/api/classes/7/assignments`;
+const CREATE_URL = `${environment.coreApi}/api/classes/7/assignments`;
 
 /**
  * Port of

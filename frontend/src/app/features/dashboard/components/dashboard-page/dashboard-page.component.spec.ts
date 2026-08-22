@@ -15,7 +15,7 @@ import { TREMOLO_ICONS } from "../../../../core/icons";
 import type { MultiMetricChartData } from "../../../../shared/models/chart.models";
 import { DashboardPageComponent } from "./dashboard-page.component";
 
-const BASE = environment.mainApi;
+const BASE = environment.coreApi;
 const PROFILE_URL = `${BASE}/api/users/9/general-info`;
 const METRICS_URL = `${BASE}/api/charts/user/9/metrics`;
 const CLASS_METRICS_URL = `${BASE}/api/charts/teacher/class-metrics`;
@@ -23,7 +23,7 @@ const ACTIVITY_URL = `${BASE}/api/note-game/activity`;
 
 /**
  * The **live** `general-info` payload -- all six fields the Go service sends
- * and no more (`backend/main/DTOs/general_user_info_dto.go`). React's type
+ * and no more (`core-api/DTOs/general_user_info_dto.go`). React's type
  * declared ten; the other four never arrive. See the stat-grid spec below.
  */
 const PROFILE = {

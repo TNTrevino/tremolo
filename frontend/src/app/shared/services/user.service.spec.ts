@@ -14,7 +14,7 @@ import type {
 import type { UserProfile } from "../models/user.models";
 import { UserService } from "./user.service";
 
-const API = environment.mainApi;
+const API = environment.coreApi;
 
 /**
  * Ports frontend-react/src/services/api/user.service.test.ts -- whose two

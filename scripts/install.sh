@@ -12,8 +12,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 green "Creating application directories..."
-mkdir -p /opt/tremolo/backend/main
-mkdir -p /opt/tremolo/backend/music
+mkdir -p /opt/tremolo/core-api
+mkdir -p /opt/tremolo/music-api
 
 green "Setting up environment config..."
 mkdir -p /etc/tremolo

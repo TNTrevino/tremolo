@@ -3,7 +3,7 @@
  *
  * Port of frontend-react/src/services/api/types/game.types.ts, split into
  * the wire shape (`*Dto`, snake_case, exactly what
- * `backend/main/DTOs/` serialises) and the domain shape (camelCase, what
+ * `core-api/DTOs/` serialises) and the domain shape (camelCase, what
  * the app reads). `UserService` is the only place the two meet -- see
  * phase-3.md's uniform rule.
  *

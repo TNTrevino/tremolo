@@ -57,8 +57,8 @@ import type {
 @Injectable({ providedIn: "root" })
 export class ClassesService {
 	private readonly http = inject(HttpClient);
-	private readonly classesBase = `${environment.mainApi}/api/classes`;
-	private readonly assignmentsBase = `${environment.mainApi}/api/assignments`;
+	private readonly classesBase = `${environment.coreApi}/api/classes`;
+	private readonly assignmentsBase = `${environment.coreApi}/api/assignments`;
 
 	createClass(name: string): Observable<Class> {
 		const request: CreateClassRequest = { name };
