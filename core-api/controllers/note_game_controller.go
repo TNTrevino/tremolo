@@ -43,9 +43,9 @@ func handleCreateNoteGameEntry(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		entry, err := httpx.Decode[dtos.Entry](r)
+		entry, problems, err := httpx.DecodeValid[dtos.Entry](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
