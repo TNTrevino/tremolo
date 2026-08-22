@@ -18,6 +18,14 @@ func RegisterNoteGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.Handle("PUT /api/note-game/settings", middleware.RequireAuth(handleUpdateNoteGameSettings(q)))
 }
 
+// @Summary  Get the note game settings
+// @Tags     note-game-settings
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.NoteGameSettingsResponse "settings is null if none saved yet"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/note-game/settings [get]
 func handleGetNoteGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)
@@ -40,6 +48,16 @@ func handleGetNoteGameSettings(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// @Summary  Update the note game settings
+// @Tags     note-game-settings
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    settings body dtos.NoteGameSettingsRequest true "Settings to save"
+// @Success  200 {object} dtos.NoteGameSettingsResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or failed to update"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Router   /api/note-game/settings [put]
 func handleUpdateNoteGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)

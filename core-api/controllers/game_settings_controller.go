@@ -21,6 +21,16 @@ func RegisterGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
 // handleGetGameSettings returns the saved settings for the game type given in
 // the game_type query parameter.
 // Protected: Requires JWT authentication
+// @Summary  Get the settings for a game type
+// @Tags     game-settings
+// @Security BearerAuth
+// @Produce  json
+// @Param    game_type query string true "Game type identifier"
+// @Success  200 {object} dtos.GameSettingsResponse "settings is null if none saved yet"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid game_type"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/game-settings [get]
 func handleGetGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)
@@ -51,6 +61,16 @@ func handleGetGameSettings(q database.Querier) http.HandlerFunc {
 
 // handleUpdateGameSettings upserts the settings for one game type.
 // Protected: Requires JWT authentication
+// @Summary  Update the settings for a game type
+// @Tags     game-settings
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    settings body dtos.GameSettingsRequest true "Settings to save"
+// @Success  200 {object} dtos.GameSettingsResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Router   /api/game-settings [put]
 func handleUpdateGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)
