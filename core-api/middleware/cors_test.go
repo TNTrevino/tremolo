@@ -5,92 +5,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
 // testOrigins is the shape main.go builds: an explicit list, no wildcard.
 var testOrigins = []string{"http://localhost:5173", "https://tremolonotes.com"}
 
-// ginCORSHandler builds the exact middleware main.go used before this
-// package existed, so the two can be compared request by request.
-func ginCORSHandler() http.Handler {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	config := cors.DefaultConfig()
-	config.AllowOrigins = testOrigins
-	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	router.Use(cors.New(config))
-
-	router.Any("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
-	return router
-}
-
-// stdlibCORSHandler is the replacement, wrapped around a handler that
-// answers /ping the same way.
-func stdlibCORSHandler() http.Handler {
+func corsTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("pong"))
 	})
 	return CORS(testOrigins)(mux)
-}
-
-// CORS is the one piece of this migration a unit test cannot judge on its
-// own: "correct" means "whatever the browser already accepts". So the two
-// implementations answer the same requests and the answers are compared.
-// Delete this test with the gin dependency.
-func TestCORS_MatchesGinContribCors(t *testing.T) {
-	t.Parallel()
-
-	requests := map[string]struct {
-		method string
-		origin string
-	}{
-		"no origin":                {http.MethodGet, ""},
-		"allowed origin":           {http.MethodGet, "http://localhost:5173"},
-		"allowed origin, post":     {http.MethodPost, "https://tremolonotes.com"},
-		"disallowed origin":        {http.MethodGet, "http://evil.example.com"},
-		"preflight, allowed":       {http.MethodOptions, "http://localhost:5173"},
-		"preflight, disallowed":    {http.MethodOptions, "http://evil.example.com"},
-		"origin differing in case": {http.MethodGet, "http://LOCALHOST:5173"},
-	}
-
-	compared := []string{
-		"Access-Control-Allow-Origin",
-		"Access-Control-Allow-Methods",
-		"Access-Control-Allow-Headers",
-		"Access-Control-Max-Age",
-		"Access-Control-Allow-Credentials",
-		"Vary",
-	}
-
-	ginHandler := ginCORSHandler()
-	stdHandler := stdlibCORSHandler()
-
-	for name, req := range requests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			ginResp := serveCORS(ginHandler, req.method, req.origin)
-			stdResp := serveCORS(stdHandler, req.method, req.origin)
-
-			assert.Equal(t, ginResp.Code, stdResp.Code, "status code")
-			assert.Equal(t, ginResp.Body.String(), stdResp.Body.String(), "body")
-			for _, header := range compared {
-				assert.Equal(t,
-					ginResp.Header().Values(header),
-					stdResp.Header().Values(header),
-					"header %s", header)
-			}
-		})
-	}
 }
 
 func serveCORS(h http.Handler, method, origin string) *httptest.ResponseRecorder {
@@ -109,6 +36,110 @@ func serveCORS(h http.Handler, method, origin string) *httptest.ResponseRecorder
 	return w
 }
 
+// These are golden values, not invented ones. While gin was still a
+// dependency this test ran gin-contrib/cors and this implementation
+// against the same requests and compared every header; the values below
+// are what that comparison agreed on. They are asserted literally now
+// because gin is gone and the comparison cannot be re-run -- but the
+// browser contract they encode has not changed, so a diff here is a
+// regression rather than a rewrite.
+//
+// The comparison found one real difference before it was retired:
+// gin-contrib lowercases the configured origins but compares the
+// request's Origin exactly as sent, so a mixed-case Origin is a 403.
+// That case is kept below.
+func TestCORS_GoldenResponses(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		method  string
+		origin  string
+		status  int
+		body    string
+		headers map[string][]string
+	}{
+		"no origin passes through untouched": {
+			method: http.MethodGet, origin: "",
+			status: http.StatusOK, body: "pong",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin": nil,
+				"Vary":                        nil,
+			},
+		},
+		"allowed origin gets the echo and a Vary": {
+			method: http.MethodGet, origin: "http://localhost:5173",
+			status: http.StatusOK, body: "pong",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin": {"http://localhost:5173"},
+				"Vary":                        {"Origin"},
+				// Only a preflight carries these.
+				"Access-Control-Allow-Methods": nil,
+				"Access-Control-Max-Age":       nil,
+			},
+		},
+		"credentials are never allowed": {
+			method: http.MethodPost, origin: "https://tremolonotes.com",
+			status: http.StatusOK, body: "pong",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin":      {"https://tremolonotes.com"},
+				"Access-Control-Allow-Credentials": nil,
+			},
+		},
+		"unlisted origin is a bare 403": {
+			method: http.MethodGet, origin: "http://evil.example.com",
+			status: http.StatusForbidden, body: "",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin": nil,
+			},
+		},
+		"origin differing only in case is still a 403": {
+			method: http.MethodGet, origin: "http://LOCALHOST:5173",
+			status: http.StatusForbidden, body: "",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin": nil,
+			},
+		},
+		"preflight answers 204 with the full set": {
+			method: http.MethodOptions, origin: "http://localhost:5173",
+			status: http.StatusNoContent, body: "",
+			headers: map[string][]string{
+				"Access-Control-Allow-Origin":  {"http://localhost:5173"},
+				"Access-Control-Allow-Methods": {"GET,POST,PUT,PATCH,DELETE,OPTIONS"},
+				"Access-Control-Allow-Headers": {"Origin,Content-Type,Accept,Authorization"},
+				"Access-Control-Max-Age":       {"43200"},
+				"Vary": {
+					"Origin",
+					"Access-Control-Request-Method",
+					"Access-Control-Request-Headers",
+				},
+			},
+		},
+		"preflight from an unlisted origin is a 403": {
+			method: http.MethodOptions, origin: "http://evil.example.com",
+			status: http.StatusForbidden, body: "",
+			headers: map[string][]string{
+				"Access-Control-Allow-Methods": nil,
+			},
+		},
+	}
+
+	handler := corsTestHandler()
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			w := serveCORS(handler, tt.method, tt.origin)
+
+			assert.Equal(t, tt.status, w.Code, "status")
+			assert.Equal(t, tt.body, w.Body.String(), "body")
+			for header, want := range tt.headers {
+				assert.Equal(t, want, w.Header().Values(header), "header %s", header)
+			}
+		})
+	}
+}
+
 // A request whose Origin is the service's own host is not cross-origin,
 // and gin-contrib let it through with no CORS headers at all. A handler
 // that instead answered 403 would break the deployed same-host setup.
@@ -120,7 +151,7 @@ func TestCORS_SameOriginPassesThroughUntouched(t *testing.T) {
 	r.Header.Set("Origin", "https://api.tremolonotes.com")
 	w := httptest.NewRecorder()
 
-	stdlibCORSHandler().ServeHTTP(w, r)
+	corsTestHandler().ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "pong", w.Body.String())

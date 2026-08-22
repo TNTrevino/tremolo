@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ import (
 
 	"sight-reading/logger"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -117,14 +115,13 @@ func GetJWTSecret() []byte {
 }
 
 // errWrongTokenType marks a token that parses and verifies but is a
-// refresh token presented where an access token is required. It is the one
-// failure the middleware reports differently, so the two implementations
-// below both need to tell it apart from a plain rejection.
+// refresh token presented where an access token is required. It is the
+// one failure RequireAuth reports differently, with "Invalid token type"
+// rather than "Unauthorized".
 var errWrongTokenType = errors.New("token is not an access token")
 
 // accessTokenClaims validates an Authorization header and returns the
-// claims it carries. It is the shared core of the gin middleware and the
-// net/http one, so a token accepted by one is accepted by the other.
+// claims it carries. RequireAuth is its only caller.
 //
 // Every failure except errWrongTokenType is deliberately
 // indistinguishable: a missing header, a malformed header, a bad
@@ -163,46 +160,4 @@ func accessTokenClaims(authHeader string) (*Claims, error) {
 	}
 
 	return claims, nil
-}
-
-// GetAuthenticatedUserID extracts and validates the authenticated user ID from the Gin context
-// This is a helper function to reduce boilerplate in handlers that use AuthMiddleware
-// Returns the user ID or an error if extraction fails
-// Callers are responsible for handling the error and setting appropriate HTTP responses
-func GetAuthenticatedUserID(c *gin.Context) (int, error) {
-	userIDInterface, exists := c.Get("userID")
-	if !exists {
-		return 0, errors.New("Unauthorized")
-	}
-
-	authenticatedUserID, ok := userIDInterface.(int)
-	if !ok {
-		return 0, errors.New("Unauthorized")
-	}
-
-	return authenticatedUserID, nil
-}
-
-// AuthMiddleware validates JWT tokens and adds user ID to context.
-//
-// Deprecated: this is the gin implementation, kept only while routes are
-// still served by the mounted gin fallback. Converted routes use
-// RequireAuth. Delete it with the fallback.
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		claims, err := accessTokenClaims(c.GetHeader("Authorization"))
-		if err != nil {
-			message := "Unauthorized"
-			if errors.Is(err, errWrongTokenType) {
-				message = "Invalid token type"
-			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": message})
-			c.Abort()
-			return
-		}
-
-		// add user id to context
-		c.Set("userID", claims.UserID)
-		c.Next()
-	}
 }
