@@ -27,9 +27,8 @@ func RegisterNoteGameRoutes(mux *http.ServeMux, q database.Querier) {
 // Protected: Requires JWT authentication
 func handleCreateNoteGameEntry(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authenticatedUserID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -39,14 +38,13 @@ func handleCreateNoteGameEntry(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		ctx := r.Context()
-		entryID, err := services.CreateNoteGameEntry(ctx, q, authenticatedUserID, &entry)
+		entryID, err := services.CreateNoteGameEntry(r.Context(), q, userID, &entry)
 		if err != nil {
 			if errors.Is(err, services.ErrUnauthorized) {
 				httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Not authorized"})
 				return
 			}
-			logger.Error("failed to create note game entry", "error", err, "userID", authenticatedUserID)
+			logger.Error("failed to create note game entry", "error", err, "userID", userID)
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Failed to save entry"})
 			return
 		}
@@ -62,16 +60,14 @@ func handleCreateNoteGameEntry(q database.Querier) http.HandlerFunc {
 // Protected: Requires JWT authentication
 func handleGetRecentNoteGameEntries(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authenticatedUserID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
 		gameType := r.URL.Query().Get("game_type")
 
-		ctx := r.Context()
-		entries, err := services.GetRecentNoteGameEntries(ctx, q, authenticatedUserID, gameType)
+		entries, err := services.GetRecentNoteGameEntries(r.Context(), q, userID, gameType)
 		if err != nil {
 			if errors.Is(err, services.ErrValidation) {
 				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid game_type"})
@@ -89,14 +85,12 @@ func handleGetRecentNoteGameEntries(q database.Querier) http.HandlerFunc {
 // Protected: Requires JWT authentication
 func handleGetDailyActivityCounts(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authenticatedUserID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
-		ctx := r.Context()
-		counts, err := services.GetDailyActivityCounts(ctx, q, authenticatedUserID)
+		counts, err := services.GetDailyActivityCounts(r.Context(), q, userID)
 		if err != nil {
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch activity data"})
 			return

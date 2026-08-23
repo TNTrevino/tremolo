@@ -70,9 +70,8 @@ func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 // Protected: requires JWT authentication.
 func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uid, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		uid, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -236,9 +235,8 @@ func respondRegisterError(w http.ResponseWriter, err error) {
 // Protected: Requires JWT authentication
 func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uid, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		uid, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 

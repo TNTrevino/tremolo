@@ -20,9 +20,8 @@ func RegisterFriendsRoutes(mux *http.ServeMux, q database.Querier) {
 
 func handleGetFriends(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -38,9 +37,8 @@ func handleGetFriends(q database.Querier) http.HandlerFunc {
 
 func handleSearchUsers(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -66,9 +64,8 @@ type addFriendRequest struct {
 
 func handleAddFriend(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 

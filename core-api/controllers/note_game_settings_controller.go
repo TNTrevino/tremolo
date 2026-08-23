@@ -20,14 +20,12 @@ func RegisterNoteGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
 
 func handleGetNoteGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
-		ctx := r.Context()
-		result, err := services.GetNoteGameSettings(ctx, q, userID)
+		result, err := services.GetNoteGameSettings(r.Context(), q, userID)
 		if err != nil {
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch settings"})
 			return
@@ -44,9 +42,8 @@ func handleGetNoteGameSettings(q database.Querier) http.HandlerFunc {
 
 func handleUpdateNoteGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -56,8 +53,7 @@ func handleUpdateNoteGameSettings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		ctx := r.Context()
-		result, err := services.UpsertNoteGameSettings(ctx, q, userID, &req)
+		result, err := services.UpsertNoteGameSettings(r.Context(), q, userID, &req)
 		if err != nil {
 			logger.Error("failed to update note game settings", "error", err, "userID", userID)
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Failed to update settings"})

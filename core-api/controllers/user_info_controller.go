@@ -22,9 +22,8 @@ func RegisterUserInfoRoutes(mux *http.ServeMux, q database.Querier) {
 // Protected: Requires JWT authentication, users can only access their own data
 func handleGetGeneralUserInfo(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authenticatedUserID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		authenticatedUserID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 

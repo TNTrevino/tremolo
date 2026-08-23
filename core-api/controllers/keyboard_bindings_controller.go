@@ -23,14 +23,12 @@ func RegisterKeyboardBindingsRoutes(mux *http.ServeMux, q database.Querier) {
 
 func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
-		ctx := r.Context()
-		result, err := services.GetKeyboardBindings(ctx, q, userID)
+		result, err := services.GetKeyboardBindings(r.Context(), q, userID)
 		if err != nil {
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch keyboard bindings"})
 			return
@@ -47,9 +45,8 @@ func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 
 func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -59,8 +56,7 @@ func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		ctx := r.Context()
-		result, err := services.UpsertKeyboardBindings(ctx, q, userID, &req)
+		result, err := services.UpsertKeyboardBindings(r.Context(), q, userID, &req)
 		if err != nil {
 			var validationErr *services.ValidationError
 			if errors.As(err, &validationErr) {

@@ -23,16 +23,14 @@ func RegisterGameSettingsRoutes(mux *http.ServeMux, q database.Querier) {
 // Protected: Requires JWT authentication
 func handleGetGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
 		gameType := r.URL.Query().Get("game_type")
 
-		ctx := r.Context()
-		result, err := services.GetGameSettings(ctx, q, userID, gameType)
+		result, err := services.GetGameSettings(r.Context(), q, userID, gameType)
 		if err != nil {
 			if errors.Is(err, services.ErrValidation) {
 				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid game_type"})
@@ -55,9 +53,8 @@ func handleGetGameSettings(q database.Querier) http.HandlerFunc {
 // Protected: Requires JWT authentication
 func handleUpdateGameSettings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := middleware.AuthenticatedUserID(r)
-		if err != nil {
-			httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
 
@@ -67,8 +64,7 @@ func handleUpdateGameSettings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		ctx := r.Context()
-		result, err := services.UpsertGameSettings(ctx, q, userID, &req)
+		result, err := services.UpsertGameSettings(r.Context(), q, userID, &req)
 		if err != nil {
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": err.Error()})
 			return
