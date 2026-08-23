@@ -5,6 +5,11 @@ definitions:
       friend_id:
         type: integer
     type: object
+  controllers.refreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
   dtos.AssignmentAttempt:
     properties:
       accuracy:
@@ -915,7 +920,7 @@ paths:
         name: body
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/controllers.refreshTokenRequest'
       produces:
       - application/json
       responses:

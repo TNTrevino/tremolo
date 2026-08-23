@@ -452,7 +452,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/controllers.refreshTokenRequest"
                         }
                     }
                 ],
@@ -2050,6 +2050,14 @@
             "properties": {
                 "friend_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "controllers.refreshTokenRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
                 }
             }
         },

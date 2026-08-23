@@ -86,9 +86,12 @@ jobs:
       # The OpenAPI spec is generated from swag annotations on the
       # controllers plus the general API info in main.go, not hand-written.
       # The pre-commit hook regenerates it locally, but this is the
-      # backstop for a bypassed hook or a stale checked-in spec.
+      # backstop for a bypassed hook or a stale checked-in spec. Pinned
+      # (matching the version in .githooks/pre-commit's install hint) so a
+      # new swag release can't change the generated formatting and fail
+      # this diff check on an otherwise-unrelated PR.
       - name: Install swag CLI
-        run: go install github.com/swaggo/swag/cmd/swag@latest
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.6
 
       - name: Check OpenAPI spec is up to date
         run: |
