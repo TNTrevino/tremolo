@@ -73,8 +73,8 @@ type Validator interface {
 
 The method is named `Valid`, takes a `context.Context`, and returns a map
 of JSON field name to problem text. The context exists so a rule can reach
-the database. No rule needs it today. `validations.ValidateTeacherRole`
-already shows the shape a future rule would take.
+the database. No rule needs it today. A uniqueness check on an email, or a
+role lookup, is the kind of rule that would.
 
 Every `Valid` method uses a **value receiver**:
 
@@ -257,8 +257,7 @@ Three effects are accepted, not accidental.
 
 - No frontend change. The wire format is preserved.
 - No new validation rules.
-- No change to `validations/http_params.go` or `validations/auth_validators.go`.
-  Neither imports the library.
+- No change to `validations/http_params.go`. It does not import the library.
 
 ## Implementation
 
