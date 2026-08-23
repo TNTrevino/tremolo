@@ -18,8 +18,8 @@ var userIDContextKey = &contextKey{"userID"}
 
 // RequireAuth rejects a request that does not carry a valid access token,
 // and hands a request that does to next with the caller's user ID in its
-// context. It is the net/http replacement for AuthMiddleware and returns
-// the same two response bodies.
+// context. It answers 401 with either "Unauthorized" or, for a refresh
+// token presented in place of an access token, "Invalid token type".
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, err := accessTokenClaims(r.Header.Get("Authorization"))
@@ -32,14 +32,14 @@ func RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(WithUserID(r.Context(), claims.UserID)))
+		next.ServeHTTP(w, r.WithContext(withUserID(r.Context(), claims.UserID)))
 	})
 }
 
-// WithUserID returns a copy of ctx carrying userID. Only RequireAuth needs
-// it in production; it is exported so tests can build an authenticated
-// request without minting a token.
-func WithUserID(ctx context.Context, userID int) context.Context {
+// withUserID returns a copy of ctx carrying userID. RequireAuth is the
+// only writer: a handler downstream reads the ID back through
+// AuthenticatedUserID, so nothing outside this file needs to set it.
+func withUserID(ctx context.Context, userID int) context.Context {
 	return context.WithValue(ctx, userIDContextKey, userID)
 }
 
