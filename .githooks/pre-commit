@@ -89,7 +89,7 @@ if has_staged_files_in "^core-api/"; then
       git add "$REPO_ROOT/core-api/openapi/"
     else
       echo "Warning: swag CLI not installed. Skipping OpenAPI regeneration."
-      echo "  Run: go install github.com/swaggo/swag/cmd/swag@latest"
+      echo "  Run: go install github.com/swaggo/swag/cmd/swag@v1.16.6"
     fi
   fi
 fi

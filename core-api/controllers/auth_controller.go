@@ -311,12 +311,20 @@ func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// refreshTokenRequest is the request body for POST /api/auth/refresh. It is
+// a named type (rather than the anonymous struct httpx.Decode was called
+// with before) so swag has a real schema to document instead of a bare
+// "object" with a dropped example.
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 // handleRefreshToken handles POST /api/auth/refresh.
 // @Summary  Refresh an access token
 // @Tags     auth
 // @Accept   json
 // @Produce  json
-// @Param    body body object true "Refresh token" example({"refresh_token": "..."})
+// @Param    body body refreshTokenRequest true "Refresh token"
 // @Success  200 {object} map[string]interface{} "access_token"
 // @Failure  400 {object} dtos.ErrorResponse "Refresh token is required"
 // @Failure  401 {object} dtos.ErrorResponse "Invalid or expired refresh token"
@@ -324,9 +332,7 @@ func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 // @Router   /api/auth/refresh [post]
 func handleRefreshToken() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[struct {
-			RefreshToken string `json:"refresh_token"`
-		}](r)
+		reqBody, err := httpx.Decode[refreshTokenRequest](r)
 		if err != nil || reqBody.RefreshToken == "" {
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Refresh token is required"})
 			return
