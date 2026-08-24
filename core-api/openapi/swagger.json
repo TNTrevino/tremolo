@@ -2214,14 +2214,6 @@
         },
         "dtos.CreateUserRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "first_name",
-                "last_name",
-                "password",
-                "role",
-                "school_id"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -2233,8 +2225,7 @@
                     "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 },
                 "role": {
                     "$ref": "#/definitions/dtos.Role"
@@ -2257,20 +2248,13 @@
         },
         "dtos.Entry": {
             "type": "object",
-            "required": [
-                "correct_questions",
-                "notes_per_minute",
-                "time_length",
-                "total_questions",
-                "user_id"
-            ],
             "properties": {
                 "assignment_id": {
                     "description": "Optional: tags this entry as an attempt at a class assignment.",
                     "type": "integer"
                 },
                 "correct_questions": {
-                    "description": "FIXME: `required` rejects the zero value, so a game where the player got\nnothing right cannot be saved: the POST 400s and the attempt is lost.\nA beginner scoring 0/10 is exactly who this hits. Use `min=0` (or drop\nthe tag and rely on the CorrectQuestions \u003c= TotalQuestions rule below).",
+                    "description": "FIXME: Valid rejects the zero value, so a game where the player got\nnothing right cannot be saved: the POST 400s and the attempt is lost.\nA beginner scoring 0/10 is exactly who this hits. Drop the presence\ncheck and rely on the CorrectQuestions \u003c= TotalQuestions rule.",
                     "type": "integer"
                 },
                 "createdDate": {
@@ -2396,10 +2380,6 @@
         },
         "dtos.GoogleCallbackRequest": {
             "type": "object",
-            "required": [
-                "code",
-                "redirect_uri"
-            ],
             "properties": {
                 "code": {
                     "type": "string"
@@ -2419,121 +2399,74 @@
         },
         "dtos.KeyBindings": {
             "type": "object",
-            "required": [
-                "key_a",
-                "key_a_flat",
-                "key_a_sharp",
-                "key_b",
-                "key_b_flat",
-                "key_b_sharp",
-                "key_c",
-                "key_c_flat",
-                "key_c_sharp",
-                "key_d",
-                "key_d_flat",
-                "key_d_sharp",
-                "key_e",
-                "key_e_flat",
-                "key_e_sharp",
-                "key_f",
-                "key_f_flat",
-                "key_f_sharp",
-                "key_g",
-                "key_g_flat",
-                "key_g_sharp"
-            ],
             "properties": {
                 "key_a": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_a_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_a_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_b": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_b_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_b_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_c": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_c_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_c_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_d": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_d_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_d_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_e": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_e_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_e_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_f": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_f_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_f_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_g": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_g_flat": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "key_g_sharp": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 }
             }
         },
         "dtos.KeyboardBindingsRequest": {
             "type": "object",
-            "required": [
-                "key_bindings"
-            ],
             "properties": {
                 "key_bindings": {
                     "$ref": "#/definitions/dtos.KeyBindings"
@@ -2556,17 +2489,12 @@
         },
         "dtos.LoginRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 }
             }
         },
@@ -2644,30 +2572,12 @@
         },
         "dtos.NoteGameSettingsRequest": {
             "type": "object",
-            "required": [
-                "clef",
-                "game_mode",
-                "high_note",
-                "low_note",
-                "note_limit",
-                "octave",
-                "scale",
-                "time_limit"
-            ],
             "properties": {
                 "clef": {
-                    "type": "string",
-                    "enum": [
-                        "treble",
-                        "bass"
-                    ]
+                    "type": "string"
                 },
                 "game_mode": {
-                    "type": "string",
-                    "enum": [
-                        "time",
-                        "notes"
-                    ]
+                    "type": "string"
                 },
                 "high_note": {
                     "type": "string"
@@ -2676,30 +2586,16 @@
                     "type": "string"
                 },
                 "note_limit": {
-                    "type": "integer",
-                    "enum": [
-                        10,
-                        25,
-                        50,
-                        100
-                    ]
+                    "type": "integer"
                 },
                 "octave": {
-                    "type": "integer",
-                    "maximum": 9,
-                    "minimum": 1
+                    "type": "integer"
                 },
                 "scale": {
                     "type": "string"
                 },
                 "time_limit": {
-                    "type": "integer",
-                    "enum": [
-                        15,
-                        30,
-                        60,
-                        120
-                    ]
+                    "type": "integer"
                 }
             }
         },
@@ -2740,36 +2636,21 @@
         },
         "dtos.RegisterRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "first_name",
-                "last_name",
-                "password",
-                "role"
-            ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
                 "first_name": {
-                    "type": "string",
-                    "minLength": 2
+                    "type": "string"
                 },
                 "last_name": {
-                    "type": "string",
-                    "minLength": 2
+                    "type": "string"
                 },
                 "password": {
-                    "type": "string",
-                    "minLength": 8
+                    "type": "string"
                 },
                 "role": {
-                    "type": "string",
-                    "enum": [
-                        "STUDENT",
-                        "TEACHER",
-                        "PARENT"
-                    ]
+                    "type": "string"
                 }
             }
         },
@@ -2879,13 +2760,6 @@
         },
         "dtos.User": {
             "type": "object",
-            "required": [
-                "email",
-                "first_name",
-                "last_name",
-                "role",
-                "school_id"
-            ],
             "properties": {
                 "created_date": {
                     "$ref": "#/definitions/sql.NullString"
