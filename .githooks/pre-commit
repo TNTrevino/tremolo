@@ -70,6 +70,19 @@ if has_staged_files_in "^core-api/"; then
       exit 1
     fi
 
+    if command -v goimports >/dev/null 2>&1; then
+      echo "Running goimports on staged Go files..."
+      echo "$STAGED_GO_FILES" | xargs goimports -w
+
+      if [ $? -ne 0 ]; then
+        echo "goimports formatting failed."
+        exit 1
+      fi
+    else
+      echo "Warning: goimports not installed. Skipping import formatting."
+      echo "  Run: go install golang.org/x/tools/cmd/goimports@latest"
+    fi
+
     for file in $STAGED_GO_FILES; do
       git add "$REPO_ROOT/$file"
     done
