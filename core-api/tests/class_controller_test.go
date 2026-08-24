@@ -170,9 +170,9 @@ func TestAssignmentRoutes_ListStudentAssignments_Unauthenticated_ReturnsUnauthor
 }
 
 // TestAssignmentRoutes_CreateAssignment_InvalidGameType_ReturnsBadRequest
-// checks that the service-layer Validate() call (still invoked from the
-// service, not the controller) continues to surface as the shared
-// "Invalid request" / ErrValidation mapping.
+// checks that the controller's httpx.DecodeValid call rejects an invalid
+// game_type before the service runs, and reports the specific field
+// problem from CreateAssignmentRequest.Valid.
 func TestAssignmentRoutes_CreateAssignment_InvalidGameType_ReturnsBadRequest(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
@@ -195,7 +195,7 @@ func TestAssignmentRoutes_CreateAssignment_InvalidGameType_ReturnsBadRequest(t *
 
 	var resp map[string]any
 	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Invalid request", resp["error"])
+	assert.Equal(t, "GameType: must be a valid game type", resp["error"])
 }
 
 // TestAssignmentRoutes_DeleteAssignment_PathParam exercises the
