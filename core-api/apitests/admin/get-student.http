@@ -1,0 +1,65 @@
+# Reading a single student by id. ADMIN-only -- see admin/list-teachers.http
+# for why this file only covers the unauthenticated and non-admin paths.
+#
+# A non-numeric {id} is a 422 {"error": true, "message": "Invalid request
+# body"} here, via the same idPathParam helper admin/get-teacher.http
+# documents -- unreachable through this suite for the same reason (it
+# runs after adminOnly, which needs a seeded ADMIN token).
+#
+# Run:  kulala run --tests --env local admin/get-student.http
+
+@student_email = kula_get_student_student_{{$timestamp}}@qa.test
+
+### GetStudentNoToken
+# GetStudentNoToken sends no Authorization header and expects 401.
+< {%
+	client.global.clear();
+%}
+GET {{baseUrl}}/student/1
+
+> {%
+	client.test("no token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterStudent
+# RegisterStudent registers a non-admin actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetStudentNotAdmin
+# GetStudentNotAdmin authenticates as a fresh STUDENT and expects 403.
+GET {{baseUrl}}/student/1
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a non-admin token is forbidden", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(
+			response.body.error === "Forbidden",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

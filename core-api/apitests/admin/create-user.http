@@ -1,0 +1,80 @@
+# Creating a user (student/teacher/parent) as an admin. ADMIN-only --
+# see admin/list-teachers.http for why this file only covers the
+# unauthenticated and non-admin paths.
+#
+# The 200-adjacent paths are all unreachable through this suite: a
+# well-formed body reaching CreateUser needs a seeded ADMIN token, which
+# no self-service route grants. For the record, since it's the one
+# handler in the service with a different error shape from everywhere
+# else in this API -- a malformed body is 422 {"error": true, "message":
+# "Invalid json body", "scenario": "TS.1"}, and a body that parses but
+# fails field validation is 422 {"error": "<problems, same
+# alphabetical-by-JSON-key join as every other DTO>", "message":
+# "Information invalid", "scenario": "TS.2"}. Both are covered by
+# core-api/tests/admin_controller_test.go via DB seeding.
+#
+# Run:  kulala run --tests --env local admin/create-user.http
+
+@student_email = kula_create_user_student_{{$timestamp}}@qa.test
+
+### CreateUserNoToken
+# CreateUserNoToken sends no Authorization header and expects 401.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/user
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("no token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterStudent
+# RegisterStudent registers a non-admin actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### CreateUserNotAdmin
+# CreateUserNotAdmin authenticates as a fresh STUDENT and expects 403 --
+# the role check runs before the body is decoded, so even an empty body
+# never reaches the 422 paths documented above.
+POST {{baseUrl}}/user
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("a non-admin token is forbidden", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(
+			response.body.error === "Forbidden",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

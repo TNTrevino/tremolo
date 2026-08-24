@@ -1,0 +1,18 @@
+# Health check for the Go service. Pings the raw database connection
+# rather than running a query, so it fails fast if Postgres itself is
+# unreachable.
+#
+# Run:  kulala run --tests --env local health/get-health.http
+
+### GetHealth
+# GetHealth checks that the service and its database connection are
+# both up and expects 200 with a "healthy" status.
+GET {{baseUrl}}/health
+
+> {%
+	client.test("get health reports the service healthy", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.status === "healthy", "status is healthy, got " + response.body.status);
+		client.assert(response.body.checks.database === "connected", "database check passed");
+	});
+%}

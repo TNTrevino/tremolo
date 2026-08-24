@@ -1,0 +1,278 @@
+# Saving the caller's note-game settings. Every rule on
+# NoteGameSettingsRequest.Valid is an independent `if` (not a switch),
+# so each block below breaks exactly one field to pin down its exact
+# message in isolation.
+#
+# Run:  kulala run --tests --env local note-game/update-settings.http
+
+@student_email = kula_update_note_settings_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### UpdateSettings
+# UpdateSettings saves a well-formed payload and expects 200 with every
+# field echoed back.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("a well-formed settings payload is saved", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.game_mode === "time", "game_mode echoes back");
+		client.assert(response.body.clef === "treble", "clef echoes back");
+	});
+%}
+
+### UpdateSettingsBadGameMode
+# UpdateSettingsBadGameMode sends a game_mode outside {"time", "notes"}.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "endless",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("an unsupported game_mode is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "GameMode: must be 'time' or 'notes'",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBadTimeLimit
+# UpdateSettingsBadTimeLimit sends a time_limit outside {15, 30, 60, 120}.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 99,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("an unsupported time_limit is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "TimeLimit: must be 15, 30, 60, or 120",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBadNoteLimit
+# UpdateSettingsBadNoteLimit sends a note_limit outside {10, 25, 50, 100}.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 99,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("an unsupported note_limit is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "NoteLimit: must be 10, 25, 50, or 100",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBlankScale
+# UpdateSettingsBlankScale omits scale entirely.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("a blank scale is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Scale: is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsOctaveOutOfRange
+# UpdateSettingsOctaveOutOfRange sends an octave outside 1-9.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 10,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("an out-of-range octave is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Octave: must be between 1 and 9",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBadLowNote
+# UpdateSettingsBadLowNote sends a low_note with an accidental -- the
+# range endpoints must be natural notes only ([A-G][0-9]).
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C#4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("a low_note with an accidental is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "LowNote: must be a natural note like C4",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBadHighNote
+# UpdateSettingsBadHighNote sends a high_note with an accidental, same
+# rule as low_note.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C#5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("a high_note with an accidental is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "HighNote: must be a natural note like C4",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateSettingsBadClef
+# UpdateSettingsBadClef sends a clef outside {"treble", "bass"} -- the
+# note game supports fewer clefs than the identification games.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "alto"
+}
+
+> {%
+	client.test("an unsupported clef is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Clef: must be 'treble' or 'bass'",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

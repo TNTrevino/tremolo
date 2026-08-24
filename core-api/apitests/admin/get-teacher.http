@@ -1,0 +1,70 @@
+# Reading a single teacher by id. ADMIN-only -- see admin/list-teachers.http
+# for why this file only covers the unauthenticated and non-admin paths.
+#
+# A non-numeric {id} is a 422 {"error": true, "message": "Invalid request
+# body"} here, via the admin-only idPathParam helper -- distinct from the
+# 400 "Invalid id" that pathID produces on the class/assignment routes.
+# That inconsistency is intentional (idPathParam reproduces the
+# pre-refactor handler's behavior byte-for-byte); do not "fix" it. It is
+# also unreachable through this suite: idPathParam only runs after
+# adminOnly, so exercising it needs a seeded ADMIN token -- see
+# core-api/tests/admin_controller_test.go.
+#
+# Run:  kulala run --tests --env local admin/get-teacher.http
+
+@student_email = kula_get_teacher_student_{{$timestamp}}@qa.test
+
+### GetTeacherNoToken
+# GetTeacherNoToken sends no Authorization header and expects 401.
+< {%
+	client.global.clear();
+%}
+GET {{baseUrl}}/teacher/1
+
+> {%
+	client.test("no token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterStudent
+# RegisterStudent registers a non-admin actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetTeacherNotAdmin
+# GetTeacherNotAdmin authenticates as a fresh STUDENT and expects 403 --
+# the role check runs before the {id} path value is even parsed.
+GET {{baseUrl}}/teacher/1
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a non-admin token is forbidden", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(
+			response.body.error === "Forbidden",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

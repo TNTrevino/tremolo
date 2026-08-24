@@ -1,0 +1,158 @@
+# Reading a class roster. Only the owning teacher may see it.
+#
+# Run:  kulala run --tests --env local classes/get-roster.http
+
+@teacher_email  = kula_roster_teacher_{{$timestamp}}@qa.test
+@student1_email = kula_roster_student1_{{$timestamp}}@qa.test
+@student2_email = kula_roster_student2_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent1
+# RegisterStudent1 registers the first enrolled student.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers a second enrolled student.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_login_email", response.body.user.email);
+%}
+
+### LoginStudent2
+# LoginStudent2 logs student2 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student2_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student2_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for both students to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinStudent1
+# JoinStudent1 enrolls student1 in the class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student1 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### JoinStudent2
+# JoinStudent2 enrolls student2 in the class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student2_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student2 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### GetRoster
+# GetRoster has the owning teacher read the roster and expects 200 with
+# both enrolled students.
+GET {{baseUrl}}/api/classes/{{class_id}}/roster
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("roster lists both enrolled students", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 2, "two students on the roster, got " + response.body.length);
+	});
+%}
+
+### GetRosterNotOwner
+# GetRosterNotOwner has an enrolled student (not the owning teacher) try
+# to read the roster and expects 403.
+GET {{baseUrl}}/api/classes/{{class_id}}/roster
+Authorization: Bearer {{student1_token}}
+
+> {%
+	client.test("a student cannot read the roster", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### GetRosterNonNumericId
+# GetRosterNonNumericId sends a path id that isn't a number. This route
+# uses the pathID helper, which reports a generic 400 -- unlike the
+# admin routes' idPathParam helper, which reports 422 for the same
+# shape of mistake (see admin/get-teacher.http).
+GET {{baseUrl}}/api/classes/not-a-number/roster
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("a non-numeric class id is a 400, not a 404", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(response.body.error === "Invalid id", "unexpected error string: " + response.body.error);
+	});
+%}

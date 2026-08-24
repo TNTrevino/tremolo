@@ -1,0 +1,116 @@
+# Exchanging a refresh token for a new access token. This handler does
+# not use httpx.DecodeError: a malformed body and a missing token
+# produce the same 400 message.
+#
+# Run:  kulala run --tests --env local auth/refresh.http
+
+@email = kula_refresh_{{$randomInt}}@qa.test
+
+### Register
+# Register creates the account this file logs in with and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.global.set("refresh_login_email", response.body.user.email);
+%}
+
+### Login
+# Login stashes both the access and refresh tokens Refresh will exercise.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{refresh_login_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.test("login returns both tokens", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+	client.global.set("access_token", response.body.access_token);
+	client.global.set("refresh_token", response.body.refresh_token);
+%}
+
+### Refresh
+# Refresh trades the stashed refresh token for a new access token and
+# expects 200.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refresh_token": "{{refresh_token}}" }
+
+> {%
+	client.test("refresh returns a new access token", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(!!response.body.access_token, "response carries a new access token");
+	});
+%}
+
+### RefreshEmptyBody
+# RefreshEmptyBody omits refresh_token and expects 400 with the exact
+# message -- a malformed body would get the same message.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("a missing refresh token is a 400", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Refresh token is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RefreshGarbageToken
+# RefreshGarbageToken sends a string that isn't a JWT at all and expects
+# 401 -- it never parses, so it's an invalid refresh token, not a wrong
+# token type.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refresh_token": "not-a-real-jwt" }
+
+> {%
+	client.test("an unparseable refresh token is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid refresh token",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RefreshWithAccessToken
+# RefreshWithAccessToken presents an access token where a refresh token
+# belongs. It parses fine, but its type claim is wrong, so this is a
+# distinct message from a token that never parsed at all.
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refresh_token": "{{access_token}}" }
+
+> {%
+	client.test("an access token used as a refresh token is the wrong type", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid token type",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

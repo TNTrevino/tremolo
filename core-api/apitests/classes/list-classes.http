@@ -1,0 +1,96 @@
+# Listing a teacher's own classes. No admin/ownership gate beyond
+# authentication -- every caller gets their own scoped list, which is
+# what the second block below proves.
+#
+# Run:  kulala run --tests --env local classes/list-classes.http
+
+@teacher1_email = kula_list_classes_t1_{{$timestamp}}@qa.test
+@teacher2_email = kula_list_classes_t2_{{$timestamp}}@qa.test
+
+### RegisterTeacher1
+# RegisterTeacher1 registers the first teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher1_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "One", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher1_login_email", response.body.user.email);
+%}
+
+### LoginTeacher1
+# LoginTeacher1 logs the first teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher1_token", response.body.access_token);
+%}
+
+### RegisterTeacher2
+# RegisterTeacher2 registers a second, unrelated teacher actor.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher2_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Two", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher2_login_email", response.body.user.email);
+%}
+
+### LoginTeacher2
+# LoginTeacher2 logs the second teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher2_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher2_token", response.body.access_token);
+%}
+
+### Teacher1CreatesClass
+# Teacher1CreatesClass gives teacher1 exactly one class to list.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher1_token}}
+Content-Type: application/json
+
+{ "name": "Teacher1's Band" }
+
+> {%
+	client.test("teacher1 creates a class", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### ListClasses
+# ListClasses has teacher1 list their classes and expects to see the
+# one they just created, and nothing from teacher2, who owns nothing.
+GET {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher1_token}}
+
+> {%
+	client.test("teacher1 sees only their own class", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var names = response.body.map(function (c) { return c.name; });
+		client.assert(names.indexOf("Teacher1's Band") !== -1, "the created class is in the list");
+	});
+%}
+
+### ListClassesEmptyForOwnerlessTeacher
+# ListClassesEmptyForOwnerlessTeacher has teacher2, who owns no classes,
+# list their classes and expects an empty array, not an error.
+GET {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher2_token}}
+
+> {%
+	client.test("a teacher with no classes gets an empty list, not an error", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 0, "expected an empty array, got " + response.body.length + " classes");
+	});
+%}

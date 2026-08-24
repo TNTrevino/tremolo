@@ -1,0 +1,124 @@
+# Deleting an assignment. Only the owning teacher may delete it; tagged
+# score entries survive (their assignment_id foreign key just goes
+# null), which is why this isn't called "archive" like the class route.
+#
+# Run:  kulala run --tests --env local assignments/delete-assignment.http
+
+@teacher_email       = kula_delete_assignment_teacher_{{$timestamp}}@qa.test
+@other_teacher_email = kula_delete_assignment_other_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the owning teacher and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the owning teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterOtherTeacher
+# RegisterOtherTeacher registers an unrelated teacher who does not own
+# the assignment under test.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{other_teacher_email}}", "password": "{{password}}", "first_name": "Other", "last_name": "Teacher", "role": "TEACHER" }
+
+> {%
+	client.global.set("other_teacher_login_email", response.body.user.email);
+%}
+
+### LoginOtherTeacher
+# LoginOtherTeacher logs the other teacher in and stashes the access
+# token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{other_teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("other_teacher_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the owning teacher a class to assign work to.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+%}
+
+### CreateAssignment
+# CreateAssignment gives the owning teacher an assignment to delete.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" }
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### DeleteAssignmentNotOwner
+# DeleteAssignmentNotOwner has an unrelated teacher try to delete the
+# assignment and expects 403.
+DELETE {{baseUrl}}/api/assignments/{{assignment_id}}
+Authorization: Bearer {{other_teacher_token}}
+
+> {%
+	client.test("a non-owning teacher cannot delete the assignment", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### DeleteAssignment
+# DeleteAssignment has the owning teacher delete the assignment and
+# expects 200 with a confirmation message.
+DELETE {{baseUrl}}/api/assignments/{{assignment_id}}
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("the owning teacher deletes the assignment", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.message === "Assignment deleted", "unexpected message: " + response.body.message);
+	});
+%}
+
+### DeleteUnknownAssignment
+# DeleteUnknownAssignment targets an id nothing was ever created with
+# and expects 404.
+DELETE {{baseUrl}}/api/assignments/999999999
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("deleting an unknown assignment is a 404", function () {
+		client.assert(response.status === 404, "expected 404, got " + response.status);
+		client.assert(response.body.error === "Not found", "unexpected error string: " + response.body.error);
+	});
+%}

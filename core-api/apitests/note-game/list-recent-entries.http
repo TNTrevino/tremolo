@@ -1,0 +1,92 @@
+# The caller's own recent score entries for one game type.
+#
+# Run:  kulala run --tests --env local note-game/list-recent-entries.http
+
+@student_email = kula_recent_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### SubmitEntry
+# SubmitEntry gives the student one "note"-type entry to list back.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 12,
+	"game_type": "note"
+}
+
+> {%
+	client.test("entry saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### ListRecentDefaultGameType
+# ListRecentDefaultGameType omits game_type entirely, which normalizes
+# to "note" silently -- not an error -- and expects the entry just
+# submitted.
+GET {{baseUrl}}/api/note-game/recent
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an omitted game_type defaults to note, not an error", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 1, "one entry, got " + response.body.length);
+	});
+%}
+
+### ListRecentExplicitGameType
+# ListRecentExplicitGameType asks for "note" explicitly and expects the
+# same result.
+GET {{baseUrl}}/api/note-game/recent?game_type=note
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an explicit valid game_type returns the same entries", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 1, "one entry, got " + response.body.length);
+	});
+%}
+
+### ListRecentInvalidGameType
+# ListRecentInvalidGameType asks for a game type outside
+# dtos.ValidGameTypes and expects 400.
+GET {{baseUrl}}/api/note-game/recent?game_type=banjo
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an unknown game_type is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(response.body.error === "Invalid game_type", "unexpected error string: " + response.body.error);
+	});
+%}

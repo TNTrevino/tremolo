@@ -1,0 +1,115 @@
+# Creating a class. Only a TEACHER may create one; the response carries
+# a freshly generated 6-character join code.
+#
+# Run:  kulala run --tests --env local classes/create-class.http
+
+@teacher_email = kula_create_class_teacher_{{$timestamp}}@qa.test
+@student_email = kula_create_class_student_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.test("teacher registered", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.test("teacher logged in", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers a STUDENT actor used to prove only teachers
+# can create classes.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass has the teacher create a class and expects 201 with an
+# id, a 6-character join code, and a starting student_count of 0.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.test("teacher creates a class", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.id > 0, "class has an id");
+		client.assert(response.body.join_code.length === 6, "join code is 6 chars");
+		client.assert(response.body.student_count === 0, "starts with no students");
+	});
+%}
+
+### StudentCannotCreateClass
+# StudentCannotCreateClass has a STUDENT attempt to create a class and
+# expects 403 Forbidden.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "name": "Not allowed" }
+
+> {%
+	client.test("a student cannot create a class", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### CreateClassBlankName
+# CreateClassBlankName sends a whitespace-only name -- CreateClassRequest
+# trims before it tests, so whitespace collapses to empty -- and expects
+# 400 with the exact validation message.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "   " }
+
+> {%
+	client.test("a whitespace-only class name is empty", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Name: is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
