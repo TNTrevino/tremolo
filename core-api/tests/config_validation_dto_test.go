@@ -48,6 +48,20 @@ func TestCreateAssignmentValid_RejectsNullConfig(t *testing.T) {
 	assert.Contains(t, problems["config"], "Config")
 }
 
+func TestCreateAssignmentValid_RejectsInvalidGameType(t *testing.T) {
+	t.Parallel()
+
+	req := dtos.CreateAssignmentRequest{
+		Title:    "Week 1",
+		GameType: "kazoo",
+		Config:   json.RawMessage(`{"scale":"C"}`),
+	}
+
+	problems := req.Valid(context.Background())
+
+	assert.Equal(t, "GameType: must be a valid game type", problems["game_type"])
+}
+
 func TestGameSettingsValid_RejectsNullConfig(t *testing.T) {
 	t.Parallel()
 
