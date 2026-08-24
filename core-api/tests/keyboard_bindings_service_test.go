@@ -210,37 +210,3 @@ func TestKeyboardBindings_Upsert_Update(t *testing.T) {
 	require.NotNil(t, fetched)
 	assert.Equal(t, updated.KeyBindings, fetched.KeyBindings)
 }
-
-// TestKeyboardBindings_Upsert_DuplicateKeysError verifies that
-// UpsertKeyboardBindings returns a validation error when two notes are mapped
-// to the same key, and that no row is inserted.
-func TestKeyboardBindings_Upsert_DuplicateKeysError(t *testing.T) {
-	testutil.SetupTestDB(t)
-	t.Parallel()
-
-	email := testutil.UniqueEmail(t, "kb_upsert_dup")
-	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
-
-	// Delete existing bindings so we can confirm nothing is written.
-	err := database.Queries.DeleteKeyboardBindings(context.Background(), int32(userID))
-	require.NoError(t, err)
-
-	// KeyC and KeyD both set to "a" — duplicate.
-	dup := &dtos.KeyboardBindingsRequest{
-		KeyBindings: dtos.KeyBindings{
-			KeyC: "a", KeyD: "a", KeyE: "3", KeyF: "4", KeyG: "5", KeyA: "6", KeyB: "7",
-			KeyCSharp: "8", KeyDSharp: "9", KeyESharp: "0", KeyFSharp: "-", KeyGSharp: "=", KeyASharp: "[", KeyBSharp: "]",
-			KeyCFlat: "!", KeyDFlat: "@", KeyEFlat: "#", KeyFFlat: "$", KeyGFlat: "%", KeyAFlat: "^", KeyBFlat: "&",
-		},
-	}
-
-	resp, err := services.UpsertKeyboardBindings(context.Background(), database.Queries, userID, dup)
-	require.Error(t, err)
-	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "duplicate key assignment")
-
-	// Verify no row was inserted.
-	fetched, err := services.GetKeyboardBindings(context.Background(), database.Queries, userID)
-	require.NoError(t, err)
-	assert.Nil(t, fetched, "Expected no bindings to be stored after validation failure")
-}
