@@ -1,0 +1,65 @@
+# One ascending octave of a random scale, for the scale-identification
+# game. Every list field has min_length=1 and every scale type is a
+# Literal, so an empty list or an out-of-repertoire value both fail
+# Pydantic schema validation -- 422 -- before the handler ever runs.
+#
+# Run:  kulala run --tests --env local music/scale-game.http
+
+### ScaleGame
+# ScaleGame forces a single tonic/scale type/clef and expects 200 with
+# that exact choice echoed back as the answer.
+POST {{baseUrl}}/music/scale-game
+Content-Type: application/json
+
+{
+	"tonicPool": ["C"],
+	"scaleTypes": ["major"],
+	"questionMode": "accidentals",
+	"octave": 4,
+	"clefs": ["treble"]
+}
+
+> {%
+	client.test("scale game returns the forced tonic and type", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.tonic === "C", "tonic echoes the forced value");
+		client.assert(response.body.scaleType === "major", "scale type echoes the forced value");
+		client.assert(response.body.clef === "treble", "clef echoes the forced value");
+	});
+%}
+
+### ScaleGameEmptyTonicPool
+# ScaleGameEmptyTonicPool sends an empty tonicPool, violating the
+# field's min_length=1, and expects 422.
+POST {{baseUrl}}/music/scale-game
+Content-Type: application/json
+
+{
+	"tonicPool": []
+}
+
+> {%
+	client.test("an empty tonic pool fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("tonicPool") !== -1, "the tonicPool field is named in the error");
+		client.assert(response.body.detail[0].type === "too_short", "the rule that failed is the min-length check");
+	});
+%}
+
+### ScaleGameUnsupportedScaleType
+# ScaleGameUnsupportedScaleType asks for a scale type outside the four
+# supported names and expects 422 -- ScaleType is a Literal, so this
+# never reaches SCALE_CLASSES.
+POST {{baseUrl}}/music/scale-game
+Content-Type: application/json
+
+{
+	"scaleTypes": ["dorian"]
+}
+
+> {%
+	client.test("an out-of-repertoire scale type fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("scaleTypes") !== -1, "the scaleTypes field is named in the error");
+	});
+%}

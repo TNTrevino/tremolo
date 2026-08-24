@@ -1,0 +1,95 @@
+# A single diatonic note from a scale, for the note-identification
+# game. `clef` is a Pydantic Literal, so a bad clef never reaches the
+# service -- it fails FastAPI's own schema validation with 422, not the
+# game endpoints' usual 400. Range mode (lowNote + highNote together)
+# has its own two music21-level 400s.
+#
+# Run:  kulala run --tests --env local music/note-game.http
+
+### NoteGame
+# NoteGame picks one note from the C major scale in octave 4 and expects
+# 200 with the note name/octave alongside the MusicXML.
+POST {{baseUrl}}/music/note-game
+Content-Type: application/json
+
+{
+	"scale": "C",
+	"octave": "4"
+}
+
+> {%
+	client.test("note game returns a chosen note and its xml", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(!!response.body.generatedXml, "response carries musicxml");
+		client.assert(!!response.body.noteName, "response carries a note name");
+		client.assert(response.body.noteOctave === "4", "note octave matches the request");
+	});
+%}
+
+### NoteGameUnsupportedClef
+# NoteGameUnsupportedClef sends a clef outside the seven supported
+# names. Pydantic's Literal type rejects it before the handler runs, so
+# this is 422, not the 400 a music21-level failure would produce.
+POST {{baseUrl}}/music/note-game
+Content-Type: application/json
+
+{
+	"scale": "C",
+	"octave": "4",
+	"clef": "kazoo"
+}
+
+> {%
+	client.test("an unsupported clef fails schema validation, not the handler", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("clef") !== -1, "the clef field is named in the error");
+	});
+%}
+
+### NoteGameLowAboveHigh
+# NoteGameLowAboveHigh gives a range where lowNote sorts above highNote,
+# which music21 rejects explicitly before it ever builds a candidate
+# list.
+POST {{baseUrl}}/music/note-game
+Content-Type: application/json
+
+{
+	"scale": "C",
+	"octave": "4",
+	"lowNote": "C5",
+	"highNote": "C4"
+}
+
+> {%
+	client.test("a range with lowNote above highNote is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!lowNote C5 is above highNote C4",
+			"unexpected error body: " + response.body
+		);
+	});
+%}
+
+### NoteGameEmptyRange
+# NoteGameEmptyRange asks for F# major notes between two naturals that
+# are C4 to C4 -- since C is not in F# major, no candidate falls in that
+# closed range and the scale walk comes back empty.
+POST {{baseUrl}}/music/note-game
+Content-Type: application/json
+
+{
+	"scale": "F#",
+	"octave": "4",
+	"lowNote": "C4",
+	"highNote": "C4"
+}
+
+> {%
+	client.test("a range with no scale notes in it is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!no F# major notes between C4 and C4",
+			"unexpected error body: " + response.body
+		);
+	});
+%}

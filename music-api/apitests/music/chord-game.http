@@ -1,0 +1,67 @@
+# A single chord built from a random root and quality, for the
+# chord-identification game. Every list field has min_length=1 and
+# quality is a Literal, so an empty list or an unsupported quality both
+# fail Pydantic schema validation -- 422 -- before CHORD_INTERVALS is
+# ever consulted.
+#
+# Run:  kulala run --tests --env local music/chord-game.http
+
+### ChordGame
+# ChordGame forces a single root/quality/clef, no inversion, and expects
+# 200 with that exact choice echoed back as the answer.
+POST {{baseUrl}}/music/chord-game
+Content-Type: application/json
+
+{
+	"rootPool": ["C"],
+	"qualities": ["major"],
+	"inversions": false,
+	"octave": 4,
+	"clefs": ["treble"]
+}
+
+> {%
+	client.test("chord game returns the forced root and quality", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.root === "C", "root echoes the forced value");
+		client.assert(response.body.quality === "major", "quality echoes the forced value");
+		client.assert(response.body.inversion === 0, "inversions disabled means root position");
+		client.assert(response.body.clef === "treble", "clef echoes the forced value");
+	});
+%}
+
+### ChordGameEmptyRootPool
+# ChordGameEmptyRootPool sends an empty rootPool, violating the field's
+# min_length=1, and expects 422.
+POST {{baseUrl}}/music/chord-game
+Content-Type: application/json
+
+{
+	"rootPool": []
+}
+
+> {%
+	client.test("an empty root pool fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("rootPool") !== -1, "the rootPool field is named in the error");
+		client.assert(response.body.detail[0].type === "too_short", "the rule that failed is the min-length check");
+	});
+%}
+
+### ChordGameUnsupportedQuality
+# ChordGameUnsupportedQuality asks for a quality outside the twelve
+# supported names and expects 422 -- ChordQuality is a Literal, so this
+# never reaches CHORD_INTERVALS.
+POST {{baseUrl}}/music/chord-game
+Content-Type: application/json
+
+{
+	"qualities": ["power"]
+}
+
+> {%
+	client.test("an out-of-repertoire quality fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("qualities") !== -1, "the qualities field is named in the error");
+	});
+%}
