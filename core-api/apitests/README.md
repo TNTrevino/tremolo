@@ -77,18 +77,24 @@ output on failure). Run the whole suite at once with `kulala run
 file, not a directory (`--name and --line require a single .http or
 .rest file path`), so run one block by naming its file directly, e.g.
 `kulala run --tests --env local --name CreateClass
-classes/create-class.http`. `--halt` stops at the first failure. `make
-test-api` from the repo root wraps the whole-suite form.
+classes/create-class.http`. `--halt` stops at the first failure.
 
-Running `.` also picks up `spec.http`, which the CLI cannot run (it is
-an editor directive, not a request) and reports as
+`make test-api` from the repo root wraps the whole suite, but does not
+just run `.`: it loops `kulala run --tests --halt --env local` over
+each group directory (`for dir in */`), stopping at the first
+directory that fails. That is deliberate, not incidental — see below.
+
+Running `.` by hand also picks up `spec.http`, which the CLI cannot run
+(it is an editor directive, not a request) and reports as
 `"../openapi/swagger.json" cannot be parsed as a URL`. That line is
 noise, not a test failure — it carries no assertions, and every real
 assertion in the suite still runs and is reported. It does, however,
 make the process exit non-zero (verified live: 0 failed assertions,
-exit code 1) — worth knowing if you're scripting around the exit code
-rather than reading `--tests` output, since `make test-api` inherits
-this as-is.
+exit code 1), which used to mean `make test-api` failed CI's api-smoke
+job even when every assertion passed. `make test-api` no longer runs
+`.` for exactly this reason (the per-directory loop above never touches
+`spec.http`, since `*/` only matches directories); this paragraph is
+only a heads-up for anyone running `.` directly from a shell or editor.
 
 `baseUrl` is per-environment in `http-client.env.json`, so CI can point
 it elsewhere by selecting a different env (e.g. `--env ci`).

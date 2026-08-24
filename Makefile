@@ -1,5 +1,5 @@
 .PHONY: help \
-	test test-frontend test-music test-go test-api \
+	test test-frontend test-music test-go test-api test-api-music \
 	lint lint-frontend lint-music lint-go vet-go \
 	format format-frontend format-music format-go \
 	format-check format-check-frontend format-check-music format-check-go \
@@ -19,6 +19,7 @@ help:
 	@echo "  test-music             pytest (music-api)"
 	@echo "  test-go                go test ./... -race (core-api)"
 	@echo "  test-api               kulala HTTP smoke tests (needs the service running)"
+	@echo "  test-api-music         kulala HTTP smoke tests for music-api (needs the service running)"
 	@echo ""
 	@echo "  lint                   run all linters"
 	@echo "  lint-frontend          ng lint --max-warnings 0"
@@ -145,7 +146,16 @@ KULALA ?= npx --yes @mistweaverco/kulala-cli@0.13.1
 
 test-api:
 	@$(call banner,Testing API (kulala smoke tests)...)
-	cd core-api/apitests && $(KULALA) run --tests --halt --env local .
+	@cd core-api/apitests && \
+	for dir in */; do \
+		$(KULALA) run --tests --halt --env local "$$dir" || exit 1; \
+	done
+
+# music-api needs no database and no env vars, just `fastapi dev main.py`
+# running on :8000 -- see music-api/apitests/README.md.
+test-api-music:
+	@$(call banner,Testing music API (kulala smoke tests)...)
+	cd music-api/apitests && $(KULALA) run --tests --halt --env local .
 
 # ---- aggregate ----
 # Each leaf runs via a recursive make so we can number the steps ([ 1/3 ] ...).
