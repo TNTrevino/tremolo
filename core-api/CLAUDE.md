@@ -32,5 +32,7 @@ Invariants:
   Go side only checks "JSON object ≤ 4KB, valid game_type".
 
 Workflow: `go test ./...` (DB tests skip without DATABASE_URL; use a
-throwaway DB, never the dev one), `gofmt -s -w .`, `go vet ./...`; CI adds
-golangci-lint and `-race`.
+throwaway DB, never the dev one), `go tool gofumpt -w .`, `go vet ./...`; CI
+adds golangci-lint and `-race`. gofumpt supersedes `gofmt -s` and also splits
+imports into a stdlib group and the rest; it is pinned as a `tool` directive
+in `go.mod`, alongside goimports and swag.
