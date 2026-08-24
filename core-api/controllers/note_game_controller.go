@@ -3,99 +3,99 @@ package controllers
 import (
 	"errors"
 	"net/http"
+
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/httpx"
 	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
-
-	"github.com/gin-gonic/gin"
 )
 
-// SetupNoteGameRoutes initializes all note game routes
-func SetupNoteGameRoutes(router *gin.Engine) {
-	noteGame := router.Group("/api/note-game")
-	noteGame.Use(middleware.AuthMiddleware())
-	{
-		noteGame.POST("/entry", CreateNoteGameEntry)
-		noteGame.GET("/recent", GetRecentNoteGameEntries)
-		noteGame.GET("/activity", GetDailyActivityCounts)
-	}
+// RegisterNoteGameRoutes registers all note game routes.
+// All routes are protected with JWT authentication middleware.
+func RegisterNoteGameRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.Handle("POST /api/note-game/entry",
+		middleware.RequireAuth(handleCreateNoteGameEntry(q)))
+	mux.Handle("GET /api/note-game/recent",
+		middleware.RequireAuth(handleGetRecentNoteGameEntries(q)))
+	mux.Handle("GET /api/note-game/activity",
+		middleware.RequireAuth(handleGetDailyActivityCounts(q)))
 }
 
-// CreateNoteGameEntry saves a new note game entry for a user
+// handleCreateNoteGameEntry saves a new note game entry for a user
 // Protected: Requires JWT authentication
-func CreateNoteGameEntry(c *gin.Context) {
-	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	var entry dtos.Entry
-	if err := c.ShouldBindJSON(&entry); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	ctx := c.Request.Context()
-	entryID, err := services.CreateNoteGameEntry(ctx, database.Queries, authenticatedUserID, &entry)
-	if err != nil {
-		if errors.Is(err, services.ErrUnauthorized) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized"})
+func handleCreateNoteGameEntry(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
-		logger.Error("failed to create note game entry", "error", err, "userID", authenticatedUserID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save entry"})
-		return
-	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Note game entry saved successfully",
-		"id":      entryID,
-	})
-}
-
-// GetRecentNoteGameEntries fetches the last 30 note game entries for the authenticated user
-// Protected: Requires JWT authentication
-func GetRecentNoteGameEntries(c *gin.Context) {
-	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	gameType := c.Query("game_type")
-
-	ctx := c.Request.Context()
-	entries, err := services.GetRecentNoteGameEntries(ctx, database.Queries, authenticatedUserID, gameType)
-	if err != nil {
-		if errors.Is(err, services.ErrValidation) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game_type"})
+		entry, err := httpx.Decode[dtos.Entry](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recent entries"})
-		return
-	}
 
-	c.JSON(http.StatusOK, entries)
+		entryID, err := services.CreateNoteGameEntry(r.Context(), q, userID, &entry)
+		if err != nil {
+			if errors.Is(err, services.ErrUnauthorized) {
+				httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Not authorized"})
+				return
+			}
+			logger.Error("failed to create note game entry", "error", err, "userID", userID)
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Failed to save entry"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusCreated, httpx.M{
+			"message": "Note game entry saved successfully",
+			"id":      entryID,
+		})
+	}
 }
 
-// GetDailyActivityCounts returns per-day game counts for the activity heatmap
+// handleGetRecentNoteGameEntries fetches the last 30 note game entries for the authenticated user
 // Protected: Requires JWT authentication
-func GetDailyActivityCounts(c *gin.Context) {
-	authenticatedUserID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+func handleGetRecentNoteGameEntries(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
 
-	ctx := c.Request.Context()
-	counts, err := services.GetDailyActivityCounts(ctx, database.Queries, authenticatedUserID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch activity data"})
-		return
-	}
+		gameType := r.URL.Query().Get("game_type")
 
-	c.JSON(http.StatusOK, counts)
+		entries, err := services.GetRecentNoteGameEntries(r.Context(), q, userID, gameType)
+		if err != nil {
+			if errors.Is(err, services.ErrValidation) {
+				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid game_type"})
+				return
+			}
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch recent entries"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, entries)
+	}
+}
+
+// handleGetDailyActivityCounts returns per-day game counts for the activity heatmap
+// Protected: Requires JWT authentication
+func handleGetDailyActivityCounts(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		counts, err := services.GetDailyActivityCounts(r.Context(), q, userID)
+		if err != nil {
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to fetch activity data"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, counts)
+	}
 }

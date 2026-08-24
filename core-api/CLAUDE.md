@@ -1,12 +1,15 @@
 # core-api — agent notes
 
-Gin + Postgres user-tracking service. **Read `README.md` here before
+`net/http` + Postgres user-tracking service. **Read `README.md` here before
 structural changes** — full route map, env vars, and games-domain details.
 
 Invariants:
 
 - Strict layering: controller → service → sqlc-generated queries. Controllers
   never import `database/generated`; services receive `generated.Querier`.
+  A controller may name `database.Querier` — the alias in
+  `core-api/database/database.go` exists precisely so a handler can take one
+  as a parameter without importing `database/generated`.
 - Database changes: new numbered goose file in `database/migrations/` (never
   edit an existing one — they run automatically at startup), queries in
   `database/queries/*.sql`, then `sqlc generate`. Never hand-edit

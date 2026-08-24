@@ -7,28 +7,24 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/httpx"
 	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
-
-	"github.com/gin-gonic/gin"
 )
 
-// SetupAuthRoutes registers the email/password and Google OAuth auth
+// RegisterAuthRoutes registers the email/password and Google OAuth auth
 // routes.
-func SetupAuthRoutes(router *gin.Engine) {
-	auth := router.Group("/api/auth")
-	{
-		auth.POST("/login", Login)
-		auth.POST("/register", Register)
-		auth.POST("/refresh", RefreshToken)
+func RegisterAuthRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.HandleFunc("POST /api/auth/login", handleLogin(q))
+	mux.HandleFunc("POST /api/auth/register", handleRegister(q))
+	mux.HandleFunc("POST /api/auth/refresh", handleRefreshToken())
 
-		auth.GET("/me", middleware.AuthMiddleware(), GetCurrentUser)
+	mux.Handle("GET /api/auth/me", middleware.RequireAuth(handleGetCurrentUser(q)))
 
-		// Google OAuth
-		auth.POST("/google/callback", GoogleCallback)
-		auth.POST("/google/link", middleware.AuthMiddleware(), LinkGoogleAccount)
-	}
+	// Google OAuth
+	mux.HandleFunc("POST /api/auth/google/callback", handleGoogleCallback(q))
+	mux.Handle("POST /api/auth/google/link", middleware.RequireAuth(handleLinkGoogleAccount(q)))
 }
 
 // googleTokenVerifier is the Google OAuth token verifier used by the
@@ -51,236 +47,245 @@ func SetGoogleTokenVerifier(v services.GoogleTokenVerifier) {
 	googleTokenVerifier = v
 }
 
-// GoogleCallback handles POST /api/auth/google/callback.
-func GoogleCallback(c *gin.Context) {
-	var reqBody dtos.GoogleCallbackRequest
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+// handleGoogleCallback handles POST /api/auth/google/callback.
+func handleGoogleCallback(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	result, err := services.GoogleCallback(c.Request.Context(), database.Queries, googleTokenVerifier, reqBody)
-	if err != nil {
-		respondGoogleAuthError(c, err)
-		return
-	}
+		result, err := services.GoogleCallback(r.Context(), q, googleTokenVerifier, reqBody)
+		if err != nil {
+			respondGoogleAuthError(w, err)
+			return
+		}
 
-	c.JSON(http.StatusOK, result)
+		httpx.JSON(w, http.StatusOK, result)
+	}
 }
 
-// LinkGoogleAccount handles POST /api/auth/google/link.
+// handleLinkGoogleAccount handles POST /api/auth/google/link.
 // Protected: requires JWT authentication.
-func LinkGoogleAccount(c *gin.Context) {
-	uid, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
 
-	var reqBody dtos.GoogleCallbackRequest
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	if err := services.LinkGoogleAccount(c.Request.Context(), database.Queries, googleTokenVerifier, uid, reqBody); err != nil {
-		respondGoogleAuthError(c, err)
-		return
-	}
+		if err := services.LinkGoogleAccount(r.Context(), q, googleTokenVerifier, uid, reqBody); err != nil {
+			respondGoogleAuthError(w, err)
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Google account linked successfully"})
+		httpx.JSON(w, http.StatusOK, httpx.M{"message": "Google account linked successfully"})
+	}
 }
 
 // respondGoogleAuthError maps GoogleCallback's and LinkGoogleAccount's
 // sentinel errors onto the exact response bodies the pre-refactor
 // handlers produced, byte-for-byte -- the frontend matches on these
 // shapes.
-func respondGoogleAuthError(c *gin.Context, err error) {
+func respondGoogleAuthError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, services.ErrValidation):
-		c.JSON(http.StatusBadRequest, gin.H{
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{
 			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
 		})
 	case errors.Is(err, services.ErrGoogleExchangeFailed):
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization code"})
+		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid authorization code"})
 	case errors.Is(err, services.ErrGoogleTokenInvalid):
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Google token"})
+		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid Google token"})
 	case errors.Is(err, services.ErrGoogleEmailUnverified):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Google email is not verified"})
+		httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Google email is not verified"})
 	case errors.Is(err, services.ErrGoogleEmailAlreadyLinked):
-		c.JSON(http.StatusConflict, gin.H{"error": "Email is already linked to a different Google account"})
+		httpx.JSON(w, http.StatusConflict, httpx.M{"error": "Email is already linked to a different Google account"})
 	case errors.Is(err, services.ErrGoogleLinkFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to link Google account"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to link Google account"})
 	case errors.Is(err, services.ErrGoogleUserCreateFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to create user"})
 	case errors.Is(err, services.ErrGoogleEmailMismatch):
-		c.JSON(http.StatusForbidden, gin.H{"error": "Google email does not match your account email"})
+		httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Google email does not match your account email"})
 	case errors.Is(err, services.ErrGoogleIDConflict):
-		c.JSON(http.StatusConflict, gin.H{"error": "This Google account is already linked to another user"})
+		httpx.JSON(w, http.StatusConflict, httpx.M{"error": "This Google account is already linked to another user"})
 	case errors.Is(err, services.ErrAccessTokenGeneration):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to generate access token"})
 	case errors.Is(err, services.ErrRefreshTokenGeneration):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to generate refresh token"})
 	default:
 		logger.Error("unexpected google auth error", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
 	}
 }
 
-// Login handles POST /api/auth/login.
-func Login(c *gin.Context) {
-	var reqBody dtos.LoginRequest
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+// handleLogin handles POST /api/auth/login.
+func handleLogin(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, err := httpx.Decode[dtos.LoginRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	result, err := services.Login(c.Request.Context(), database.Queries, reqBody)
-	if err != nil {
-		respondLoginError(c, err)
-		return
-	}
+		result, err := services.Login(r.Context(), q, reqBody)
+		if err != nil {
+			respondLoginError(w, err)
+			return
+		}
 
-	c.JSON(http.StatusOK, result)
+		httpx.JSON(w, http.StatusOK, result)
+	}
 }
 
 // respondLoginError maps Login's sentinel errors onto the exact response
 // bodies the pre-refactor handler produced, byte-for-byte -- the
 // frontend matches on these shapes.
-func respondLoginError(c *gin.Context, err error) {
+func respondLoginError(w http.ResponseWriter, err error) {
 	var lockoutErr *services.LockoutTriggeredError
 
 	switch {
 	case errors.Is(err, services.ErrValidation):
-		c.JSON(http.StatusBadRequest, gin.H{
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{
 			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
 		})
 	case errors.Is(err, services.ErrLockCheckFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
 			"scenario": "AS.10",
 		})
 	case errors.Is(err, services.ErrAccountLocked):
-		c.JSON(http.StatusUnauthorized, gin.H{
+		httpx.JSON(w, http.StatusUnauthorized, httpx.M{
 			"error":    "Account is locked due to too many failed login attempts",
 			"scenario": "AS.11",
 		})
 	case errors.As(err, &lockoutErr):
-		c.JSON(http.StatusUnauthorized, gin.H{"error": lockoutErr.Error()})
+		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": lockoutErr.Error()})
 	case errors.Is(err, services.ErrUserLookupFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error",
 			"scenario": "AS.12",
 		})
 	case errors.Is(err, services.ErrInvalidCredentials):
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid credentials"})
 	case errors.Is(err, services.ErrAccessTokenGeneration):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to generate access token"})
 	case errors.Is(err, services.ErrRefreshTokenGeneration):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to generate refresh token"})
 	default:
 		logger.Error("unexpected login error", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
 	}
 }
 
-// Register handles POST /api/auth/register.
-func Register(c *gin.Context) {
-	var reqBody dtos.RegisterRequest
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+// handleRegister handles POST /api/auth/register.
+func handleRegister(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, err := httpx.Decode[dtos.RegisterRequest](r)
+		if err != nil {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	result, err := services.Register(c.Request.Context(), database.Queries, reqBody)
-	if err != nil {
-		respondRegisterError(c, err)
-		return
-	}
+		result, err := services.Register(r.Context(), q, reqBody)
+		if err != nil {
+			respondRegisterError(w, err)
+			return
+		}
 
-	c.JSON(http.StatusCreated, result)
+		httpx.JSON(w, http.StatusCreated, result)
+	}
 }
 
 // respondRegisterError maps Register's sentinel errors onto the exact
 // response bodies the pre-refactor handler produced.
-func respondRegisterError(c *gin.Context, err error) {
+func respondRegisterError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, services.ErrValidation):
-		c.JSON(http.StatusBadRequest, gin.H{
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{
 			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
 		})
 	case errors.Is(err, services.ErrEmailCheckFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
 			"scenario": "AS.8",
 		})
 	case errors.Is(err, services.ErrEmailTaken):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Email already exists"})
 	case errors.Is(err, services.ErrPasswordHashFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to process password"})
 	case errors.Is(err, services.ErrInvalidRole):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid role"})
 	case errors.Is(err, services.ErrUserCreateFailed):
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to create user"})
 	default:
 		logger.Error("unexpected register error", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
 	}
 }
 
-// GetCurrentUser handles GET /api/auth/me.
+// handleGetCurrentUser handles GET /api/auth/me.
 // Protected: Requires JWT authentication
-func GetCurrentUser(c *gin.Context) {
-	uid, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	result, err := services.GetCurrentUser(c.Request.Context(), database.Queries, uid)
-	if err != nil {
-		if errors.Is(err, services.ErrNotFound) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid, ok := authedUserID(w, r)
+		if !ok {
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":    "Internal server error",
-			"scenario": "AS.6",
-		})
-		return
-	}
 
-	c.JSON(http.StatusOK, result)
+		result, err := services.GetCurrentUser(r.Context(), q, uid)
+		if err != nil {
+			if errors.Is(err, services.ErrNotFound) {
+				httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Unauthorized"})
+				return
+			}
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{
+				"error":    "Internal server error",
+				"scenario": "AS.6",
+			})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, result)
+	}
 }
 
-// RefreshToken handles POST /api/auth/refresh.
-func RefreshToken(c *gin.Context) {
-	var reqBody struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Refresh token is required"})
-		return
-	}
-
-	newAccessToken, err := services.RefreshToken(reqBody.RefreshToken)
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrInvalidRefreshToken):
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
-		case errors.Is(err, services.ErrWrongTokenType):
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token type"})
-		case errors.Is(err, services.ErrAccessTokenGeneration):
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
-		default:
-			logger.Error("unexpected refresh token error", "error", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+// handleRefreshToken handles POST /api/auth/refresh.
+func handleRefreshToken() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, err := httpx.Decode[struct {
+			RefreshToken string `json:"refresh_token"`
+		}](r)
+		if err != nil || reqBody.RefreshToken == "" {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Refresh token is required"})
+			return
 		}
-		return
-	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token": newAccessToken,
-	})
+		newAccessToken, err := services.RefreshToken(reqBody.RefreshToken)
+		if err != nil {
+			switch {
+			case errors.Is(err, services.ErrInvalidRefreshToken):
+				httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid refresh token"})
+			case errors.Is(err, services.ErrWrongTokenType):
+				httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid token type"})
+			case errors.Is(err, services.ErrAccessTokenGeneration):
+				httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to generate access token"})
+			default:
+				logger.Error("unexpected refresh token error", "error", err)
+				httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+			}
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, httpx.M{
+			"access_token": newAccessToken,
+		})
+	}
 }

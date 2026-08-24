@@ -30,7 +30,8 @@ You will write Go code that:
 - `database/` - PostgreSQL connection and queries
 - `DTOs/` - Data transfer objects for API responses
 - `validations/` - Input validation
-- Framework: Gin for HTTP routing
+- Routing: the standard library `net/http` ServeMux, one
+  `RegisterXRoutes(mux, q)` per domain, listed in `controllers/routes.go`
 - Port: 5001 (default)
 
 ### Chart.js Integration Requirements
@@ -120,20 +121,22 @@ func (s *ServiceName) GetChartData(userID int, startDate time.Time) ([]DTOName, 
 
 ### Controller Pattern
 ```go
-func GetChartDataEndpoint(c *gin.Context) {
-    userID, err := strconv.Atoi(c.Param("id"))
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
-        return
+func handleGetChartData(q database.Querier) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        userID, err := strconv.Atoi(r.PathValue("id"))
+        if err != nil {
+            httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "invalid user ID"})
+            return
+        }
+
+        data, err := services.GetChartData(r.Context(), q, userID, time.Now().AddDate(0, 0, -30))
+        if err != nil {
+            httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "failed to retrieve data"})
+            return
+        }
+
+        httpx.JSON(w, http.StatusOK, data)
     }
-    
-    data, err := service.GetChartData(userID, time.Now().AddDate(0, 0, -30))
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve data"})
-        return
-    }
-    
-    c.JSON(http.StatusOK, data)
 }
 ```
 

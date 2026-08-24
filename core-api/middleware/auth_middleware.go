@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ import (
 
 	"sight-reading/logger"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -116,84 +114,50 @@ func GetJWTSecret() []byte {
 	return jwtSecret
 }
 
-// GetAuthenticatedUserID extracts and validates the authenticated user ID from the Gin context
-// This is a helper function to reduce boilerplate in handlers that use AuthMiddleware
-// Returns the user ID or an error if extraction fails
-// Callers are responsible for handling the error and setting appropriate HTTP responses
-func GetAuthenticatedUserID(c *gin.Context) (int, error) {
-	userIDInterface, exists := c.Get("userID")
-	if !exists {
-		return 0, errors.New("Unauthorized")
+// errWrongTokenType marks a token that parses and verifies but is a
+// refresh token presented where an access token is required. It is the
+// one failure RequireAuth reports differently, with "Invalid token type"
+// rather than "Unauthorized".
+var errWrongTokenType = errors.New("token is not an access token")
+
+// accessTokenClaims validates an Authorization header and returns the
+// claims it carries. RequireAuth is its only caller.
+//
+// Every failure except errWrongTokenType is deliberately
+// indistinguishable: a missing header, a malformed header, a bad
+// signature and an expired token all return the same error, so nothing
+// about why the token failed leaks to the caller.
+func accessTokenClaims(authHeader string) (*Claims, error) {
+	if authHeader == "" {
+		return nil, errors.New("missing authorization header")
 	}
 
-	authenticatedUserID, ok := userIDInterface.(int)
-	if !ok {
-		return 0, errors.New("Unauthorized")
+	// Expected format: "Bearer <token>"
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != BearerTokenParts || parts[0] != "Bearer" {
+		return nil, errors.New("malformed authorization header")
 	}
 
-	return authenticatedUserID, nil
-}
-
-// AuthMiddleware validates JWT tokens and adds user ID to context
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(parts[1], claims, func(token *jwt.Token) (any, error) {
+		// Verify signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-
-		// Expected format: "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != BearerTokenParts || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
-
-		// Parse and validate token
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) { // TODO: what is going on here?
-			// Verify signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok { // if initialization; condition
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		if !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized",
-			})
-			c.Abort()
-			return
-		}
-
-		// verify its an access and not a refresh token
-		if claims.TokenType != "access" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token type",
-			})
-			c.Abort()
-			return
-		}
-
-		// add user id to context
-		c.Set("userID", claims.UserID)
-		c.Next()
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	// verify its an access and not a refresh token
+	if claims.TokenType != "access" {
+		return nil, errWrongTokenType
+	}
+
+	return claims, nil
 }

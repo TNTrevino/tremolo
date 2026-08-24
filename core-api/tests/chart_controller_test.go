@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"sight-reading/controllers"
+	"sight-reading/database"
 	"sight-reading/tests/testutil"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,13 +19,13 @@ func chartUserPath(userID int) string {
 }
 
 // chartTestRouter builds a router with only the chart routes registered,
-// mirroring how main.go wires controllers.SetupChartRoutes. The chart
+// mirroring how main.go wires controllers.RegisterChartRoutes. The chart
 // refactor moved param parsing and status codes out of the services, so
 // these HTTP-level cases are covered here rather than in the service tests.
-func chartTestRouter() *gin.Engine {
-	router := gin.New()
-	controllers.SetupChartRoutes(router)
-	return router
+func chartTestRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	controllers.RegisterChartRoutes(mux, database.Queries)
+	return mux
 }
 
 func TestChartRoutes_Unauthenticated_ReturnsUnauthorized(t *testing.T) {

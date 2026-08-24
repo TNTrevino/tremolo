@@ -2,87 +2,89 @@ package controllers
 
 import (
 	"net/http"
+
 	"sight-reading/database"
+	"sight-reading/httpx"
 	"sight-reading/logger"
 	"sight-reading/middleware"
 	"sight-reading/services"
-
-	"github.com/gin-gonic/gin"
 )
 
-func SetupFriendsRoutes(router *gin.Engine) {
-	friends := router.Group("/api/friends")
-	friends.Use(middleware.AuthMiddleware())
-	{
-		friends.GET("", GetFriends)
-		friends.GET("/search", SearchUsers)
-		friends.POST("", AddFriend)
+// RegisterFriendsRoutes registers the friends routes.
+// All routes are protected with JWT authentication middleware.
+func RegisterFriendsRoutes(mux *http.ServeMux, q database.Querier) {
+	mux.Handle("GET /api/friends", middleware.RequireAuth(handleGetFriends(q)))
+	mux.Handle("GET /api/friends/search", middleware.RequireAuth(handleSearchUsers(q)))
+	mux.Handle("POST /api/friends", middleware.RequireAuth(handleAddFriend(q)))
+}
+
+func handleGetFriends(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		friends, err := services.GetFriends(r.Context(), q, userID)
+		if err != nil {
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to retrieve friends"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, friends)
 	}
 }
 
-func GetFriends(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
+func handleSearchUsers(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		query := r.URL.Query().Get("q")
+		if query == "" {
+			httpx.JSON(w, http.StatusOK, []any{})
+			return
+		}
+
+		results, err := services.SearchUsers(r.Context(), q, userID, query)
+		if err != nil {
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to search users"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, results)
 	}
-
-	ctx := c.Request.Context()
-	friends, err := services.GetFriends(ctx, database.Queries, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friends"})
-		return
-	}
-
-	c.JSON(http.StatusOK, friends)
-}
-
-func SearchUsers(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	query := c.Query("q")
-	if query == "" {
-		c.JSON(http.StatusOK, []any{})
-		return
-	}
-
-	ctx := c.Request.Context()
-	results, err := services.SearchUsers(ctx, database.Queries, userID, query)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search users"})
-		return
-	}
-
-	c.JSON(http.StatusOK, results)
 }
 
 type addFriendRequest struct {
-	FriendID int `json:"friend_id" binding:"required"`
+	FriendID int `json:"friend_id"`
 }
 
-func AddFriend(c *gin.Context) {
-	userID, err := middleware.GetAuthenticatedUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+func handleAddFriend(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
 
-	var req addFriendRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
+		// A friend_id of 0 counts as missing, not as a friend whose ID
+		// is 0. httpx.Decode enforces no struct tags, so the check is
+		// here by hand: a malformed body and an absent, null or zero
+		// friend_id all have to produce the identical 400 below.
+		req, err := httpx.Decode[addFriendRequest](r)
+		if err != nil || req.FriendID == 0 {
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			return
+		}
 
-	ctx := c.Request.Context()
-	if err := services.AddFriend(ctx, database.Queries, userID, req.FriendID); err != nil {
-		logger.Error("failed to add friend", "error", err, "userID", userID, "friendID", req.FriendID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to add friend"})
-		return
-	}
+		if err := services.AddFriend(r.Context(), q, userID, req.FriendID); err != nil {
+			logger.Error("failed to add friend", "error", err, "userID", userID, "friendID", req.FriendID)
+			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Failed to add friend"})
+			return
+		}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Friend added successfully"})
+		httpx.JSON(w, http.StatusCreated, httpx.M{"message": "Friend added successfully"})
+	}
 }

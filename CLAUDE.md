@@ -8,7 +8,7 @@ Tremolo (tremolonotes.com) is a music-education practice app (competitor to musi
 
 - `frontend/` — Angular 22 + TypeScript SPA (standalone components, zoneless change detection, signals, RxJS, Tailwind). Renders MusicXML with OpenSheetMusicDisplay (OSMD). Migrated from React in 2026; the record is in `frontend/.migration/`.
 - `music-api/` — Python FastAPI "music generation" microservice (port 8000). Uses **music21** to generate exercises and returns MusicXML (plus answer metadata for games). Stateless, no auth.
-- `core-api/` — Go (Gin) "user tracking" microservice (port 5001). Auth (JWT + Google OAuth), users/teachers/friends, game settings, score entries, dashboard charts. Postgres via **sqlc** (queries in `database/queries/`, generated code in `database/generated/`, goose-style migrations in `database/migrations/`).
+- `core-api/` — Go (`net/http`) "user tracking" microservice (port 5001). Auth (JWT + Google OAuth), users/teachers/friends, game settings, score entries, dashboard charts. Postgres via **sqlc** (queries in `database/queries/`, generated code in `database/generated/`, goose-style migrations in `database/migrations/`).
 
 The frontend talks to both services directly, through `environment.coreApi` and `environment.musicApi` in `frontend/src/environments/`. The Go and Python services do not talk to each other.
 
@@ -80,7 +80,7 @@ Games (key signature / interval / scale / chord identification) are declarative.
 
 Strict controller → service → repository layering (repositories are the sqlc-generated queries):
 
-- `controllers/` — Gin handlers, request binding, routes registered in `main.go`
+- `controllers/` — `net/http` handlers, request binding, one `RegisterXRoutes` per domain, listed in `controllers/routes.go`
 - `services/` — business logic; `DTOs/` — request/response shapes; `validations/`, `middleware/` (JWT auth), `logger/`
 - Tests live both next to services and under `tests/`
 

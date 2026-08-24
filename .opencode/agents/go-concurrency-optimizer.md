@@ -120,7 +120,7 @@ Structure your response as follows:
 - **Consider context**: Respect context cancellation and timeouts
 - **Document reasoning**: Explain why a particular pattern was chosen
 - **Be idiomatic**: Use Go's concurrency primitives the Go way
-- **Project awareness**: When working with core-api/ code, consider the existing patterns (sqlx, Gin framework, global DBClient)
+- **Project awareness**: When working with core-api/ code, consider the existing patterns (sqlc-generated queries, standard library `net/http`, a `database.Querier` passed down from `NewServer`)
 
 ## Common Patterns You Should Master
 
