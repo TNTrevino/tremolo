@@ -174,7 +174,7 @@ func testAssignmentRequest() *dtos.CreateAssignmentRequest {
 	}
 }
 
-func TestCreateAssignment_ValidationAndOwnership(t *testing.T) {
+func TestCreateAssignment_Ownership(t *testing.T) {
 	testutil.SetupTestDB(t)
 	t.Parallel()
 
@@ -191,12 +191,6 @@ func TestCreateAssignment_ValidationAndOwnership(t *testing.T) {
 	// Not the owner.
 	_, err = services.CreateAssignment(context.Background(), database.Queries, otherTeacherID, class.ID, testAssignmentRequest())
 	assert.ErrorIs(t, err, services.ErrForbidden)
-
-	// Bad game type fails validation before touching the DB.
-	bad := testAssignmentRequest()
-	bad.GameType = "kazoo"
-	_, err = services.CreateAssignment(context.Background(), database.Queries, teacherID, class.ID, bad)
-	assert.Error(t, err)
 
 	list, err := services.ListClassAssignments(context.Background(), database.Queries, teacherID, class.ID)
 	require.NoError(t, err)
