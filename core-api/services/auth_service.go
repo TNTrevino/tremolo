@@ -4,6 +4,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"sight-reading/database/generated"
@@ -42,9 +43,9 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
 
 	lockedUntil, err := q.CheckAccountLocked(ctx, emailNullStr)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		logger.Error("Error checking account lock status", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrLockCheckFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrLockCheckFailed, err)
 	}
 
 	if lockedUntil.Valid {
@@ -54,11 +55,11 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 
 	user, err := q.GetUserByEmail(ctx, emailNullStr)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			logger.Info("User not found with provided", "email", normalizedEmail)
 			return nil, ErrInvalidCredentials
 		}
-		return nil, fmt.Errorf("%w: %v", ErrUserLookupFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrUserLookupFailed, err)
 	}
 
 	if user.Password == "" {
@@ -97,12 +98,12 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 
 	accessToken, err := middleware.GenerateAccessToken(int(user.ID))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrAccessTokenGeneration, err)
+		return nil, fmt.Errorf("%w: %w", ErrAccessTokenGeneration, err)
 	}
 
 	refreshToken, err := middleware.GenerateRefreshToken(int(user.ID))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrRefreshTokenGeneration, err)
+		return nil, fmt.Errorf("%w: %w", ErrRefreshTokenGeneration, err)
 	}
 
 	return &dtos.LoginResponse{
@@ -119,7 +120,7 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 func GetCurrentUser(ctx context.Context, q generated.Querier, userID int) (*dtos.UserResponse, error) {
 	user, err := q.GetUserByID(ctx, int32(userID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
@@ -146,7 +147,7 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	exists, err := checkIfUserExists(ctx, q, emailNullStr)
 	if err != nil {
 		logger.Error("Database error. Scenario: AS.7", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrEmailCheckFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrEmailCheckFailed, err)
 	}
 
 	if exists {
@@ -156,13 +157,13 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 
 	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrPasswordHashFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
 	}
 
 	roleID, err := q.GetRoleIDByName(ctx, req.Role)
 	if err != nil {
 		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
-		return nil, fmt.Errorf("%w: %v", ErrInvalidRole, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidRole, err)
 	}
 
 	createParams := generated.CreateUserParams{
@@ -177,7 +178,7 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	createdUser, err := q.CreateUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create user", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrUserCreateFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrUserCreateFailed, err)
 	}
 
 	if err := CreateDefaultKeyboardBindings(ctx, q, int(createdUser.ID)); err != nil {
@@ -195,7 +196,7 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullString) (bool, error) {
 	_, err := q.GetUserByEmail(ctx, email)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
 		return false, fmt.Errorf("database error: %w", err)
@@ -240,7 +241,7 @@ func RefreshToken(refreshToken string) (string, error) {
 
 	newAccessToken, err := middleware.GenerateAccessToken(claims.UserID)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrAccessTokenGeneration, err)
+		return "", fmt.Errorf("%w: %w", ErrAccessTokenGeneration, err)
 	}
 
 	return newAccessToken, nil

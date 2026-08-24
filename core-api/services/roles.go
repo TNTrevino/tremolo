@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -16,7 +17,7 @@ import (
 func RequireAdmin(ctx context.Context, q generated.Querier, userID int) error {
 	role, err := q.GetUserRole(ctx, int32(userID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrForbidden
 		}
 		return err

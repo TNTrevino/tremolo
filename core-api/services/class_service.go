@@ -41,7 +41,7 @@ func isUniqueViolation(err error) bool {
 func requireTeacher(ctx context.Context, q generated.Querier, userID int) error {
 	role, err := q.GetUserRole(ctx, int32(userID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrForbidden
 		}
 		return err
@@ -56,7 +56,7 @@ func requireTeacher(ctx context.Context, q generated.Querier, userID int) error 
 func requireClassOwner(ctx context.Context, q generated.Querier, userID, classID int) (generated.TremoloClass, error) {
 	class, err := q.GetClassByID(ctx, int32(classID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return generated.TremoloClass{}, ErrNotFound
 		}
 		return generated.TremoloClass{}, err
@@ -160,7 +160,7 @@ func ListStudentClasses(ctx context.Context, q generated.Querier, studentID int)
 func JoinClass(ctx context.Context, q generated.Querier, studentID int, req *dtos.JoinClassRequest) (*dtos.StudentClassResponse, error) {
 	class, err := q.GetClassByJoinCode(ctx, normalizeJoinCode(req.JoinCode))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		logger.Error("Failed to look up join code", "error", err.Error())

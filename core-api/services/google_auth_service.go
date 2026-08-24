@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -40,13 +41,13 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 	idTokenStr, err := verifier.ExchangeCode(ctx, req.Code, req.RedirectURI)
 	if err != nil {
 		logger.Error("Failed to exchange Google authorization code", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrGoogleExchangeFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrGoogleExchangeFailed, err)
 	}
 
 	claims, err := verifier.VerifyIDToken(ctx, idTokenStr)
 	if err != nil {
 		logger.Error("Failed to verify Google ID token", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrGoogleTokenInvalid, err)
+		return nil, fmt.Errorf("%w: %w", ErrGoogleTokenInvalid, err)
 	}
 
 	if !claims.EmailVerified {
@@ -60,7 +61,7 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 	if err == nil {
 		return issueGoogleLoginResponse(convertGetUserByGoogleIDRowToUserResponse(user), false)
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		logger.Error("Database error looking up user by Google ID", "error", err.Error())
 		return nil, fmt.Errorf("look up user by google id: %w", err)
 	}
@@ -81,7 +82,7 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 		}
 		if err := q.LinkGoogleAccount(ctx, linkParams); err != nil {
 			logger.Error("Failed to link Google account", "error", err.Error())
-			return nil, fmt.Errorf("%w: %v", ErrGoogleLinkFailed, err)
+			return nil, fmt.Errorf("%w: %w", ErrGoogleLinkFailed, err)
 		}
 		logger.Info("Auto-linked Google account to existing user", "email", normalizedEmail)
 
@@ -89,7 +90,7 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 		userResp.HasGoogle = true
 		return issueGoogleLoginResponse(userResp, true)
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		logger.Error("Database error looking up user by email", "error", err.Error())
 		return nil, fmt.Errorf("look up user by email for oauth: %w", err)
 	}
@@ -123,7 +124,7 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 	newUser, err := q.CreateOAuthUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create OAuth user", "error", err.Error())
-		return nil, fmt.Errorf("%w: %v", ErrGoogleUserCreateFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrGoogleUserCreateFailed, err)
 	}
 
 	if err := CreateDefaultKeyboardBindings(ctx, q, int(newUser.ID)); err != nil {
@@ -149,13 +150,13 @@ func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier Google
 	idTokenStr, err := verifier.ExchangeCode(ctx, req.Code, req.RedirectURI)
 	if err != nil {
 		logger.Error("Failed to exchange Google authorization code for link", "error", err.Error())
-		return fmt.Errorf("%w: %v", ErrGoogleExchangeFailed, err)
+		return fmt.Errorf("%w: %w", ErrGoogleExchangeFailed, err)
 	}
 
 	claims, err := verifier.VerifyIDToken(ctx, idTokenStr)
 	if err != nil {
 		logger.Error("Failed to verify Google ID token for link", "error", err.Error())
-		return fmt.Errorf("%w: %v", ErrGoogleTokenInvalid, err)
+		return fmt.Errorf("%w: %w", ErrGoogleTokenInvalid, err)
 	}
 
 	if !claims.EmailVerified {
@@ -178,7 +179,7 @@ func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier Google
 	if err == nil {
 		return ErrGoogleIDConflict
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		logger.Error("Database error checking Google ID uniqueness", "error", err.Error(), "user_id", userID)
 		return fmt.Errorf("check google id uniqueness: %w", err)
 	}
@@ -189,7 +190,7 @@ func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier Google
 	}
 	if err := q.LinkGoogleAccount(ctx, linkParams); err != nil {
 		logger.Error("Failed to link Google account", "error", err.Error())
-		return fmt.Errorf("%w: %v", ErrGoogleLinkFailed, err)
+		return fmt.Errorf("%w: %w", ErrGoogleLinkFailed, err)
 	}
 
 	return nil
@@ -204,13 +205,13 @@ func issueGoogleLoginResponse(user dtos.UserResponse, accountLinked bool) (*dtos
 	accessToken, err := middleware.GenerateAccessToken(user.ID)
 	if err != nil {
 		logger.Error("Failed to generate access token", "error", err.Error(), "user_id", user.ID)
-		return nil, fmt.Errorf("%w: %v", ErrAccessTokenGeneration, err)
+		return nil, fmt.Errorf("%w: %w", ErrAccessTokenGeneration, err)
 	}
 
 	refreshToken, err := middleware.GenerateRefreshToken(user.ID)
 	if err != nil {
 		logger.Error("Failed to generate refresh token", "error", err.Error(), "user_id", user.ID)
-		return nil, fmt.Errorf("%w: %v", ErrRefreshTokenGeneration, err)
+		return nil, fmt.Errorf("%w: %w", ErrRefreshTokenGeneration, err)
 	}
 
 	return &dtos.LoginResponse{

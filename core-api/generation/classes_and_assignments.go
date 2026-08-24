@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"math/rand/v2"
 	"time"
@@ -44,7 +45,7 @@ func insertClassesAndAssignments(studentIDs []int32) {
 	if _, err := database.Queries.GetUserByEmail(ctx, sql.NullString{String: testTeacherEmail, Valid: true}); err == nil {
 		log.Printf("Skipping classes/assignments seed: %s already exists", testTeacherEmail)
 		return
-	} else if err != sql.ErrNoRows {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("Warning: failed to check for existing test teacher, skipping classes/assignments seed: %v", err)
 		return
 	}

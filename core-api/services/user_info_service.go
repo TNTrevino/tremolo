@@ -4,6 +4,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
@@ -14,7 +15,7 @@ import (
 func GetGeneralUserInfo(ctx context.Context, q generated.Querier, userID int) (*dtos.GeneralUserInfoDTO, error) {
 	userInfo, err := q.GetUserGeneralInfo(ctx, int32(userID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		logger.Error("Failed to fetch general user info",

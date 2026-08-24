@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -27,7 +28,7 @@ func CreateDefaultKeyboardBindings(ctx context.Context, q generated.Querier, use
 func GetKeyboardBindings(ctx context.Context, q generated.Querier, userID int) (*dtos.KeyboardBindingsResponse, error) {
 	row, err := q.GetKeyboardBindings(ctx, int32(userID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		logger.Error("Failed to fetch keyboard bindings",
