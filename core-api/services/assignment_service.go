@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -153,7 +154,7 @@ func ListStudentAssignments(ctx context.Context, q generated.Querier, studentID 
 func GetAssignmentResults(ctx context.Context, q generated.Querier, teacherID, assignmentID int) ([]dtos.AssignmentResultRow, error) {
 	assignment, err := q.GetAssignmentByID(ctx, int32(assignmentID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
@@ -196,7 +197,7 @@ func GetAssignmentResults(ctx context.Context, q generated.Querier, teacherID, a
 func GetAssignmentAttempts(ctx context.Context, q generated.Querier, callerID, assignmentID, studentID int) ([]dtos.AssignmentAttempt, error) {
 	assignment, err := q.GetAssignmentByID(ctx, int32(assignmentID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
@@ -237,7 +238,7 @@ func GetAssignmentAttempts(ctx context.Context, q generated.Querier, callerID, a
 func DeleteAssignment(ctx context.Context, q generated.Querier, teacherID, assignmentID int) error {
 	assignment, err := q.GetAssignmentByID(ctx, int32(assignmentID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
 		return err
@@ -267,7 +268,7 @@ func ValidateEntryAssignment(ctx context.Context, q generated.Querier, studentID
 		StudentID: int32(studentID),
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrValidation
 		}
 		return err

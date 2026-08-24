@@ -10,7 +10,7 @@ import (
 // with errors.Is(err, ErrValidation) (controllers map it to 400) while
 // the wrapped message keeps the offending field detail for logs.
 func validationErr(err error) error {
-	return fmt.Errorf("%w: %s", ErrValidation, err)
+	return fmt.Errorf("%w: %w", ErrValidation, err)
 }
 
 // Shared error sentinels for the service layer. Controllers map these

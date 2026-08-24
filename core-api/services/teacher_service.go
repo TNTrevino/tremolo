@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	dtos "sight-reading/DTOs"
@@ -28,7 +29,7 @@ func CreateUser(ctx context.Context, q generated.Querier, req *dtos.CreateUserRe
 	roleID, err := q.GetRoleIDByName(ctx, string(req.Role))
 	if err != nil {
 		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
-		return nil, fmt.Errorf("%w: %v", ErrInvalidRole, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidRole, err)
 	}
 
 	passwordHash, err := HashPassword(req.Password)
@@ -78,7 +79,7 @@ func GetStudent(ctx context.Context, q generated.Querier, id int) (*dtos.User, e
 
 	user, err := q.GetUserByRoleAndID(ctx, params)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		logger.Error("failed to get student", "error", err, "id", id)

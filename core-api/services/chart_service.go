@@ -4,6 +4,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	dtos "sight-reading/DTOs"
@@ -54,7 +55,7 @@ func GetUserChartData(ctx context.Context, q generated.Querier, authenticatedUse
 func RequireTeacherRole(ctx context.Context, q generated.Querier, teacherID int) error {
 	role, err := q.GetUserRole(ctx, int32(teacherID))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
 		logger.Error("Failed to verify user role", "error", err.Error(), "user_id", teacherID)

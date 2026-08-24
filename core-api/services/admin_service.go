@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -26,7 +27,7 @@ func GetTeachers(ctx context.Context, q generated.Querier) ([]dtos.User, error) 
 func GetTeacher(ctx context.Context, q generated.Querier, id int) (*dtos.User, error) {
 	user, err := q.GetUserByID(ctx, int32(id))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		logger.Error("failed to get teacher", "error", err, "id", id)

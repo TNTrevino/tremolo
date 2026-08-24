@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
@@ -21,7 +22,7 @@ func GetGameSettings(ctx context.Context, q generated.Querier, userID int, gameT
 		GameType: gameType,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		logger.Error("Failed to fetch game settings",

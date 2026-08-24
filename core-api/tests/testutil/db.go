@@ -4,6 +4,7 @@ package testutil
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"sight-reading/database"
@@ -282,7 +283,7 @@ func GetTestUserByEmail(t *testing.T, email string) *generated.GetUserByEmailRow
 
 	user, err := database.Queries.GetUserByEmail(context.Background(), sql.NullString{String: email, Valid: true})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
 		t.Fatalf("Failed to get test user by email: %v", err)
