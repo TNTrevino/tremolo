@@ -21,10 +21,6 @@ import (
 // it reaches the database; it is never stored or echoed back in plain
 // text.
 func CreateUser(ctx context.Context, q generated.Querier, req *dtos.CreateUserRequest) (*dtos.UserResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, validationErr(err)
-	}
-
 	if req.Role == dtos.Admin {
 		return nil, ErrForbidden
 	}

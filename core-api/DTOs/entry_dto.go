@@ -1,34 +1,31 @@
 package dtos
 
 import (
+	"context"
 	"database/sql"
-	"errors"
-	"strings"
 
 	"sight-reading/validations"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type Entry struct {
 	ID             *int16         `db:"id"                json:"id"`
-	TimeLength     string         `db:"time_length"       json:"time_length"       validate:"required,time"`
+	TimeLength     string         `db:"time_length"       json:"time_length"`
 	CreatedDate    sql.NullString `db:"created_date"`
 	CreatedTime    sql.NullString `db:"created_time"`
-	TotalQuestions int16          `db:"total_questions" json:"total_questions" validate:"required,number"`
-	// FIXME: `required` rejects the zero value, so a game where the player got
+	TotalQuestions int16          `db:"total_questions" json:"total_questions"`
+	// FIXME: Valid rejects the zero value, so a game where the player got
 	// nothing right cannot be saved: the POST 400s and the attempt is lost.
-	// A beginner scoring 0/10 is exactly who this hits. Use `min=0` (or drop
-	// the tag and rely on the CorrectQuestions <= TotalQuestions rule below).
-	CorrectQuestions int16 `db:"correct_questions" json:"correct_questions" validate:"required,number"`
+	// A beginner scoring 0/10 is exactly who this hits. Drop the presence
+	// check and rely on the CorrectQuestions <= TotalQuestions rule.
+	CorrectQuestions int16 `db:"correct_questions" json:"correct_questions"`
 	// FIXME: int16 caps user ids at 32767 and ids are already in the 1500s.
 	// Headroom, but finite -- widen before it matters.
-	UserID int16 `db:"user_id" json:"user_id" validate:"required,number"`
+	UserID int16 `db:"user_id" json:"user_id"`
 	// FIXME: int8 caps notes-per-minute at 127, so any score above that fails
 	// the JSON bind with a 400 and the attempt is silently lost. Reachable by
 	// a fast player on a short game. Widen to int16/float64 -- note the read
 	// side (NoteGameEntryResponse.NotesPerMinute) is already float64.
-	NPM      int8   `db:"notes_per_minute" json:"notes_per_minute" validate:"required,number"`
+	NPM      int8   `db:"notes_per_minute" json:"notes_per_minute"`
 	GameType string `db:"game_type"         json:"game_type"`
 	// Optional: tags this entry as an attempt at a class assignment.
 	AssignmentID *int `db:"assignment_id" json:"assignment_id"`
@@ -51,81 +48,44 @@ type DailyActivityCount struct {
 	GameCount int    `json:"game_count"`
 }
 
-// add an or to the hours to ensure the miliary time and nothing else
+// Valid checks a submitted score entry.
+//
+// TotalQuestions has no presence rule on purpose. The tag said
+// `required`, but the switch that turned tag failures into messages
+// spelled the case "Questions" while the field is "TotalQuestions", so
+// the failure produced no message -- and when it was the only failure the
+// method returned nil. Reproducing that as "no rule" keeps the behavior
+// and removes the branch that could report success on a failed entry.
+//
+// FIXME: TotalQuestions should require a positive value. Adding it is a
+// behavior change, so it is tracked separately.
+func (entry Entry) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
 
-func (entry *Entry) ValidateEntry() error {
-	validate := validator.New()
-	err := validate.RegisterValidation("time", validations.EntryTimeLength)
-	if err != nil {
-		// TODO: json response
-		return err
+	switch {
+	case entry.TimeLength == "":
+		problems["time_length"] = "TimeLength: Time length is required"
+	case !validations.EntryTimeLength(entry.TimeLength):
+		problems["time_length"] = "TimeLength: Time must be in the 23:59:59 format (militaty time)"
 	}
 
-	var errorMessage []string
-
-	// Business rule checks (independent of struct validation)
-	if entry.CorrectQuestions > entry.TotalQuestions {
-		errorMessage = append(errorMessage, "CorrectQuestions: Correct questions cannot be more than total questions")
+	// The business rule outranks the presence rule: a caller who sent more
+	// correct answers than questions needs to hear that, not that a field
+	// is missing.
+	switch {
+	case entry.CorrectQuestions > entry.TotalQuestions:
+		problems["correct_questions"] = "CorrectQuestions: Correct questions cannot be more than total questions"
+	case entry.CorrectQuestions == 0:
+		problems["correct_questions"] = "CorrectQuestions: the amount of correct questions are required"
 	}
 
-	err = validate.Struct(entry)
-	if err != nil {
-		// NOTE: type asserstion
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-
-				case "TimeLength":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "TimeLength: Time length is required")
-					case "time":
-						errorMessage = append(errorMessage, "TimeLength: Time must be in the 23:59:59 format (militaty time)")
-					}
-
-				// FIXME: dead branch -- StructField() returns "TotalQuestions",
-				// so this never matches. A TotalQuestions validation failure
-				// therefore appends no message, and if it is the only failure
-				// errorMessage stays empty and ValidateEntry returns nil --
-				// reporting success on an entry that failed validation.
-				// Rename this case to "TotalQuestions".
-				case "Questions":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Questions: Question amount is required")
-					case "number":
-						errorMessage = append(errorMessage, "Questions: must be a number")
-					}
-
-				case "CorrectQuestions":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "CorrectQuestions: the amount of correct questions are required")
-					case "number":
-						errorMessage = append(errorMessage, "CorrectQuestions: must be a number")
-					}
-
-				case "UserID":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "UserID: ID is required")
-					case "number":
-						errorMessage = append(errorMessage, "CorrectQuestions: must be a number")
-					}
-
-				case "NPM":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "NPM: notes per minute is required")
-					case "number":
-						errorMessage = append(errorMessage, "NPM: must be a number")
-					}
-				}
-			}
-		}
+	if entry.UserID == 0 {
+		problems["user_id"] = "UserID: ID is required"
 	}
-	if len(errorMessage) > 0 {
-		return errors.New(strings.Join(errorMessage, ",\n"))
+
+	if entry.NPM == 0 {
+		problems["notes_per_minute"] = "NPM: notes per minute is required"
 	}
-	return nil
+
+	return problems
 }

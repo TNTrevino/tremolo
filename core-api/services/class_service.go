@@ -70,9 +70,6 @@ func requireClassOwner(ctx context.Context, q generated.Querier, userID, classID
 // CreateClass creates a class owned by the authenticated teacher, with
 // a freshly generated join code (retrying on the rare collision).
 func CreateClass(ctx context.Context, q generated.Querier, teacherID int, req *dtos.CreateClassRequest) (*dtos.ClassResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, validationErr(err)
-	}
 	if err := requireTeacher(ctx, q, teacherID); err != nil {
 		return nil, err
 	}
@@ -161,10 +158,6 @@ func ListStudentClasses(ctx context.Context, q generated.Querier, studentID int)
 // JoinClass adds the authenticated user to the class matching the join
 // code. Joining twice is a no-op, so students can safely re-enter a code.
 func JoinClass(ctx context.Context, q generated.Querier, studentID int, req *dtos.JoinClassRequest) (*dtos.StudentClassResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, validationErr(err)
-	}
-
 	class, err := q.GetClassByJoinCode(ctx, normalizeJoinCode(req.JoinCode))
 	if err != nil {
 		if err == sql.ErrNoRows {

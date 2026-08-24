@@ -3,56 +3,43 @@
 package dtos
 
 import (
-	"errors"
-	"sight-reading/validations"
-	"strings"
+	"context"
 
-	"github.com/go-playground/validator/v10"
+	"sight-reading/validations"
 )
 
 // LoginRequest represents the request body for user login
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8,password_complexity"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-// ValidateLoginRequest validates the login request
-// TODO: move this to the validations package?
-func (req *LoginRequest) ValidateLoginRequest() error {
-	validate := validator.New()
-	err := validate.RegisterValidation("password_complexity", validations.PasswordComplexity)
-	if err != nil {
-		return err
+func (req LoginRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	switch {
+	case req.Email == "":
+		problems["email"] = "Email is required"
+	case !validations.IsEmail(req.Email):
+		problems["email"] = "Email must be a valid email address"
 	}
 
-	err = validate.Struct(req)
-	if err != nil {
-		var errorMessage []string
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-				case "Email":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Email is required")
-					case "email":
-						errorMessage = append(errorMessage, "Email must be a valid email address")
-					}
-				case "Password":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Password is required")
-					case "min":
-						errorMessage = append(errorMessage, "Password must be at least 8 characters")
-					case "password_complexity":
-						errorMessage = append(errorMessage, "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character")
-					}
-				}
-			}
-		}
-		return errors.New(strings.Join(errorMessage, ", "))
+	return addPasswordProblem(problems, req.Password)
+}
+
+// addPasswordProblem applies the password rules Login and Register share.
+// Both routes must reject the same passwords, and the copy is the same
+// sentence on each, so the rule lives once.
+func addPasswordProblem(problems map[string]string, password string) map[string]string {
+	switch {
+	case password == "":
+		problems["password"] = "Password is required"
+	case len(password) < 8:
+		problems["password"] = "Password must be at least 8 characters"
+	case !validations.PasswordComplexity(password):
+		problems["password"] = "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
 	}
-	return nil
+	return problems
 }
 
 // UserResponse represents the user data returned in API responses
@@ -75,70 +62,55 @@ type LoginResponse struct {
 
 // RegisterRequest represents the request body for user registration
 type RegisterRequest struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=8,password_complexity"`
-	FirstName string `json:"first_name" validate:"required,min=2"`
-	LastName  string `json:"last_name" validate:"required,min=2"`
-	Role      string `json:"role" validate:"required,oneof=STUDENT TEACHER PARENT"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Role      string `json:"role"`
 }
 
-// ValidateRegisterRequest validates the registration request
-func (req *RegisterRequest) ValidateRegisterRequest() error {
-	validate := validator.New()
-	err := validate.RegisterValidation("password_complexity", validations.PasswordComplexity)
-	if err != nil {
-		return err
+// registerRoles are the roles a self-service signup may claim. ADMIN is
+// absent on purpose: an admin is created by another admin.
+var registerRoles = map[string]bool{
+	"STUDENT": true,
+	"TEACHER": true,
+	"PARENT":  true,
+}
+
+func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	switch {
+	case req.Email == "":
+		problems["email"] = "Email is required"
+	case !validations.IsEmail(req.Email):
+		problems["email"] = "Email must be a valid email address"
 	}
 
-	err = validate.Struct(req)
-	if err != nil {
-		var errorMessage []string
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-				case "Email":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Email is required")
-					case "email":
-						errorMessage = append(errorMessage, "Email must be a valid email address")
-					}
-				case "Password":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Password is required")
-					case "min":
-						errorMessage = append(errorMessage, "Password must be at least 8 characters")
-					case "password_complexity":
-						errorMessage = append(errorMessage, "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character")
-					}
-				case "FirstName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "First name is required")
-					case "min":
-						errorMessage = append(errorMessage, "First name must be at least 2 characters")
-					}
-				case "LastName":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Last name is required")
-					case "min":
-						errorMessage = append(errorMessage, "Last name must be at least 2 characters")
-					}
-				case "Role":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Role is required")
-					case "oneof":
-						errorMessage = append(errorMessage, "Role must be one of: STUDENT, TEACHER, PARENT")
-					}
-				}
-			}
-		}
-		return errors.New(strings.Join(errorMessage, ", "))
+	problems = addPasswordProblem(problems, req.Password)
+
+	switch {
+	case req.FirstName == "":
+		problems["first_name"] = "First name is required"
+	case len(req.FirstName) < 2:
+		problems["first_name"] = "First name must be at least 2 characters"
 	}
-	return nil
+
+	switch {
+	case req.LastName == "":
+		problems["last_name"] = "Last name is required"
+	case len(req.LastName) < 2:
+		problems["last_name"] = "Last name must be at least 2 characters"
+	}
+
+	switch {
+	case req.Role == "":
+		problems["role"] = "Role is required"
+	case !registerRoles[req.Role]:
+		problems["role"] = "Role must be one of: STUDENT, TEACHER, PARENT"
+	}
+
+	return problems
 }
 
 // RegisterResponse represents the response body for successful registration
@@ -149,32 +121,25 @@ type RegisterResponse struct {
 
 // GoogleCallbackRequest represents the request from the frontend after Google OAuth redirect
 type GoogleCallbackRequest struct {
-	Code        string `json:"code" validate:"required"`
-	RedirectURI string `json:"redirect_uri" validate:"required,url"`
+	Code        string `json:"code"`
+	RedirectURI string `json:"redirect_uri"`
 }
 
-// ValidateGoogleCallbackRequest validates the Google OAuth callback request
-func (req *GoogleCallbackRequest) ValidateGoogleCallbackRequest() error {
-	validate := validator.New()
-	err := validate.Struct(req)
-	if err != nil {
-		var errorMessage []string
-		if errs, ok := err.(validator.ValidationErrors); ok {
-			for _, fieldErr := range errs {
-				switch fieldErr.StructField() {
-				case "Code":
-					errorMessage = append(errorMessage, "Authorization code is required")
-				case "RedirectURI":
-					switch fieldErr.Tag() {
-					case "required":
-						errorMessage = append(errorMessage, "Redirect URI is required")
-					case "url":
-						errorMessage = append(errorMessage, "Redirect URI must be a valid URL")
-					}
-				}
-			}
-		}
-		return errors.New(strings.Join(errorMessage, ", "))
+func (req GoogleCallbackRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	// Code has one message for every failure, which is what the tag-based
+	// version did: its switch had no per-tag branch.
+	if req.Code == "" {
+		problems["code"] = "Authorization code is required"
 	}
-	return nil
+
+	switch {
+	case req.RedirectURI == "":
+		problems["redirect_uri"] = "Redirect URI is required"
+	case !validations.IsURL(req.RedirectURI):
+		problems["redirect_uri"] = "Redirect URI must be a valid URL"
+	}
+
+	return problems
 }

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	dtos "sight-reading/DTOs"
@@ -21,6 +20,15 @@ func RegisterKeyboardBindingsRoutes(mux *http.ServeMux, q database.Querier) {
 		middleware.RequireAuth(handleUpdateKeyboardBindings(q)))
 }
 
+// @Summary  Get the keyboard bindings
+// @Tags     keyboard-bindings
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.KeyboardBindingsResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  404 {object} dtos.ErrorResponse "No keyboard bindings found"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/note-game/keyboard-bindings [get]
 func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)
@@ -43,6 +51,17 @@ func handleGetKeyboardBindings(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// @Summary  Update the keyboard bindings
+// @Tags     keyboard-bindings
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    bindings body dtos.KeyboardBindingsRequest true "Bindings to save"
+// @Success  200 {object} dtos.KeyboardBindingsResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/note-game/keyboard-bindings [put]
 func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := authedUserID(w, r)
@@ -50,19 +69,14 @@ func handleUpdateKeyboardBindings(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		req, err := httpx.Decode[dtos.KeyboardBindingsRequest](r)
+		req, problems, err := httpx.DecodeValid[dtos.KeyboardBindingsRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
 		result, err := services.UpsertKeyboardBindings(r.Context(), q, userID, &req)
 		if err != nil {
-			var validationErr *services.ValidationError
-			if errors.As(err, &validationErr) {
-				httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": validationErr.Unwrap().Error()})
-				return
-			}
 			logger.Error("failed to update keyboard bindings", "error", err, "userID", userID)
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to update keyboard bindings"})
 			return

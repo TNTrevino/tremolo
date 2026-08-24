@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -72,10 +71,32 @@ func idPathParam(w http.ResponseWriter, r *http.Request) (int, bool) {
 // handleCreateUser handles POST /user: admin-created users (student/teacher/
 // parent -- ADMIN creation is rejected).
 // Protected: Requires JWT authentication (ADMIN role, via adminOnly)
+// @Summary  Create a user
+// @Tags     admin
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    user body dtos.CreateUserRequest true "User to create"
+// @Success  201 {object} map[string]interface{} "body, status"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid role"
+// @Failure  403 {object} dtos.ErrorResponse "Creating ADMIN users is not allowed"
+// @Failure  422 {object} dtos.ErrorResponse "Invalid request body or field validation failed"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /user [post]
 func handleCreateUser(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.CreateUserRequest](r)
+		// This handler does not use httpx.DecodeError: it answers 422,
+		// not 400, and its body carries a message and a scenario key.
+		reqBody, problems, err := httpx.DecodeValid[dtos.CreateUserRequest](r)
 		if err != nil {
+			if len(problems) > 0 {
+				httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
+					"error":    httpx.ProblemsError(problems),
+					"message":  "Information invalid",
+					"scenario": "TS.2",
+				})
+				return
+			}
 			httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
 				"error":    true,
 				"message":  "Invalid json body",
@@ -87,12 +108,6 @@ func handleCreateUser(q database.Querier) http.HandlerFunc {
 		result, err := services.CreateUser(r.Context(), q, &reqBody)
 		if err != nil {
 			switch {
-			case errors.Is(err, services.ErrValidation):
-				httpx.JSON(w, http.StatusUnprocessableEntity, httpx.M{
-					"error":    strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-					"message":  "Information invalid",
-					"scenario": "TS.2",
-				})
 			case errors.Is(err, services.ErrForbidden):
 				httpx.JSON(w, http.StatusForbidden, httpx.M{
 					"error": "Creating ADMIN users is not allowed",
@@ -118,6 +133,14 @@ func handleCreateUser(q database.Querier) http.HandlerFunc {
 
 // handleGetStudents handles GET /students.
 // Protected: Requires JWT authentication (ADMIN role, via adminOnly)
+// @Summary  List students
+// @Tags     admin
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {array}  dtos.User
+// @Failure  403 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /students [get]
 func handleGetStudents(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		students, err := services.GetStudents(r.Context(), q)
@@ -131,6 +154,16 @@ func handleGetStudents(q database.Querier) http.HandlerFunc {
 
 // handleGetStudent handles GET /student/{id}.
 // Protected: Requires JWT authentication (ADMIN role, via adminOnly)
+// @Summary  Get a student
+// @Tags     admin
+// @Security BearerAuth
+// @Produce  json
+// @Param    id path int true "Student user ID"
+// @Success  200 {object} dtos.User
+// @Failure  403 {object} dtos.ErrorResponse
+// @Failure  404 {object} dtos.ErrorResponse
+// @Failure  422 {object} dtos.ErrorResponse "Invalid id"
+// @Router   /student/{id} [get]
 func handleGetStudent(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, ok := idPathParam(w, r)
@@ -153,6 +186,14 @@ func handleGetStudent(q database.Querier) http.HandlerFunc {
 
 // handleGetTeachers handles GET /teachers.
 // Protected: Requires JWT authentication (ADMIN role, via adminOnly)
+// @Summary  List teachers
+// @Tags     admin
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {array}  dtos.User
+// @Failure  403 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /teachers [get]
 func handleGetTeachers(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teachers, err := services.GetTeachers(r.Context(), q)
@@ -166,6 +207,16 @@ func handleGetTeachers(q database.Querier) http.HandlerFunc {
 
 // handleGetTeacher handles GET /teacher/{id}.
 // Protected: Requires JWT authentication (ADMIN role, via adminOnly)
+// @Summary  Get a teacher
+// @Tags     admin
+// @Security BearerAuth
+// @Produce  json
+// @Param    id path int true "Teacher user ID"
+// @Success  200 {object} dtos.User
+// @Failure  403 {object} dtos.ErrorResponse
+// @Failure  404 {object} dtos.ErrorResponse
+// @Failure  422 {object} dtos.ErrorResponse "Invalid id"
+// @Router   /teacher/{id} [get]
 func handleGetTeacher(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, ok := idPathParam(w, r)

@@ -62,9 +62,6 @@ func assignmentToDTO(a generated.TremoloAssignment) dtos.AssignmentResponse {
 // The game config is stored as a frozen snapshot: editing personal
 // settings later must not change what was assigned.
 func CreateAssignment(ctx context.Context, q generated.Querier, teacherID, classID int, req *dtos.CreateAssignmentRequest) (*dtos.AssignmentResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, validationErr(err)
-	}
 	if _, err := requireClassOwner(ctx, q, teacherID, classID); err != nil {
 		return nil, err
 	}

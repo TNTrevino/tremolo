@@ -38,10 +38,6 @@ const (
 // or reading that bookkeeping are logged and swallowed (not surfaced to
 // the caller) -- that's existing behavior, tracked separately for cleanup.
 func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dtos.LoginResponse, error) {
-	if err := req.ValidateLoginRequest(); err != nil {
-		return nil, validationErr(err)
-	}
-
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
 
@@ -144,10 +140,6 @@ func HashPassword(password string) (string, error) {
 
 // Register creates a new email/password user (student/teacher/parent).
 func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest) (*dtos.RegisterResponse, error) {
-	if err := req.ValidateRegisterRequest(); err != nil {
-		return nil, validationErr(err)
-	}
-
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
 

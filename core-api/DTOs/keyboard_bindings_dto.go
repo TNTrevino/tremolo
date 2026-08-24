@@ -1,39 +1,37 @@
 package dtos
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"strings"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type KeyBindings struct {
-	KeyC      string `json:"key_c"       validate:"required,max=20"`
-	KeyD      string `json:"key_d"       validate:"required,max=20"`
-	KeyE      string `json:"key_e"       validate:"required,max=20"`
-	KeyF      string `json:"key_f"       validate:"required,max=20"`
-	KeyG      string `json:"key_g"       validate:"required,max=20"`
-	KeyA      string `json:"key_a"       validate:"required,max=20"`
-	KeyB      string `json:"key_b"       validate:"required,max=20"`
-	KeyCSharp string `json:"key_c_sharp" validate:"required,max=20"`
-	KeyDSharp string `json:"key_d_sharp" validate:"required,max=20"`
-	KeyESharp string `json:"key_e_sharp" validate:"required,max=20"`
-	KeyFSharp string `json:"key_f_sharp" validate:"required,max=20"`
-	KeyGSharp string `json:"key_g_sharp" validate:"required,max=20"`
-	KeyASharp string `json:"key_a_sharp" validate:"required,max=20"`
-	KeyBSharp string `json:"key_b_sharp" validate:"required,max=20"`
-	KeyCFlat  string `json:"key_c_flat"  validate:"required,max=20"`
-	KeyDFlat  string `json:"key_d_flat"  validate:"required,max=20"`
-	KeyEFlat  string `json:"key_e_flat"  validate:"required,max=20"`
-	KeyFFlat  string `json:"key_f_flat"  validate:"required,max=20"`
-	KeyGFlat  string `json:"key_g_flat"  validate:"required,max=20"`
-	KeyAFlat  string `json:"key_a_flat"  validate:"required,max=20"`
-	KeyBFlat  string `json:"key_b_flat"  validate:"required,max=20"`
+	KeyC      string `json:"key_c"`
+	KeyD      string `json:"key_d"`
+	KeyE      string `json:"key_e"`
+	KeyF      string `json:"key_f"`
+	KeyG      string `json:"key_g"`
+	KeyA      string `json:"key_a"`
+	KeyB      string `json:"key_b"`
+	KeyCSharp string `json:"key_c_sharp"`
+	KeyDSharp string `json:"key_d_sharp"`
+	KeyESharp string `json:"key_e_sharp"`
+	KeyFSharp string `json:"key_f_sharp"`
+	KeyGSharp string `json:"key_g_sharp"`
+	KeyASharp string `json:"key_a_sharp"`
+	KeyBSharp string `json:"key_b_sharp"`
+	KeyCFlat  string `json:"key_c_flat"`
+	KeyDFlat  string `json:"key_d_flat"`
+	KeyEFlat  string `json:"key_e_flat"`
+	KeyFFlat  string `json:"key_f_flat"`
+	KeyGFlat  string `json:"key_g_flat"`
+	KeyAFlat  string `json:"key_a_flat"`
+	KeyBFlat  string `json:"key_b_flat"`
 }
 
 type KeyboardBindingsRequest struct {
-	KeyBindings KeyBindings `json:"key_bindings" validate:"required"`
+	KeyBindings KeyBindings `json:"key_bindings"`
 }
 
 type KeyboardBindingsResponse struct {
@@ -42,68 +40,83 @@ type KeyboardBindingsResponse struct {
 	KeyBindings KeyBindings `json:"key_bindings"`
 }
 
-func (r *KeyboardBindingsRequest) Validate() error {
-	validate := validator.New()
-	err := validate.Struct(r)
-	if err != nil {
-		errs, ok := err.(validator.ValidationErrors)
-		if !ok {
-			return err
-		}
-		var errorMessages []string
-		for _, fieldErr := range errs {
-			var msg string
-			switch fieldErr.Tag() {
-			case "required":
-				msg = fmt.Sprintf("%s: is required", fieldErr.StructField())
-			case "max":
-				msg = fmt.Sprintf("%s: must be at most %s characters", fieldErr.StructField(), fieldErr.Param())
-			default:
-				msg = fmt.Sprintf("%s: failed validation '%s'", fieldErr.StructField(), fieldErr.Tag())
-			}
-			errorMessages = append(errorMessages, msg)
-		}
-		if len(errorMessages) > 0 {
-			return errors.New(strings.Join(errorMessages, ",\n"))
-		}
-		return err
-	}
-
-	kb := r.KeyBindings
-	seen := make(map[string]string)
-	bindings := []struct {
+// bindingFields lists every note, its JSON field name, and its value.
+// Twenty-one fields with identical rules do not deserve twenty-one copies
+// of the same three lines, and the duplicate-key check needs the same
+// list anyway.
+func (kb KeyBindings) bindingFields() []struct {
+	note  string
+	key   string
+	value string
+} {
+	return []struct {
 		note  string
+		key   string
 		value string
 	}{
-		{"C", kb.KeyC},
-		{"D", kb.KeyD},
-		{"E", kb.KeyE},
-		{"F", kb.KeyF},
-		{"G", kb.KeyG},
-		{"A", kb.KeyA},
-		{"B", kb.KeyB},
-		{"C#", kb.KeyCSharp},
-		{"D#", kb.KeyDSharp},
-		{"E#", kb.KeyESharp},
-		{"F#", kb.KeyFSharp},
-		{"G#", kb.KeyGSharp},
-		{"A#", kb.KeyASharp},
-		{"B#", kb.KeyBSharp},
-		{"Cb", kb.KeyCFlat},
-		{"Db", kb.KeyDFlat},
-		{"Eb", kb.KeyEFlat},
-		{"Fb", kb.KeyFFlat},
-		{"Gb", kb.KeyGFlat},
-		{"Ab", kb.KeyAFlat},
-		{"Bb", kb.KeyBFlat},
+		{"C", "key_c", kb.KeyC},
+		{"D", "key_d", kb.KeyD},
+		{"E", "key_e", kb.KeyE},
+		{"F", "key_f", kb.KeyF},
+		{"G", "key_g", kb.KeyG},
+		{"A", "key_a", kb.KeyA},
+		{"B", "key_b", kb.KeyB},
+		{"C#", "key_c_sharp", kb.KeyCSharp},
+		{"D#", "key_d_sharp", kb.KeyDSharp},
+		{"E#", "key_e_sharp", kb.KeyESharp},
+		{"F#", "key_f_sharp", kb.KeyFSharp},
+		{"G#", "key_g_sharp", kb.KeyGSharp},
+		{"A#", "key_a_sharp", kb.KeyASharp},
+		{"B#", "key_b_sharp", kb.KeyBSharp},
+		{"Cb", "key_c_flat", kb.KeyCFlat},
+		{"Db", "key_d_flat", kb.KeyDFlat},
+		{"Eb", "key_e_flat", kb.KeyEFlat},
+		{"Fb", "key_f_flat", kb.KeyFFlat},
+		{"Gb", "key_g_flat", kb.KeyGFlat},
+		{"Ab", "key_a_flat", kb.KeyAFlat},
+		{"Bb", "key_b_flat", kb.KeyBFlat},
 	}
+}
 
-	for _, b := range bindings {
-		if _, exists := seen[b.value]; exists {
-			return fmt.Errorf("duplicate key assignment: key '%s' is assigned to multiple notes", b.value)
+// goFieldName turns a JSON key like "key_c_sharp" back into the Go field
+// name "KeyCSharp". The messages name the Go field, which is what the
+// tag-driven version reported.
+func goFieldName(jsonKey string) string {
+	out := ""
+	for _, part := range strings.Split(jsonKey, "_") {
+		out += strings.ToUpper(part[:1]) + part[1:]
+	}
+	return out
+}
+
+func (r KeyboardBindingsRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	fields := r.KeyBindings.bindingFields()
+	for _, f := range fields {
+		switch {
+		case f.value == "":
+			problems[f.key] = fmt.Sprintf("%s: is required", goFieldName(f.key))
+		case len(f.value) > 20:
+			problems[f.key] = fmt.Sprintf("%s: must be at most 20 characters", goFieldName(f.key))
 		}
-		seen[b.value] = b.note
 	}
 
-	return nil
+	// The duplicate check only runs on a fully populated set. Two empty
+	// keys are not a duplicate assignment, they are two missing fields,
+	// and reporting both would bury the real problem.
+	if len(problems) > 0 {
+		return problems
+	}
+
+	seen := map[string]string{}
+	for _, f := range fields {
+		if _, exists := seen[f.value]; exists {
+			problems["key_bindings"] = fmt.Sprintf("duplicate key assignment: key '%s' is assigned to multiple notes", f.value)
+			return problems
+		}
+		seen[f.value] = f.note
+	}
+
+	return problems
 }

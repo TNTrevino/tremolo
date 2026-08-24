@@ -27,17 +27,9 @@ const (
 	RecentEntriesLimit = 30
 )
 
-// CreateNoteGameEntry handles business logic for saving a note game entry
-// Validates entry data and authorization before saving
+// CreateNoteGameEntry checks authorization and saves a note game entry.
+// The request body is validated at decode, so entry arrives valid.
 func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticatedUserID int, entry *dtos.Entry) (int64, error) {
-	// Validate entry data
-	if err := entry.ValidateEntry(); err != nil {
-		logger.Error("Entry validation failed",
-			"error", err.Error(),
-			"user_id", entry.UserID)
-		return 0, err
-	}
-
 	// Authorization: Verify the user_id in the request matches authenticated user
 	if int(entry.UserID) != authenticatedUserID {
 		logger.Warn("Authorization failed: user ID mismatch",

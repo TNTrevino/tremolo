@@ -1,6 +1,7 @@
 package generation
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -420,9 +421,8 @@ func generateFakeUser(role dtos.Role, schoolID int16) dtos.User {
 			CreatedTime:  generateFakeTimeCreated(),
 		}
 
-		err := user.ValidateUser()
-		if err != nil {
-			log.Printf("User validation failed (attempt %d/%d): %v", attempt+1, maxRetries, err)
+		if problems := user.Valid(context.Background()); len(problems) > 0 {
+			log.Printf("User validation failed (attempt %d/%d): %v", attempt+1, maxRetries, problems)
 			continue
 		}
 

@@ -146,11 +146,11 @@ func TestGameSettingsRequest_Validate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := tc.req.Validate()
+			problems := tc.req.Valid(context.Background())
 			if tc.wantErr {
-				assert.Error(t, err)
+				assert.NotEmpty(t, problems)
 			} else {
-				assert.NoError(t, err)
+				assert.Empty(t, problems)
 			}
 		})
 	}

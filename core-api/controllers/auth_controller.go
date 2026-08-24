@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -48,11 +48,23 @@ func SetGoogleTokenVerifier(v services.GoogleTokenVerifier) {
 }
 
 // handleGoogleCallback handles POST /api/auth/google/callback.
+// @Summary  Complete Google OAuth sign-in
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    callback body dtos.GoogleCallbackRequest true "Authorization code and redirect URI"
+// @Success  200 {object} dtos.LoginResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid authorization code or Google token"
+// @Failure  403 {object} dtos.ErrorResponse "Google email is not verified"
+// @Failure  409 {object} dtos.ErrorResponse "Email already linked to a different Google account"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/google/callback [post]
 func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.GoogleCallbackRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -68,6 +80,19 @@ func handleGoogleCallback(q database.Querier) http.HandlerFunc {
 
 // handleLinkGoogleAccount handles POST /api/auth/google/link.
 // Protected: requires JWT authentication.
+// @Summary  Link a Google account
+// @Tags     auth
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    callback body dtos.GoogleCallbackRequest true "Authorization code and redirect URI"
+// @Success  200 {object} map[string]interface{} "message"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid authorization code, Google token, or unauthenticated"
+// @Failure  403 {object} dtos.ErrorResponse "Email mismatch or unverified Google email"
+// @Failure  409 {object} dtos.ErrorResponse "Google account already linked elsewhere"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/google/link [post]
 func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := authedUserID(w, r)
@@ -75,9 +100,9 @@ func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		reqBody, err := httpx.Decode[dtos.GoogleCallbackRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.GoogleCallbackRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -96,10 +121,6 @@ func handleLinkGoogleAccount(q database.Querier) http.HandlerFunc {
 // shapes.
 func respondGoogleAuthError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrGoogleExchangeFailed):
 		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid authorization code"})
 	case errors.Is(err, services.ErrGoogleTokenInvalid):
@@ -127,11 +148,21 @@ func respondGoogleAuthError(w http.ResponseWriter, err error) {
 }
 
 // handleLogin handles POST /api/auth/login.
+// @Summary  Log in
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    credentials body dtos.LoginRequest true "Email and password"
+// @Success  200 {object} dtos.LoginResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or credentials"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid credentials or locked account"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/login [post]
 func handleLogin(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.LoginRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.LoginRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -152,10 +183,6 @@ func respondLoginError(w http.ResponseWriter, err error) {
 	var lockoutErr *services.LockoutTriggeredError
 
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrLockCheckFailed):
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
@@ -186,11 +213,20 @@ func respondLoginError(w http.ResponseWriter, err error) {
 }
 
 // handleRegister handles POST /api/auth/register.
+// @Summary  Register a new account
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    account body dtos.RegisterRequest true "New account details"
+// @Success  201 {object} dtos.RegisterResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or email already registered"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/register [post]
 func handleRegister(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[dtos.RegisterRequest](r)
+		reqBody, problems, err := httpx.DecodeValid[dtos.RegisterRequest](r)
 		if err != nil {
-			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid request body"})
+			httpx.DecodeError(w, problems)
 			return
 		}
 
@@ -208,10 +244,6 @@ func handleRegister(q database.Querier) http.HandlerFunc {
 // response bodies the pre-refactor handler produced.
 func respondRegisterError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, services.ErrValidation):
-		httpx.JSON(w, http.StatusBadRequest, httpx.M{
-			"error": strings.TrimPrefix(err.Error(), services.ErrValidation.Error()+": "),
-		})
 	case errors.Is(err, services.ErrEmailCheckFailed):
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{
 			"error":    "Internal server error.",
@@ -233,6 +265,14 @@ func respondRegisterError(w http.ResponseWriter, err error) {
 
 // handleGetCurrentUser handles GET /api/auth/me.
 // Protected: Requires JWT authentication
+// @Summary  Get the current user
+// @Tags     auth
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.UserResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/me [get]
 func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uid, ok := authedUserID(w, r)
@@ -257,13 +297,41 @@ func handleGetCurrentUser(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// refreshTokenRequest is the POST /api/auth/refresh body. It is a named
+// type rather than an anonymous struct for two reasons: a Valid method
+// cannot hang on an anonymous one, and swag needs a real schema to
+// document instead of a bare "object".
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (r refreshTokenRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	if r.RefreshToken == "" {
+		problems["refresh_token"] = "Refresh token is required"
+	}
+
+	return problems
+}
+
 // handleRefreshToken handles POST /api/auth/refresh.
+// @Summary  Refresh an access token
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body refreshTokenRequest true "Refresh token"
+// @Success  200 {object} map[string]interface{} "access_token"
+// @Failure  400 {object} dtos.ErrorResponse "Refresh token is required"
+// @Failure  401 {object} dtos.ErrorResponse "Invalid or expired refresh token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/refresh [post]
 func handleRefreshToken() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody, err := httpx.Decode[struct {
-			RefreshToken string `json:"refresh_token"`
-		}](r)
-		if err != nil || reqBody.RefreshToken == "" {
+		// This handler does not use httpx.DecodeError: a malformed body
+		// and a missing token produce the same message here.
+		reqBody, _, err := httpx.DecodeValid[refreshTokenRequest](r)
+		if err != nil {
 			httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Refresh token is required"})
 			return
 		}

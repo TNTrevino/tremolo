@@ -27,7 +27,7 @@ func insertRealisticEntries(studentID int32, entryCount int) {
 	argIdx := 1
 
 	for _, entry := range entries {
-		if err := entry.ValidateEntry(); err != nil {
+		if len(entry.Valid(context.Background())) > 0 {
 			continue
 		}
 
