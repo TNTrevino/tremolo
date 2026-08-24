@@ -1,0 +1,357 @@
+# Submitting a note-game score entry. Every block below exercises a
+# different layer: dtos.Entry.Valid() (isolated, one bad field at a
+# time, so each message is pinned down on its own), the caller-matches-
+# user_id authorization check, and the assignment-tagging business
+# rules moved here from the old classes.http monolith.
+#
+# Run:  kulala run --tests --env local note-game/create-entry.http
+
+@teacher_email  = kula_entry_teacher_{{$timestamp}}@qa.test
+@student_email  = kula_entry_student_{{$timestamp}}@qa.test
+@outsider_email = kula_entry_outsider_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher who will own the class and
+# assignment used by the tagging cases below.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers the enrolled student who submits most of
+# the entries below.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### RegisterOutsider
+# RegisterOutsider registers a student who never joins the class, used
+# for the not-enrolled tagging case.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{outsider_email}}", "password": "{{password}}", "first_name": "Ollie", "last_name": "Outsider", "role": "STUDENT" }
+
+> {%
+	client.global.set("outsider_id", response.body.user.id);
+	client.global.set("outsider_login_email", response.body.user.email);
+%}
+
+### LoginOutsider
+# LoginOutsider logs the outsider in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{outsider_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("outsider_token", response.body.access_token);
+%}
+
+### SubmitEntry
+# SubmitEntry has the student submit an untagged, well-formed entry and
+# expects 201 with the saved id.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 12,
+	"game_type": "note"
+}
+
+> {%
+	client.test("a well-formed entry is saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Note game entry saved successfully", "unexpected message: " + response.body.message);
+		client.assert(response.body.id > 0, "response carries the new entry id");
+	});
+%}
+
+### EmptyBody
+# EmptyBody submits {} and expects every rule that fires on a zero
+# value to report, sorted alphabetically by JSON key. total_questions
+# has no presence rule (see the FIXME on Entry.Valid), and game_type
+# has no rule in Valid() at all, so neither appears here.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("every zero-valued field with a rule is reported, sorted by JSON key", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"CorrectQuestions: the amount of correct questions are required, " +
+				"NPM: notes per minute is required, " +
+				"TimeLength: Time length is required, " +
+				"UserID: ID is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### CorrectQuestionsExceedsTotal
+# CorrectQuestionsExceedsTotal sends more correct answers than
+# questions asked. The business rule outranks the zero-value presence
+# rule, so this message wins even though correct_questions is nonzero.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 5,
+	"correct_questions": 10,
+	"notes_per_minute": 10,
+	"game_type": "note"
+}
+
+> {%
+	client.test("more correct answers than questions asked is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "CorrectQuestions: Correct questions cannot be more than total questions",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### CorrectQuestionsZero
+# CorrectQuestionsZero sends a legitimate 0/10 score. This is a known
+# bug (see the FIXME on Entry.Valid): the zero-value presence check
+# rejects a real result, so a beginner's honest 0-correct attempt is
+# lost instead of saved.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 0,
+	"notes_per_minute": 10,
+	"game_type": "note"
+}
+
+> {%
+	client.test("a real 0-correct score is rejected, not saved (known bug)", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "CorrectQuestions: the amount of correct questions are required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UserIdZero
+# UserIdZero omits a real user_id and expects 400.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": 0,
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 10,
+	"game_type": "note"
+}
+
+> {%
+	client.test("a zero user id is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "UserID: ID is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### NpmZero
+# NpmZero omits notes_per_minute and expects 400.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 0,
+	"game_type": "note"
+}
+
+> {%
+	client.test("a zero notes-per-minute is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "NPM: notes per minute is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### SubmitEntryForAnotherUser
+# SubmitEntryForAnotherUser has the student submit a body claiming to be
+# the outsider's entry. The body passes DTO validation but fails the
+# service's caller-matches-user_id check, which is 403, not 400.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{outsider_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 10,
+	"game_type": "note"
+}
+
+> {%
+	client.test("a caller cannot submit an entry for a different user", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Not authorized", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for the tagging cases below.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinStudent
+# JoinStudent enrolls the student -- the outsider deliberately never
+# joins.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### CreateAssignment
+# CreateAssignment tags a "note"-type assignment on the class.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" }
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### AttemptWrongGameType
+# AttemptWrongGameType tags the entry to the assignment but claims a
+# different game type ("scale" against a "note" assignment). Both the
+# mismatch and the not-enrolled case below collapse to the same generic
+# 400 -- the controller only special-cases ErrUnauthorized as 403.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 9,
+	"notes_per_minute": 9,
+	"game_type": "scale",
+	"assignment_id": {{assignment_id}}
+}
+
+> {%
+	client.test("a mismatched game type is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(response.body.error === "Failed to save entry", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### AttemptNotEnrolled
+# AttemptNotEnrolled has the outsider, who never joined the class, try
+# to tag an entry to the assignment.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{outsider_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{outsider_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 9,
+	"notes_per_minute": 9,
+	"game_type": "note",
+	"assignment_id": {{assignment_id}}
+}
+
+> {%
+	client.test("a non-enrolled student cannot tag the assignment", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(response.body.error === "Failed to save entry", "unexpected error string: " + response.body.error);
+	});
+%}

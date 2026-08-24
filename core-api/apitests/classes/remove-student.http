@@ -1,0 +1,149 @@
+# Removing a student from a class -- either the owning teacher removes
+# them, or the student removes themself (leaves). The self-leave path
+# deliberately skips the ownership check: any authenticated student may
+# call this on their own id, even for a class they were never enrolled
+# in (the delete just affects zero rows and still reports success).
+#
+# Run:  kulala run --tests --env local classes/remove-student.http
+
+@teacher_email  = kula_remove_teacher_{{$timestamp}}@qa.test
+@student1_email = kula_remove_student1_{{$timestamp}}@qa.test
+@student2_email = kula_remove_student2_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent1
+# RegisterStudent1 registers the student the teacher will remove.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_id", response.body.user.id);
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers a second, non-owning student used for the
+# authorization check.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_id", response.body.user.id);
+	client.global.set("student2_login_email", response.body.user.email);
+%}
+
+### LoginStudent2
+# LoginStudent2 logs student2 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student2_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student2_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for student1 to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinStudent1
+# JoinStudent1 enrolls student1 so there is someone to remove.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student1 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### Student2CannotRemoveStudent1
+# Student2CannotRemoveStudent1 has student2 (not the owning teacher, and
+# not removing themself) try to remove student1 and expects 403.
+DELETE {{baseUrl}}/api/classes/{{class_id}}/students/{{student1_id}}
+Authorization: Bearer {{student2_token}}
+
+> {%
+	client.test("a non-owning, non-self student cannot remove another student", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### Student2LeavesUnenrolledClass
+# Student2LeavesUnenrolledClass has student2 "leave" a class they never
+# joined, on their own id. The self-leave path skips the ownership
+# check entirely, so this still succeeds -- it just deletes zero rows.
+DELETE {{baseUrl}}/api/classes/{{class_id}}/students/{{student2_id}}
+Authorization: Bearer {{student2_token}}
+
+> {%
+	client.test("a student can call self-leave even on a class they never joined", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### TeacherRemovesStudent1
+# TeacherRemovesStudent1 has the owning teacher remove the enrolled
+# student and expects 200 with a confirmation message.
+DELETE {{baseUrl}}/api/classes/{{class_id}}/students/{{student1_id}}
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("the owning teacher removes an enrolled student", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.message === "Student removed", "unexpected message: " + response.body.message);
+	});
+%}

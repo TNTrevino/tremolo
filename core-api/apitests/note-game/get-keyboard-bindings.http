@@ -1,0 +1,91 @@
+# Reading the caller's saved keyboard-to-note bindings for the note
+# game. Registration auto-seeds every new user with the standard QWERTY
+# layout (services.CreateDefaultKeyboardBindings, called from
+# RegisterUser) -- so a normally-registered caller always has bindings
+# to read, and the handler's 404 "No keyboard bindings found" path is
+# effectively unreachable through this suite: the only way to produce a
+# user with no bindings row is the admin-created-user path
+# (services.CreateUser, POST /user), which does not seed defaults, and
+# this suite has no self-service admin path (see admin/README notes).
+#
+# Run:  kulala run --tests --env local note-game/get-keyboard-bindings.http
+
+@student_email = kula_get_bindings_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers a fresh student and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetDefaultBindings
+# GetDefaultBindings reads a brand new account's bindings and expects
+# 200 with the seeded QWERTY defaults, not a 404 -- registration already
+# created a row.
+GET {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a fresh account already has the seeded default bindings", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.key_bindings.key_c === "a", "key_c defaults to the home-row QWERTY layout");
+		client.assert(response.body.key_bindings.key_c_sharp === "q", "key_c_sharp defaults to the top-row QWERTY layout");
+		client.assert(response.body.key_bindings.key_c_flat === "z", "key_c_flat defaults to the bottom-row QWERTY layout");
+	});
+%}
+
+### SaveCustomBindings
+# SaveCustomBindings overwrites the defaults with a custom, fully
+# populated set for the next block to read back.
+PUT {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"key_bindings": {
+		"key_c": "1", "key_d": "2", "key_e": "3", "key_f": "4",
+		"key_g": "5", "key_a": "6", "key_b": "7",
+		"key_c_sharp": "q", "key_d_sharp": "w", "key_e_sharp": "e",
+		"key_f_sharp": "r", "key_g_sharp": "t", "key_a_sharp": "y", "key_b_sharp": "u",
+		"key_c_flat": "z", "key_d_flat": "x", "key_e_flat": "c",
+		"key_f_flat": "v", "key_g_flat": "b", "key_a_flat": "n", "key_b_flat": "m"
+	}
+}
+
+> {%
+	client.test("custom bindings overwrite the defaults", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### GetCustomBindings
+# GetCustomBindings reads the bindings back and expects the custom
+# values, not the defaults.
+GET {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("saved custom bindings are read back unchanged", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.key_bindings.key_c === "1", "key_c is the custom value, not the default 'a'");
+	});
+%}

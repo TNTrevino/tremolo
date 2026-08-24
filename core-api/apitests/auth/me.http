@@ -1,0 +1,84 @@
+# Reading the current authenticated user.
+#
+# Run:  kulala run --tests --env local auth/me.http
+
+@email = kula_me_{{$randomInt}}@qa.test
+
+### Register
+# Register creates the account this file authenticates as and expects
+# 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.global.set("me_login_email", response.body.user.email);
+%}
+
+### Login
+# Login stashes the access token Me will present.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{me_login_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.global.set("me_token", response.body.access_token);
+%}
+
+### Me
+# Me reads the caller's own profile back and expects 200 with the same
+# email and role it registered with.
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{me_token}}
+
+> {%
+	client.test("me returns the caller's own profile", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.email === client.global.get("me_login_email"), "email matches the registered account");
+		client.assert(response.body.role === "STUDENT", "role matches the registered account");
+	});
+%}
+
+### MeNoToken
+# MeNoToken sends no Authorization header at all and expects 401.
+GET {{baseUrl}}/api/auth/me
+
+> {%
+	client.test("no token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### MeBadToken
+# MeBadToken sends a garbage bearer token and expects the same 401 as no
+# token at all.
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer not-a-real-token
+
+> {%
+	client.test("a garbage token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

@@ -1,0 +1,180 @@
+# Registering a new account. Every negative block below asserts the
+# *exact* response body, because httpx.ProblemsError sorts problem keys
+# alphabetically by JSON field name and one field yields at most one
+# message -- see core-api/apitests/README.md.
+#
+# Run:  kulala run --tests --env local auth/register.http
+
+@email = kula_register_{{$randomInt}}@qa.test
+
+### Register
+# Register creates a fresh STUDENT account and expects 201 with the
+# stored user echoed back.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("register creates the user", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.user.id > 0, "response carries the new user id");
+		client.assert(response.body.user.role === "STUDENT", "role is echoed back");
+	});
+	client.global.set("register_email", response.body.user.email);
+%}
+
+### RegisterDuplicateEmail
+# RegisterDuplicateEmail reuses the email Register just stored and
+# expects 400, not 409 -- duplicate email is a bad request here, not a
+# conflict.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{register_email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("a duplicate email is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Email already exists",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterEmptyBody
+# RegisterEmptyBody sends {} -- five fields, five problems. Struct order
+# is email, password, first_name, last_name, role -- the response is
+# alphabetical by JSON key instead, so "Password" lands fourth.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("every empty field is reported, sorted by JSON key", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"Email is required, " +
+				"First name is required, " +
+				"Last name is required, " +
+				"Password is required, " +
+				"Role is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+	client.global.set("empty_body_error", response.body.error);
+%}
+
+### RegisterEmptyBodyAgain
+# RegisterEmptyBodyAgain repeats the identical request. Go map iteration
+# is random, so the same request must still produce the same bytes --
+# that is the whole reason ProblemsError sorts.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("the order is stable across identical requests", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === client.global.get("empty_body_error"),
+			"order drifted between two identical requests: " + response.body.error
+		);
+	});
+%}
+
+### RegisterSecondRulePerField
+# RegisterSecondRulePerField makes every field present but wrong, so each
+# field falls through to its second rule. Same five keys, same
+# alphabetical order.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "not-an-email",
+	"password": "short",
+	"first_name": "A",
+	"last_name": "B",
+	"role": "WIZARD"
+}
+
+> {%
+	client.test("present-but-invalid fields report their second rule", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"Email must be a valid email address, " +
+				"First name must be at least 2 characters, " +
+				"Last name must be at least 2 characters, " +
+				"Password must be at least 8 characters, " +
+				"Role must be one of: STUDENT, TEACHER, PARENT",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterOneMessagePerField
+# RegisterOneMessagePerField sends a password that is long enough but has
+# no uppercase letter, digit or special character. Only the complexity
+# message comes back -- the length rule is an earlier switch case that
+# did not match, and the map holds one value per key regardless.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "kula_register_ok_{{$timestamp}}@qa.test",
+	"password": "alllowercase",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("a field reports one message, not a list", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"Password must contain at least 1 uppercase letter, " +
+				"1 lowercase letter, 1 number, and 1 special character",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterMalformedJson
+# RegisterMalformedJson sends a body that never parses, so there are no
+# fields to name. DecodeValid returns a nil problems map and DecodeError
+# falls back to the generic message.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "half-a-body"
+
+> {%
+	client.test("unparseable JSON gets the generic message", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid request body",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

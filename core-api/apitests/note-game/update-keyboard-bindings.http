@@ -1,0 +1,113 @@
+# Saving the caller's keyboard-to-note bindings. All 21 notes (natural,
+# sharp, flat) must be assigned in one request, each to a distinct key.
+#
+# Run:  kulala run --tests --env local note-game/update-keyboard-bindings.http
+
+@student_email = kula_update_bindings_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### UpdateBindings
+# UpdateBindings saves a well-formed, fully-populated binding set and
+# expects 200 with the values echoed back.
+PUT {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"key_bindings": {
+		"key_c": "a", "key_d": "s", "key_e": "d", "key_f": "f",
+		"key_g": "g", "key_a": "h", "key_b": "j",
+		"key_c_sharp": "w", "key_d_sharp": "e", "key_e_sharp": "r",
+		"key_f_sharp": "t", "key_g_sharp": "y", "key_a_sharp": "u", "key_b_sharp": "i",
+		"key_c_flat": "z", "key_d_flat": "x", "key_e_flat": "c",
+		"key_f_flat": "v", "key_g_flat": "b", "key_a_flat": "n", "key_b_flat": "m"
+	}
+}
+
+> {%
+	client.test("a fully-populated, distinct binding set is saved", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.key_bindings.key_c === "a", "key_c echoes back");
+	});
+%}
+
+### UpdateBindingsMissingKey
+# UpdateBindingsMissingKey leaves key_c blank. The message names the Go
+# field (via goFieldName), not the JSON key.
+PUT {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"key_bindings": {
+		"key_c": "", "key_d": "s", "key_e": "d", "key_f": "f",
+		"key_g": "g", "key_a": "h", "key_b": "j",
+		"key_c_sharp": "w", "key_d_sharp": "e", "key_e_sharp": "r",
+		"key_f_sharp": "t", "key_g_sharp": "y", "key_a_sharp": "u", "key_b_sharp": "i",
+		"key_c_flat": "z", "key_d_flat": "x", "key_e_flat": "c",
+		"key_f_flat": "v", "key_g_flat": "b", "key_a_flat": "n", "key_b_flat": "m"
+	}
+}
+
+> {%
+	client.test("a missing key reports the Go field name, not the JSON key", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "KeyC: is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### UpdateBindingsDuplicateKey
+# UpdateBindingsDuplicateKey assigns the same physical key to both C and
+# D. The duplicate check only runs once every field is present, so this
+# is the one and only problem reported.
+PUT {{baseUrl}}/api/note-game/keyboard-bindings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"key_bindings": {
+		"key_c": "a", "key_d": "a", "key_e": "d", "key_f": "f",
+		"key_g": "g", "key_a": "h", "key_b": "j",
+		"key_c_sharp": "w", "key_d_sharp": "e", "key_e_sharp": "r",
+		"key_f_sharp": "t", "key_g_sharp": "y", "key_a_sharp": "u", "key_b_sharp": "i",
+		"key_c_flat": "z", "key_d_flat": "x", "key_e_flat": "c",
+		"key_f_flat": "v", "key_g_flat": "b", "key_a_flat": "n", "key_b_flat": "m"
+	}
+}
+
+> {%
+	client.test("assigning one key to two notes is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "duplicate key assignment: key 'a' is assigned to multiple notes",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
