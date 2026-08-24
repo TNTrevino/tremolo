@@ -2,9 +2,10 @@ package services
 
 import (
 	"database/sql"
+	"time"
+
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
-	"time"
 )
 
 // convertRowsToChartData converts database rows to chart data with computed metrics

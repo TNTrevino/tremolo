@@ -7,12 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sight-reading/database/generated"
-	"sight-reading/logger"
-	"sight-reading/middleware"
 	"strconv"
 	"strings"
 	"time"
+
+	"sight-reading/database/generated"
+	"sight-reading/logger"
+	"sight-reading/middleware"
 
 	dtos "sight-reading/DTOs"
 

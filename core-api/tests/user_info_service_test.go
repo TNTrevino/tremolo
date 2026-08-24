@@ -3,10 +3,11 @@ package tests
 import (
 	"context"
 	"regexp"
+	"testing"
+
 	"sight-reading/database"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

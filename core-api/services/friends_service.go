@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
 	dtos "sight-reading/DTOs"
 	"sight-reading/database/generated"
 	"sight-reading/logger"
