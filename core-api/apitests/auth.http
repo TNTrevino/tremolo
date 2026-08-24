@@ -21,7 +21,7 @@
 < {%
 	client.global.clear();
 %}
-POST {{base_url}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -42,7 +42,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -60,7 +60,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN_BAD_PASSWORD
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {

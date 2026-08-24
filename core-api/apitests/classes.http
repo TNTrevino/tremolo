@@ -31,7 +31,7 @@
 < {%
 	client.global.clear();
 %}
-POST {{base_url}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 { "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
@@ -44,7 +44,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN_TEACHER
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 { "email": "{{teacher_login_email}}", "password": "{{password}}" }
@@ -58,7 +58,7 @@ Content-Type: application/json
 %}
 
 ### REGISTER_STUDENT1
-POST {{base_url}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 { "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
@@ -72,7 +72,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN_STUDENT1
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 { "email": "{{student1_login_email}}", "password": "{{password}}" }
@@ -82,7 +82,7 @@ Content-Type: application/json
 %}
 
 ### REGISTER_STUDENT2
-POST {{base_url}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 { "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
@@ -93,7 +93,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN_STUDENT2
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 { "email": "{{student2_login_email}}", "password": "{{password}}" }
@@ -103,7 +103,7 @@ Content-Type: application/json
 %}
 
 ### REGISTER_OUTSIDER
-POST {{base_url}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 { "email": "{{outsider_email}}", "password": "{{password}}", "first_name": "Ollie", "last_name": "Outsider", "role": "STUDENT" }
@@ -114,7 +114,7 @@ Content-Type: application/json
 %}
 
 ### LOGIN_OUTSIDER
-POST {{base_url}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 { "email": "{{outsider_login_email}}", "password": "{{password}}" }
@@ -126,7 +126,7 @@ Content-Type: application/json
 # ─────────────────────────── classes ───────────────────────────
 
 ### CREATE_CLASS
-POST {{base_url}}/api/classes
+POST {{baseUrl}}/api/classes
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
@@ -146,7 +146,7 @@ Content-Type: application/json
 %}
 
 ### STUDENT_CANNOT_CREATE_CLASS
-POST {{base_url}}/api/classes
+POST {{baseUrl}}/api/classes
 Authorization: Bearer {{student1_token}}
 Content-Type: application/json
 
@@ -159,7 +159,7 @@ Content-Type: application/json
 %}
 
 ### JOIN_STUDENT1_MESSY_CODE
-POST {{base_url}}/api/classes/join
+POST {{baseUrl}}/api/classes/join
 Authorization: Bearer {{student1_token}}
 Content-Type: application/json
 
@@ -173,7 +173,7 @@ Content-Type: application/json
 %}
 
 ### JOIN_STUDENT2
-POST {{base_url}}/api/classes/join
+POST {{baseUrl}}/api/classes/join
 Authorization: Bearer {{student2_token}}
 Content-Type: application/json
 
@@ -186,7 +186,7 @@ Content-Type: application/json
 %}
 
 ### JOIN_BAD_CODE
-POST {{base_url}}/api/classes/join
+POST {{baseUrl}}/api/classes/join
 Authorization: Bearer {{outsider_token}}
 Content-Type: application/json
 
@@ -199,7 +199,7 @@ Content-Type: application/json
 %}
 
 ### ROSTER
-GET {{base_url}}/api/classes/{{class_id}}/roster
+GET {{baseUrl}}/api/classes/{{class_id}}/roster
 Authorization: Bearer {{teacher_token}}
 
 > {%
@@ -210,7 +210,7 @@ Authorization: Bearer {{teacher_token}}
 %}
 
 ### ROSTER_NOT_OWNER
-GET {{base_url}}/api/classes/{{class_id}}/roster
+GET {{baseUrl}}/api/classes/{{class_id}}/roster
 Authorization: Bearer {{student1_token}}
 
 > {%
@@ -222,7 +222,7 @@ Authorization: Bearer {{student1_token}}
 # ───────────────────────── assignments ─────────────────────────
 
 ### CREATE_ASSIGNMENT
-POST {{base_url}}/api/classes/{{class_id}}/assignments
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
 Authorization: Bearer {{teacher_token}}
 Content-Type: application/json
 
@@ -244,7 +244,7 @@ Content-Type: application/json
 
 ### SUBMIT_ATTEMPT_STUDENT1
 # An attempt is a score entry tagged with the assignment: 15/20 = 75%.
-POST {{base_url}}/api/note-game/entry
+POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student1_token}}
 Content-Type: application/json
 
@@ -266,7 +266,7 @@ Content-Type: application/json
 
 ### ATTEMPT_WRONG_GAME_TYPE
 # Entry says "scale" but the assignment is a "note" game — tag rejected.
-POST {{base_url}}/api/note-game/entry
+POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student1_token}}
 Content-Type: application/json
 
@@ -289,7 +289,7 @@ Content-Type: application/json
 ### ATTEMPT_NOT_ENROLLED
 # The outsider never joined the class, so they can't tag the assignment.
 # (The entry endpoint collapses this to 400, not 403.)
-POST {{base_url}}/api/note-game/entry
+POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{outsider_token}}
 Content-Type: application/json
 
@@ -312,7 +312,7 @@ Content-Type: application/json
 # ─────────────────────── read the results ──────────────────────
 
 ### STUDENT_ASSIGNMENTS
-GET {{base_url}}/api/assignments
+GET {{baseUrl}}/api/assignments
 Authorization: Bearer {{student1_token}}
 
 > {%
@@ -326,7 +326,7 @@ Authorization: Bearer {{student1_token}}
 %}
 
 ### RESULTS_GRID
-GET {{base_url}}/api/assignments/{{assignment_id}}/results
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/results
 Authorization: Bearer {{teacher_token}}
 
 > {%
@@ -341,7 +341,7 @@ Authorization: Bearer {{teacher_token}}
 %}
 
 ### RESULTS_NOT_OWNER
-GET {{base_url}}/api/assignments/{{assignment_id}}/results
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/results
 Authorization: Bearer {{student1_token}}
 
 > {%
