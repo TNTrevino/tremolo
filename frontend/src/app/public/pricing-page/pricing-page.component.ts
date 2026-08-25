@@ -4,6 +4,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../shared/components/ui/card.directive";
+import { CONTACT_EMAIL } from "../../shared/constants/contact";
 
 /** One card in the "What's included" grid. */
 interface IncludedItem {
@@ -43,9 +44,7 @@ export class PricingPageComponent {
 	/** The five engraved staff lines behind the hero headline, as on /home. */
 	protected readonly staffLines = [0, 1, 2, 3, 4] as const;
 
-	/** TODO(owner): confirm contact@tremolonotes.com is a mailbox somebody reads before the first teacher demo. Same placeholder as the privacy and terms pages -- change all three together. */
-	protected readonly inviteHref =
-		"mailto:contact@tremolonotes.com?subject=Tremolo%20pilot%20invite%20code";
+	protected readonly inviteHref = `mailto:${CONTACT_EMAIL}?subject=Tremolo%20pilot%20invite%20code`;
 
 	protected readonly included: readonly IncludedItem[] = [
 		{
