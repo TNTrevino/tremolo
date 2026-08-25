@@ -398,6 +398,14 @@ definitions:
         type: string
       first_name:
         type: string
+      grade_level:
+        description: |-
+          GradeLevel is an optional age-band signal a student may supply (#244):
+          "6".."12" or "other". A grade, not a birth date -- see
+          docs/legal/student-privacy-posture.md. Optional on purpose: it gates
+          nothing, every pre-#244 account has none, and an API client that never
+          sends it stays valid.
+        type: string
       invite_code:
         description: |-
           InviteCode is required for, and only read by, a TEACHER signup:

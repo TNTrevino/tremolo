@@ -43,6 +43,9 @@ func CreateUser(ctx context.Context, q generated.Querier, req *dtos.CreateUserRe
 		Email:     sql.NullString{String: req.Email, Valid: req.Email != ""},
 		Password:  sql.NullString{String: passwordHash, Valid: true},
 		RoleID:    roleID,
+		// GradeLevel is left unset (NULL): an admin-created user has no
+		// grade signal by design (#244) -- nobody filled out the signup
+		// form that asks for one.
 	}
 
 	if req.SchoolID != 0 {

@@ -193,12 +193,13 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	}
 
 	createParams := generated.CreateUserParams{
-		FirstName: strings.TrimSpace(req.FirstName),
-		LastName:  strings.TrimSpace(req.LastName),
-		Email:     emailNullStr,
-		Password:  sql.NullString{String: passwordHash, Valid: true},
-		RoleID:    roleID,
-		SchoolID:  sql.NullInt32{Valid: false},
+		FirstName:  strings.TrimSpace(req.FirstName),
+		LastName:   strings.TrimSpace(req.LastName),
+		Email:      emailNullStr,
+		Password:   sql.NullString{String: passwordHash, Valid: true},
+		RoleID:     roleID,
+		SchoolID:   sql.NullInt32{Valid: false},
+		GradeLevel: gradeLevelParam(req.GradeLevel),
 	}
 
 	createdUser, err := q.CreateUser(ctx, createParams)
@@ -220,6 +221,14 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 		Message: "User created successfully",
 		User:    convertCreateUserRowToUserResponse(createdUser, req.Role),
 	}, nil
+}
+
+// gradeLevelParam turns an optional grade into a nullable column value.
+// An empty string is "not stated", which is a NULL rather than an empty
+// string: the two must not be distinguishable in the data.
+func gradeLevelParam(grade string) sql.NullString {
+	trimmed := strings.TrimSpace(grade)
+	return sql.NullString{String: trimmed, Valid: trimmed != ""}
 }
 
 func checkIfUserExists(ctx context.Context, q generated.Querier, email sql.NullString) (bool, error) {

@@ -321,3 +321,23 @@ func UniqueEmail(t *testing.T, prefix string) string {
 	t.Helper()
 	return fmt.Sprintf("%s_%d@test.com", prefix, time.Now().UnixNano())
 }
+
+// GetTestUserGradeLevel reads a user's grade_level column directly. It
+// exists because GetUserByEmail does not select that column -- the only
+// thing a test needs from it is proving what CreateUser actually
+// persisted (#244), which doesn't warrant widening a query every other
+// caller of GetUserByEmail would then also get back. An invalid
+// (NULL) result means the column is unset.
+func GetTestUserGradeLevel(t *testing.T, email string) sql.NullString {
+	t.Helper()
+	SetupTestDB(t)
+
+	var gradeLevel sql.NullString
+	err := database.DBConn.QueryRowContext(context.Background(),
+		"select grade_level from tremolo.users where email = $1", email,
+	).Scan(&gradeLevel)
+	if err != nil {
+		t.Fatalf("Failed to read grade_level for %q: %v", email, err)
+	}
+	return gradeLevel
+}

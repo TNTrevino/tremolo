@@ -81,6 +81,12 @@ type RegisterRequest struct {
 	// self-service cannot claim that role without one (#250). Whether the
 	// code is real is a database question services.Register answers.
 	InviteCode string `json:"invite_code"`
+	// GradeLevel is an optional age-band signal a student may supply (#244):
+	// "6".."12" or "other". A grade, not a birth date -- see
+	// docs/legal/student-privacy-posture.md. Optional on purpose: it gates
+	// nothing, every pre-#244 account has none, and an API client that never
+	// sends it stays valid.
+	GradeLevel string `json:"grade_level"`
 }
 
 // registerRoles are the roles a self-service signup may claim. ADMIN is
@@ -91,6 +97,20 @@ type RegisterRequest struct {
 var registerRoles = map[string]bool{
 	"STUDENT": true,
 	"TEACHER": true,
+}
+
+// gradeLevels is the allowed set for RegisterRequest.GradeLevel (#244).
+// "other" covers an adult or anyone the 6-12 band does not describe -- an
+// answer, not a refusal.
+var gradeLevels = map[string]bool{
+	"6":     true,
+	"7":     true,
+	"8":     true,
+	"9":     true,
+	"10":    true,
+	"11":    true,
+	"12":    true,
+	"other": true,
 }
 
 func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
@@ -132,6 +152,13 @@ func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
 	// database whether the code is real, unexpired and unspent.
 	if req.Role == string(Teacher) && strings.TrimSpace(req.InviteCode) == "" {
 		problems["invite_code"] = "Invite code is required for teacher accounts"
+	}
+
+	// Validated only when present. Making it required would change the exact
+	// -string bodies apitests/auth/register.http pins and would break every
+	// existing register call. The UI asks; the API does not insist.
+	if grade := strings.TrimSpace(req.GradeLevel); grade != "" && !gradeLevels[grade] {
+		problems["grade_level"] = "Grade level must be one of: 6, 7, 8, 9, 10, 11, 12, other"
 	}
 
 	return problems

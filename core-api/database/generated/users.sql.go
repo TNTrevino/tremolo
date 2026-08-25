@@ -62,6 +62,8 @@ type CreateOAuthUserRow struct {
 	CreatedDate sql.NullTime   `json:"created_date"`
 }
 
+// CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
+// column just defaults NULL for these rows (#244).
 func (q *Queries) CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createOAuthUser,
 		arg.FirstName,
@@ -91,7 +93,8 @@ insert into tremolo.users (
     email,
     password,
     role_id,
-    school_id
+    school_id,
+    grade_level
 )
 values (
     $1,
@@ -99,18 +102,20 @@ values (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
-returning id, first_name, last_name, email, role_id, school_id, created_date
+returning id, first_name, last_name, email, role_id, school_id, created_date, grade_level
 `
 
 type CreateUserParams struct {
-	FirstName string         `json:"first_name"`
-	LastName  string         `json:"last_name"`
-	Email     sql.NullString `json:"email"`
-	Password  sql.NullString `json:"password"`
-	RoleID    int32          `json:"role_id"`
-	SchoolID  sql.NullInt32  `json:"school_id"`
+	FirstName  string         `json:"first_name"`
+	LastName   string         `json:"last_name"`
+	Email      sql.NullString `json:"email"`
+	Password   sql.NullString `json:"password"`
+	RoleID     int32          `json:"role_id"`
+	SchoolID   sql.NullInt32  `json:"school_id"`
+	GradeLevel sql.NullString `json:"grade_level"`
 }
 
 type CreateUserRow struct {
@@ -121,6 +126,7 @@ type CreateUserRow struct {
 	RoleID      int32          `json:"role_id"`
 	SchoolID    sql.NullInt32  `json:"school_id"`
 	CreatedDate sql.NullTime   `json:"created_date"`
+	GradeLevel  sql.NullString `json:"grade_level"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -131,6 +137,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.Password,
 		arg.RoleID,
 		arg.SchoolID,
+		arg.GradeLevel,
 	)
 	var i CreateUserRow
 	err := row.Scan(
@@ -141,6 +148,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.RoleID,
 		&i.SchoolID,
 		&i.CreatedDate,
+		&i.GradeLevel,
 	)
 	return i, err
 }

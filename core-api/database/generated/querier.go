@@ -27,6 +27,8 @@ type Querier interface {
 	// note_game_entries queries
 	CreateNoteGameEntry(ctx context.Context, arg CreateNoteGameEntryParams) (int32, error)
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
+	// CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
+	// column just defaults NULL for these rows (#244).
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
 	// Teacher invite codes. Redemption is deliberately a single conditional
