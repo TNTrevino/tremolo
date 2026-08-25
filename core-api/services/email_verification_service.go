@@ -81,6 +81,17 @@ func SendVerificationEmail(ctx context.Context, q generated.Querier, userID int,
 }
 
 // VerifyEmail redeems a token minted by SendVerificationEmail.
+//
+// The token is consumed FIRST, before email_verified_at is touched -- same
+// ordering as ResetPassword, and the same reason: consuming it is what
+// makes it single-use, and doing that update last would leave a replayable
+// token sitting around if MarkEmailVerified failed partway through. A
+// MarkEmailVerified failure here is surfaced to the caller (not
+// log-and-swallow like the OAuth flows' best-effort calls), because
+// verifying the address is this function's entire job rather than
+// bookkeeping alongside some other operation that already succeeded; the
+// token being burned in that rare case is the safer failure to have, and
+// pressing "resend" mints a fresh one.
 func VerifyEmail(ctx context.Context, q generated.Querier, req dtos.VerifyEmailRequest) error {
 	row, err := q.ConsumeEmailToken(ctx, generated.ConsumeEmailTokenParams{
 		TokenHash: HashResetToken(req.Token),

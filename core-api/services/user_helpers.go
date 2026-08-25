@@ -130,6 +130,25 @@ func convertGetUserGeneralInfoRowToDTO(userInfo generated.GetUserGeneralInfoRow)
 	return dto.ToDTO()
 }
 
+// convertCreateOAuthUserRowToUserResponse converts a CreateOAuthUserRow to
+// a UserResponse DTO, the same way convertCreateUserRowToUserResponse does
+// for the email/password signup row -- CreateOAuthUserRow also returns
+// role_id rather than a role name, so the caller passes roleName in.
+// HasGoogle and EmailVerified are always true: every caller reaches this
+// converter only after Google has just authenticated the address (see
+// convertGetUserByGoogleIDRowToUserResponse for the same reasoning).
+func convertCreateOAuthUserRowToUserResponse(user generated.CreateOAuthUserRow, roleName string) dtos.UserResponse {
+	return dtos.UserResponse{
+		ID:            int(user.ID),
+		Email:         user.Email.String,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Role:          roleName,
+		HasGoogle:     true,
+		EmailVerified: true,
+	}
+}
+
 func convertGetUserByEmailRowToUserResponse(user generated.GetUserByEmailRow) dtos.UserResponse {
 	return dtos.UserResponse{
 		ID:            int(user.ID),

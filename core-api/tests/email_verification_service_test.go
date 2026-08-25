@@ -8,6 +8,7 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
@@ -18,6 +19,19 @@ import (
 // resetTokenPattern (password_reset_service_test.go) is reused here: it
 // only looks for a "token=" query parameter, which is exactly as true of
 // a "/verify-email?token=..." link as of a "/reset-password?token=..." one.
+
+// countUnused returns how many of tokens have never been redeemed. Shared
+// by the two SendVerificationEmail tests below, which both need to know
+// exactly one live token remains after their respective setup.
+func countUnused(tokens []generated.TremoloEmailToken) int {
+	unused := 0
+	for _, tok := range tokens {
+		if !tok.UsedAt.Valid {
+			unused++
+		}
+	}
+	return unused
+}
 
 // ---------- SendVerificationEmail ----------
 
@@ -37,13 +51,7 @@ func TestSendVerificationEmail_EnqueuesALinkAndAToken(t *testing.T) {
 	assert.Contains(t, queued[0].BodyText, "/verify-email?token=")
 
 	tokens := testutil.EmailTokensFor(t, userID, services.PurposeVerifyEmail)
-	unused := 0
-	for _, tok := range tokens {
-		if !tok.UsedAt.Valid {
-			unused++
-		}
-	}
-	assert.Equal(t, 1, unused, "expected exactly one unused token row")
+	assert.Equal(t, 1, countUnused(tokens), "expected exactly one unused token row")
 }
 
 func TestSendVerificationEmail_InvalidatesThePreviousToken(t *testing.T) {
@@ -72,13 +80,7 @@ func TestSendVerificationEmail_InvalidatesThePreviousToken(t *testing.T) {
 
 	tokens := testutil.EmailTokensFor(t, userID, services.PurposeVerifyEmail)
 	require.Len(t, tokens, 2)
-	unused := 0
-	for _, tok := range tokens {
-		if !tok.UsedAt.Valid {
-			unused++
-		}
-	}
-	assert.Equal(t, 1, unused, "only the newest (second) token should remain unused")
+	assert.Equal(t, 1, countUnused(tokens), "only the newest (second) token should remain unused")
 }
 
 // ---------- VerifyEmail ----------

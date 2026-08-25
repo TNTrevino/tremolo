@@ -536,6 +536,7 @@ func TestAuthRoutes_AuthRequirement(t *testing.T) {
 		{http.MethodPost, "/api/auth/register"},
 		{http.MethodPost, "/api/auth/refresh"},
 		{http.MethodPost, "/api/auth/google/callback"},
+		{http.MethodPost, "/api/auth/verify-email"},
 	}
 	for _, rt := range publicRoutes {
 		w := httptest.NewRecorder()
@@ -550,6 +551,7 @@ func TestAuthRoutes_AuthRequirement(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/auth/me"},
 		{http.MethodPost, "/api/auth/google/link"},
+		{http.MethodPost, "/api/auth/resend-verification"},
 	}
 	for _, rt := range protectedRoutes {
 		w := httptest.NewRecorder()
