@@ -6,10 +6,33 @@ import {
 import { TestBed } from "@angular/core/testing";
 
 import { environment } from "../../../../environments/environment";
+import type { UserExport } from "../models/export.models";
 import { AccountService } from "./account.service";
 
 const USERS = `${environment.coreApi}/api/users`;
 const AUTH = `${environment.coreApi}/api/auth`;
+
+const EXPORT_FIXTURE: UserExport = {
+	exported_at: "2026-08-25T00:00:00Z",
+	profile: {
+		id: 42,
+		first_name: "Baseline",
+		last_name: "Student",
+		email: "baseline.student@tremolo.test",
+		role: "STUDENT",
+		instrument: "",
+		school: "",
+		has_google: false,
+		created_date: "2026-01-01",
+		created_time: "00:00:00",
+	},
+	settings: { note_game: null, games: [] },
+	keyboard_bindings: null,
+	score_entries: [],
+	classes: { joined: [], owned: [] },
+	assignment_attempts: [],
+	friends: [],
+};
 
 describe("AccountService", () => {
 	let service: AccountService;
@@ -75,5 +98,16 @@ describe("AccountService", () => {
 			message: "Your email address has been updated.",
 			email: "new@example.com",
 		});
+	});
+
+	it("GETs the caller's own data export", () => {
+		let result: UserExport | undefined;
+		service.exportData(42).subscribe((res) => (result = res));
+
+		const req = backend.expectOne(`${USERS}/42/export`);
+		expect(req.request.method).toBe("GET");
+		req.flush(EXPORT_FIXTURE);
+
+		expect(result).toEqual(EXPORT_FIXTURE);
 	});
 });

@@ -287,7 +287,11 @@
 							Get a copy of all your practice data, statistics, and account
 							information in JSON format.
 						</p>
-						<app-button variant="outline" (click)="downloadData()">
+						<app-button
+							variant="outline"
+							[loading]="exporting()"
+							(click)="exportData()"
+						>
 							<ng-icon
 								name="lucideDownload"
 								size="1rem"

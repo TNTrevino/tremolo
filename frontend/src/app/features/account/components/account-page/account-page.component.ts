@@ -28,6 +28,7 @@ import {
 	type PasswordChangeFormData,
 	passwordChangeSchema,
 } from "../../../../shared/validators/auth.schemas";
+import type { UserExport } from "../../models/export.models";
 import { AccountService } from "../../services/account.service";
 
 const BLANK_PASSWORD_FORM: PasswordChangeFormData = {
@@ -46,12 +47,12 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
 /**
  * Account settings. Port of frontend-react/src/pages/AccountPage.tsx.
  *
- * Five cards and a confirmation modal. The data-download and delete-account
- * actions still have no backend route (`core-api/controllers/user_info_controller.go`
- * mounts one GET) and stay toast stubs, ported as-is -- see
- * phase-3-subfeature-3-handoff.md. Password and email changes are real now
- * (#249): AccountService's PUT/POST calls, wired the same way every other
- * mutation on this page-tier is (a one-shot `.subscribe()`, not `rxResource`).
+ * Five cards and a confirmation modal. The delete-account action still
+ * has no backend route and stays a toast stub, ported as-is -- see
+ * phase-3-subfeature-3-handoff.md. Password and email changes (#249) and
+ * the data export (#243) are all real: AccountService's PUT/POST/GET
+ * calls, wired the same way every other mutation on this page-tier is (a
+ * one-shot `.subscribe()`, not `rxResource`).
  *
  * Three Signal Forms live here, exactly as React ran three separate form
  * hooks: the schemas are unrelated, and the delete form has to reset
@@ -90,6 +91,7 @@ export class AccountPageComponent {
 
 	readonly passwordPending = signal(false);
 	readonly emailPending = signal(false);
+	readonly exporting = signal(false);
 
 	private readonly passwordModel = signal<PasswordChangeFormData>({
 		...BLANK_PASSWORD_FORM,
@@ -180,10 +182,43 @@ export class AccountPageComponent {
 			});
 	}
 
-	downloadData(): void {
-		this.notifications.showInfo(
-			"Your data download will begin shortly. (Feature coming soon)",
-		);
+	/** Downloads the caller's own data export (#243): fetch it, then hand
+	 * it to saveExport to turn into a file. */
+	exportData(): void {
+		const userId = this.user()?.id;
+		if (userId === undefined || this.exporting()) return;
+
+		this.exporting.set(true);
+		this.account.exportData(userId).subscribe({
+			next: (data) => {
+				this.exporting.set(false);
+				this.saveExport(data);
+				this.notifications.showSuccess("Your data has been downloaded.");
+			},
+			error: (err: unknown) => {
+				this.exporting.set(false);
+				this.notifications.showError(getErrorMessage(err));
+			},
+		});
+	}
+
+	/** Turns a fetched export into a downloaded file: an object URL wrapping
+	 * a JSON blob, clicked through a throwaway anchor and immediately
+	 * revoked. The date-stamped filename is entirely client-side -- the
+	 * response carries only the bytes. */
+	private saveExport(data: UserExport): void {
+		const blob = new Blob([JSON.stringify(data, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+		try {
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = `tremolo-data-${new Date().toISOString().slice(0, 10)}.json`;
+			anchor.click();
+		} finally {
+			URL.revokeObjectURL(url);
+		}
 	}
 
 	openDeleteModal(): void {

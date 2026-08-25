@@ -12,20 +12,44 @@ import { environment } from "../../../../../environments/environment";
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { TREMOLO_ICONS } from "../../../../core/icons";
 import { NotificationService } from "../../../../core/services/notification.service";
+import type { UserExport } from "../../models/export.models";
 import { AccountPageComponent } from "./account-page.component";
 
 const EMAIL = "baseline.student@tremolo.test";
 const PASSWORD_URL = `${environment.coreApi}/api/users/42/password`;
 const EMAIL_URL = `${environment.coreApi}/api/users/42/email`;
+const EXPORT_URL = `${environment.coreApi}/api/users/42/export`;
+
+const EXPORT_FIXTURE: UserExport = {
+	exported_at: "2026-08-25T00:00:00Z",
+	profile: {
+		id: 42,
+		first_name: "Baseline",
+		last_name: "Student",
+		email: EMAIL,
+		role: "STUDENT",
+		instrument: "",
+		school: "",
+		has_google: false,
+		created_date: "2026-01-01",
+		created_time: "00:00:00",
+	},
+	settings: { note_game: null, games: [] },
+	keyboard_bindings: null,
+	score_entries: [],
+	classes: { joined: [], owned: [] },
+	assignment_attempts: [],
+	friends: [],
+};
 
 /**
- * The account page's contract. Download-data and account-deletion are
- * still promises -- React answered both with a toast because the Go
- * service has no route for either -- so what those cases pin is the
- * wording of those toasts and the client-side validation in front of
- * them. Password and email changes are real (#249): AccountService's
- * PUT/POST calls, asserted here the same way every other HTTP-backed page
- * in this codebase is (HttpTestingController, not a service spy).
+ * The account page's contract. Account-deletion is still a promise --
+ * React answered it with a toast because the Go service has no route
+ * for it -- so what that case pins is the wording of that toast and the
+ * client-side validation in front of it. Password and email changes
+ * (#249) and the data export (#243) are all real: AccountService's
+ * PUT/POST/GET calls, asserted here the same way every other HTTP-backed
+ * page in this codebase is (HttpTestingController, not a service spy).
  *
  * Toasts are asserted through the real `NotificationService` rather than a
  * spy: the queue *is* the observable behaviour, and a spy would pass even if
@@ -318,13 +342,52 @@ describe("AccountPageComponent", () => {
 		expect(emailPill()).toBe("Verified");
 	});
 
-	it("answers the data download with the coming-soon notice", async () => {
+	it("requests, then downloads, a real data export", async () => {
+		const objectUrl = "blob:mock-export-url";
+		const createObjectURL = vi
+			.spyOn(URL, "createObjectURL")
+			.mockReturnValue(objectUrl);
+		const revokeObjectURL = vi
+			.spyOn(URL, "revokeObjectURL")
+			.mockReturnValue(undefined);
+		let downloadName: string | undefined;
+		const anchorClick = vi
+			.spyOn(HTMLAnchorElement.prototype, "click")
+			.mockImplementation(function (this: HTMLAnchorElement) {
+				downloadName = this.download;
+			});
+
 		await render();
 		await click("Download All My Data");
 
-		expect(messages()).toEqual([
-			"Your data download will begin shortly. (Feature coming soon)",
-		]);
+		const request = backend.expectOne(EXPORT_URL);
+		expect(request.request.method).toBe("GET");
+		request.flush(EXPORT_FIXTURE);
+		await fixture.whenStable();
+
+		expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+		expect(anchorClick).toHaveBeenCalledTimes(1);
+		expect(downloadName).toMatch(/^tremolo-data-\d{4}-\d{2}-\d{2}\.json$/);
+		expect(revokeObjectURL).toHaveBeenCalledWith(objectUrl);
+		expect(messages()).toEqual(["Your data has been downloaded."]);
+	});
+
+	it("surfaces an export error as a toast and downloads nothing", async () => {
+		const createObjectURL = vi.spyOn(URL, "createObjectURL");
+
+		await render();
+		await click("Download All My Data");
+
+		backend
+			.expectOne(EXPORT_URL)
+			.flush(
+				{ error: "Internal server error" },
+				{ status: 500, statusText: "" },
+			);
+		await fixture.whenStable();
+
+		expect(messages()).toEqual(["Internal server error"]);
+		expect(createObjectURL).not.toHaveBeenCalled();
 	});
 
 	it("opens and dismisses the deletion modal, clearing what was typed", async () => {
@@ -364,12 +427,5 @@ describe("AccountPageComponent", () => {
 		expect(store.isAuthenticated()).toBe(false);
 		expect(store.user()).toBeNull();
 		expect(navigate).toHaveBeenCalledWith("/");
-	});
-
-	it("makes no request for the still-stubbed data download", async () => {
-		await render();
-		await click("Download All My Data");
-
-		backend.expectNone(() => true);
 	});
 });

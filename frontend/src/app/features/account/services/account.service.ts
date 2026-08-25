@@ -4,6 +4,7 @@ import type { Observable } from "rxjs";
 
 import { environment } from "../../../../environments/environment";
 import type { MessageResponse } from "../../../auth/models/auth.models";
+import type { UserExport } from "../models/export.models";
 
 /** PUT /api/users/{userId}/password body. */
 export interface ChangePasswordRequest {
@@ -26,7 +27,8 @@ export interface ConfirmEmailChangeResponse {
 
 /**
  * The account-settings HTTP calls core-api's user_info_controller.go does
- * not cover: changing the caller's own password and email address (#249).
+ * not cover: changing the caller's own password and email address (#249),
+ * and downloading the caller's own data export (#243).
  *
  * Plain http calls to environment.coreApi, same shape as AuthService --
  * Observables in, Observables out, no session side effects of its own
@@ -64,5 +66,19 @@ export class AccountService {
 			`${this.authBase}/confirm-email-change`,
 			{ token },
 		);
+	}
+
+	/**
+	 * GET /api/users/{userId}/export -- the caller's full data export
+	 * (#243). A plain `<a download>` pointed at this URL could not work:
+	 * the route is self-only and needs a bearer token, which a bare
+	 * anchor sends none of. This is a normal HTTP request instead, so
+	 * authInterceptor attaches one same as any other call, and parsing
+	 * the response as `UserExport` keeps it typed all the way to
+	 * account-page.component.ts's `saveExport` -- and lets a spec flush a
+	 * plain object rather than fabricating a Blob.
+	 */
+	exportData(userId: number): Observable<UserExport> {
+		return this.http.get<UserExport>(`${this.usersBase}/${userId}/export`);
 	}
 }
