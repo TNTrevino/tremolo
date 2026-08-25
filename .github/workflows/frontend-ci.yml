@@ -54,11 +54,12 @@ jobs:
           npm ci
 
       # The checks themselves live in the Makefile so CI and local dev
-      # can't drift: format-check + lint + test + build, in that order.
+      # can't drift: format-check + lint + build + test, in that order --
+      # build runs before the test suite so a broken build fails fast.
       #
       # The E2E suite (frontend/e2e/) is deliberately NOT here: it needs
       # both backends and a seeded database, and the repo has no such job.
       # It is the migration's regression suite and is run by hand against a
       # local server -- see frontend/e2e/README.md.
-      - name: Check (format + lint + test + build)
+      - name: Check (format + lint + build + test)
         run: make check-frontend

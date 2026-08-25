@@ -4,7 +4,7 @@
 	format format-frontend format-music format-go \
 	format-check format-check-frontend format-check-music format-check-go \
 	check check-frontend check-music check-go \
-	build-frontend openapi-go
+	build-frontend build-music build-go openapi-go
 
 # ---- pretty output ----
 # $(call banner,MESSAGE) prints "[ STEP ] MESSAGE". STEP is passed down by the
@@ -33,11 +33,11 @@ help:
 	@echo ""
 	@echo "  format-check           verify formatting without changing files"
 	@echo ""
-	@echo "  check                  format-check + lint + test everything;"
+	@echo "  check                  format-check + lint + build + test everything;"
 	@echo "                         never mutates -- this is what CI runs"
-	@echo "  check-frontend         format-check + lint + test + build"
-	@echo "  check-music            format-check + lint + test"
-	@echo "  check-go               format-check + vet + golangci-lint + test"
+	@echo "  check-frontend         format-check + lint + build + test"
+	@echo "  check-music            format-check + lint + build + test"
+	@echo "  check-go               format-check + vet + golangci-lint + build + test"
 	@echo ""
 	@echo "  openapi-go             regenerate core-api/openapi/swagger.{json,yaml}"
 
@@ -66,7 +66,7 @@ build-frontend:
 	@$(call banner,Building frontend (ng build)...)
 	cd frontend && npm run build
 
-check-frontend: format-check-frontend lint-frontend test-frontend build-frontend
+check-frontend: format-check-frontend lint-frontend build-frontend test-frontend
 
 # ---- music-api ----
 
@@ -90,7 +90,15 @@ format-check-music:
 	@$(call banner,Checking music service formatting (black)...)
 	$(MUSIC_RUN) black --check .
 
-check-music: format-check-music lint-music test-music
+# There is no compiled artifact to produce -- this is the closest analog to
+# `go build`/`ng build`: it imports the exact object gunicorn serves in prod
+# (wsgi_app = "main:app" in gunicorn_config.py), so a missing symbol or
+# broken import fails here instead of only surfacing at deploy/start time.
+build-music:
+	@$(call banner,Building music service (import check)...)
+	$(MUSIC_RUN) python -c "from main import app"
+
+check-music: format-check-music lint-music build-music test-music
 
 # ---- core-api ----
 
@@ -127,7 +135,15 @@ format-check-go:
 		echo "gofumpt: all files formatted"; \
 	fi
 
-check-go: format-check-go lint-go test-go
+# Builds the whole package, matching what deploy.yml ships. Naming a single
+# file (`go build main.go`) compiles only that file and silently ignores
+# every sibling file in the package -- `.` builds the package as a whole,
+# so a symbol defined in another file (e.g. server.go) is actually seen.
+build-go:
+	@$(call banner,Building go service (go build)...)
+	cd core-api && go build -o tremolo-api .
+
+check-go: format-check-go lint-go build-go test-go
 
 # Regenerates core-api/openapi/{swagger.json,swagger.yaml} from the swag
 # annotations on each handler (controllers/*.go) plus the general API info
