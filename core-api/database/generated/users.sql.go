@@ -188,19 +188,20 @@ func (q *Queries) GetRoleIDByName(ctx context.Context, name string) (int32, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password
+select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password, u.email_verified_at
 from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.email = $1
 `
 
 type GetUserByEmailRow struct {
-	ID        int32          `json:"id"`
-	Email     sql.NullString `json:"email"`
-	FirstName string         `json:"first_name"`
-	LastName  string         `json:"last_name"`
-	Role      string         `json:"role"`
-	Password  string         `json:"password"`
+	ID              int32          `json:"id"`
+	Email           sql.NullString `json:"email"`
+	FirstName       string         `json:"first_name"`
+	LastName        string         `json:"last_name"`
+	Role            string         `json:"role"`
+	Password        string         `json:"password"`
+	EmailVerifiedAt sql.NullTime   `json:"email_verified_at"`
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error) {
@@ -213,6 +214,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (Get
 		&i.LastName,
 		&i.Role,
 		&i.Password,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }
@@ -282,20 +284,21 @@ func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString
 }
 
 const getUserByID = `-- name: GetUserByID :one
-select u.id, u.email, u.first_name, u.last_name, r.name as role, u.school_id, u.created_date
+select u.id, u.email, u.first_name, u.last_name, r.name as role, u.school_id, u.created_date, u.email_verified_at
 from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.id = $1
 `
 
 type GetUserByIDRow struct {
-	ID          int32          `json:"id"`
-	Email       sql.NullString `json:"email"`
-	FirstName   string         `json:"first_name"`
-	LastName    string         `json:"last_name"`
-	Role        string         `json:"role"`
-	SchoolID    sql.NullInt32  `json:"school_id"`
-	CreatedDate sql.NullTime   `json:"created_date"`
+	ID              int32          `json:"id"`
+	Email           sql.NullString `json:"email"`
+	FirstName       string         `json:"first_name"`
+	LastName        string         `json:"last_name"`
+	Role            string         `json:"role"`
+	SchoolID        sql.NullInt32  `json:"school_id"`
+	CreatedDate     sql.NullTime   `json:"created_date"`
+	EmailVerifiedAt sql.NullTime   `json:"email_verified_at"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error) {
@@ -309,6 +312,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, er
 		&i.Role,
 		&i.SchoolID,
 		&i.CreatedDate,
+		&i.EmailVerifiedAt,
 	)
 	return i, err
 }

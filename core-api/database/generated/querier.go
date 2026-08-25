@@ -28,6 +28,16 @@ type Querier interface {
 	// have no way to tell that was intended. They stay explicit.
 	//
 	ClaimQueuedEmails(ctx context.Context, arg ClaimQueuedEmailsParams) ([]TremoloQueuedEmail, error)
+	// ConsumeEmailToken is the same single-statement gate as
+	// ConsumePasswordResetToken: claimed and returned in one UPDATE, so two
+	// concurrent redemptions racing on the same token cannot both win.
+	// purpose is part of the WHERE, not just token_hash, because email_tokens
+	// is shared with the email-change flow (#249) -- a verify_email token must
+	// never be consumable as a change_email token, even though token_hash
+	// alone is already globally unique. Returns the full row (not just
+	// user_id) because the email-change flow needs .Email too.
+	//
+	ConsumeEmailToken(ctx context.Context, arg ConsumeEmailTokenParams) (TremoloEmailToken, error)
 	// ConsumePasswordResetToken is the single-use gate: claimed and returned in
 	// one UPDATE statement, so two concurrent resets racing on the same token
 	// cannot both win. sql.ErrNoRows means exactly "unknown, used, or expired"
@@ -43,6 +53,7 @@ type Querier interface {
 	// Class + roster queries. Ownership checks (teacher_id = caller) happen
 	// in the service layer by comparing against the fetched row.
 	CreateClass(ctx context.Context, arg CreateClassParams) (TremoloClass, error)
+	CreateEmailToken(ctx context.Context, arg CreateEmailTokenParams) (TremoloEmailToken, error)
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// Inserts both directions to create an instant mutual friendship.
 	// ON CONFLICT DO NOTHING makes this idempotent.
@@ -139,6 +150,7 @@ type Querier interface {
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
+	InvalidateEmailTokens(ctx context.Context, arg InvalidateEmailTokensParams) error
 	InvalidateUserPasswordResetTokens(ctx context.Context, userID int32) error
 	IsStudentInClass(ctx context.Context, arg IsStudentInClassParams) (bool, error)
 	// Does the caller own an ACTIVE class this student is enrolled in? This is
@@ -160,12 +172,18 @@ type Querier interface {
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
 	ListEmailSendAttempts(ctx context.Context, queuedEmailID int64) ([]TremoloEmailSendAttempt, error)
+	ListEmailTokensByUser(ctx context.Context, arg ListEmailTokensByUserParams) ([]TremoloEmailToken, error)
 	ListPasswordResetTokensByUser(ctx context.Context, userID int32) ([]TremoloPasswordResetToken, error)
 	ListQueuedEmailsByRecipient(ctx context.Context, recipient string) ([]TremoloQueuedEmail, error)
 	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
 	MarkEmailDead(ctx context.Context, arg MarkEmailDeadParams) error
 	MarkEmailSent(ctx context.Context, id int64) error
+	// MarkEmailVerified is coalesce-guarded so redeeming a second valid token
+	// (a stale second tab, a resend race) is idempotent: the timestamp is set
+	// once, on the first success, and never moves after that.
+	//
+	MarkEmailVerified(ctx context.Context, id int32) error
 	RecordEmailSendAttempt(ctx context.Context, arg RecordEmailSendAttemptParams) error
 	RedeemTeacherInviteCode(ctx context.Context, code string) (int32, error)
 	ReleaseTeacherInviteCode(ctx context.Context, id int32) error

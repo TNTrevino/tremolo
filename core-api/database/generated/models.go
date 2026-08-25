@@ -46,6 +46,17 @@ type TremoloEmailSendAttempt struct {
 	AttemptedAt   time.Time      `json:"attempted_at"`
 }
 
+type TremoloEmailToken struct {
+	ID        int64        `json:"id"`
+	UserID    int32        `json:"user_id"`
+	Purpose   string       `json:"purpose"`
+	TokenHash string       `json:"token_hash"`
+	Email     string       `json:"email"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
 type TremoloFriend struct {
 	UserID      int32        `json:"user_id"`
 	FriendID    int32        `json:"friend_id"`
@@ -197,5 +208,6 @@ type TremoloUser struct {
 	Instrument          sql.NullString `json:"instrument"`
 	RoleID              int32          `json:"role_id"`
 	GoogleID            sql.NullString `json:"google_id"`
+	EmailVerifiedAt     sql.NullTime   `json:"email_verified_at"`
 	GradeLevel          sql.NullString `json:"grade_level"`
 }
