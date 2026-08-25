@@ -1,0 +1,186 @@
+<!--
+	#264. Section rhythm ported from home-page.component.html: same hero
+	treatment (staff lines behind an ink headline, one brass CTA), same
+	py-20 px-4 card/grid sections at the same container max-widths.
+
+	Card overrides go through `className` (tailwind-merge), never `class` --
+	see card.directive.ts. Icons are sized with `<ng-icon size="…">` and are
+	`aria-hidden`, since `<ng-icon>` sets `role="img"` on its host and each
+	one sits beside its own label.
+-->
+<div class="min-h-screen">
+	<!-- Hero: ink headline set on faint engraved staff lines -->
+	<section class="relative overflow-hidden py-24 px-4">
+		<div
+			aria-hidden="true"
+			class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-7"
+		>
+			@for (line of staffLines; track line) {
+				<div class="h-px w-full bg-foreground/10"></div>
+			}
+		</div>
+		<div class="container mx-auto max-w-6xl relative">
+			<div class="text-center space-y-6 animate-fade-in">
+				<h1
+					class="font-display text-5xl md:text-7xl font-bold leading-tight text-balance"
+				>
+					Free for pilot teachers
+				</h1>
+				<p class="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
+					Tremolo is free for the whole 2026–27 school year for every teacher in
+					the pilot. No card, no quote, no purchase order.
+				</p>
+				<div
+					class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6"
+				>
+					<a href="{{ inviteHref }}">
+						<app-button size="xl" variant="brass" className="w-full sm:w-auto">
+							<ng-icon
+								name="lucideMail"
+								size="1.25rem"
+								aria-hidden="true"
+								class="mr-2"
+							/>
+							Ask for an invite code
+						</app-button>
+					</a>
+					<a routerLink="/signup">
+						<app-button
+							size="xl"
+							variant="outline"
+							className="w-full sm:w-auto"
+						>
+							Students: create a free account
+						</app-button>
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- What's included -->
+	<section class="py-20 px-4">
+		<div class="container mx-auto max-w-6xl">
+			<h2 class="font-display text-4xl font-bold text-center mb-12">
+				What's included
+			</h2>
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+				@for (item of included; track item.title) {
+					<div appCard className="hover:shadow-lg transition-all">
+						<div appCardHeader>
+							<div
+								class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4"
+							>
+								<ng-icon
+									[name]="item.icon"
+									size="1.5rem"
+									aria-hidden="true"
+									class="text-primary"
+								/>
+							</div>
+							<h3 appCardTitle>{{ item.title }}</h3>
+						</div>
+						<div appCardContent>
+							<p appCardDescription className="text-base">
+								{{ item.description }}
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+			<p class="text-center text-lg text-muted-foreground mt-12">
+				All of it. There is no locked tier and no trial clock.
+			</p>
+		</div>
+	</section>
+
+	<!-- What being a pilot teacher means -->
+	<section class="py-20 px-4 bg-muted/30">
+		<div class="container mx-auto max-w-4xl">
+			<h2 class="font-display text-4xl font-bold text-center mb-12">
+				What being a pilot teacher means
+			</h2>
+			<div class="space-y-8">
+				@for (item of pilotSteps; track item.step) {
+					<div class="flex gap-6 items-start">
+						<div
+							class="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold"
+						>
+							{{ item.step }}
+						</div>
+						<div class="flex-1">
+							<h3 class="text-2xl font-bold mb-2">{{ item.title }}</h3>
+							<p class="text-muted-foreground text-lg">
+								{{ item.description }}
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</section>
+
+	<!-- After the pilot -->
+	<section class="py-20 px-4">
+		<div class="container mx-auto max-w-4xl">
+			<h2 class="font-display text-4xl font-bold text-center mb-12">
+				After the pilot
+			</h2>
+			<div appCard className="border-primary/50 shadow-lg">
+				<div
+					appCardContent
+					className="space-y-4 text-lg text-muted-foreground pt-6"
+				>
+					<p>
+						There will be a paid tier eventually, aimed at school programs with
+						a budget rather than at individual students. Students keep a free
+						account for their own practice, always.
+					</p>
+					<p>
+						We are not naming a price while the pilot is running, on purpose:
+						what pilot teachers say is worth paying for is what decides both the
+						price and what is in it. If anything you use today ever moves behind
+						a charge, you will hear it from us first and well ahead of time.
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Want in for 2026-27? -->
+	<section class="py-20 px-4 bg-muted/30">
+		<div class="container mx-auto max-w-4xl text-center space-y-6">
+			<h2 class="font-display text-4xl font-bold">Want in for 2026–27?</h2>
+			<p class="text-xl text-muted-foreground">
+				Teacher accounts are created with an invite code. Email us and we will
+				send you one, with a walkthrough for setting up your first class.
+			</p>
+			<div
+				class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
+			>
+				<a href="{{ inviteHref }}">
+					<app-button size="lg" variant="brass">
+						<ng-icon
+							name="lucideMail"
+							size="1.25rem"
+							aria-hidden="true"
+							class="mr-2"
+						/>
+						Ask for an invite code
+					</app-button>
+				</a>
+				<a routerLink="/note-game">
+					<app-button size="lg" variant="outline">
+						<ng-icon
+							name="lucideMusic2"
+							size="1.25rem"
+							aria-hidden="true"
+							class="mr-2"
+						/>
+						Try a game first
+					</app-button>
+				</a>
+			</div>
+		</div>
+	</section>
+</div>

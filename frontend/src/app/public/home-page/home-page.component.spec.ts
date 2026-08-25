@@ -94,13 +94,14 @@ describe("HomePageComponent", () => {
 		]);
 	});
 
-	it("links the CTAs at both ends of the page to the games", () => {
+	it("links every anchor on the page to its target, in DOM order", () => {
 		const links = [...el().querySelectorAll("a")].map((a) => ({
 			href: a.getAttribute("href"),
 			text: a.textContent?.trim(),
 		}));
 		expect(links).toEqual([
 			{ href: "/note-game", text: "Start practicing" },
+			{ href: "/pricing", text: "Free for pilot teachers this year" },
 			{ href: "/note-game", text: "Start Note Game" },
 			{ href: "/sheet-music", text: "Try Rhythm Practice" },
 		]);

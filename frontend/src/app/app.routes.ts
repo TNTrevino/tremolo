@@ -57,6 +57,13 @@ export const routes: Routes = [
 			),
 	},
 	{
+		path: "pricing",
+		loadComponent: () =>
+			import("./public/pricing-page/pricing-page.component").then(
+				(m) => m.PricingPageComponent,
+			),
+	},
+	{
 		path: "privacy",
 		loadComponent: () =>
 			import("./public/privacy-page/privacy-page.component").then(

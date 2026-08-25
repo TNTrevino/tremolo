@@ -4,9 +4,10 @@ import { provideRouter } from "@angular/router";
 import { FooterComponent } from "./footer.component";
 
 /**
- * New in #242. Renders once in app.component.html, outside the router
- * outlet, the same way `<app-navigation>` does -- see app.component.spec.ts
- * for the shell-level assertion that it is actually mounted there.
+ * New in #242, extended in #264 with the Pricing link. Renders once in
+ * app.component.html, outside the router outlet, the same way
+ * `<app-navigation>` does -- see app.component.spec.ts for the shell-level
+ * assertion that it is actually mounted there.
  */
 describe("FooterComponent", () => {
 	let fixture: ComponentFixture<FooterComponent>;
@@ -38,20 +39,22 @@ describe("FooterComponent", () => {
 		expect(el().querySelector("nav")).toBeNull();
 	});
 
-	it("renders the four links in order: Privacy, Terms, About, Contact", () => {
+	it("renders the five links in order: Privacy, Terms, About, Pricing, Contact", () => {
 		expect(links().map((a) => a.textContent?.trim())).toEqual([
 			"Privacy",
 			"Terms",
 			"About",
+			"Pricing",
 			"Contact",
 		]);
 	});
 
-	it("resolves the three internal links to their routes", () => {
-		const [privacy, terms, about] = links();
+	it("resolves the four internal links to their routes", () => {
+		const [privacy, terms, about, pricing] = links();
 		expect(privacy?.getAttribute("href")).toBe("/privacy");
 		expect(terms?.getAttribute("href")).toBe("/terms");
 		expect(about?.getAttribute("href")).toBe("/about");
+		expect(pricing?.getAttribute("href")).toBe("/pricing");
 	});
 
 	it("makes Contact a mailto link, since no /contact route exists", () => {
