@@ -242,4 +242,11 @@ export const routes: Routes = [
 				(m) => m.VerifyEmailPageComponent,
 			),
 	},
+	{
+		path: "confirm-email-change",
+		loadComponent: () =>
+			import("./auth/components/confirm-email-change/confirm-email-change-page.component").then(
+				(m) => m.ConfirmEmailChangePageComponent,
+			),
+	},
 ];

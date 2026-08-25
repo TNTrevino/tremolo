@@ -111,6 +111,17 @@ export const deleteAccountSchema = z.object({
 	emailConfirmation: z.string().min(1, "Email confirmation is required"),
 });
 
+/**
+ * #249: request an email address change from the account page. Re-proves
+ * currentPassword the same way passwordChangeSchema does -- the Go
+ * service re-checks it server-side either way (this is a courtesy, not
+ * the gate, same as every schema here).
+ */
+export const emailChangeSchema = z.object({
+	currentPassword: z.string().min(1, "Current password is required"),
+	newEmail: z.email("Invalid email format"),
+});
+
 /** #248: request a password reset link. */
 export const forgotPasswordSchema = z.object({
 	email: z.email("Invalid email format"),
@@ -136,5 +147,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignupFormData = z.infer<typeof signupSchema>;
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 export type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>;
+export type EmailChangeFormData = z.infer<typeof emailChangeSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

@@ -19,12 +19,16 @@ import { FormFieldComponent } from "../../../../shared/components/forms/form-fie
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import {
 	type DeleteAccountFormData,
 	deleteAccountSchema,
+	type EmailChangeFormData,
+	emailChangeSchema,
 	type PasswordChangeFormData,
 	passwordChangeSchema,
 } from "../../../../shared/validators/auth.schemas";
+import { AccountService } from "../../services/account.service";
 
 const BLANK_PASSWORD_FORM: PasswordChangeFormData = {
 	currentPassword: "",
@@ -32,21 +36,25 @@ const BLANK_PASSWORD_FORM: PasswordChangeFormData = {
 	confirmPassword: "",
 };
 
+const BLANK_EMAIL_FORM: EmailChangeFormData = {
+	currentPassword: "",
+	newEmail: "",
+};
+
 const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
 
 /**
  * Account settings. Port of frontend-react/src/pages/AccountPage.tsx.
  *
- * Five cards and a confirmation modal, of which **nothing talks to the
- * server**: React answered the password form, the data download and the
- * deletion with toasts, because the Go service registers no route for any
- * of them (`core-api/controllers/user_info_controller.go` mounts one
- * GET). That is ported as-is -- the strings below are the product's current
- * promises, not placeholders someone forgot. There is therefore **no
- * `rxResource` on this page**; see phase-3-subfeature-3-handoff.md.
+ * Five cards and a confirmation modal. The data-download and delete-account
+ * actions still have no backend route (`core-api/controllers/user_info_controller.go`
+ * mounts one GET) and stay toast stubs, ported as-is -- see
+ * phase-3-subfeature-3-handoff.md. Password and email changes are real now
+ * (#249): AccountService's PUT/POST calls, wired the same way every other
+ * mutation on this page-tier is (a one-shot `.subscribe()`, not `rxResource`).
  *
- * Two Signal Forms live here rather than one, exactly as React ran two
- * `useForm`s: the schemas are unrelated and the delete form has to reset
+ * Three Signal Forms live here, exactly as React ran three separate form
+ * hooks: the schemas are unrelated, and the delete form has to reset
  * independently when the modal is dismissed.
  */
 @Component({
@@ -64,21 +72,37 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
 })
 export class AccountPageComponent {
 	private readonly auth = inject(AuthService);
+	private readonly account = inject(AccountService);
 	private readonly store = inject(AuthStore);
 	private readonly router = inject(Router);
 	private readonly notifications = inject(NotificationService);
 
 	readonly user = this.store.user;
 
-	/** Reveals all three password fields at once, as React's single flag did. */
+	/**
+	 * Reveals all three password-change fields at once, as React's single
+	 * flag did -- and, since #249, the email-change form's current-password
+	 * field too (see the template: it has no reveal button of its own, it
+	 * just reads this same signal).
+	 */
 	readonly showPasswords = signal(false);
 	readonly showDeleteModal = signal(false);
+
+	readonly passwordPending = signal(false);
+	readonly emailPending = signal(false);
 
 	private readonly passwordModel = signal<PasswordChangeFormData>({
 		...BLANK_PASSWORD_FORM,
 	});
 	readonly passwordForm = form(this.passwordModel, (path) => {
 		validateStandardSchema(path, passwordChangeSchema);
+	});
+
+	private readonly emailModel = signal<EmailChangeFormData>({
+		...BLANK_EMAIL_FORM,
+	});
+	readonly emailForm = form(this.emailModel, (path) => {
+		validateStandardSchema(path, emailChangeSchema);
 	});
 
 	private readonly deleteModel = signal<DeleteAccountFormData>({
@@ -98,10 +122,62 @@ export class AccountPageComponent {
 		this.passwordForm().markAsTouched();
 		if (this.passwordForm().invalid()) return;
 
-		this.notifications.showInfo("Password update functionality coming soon!");
-		// `reset(value)` clears touched/dirty *and* sets the model back, which
-		// is the pair React Hook Form's `reset()` did in one call.
-		this.passwordForm().reset({ ...BLANK_PASSWORD_FORM });
+		const userId = this.user()?.id;
+		if (userId === undefined || this.passwordPending()) return;
+
+		this.passwordPending.set(true);
+		this.account
+			.changePassword(userId, {
+				current_password: this.passwordModel().currentPassword,
+				new_password: this.passwordModel().newPassword,
+			})
+			.subscribe({
+				next: () => {
+					this.passwordPending.set(false);
+					this.notifications.showSuccess("Password updated.");
+					// `reset(value)` clears touched/dirty *and* sets the model
+					// back, the pair React Hook Form's `reset()` did in one call.
+					this.passwordForm().reset({ ...BLANK_PASSWORD_FORM });
+				},
+				error: (err: unknown) => {
+					this.passwordPending.set(false);
+					this.notifications.showError(getErrorMessage(err));
+					// Deliberately NOT reset: the most likely failure is a
+					// wrong current password, and the visitor must not have
+					// to retype every field to fix the one that was wrong.
+				},
+			});
+	}
+
+	submitEmailChange(event: Event): void {
+		event.preventDefault();
+
+		this.emailForm().markAsTouched();
+		if (this.emailForm().invalid()) return;
+
+		const userId = this.user()?.id;
+		if (userId === undefined || this.emailPending()) return;
+
+		this.emailPending.set(true);
+		this.account
+			.requestEmailChange(userId, {
+				current_password: this.emailModel().currentPassword,
+				new_email: this.emailModel().newEmail,
+			})
+			.subscribe({
+				next: (res) => {
+					this.emailPending.set(false);
+					this.notifications.showSuccess(res.message);
+					this.emailForm().reset({ ...BLANK_EMAIL_FORM });
+				},
+				error: (err: unknown) => {
+					this.emailPending.set(false);
+					this.notifications.showError(getErrorMessage(err));
+					// Same reasoning as the password form: a wrong current
+					// password is the likely failure, so the field is left
+					// as typed rather than forcing a full retry.
+				},
+			});
 	}
 
 	downloadData(): void {
