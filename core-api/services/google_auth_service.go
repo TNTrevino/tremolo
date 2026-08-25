@@ -86,6 +86,13 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 		}
 		logger.Info("Auto-linked Google account to existing user", "email", normalizedEmail)
 
+		// Best effort: the auto-linked address was already verified by
+		// Google (claims.EmailVerified checked above), and sign-in must
+		// not fail on this bookkeeping.
+		if err := q.MarkEmailVerified(ctx, existingUser.ID); err != nil {
+			logger.Error("Failed to mark email verified after Google auto-link", "error", err.Error(), "user_id", existingUser.ID)
+		}
+
 		userResp := convertGetUserByEmailForOAuthRowToUserResponse(existingUser)
 		userResp.HasGoogle = true
 		return issueGoogleLoginResponse(userResp, true)
@@ -132,6 +139,13 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 			"error", err.Error(), "user_id", newUser.ID)
 	}
 
+	// Best effort, same reasoning as the auto-link branch above: a brand
+	// new Google-authenticated account is verified by construction, and
+	// sign-in must not fail on this bookkeeping.
+	if err := q.MarkEmailVerified(ctx, newUser.ID); err != nil {
+		logger.Error("Failed to mark email verified for new OAuth user", "error", err.Error(), "user_id", newUser.ID)
+	}
+
 	logger.Info("Created new OAuth user", "email", normalizedEmail, "user_id", newUser.ID)
 	userResp := dtos.UserResponse{
 		ID:        int(newUser.ID),
@@ -140,6 +154,9 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 		LastName:  newUser.LastName,
 		Role:      "BASIC",
 		HasGoogle: true,
+		// Verified by construction, same as every other Google-authenticated
+		// response in this file -- see convertGetUserByGoogleIDRowToUserResponse.
+		EmailVerified: true,
 	}
 	return issueGoogleLoginResponse(userResp, false)
 }
@@ -191,6 +208,14 @@ func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier Google
 	if err := q.LinkGoogleAccount(ctx, linkParams); err != nil {
 		logger.Error("Failed to link Google account", "error", err.Error())
 		return fmt.Errorf("%w: %w", ErrGoogleLinkFailed, err)
+	}
+
+	// Best effort, same reasoning as GoogleCallback's auto-link branch:
+	// the email just matched claims.Email, which VerifyIDToken already
+	// required to be Google-verified, and linking must not fail on this
+	// bookkeeping.
+	if err := q.MarkEmailVerified(ctx, int32(userID)); err != nil {
+		logger.Error("Failed to mark email verified after explicit Google link", "error", err.Error(), "user_id", userID)
 	}
 
 	return nil
