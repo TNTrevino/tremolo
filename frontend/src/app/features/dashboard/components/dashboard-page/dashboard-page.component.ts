@@ -12,9 +12,11 @@ import { ClassesService } from "@features/classes/services/classes.service";
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { ActivityHeatmapComponent } from "../../../../shared/components/charts/activity-heatmap.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
-import type {
-	ChartInterval,
-	MultiMetricChartData,
+import {
+	chartQuery,
+	EMPTY_CHART,
+	type ChartInterval,
+	type MultiMetricChartData,
 } from "../../../../shared/models/chart.models";
 import { UserService } from "../../../../shared/services/user.service";
 import { formatTimeReading } from "../../../../shared/utils/date.utils";
@@ -212,22 +214,4 @@ export class DashboardPageComponent {
 		}
 		return this.chart.value() ?? EMPTY_CHART;
 	});
-}
-
-const EMPTY_CHART: MultiMetricChartData = {
-	npm: [],
-	accuracy: [],
-	sessionCount: [],
-	totalQuestions: [],
-};
-
-/**
- * `days` is only sent for the daily view, and it is 30 -- React's
- * `days: interval === "day" ? 30 : undefined`.
- */
-function chartQuery(interval: ChartInterval): {
-	interval: ChartInterval;
-	days: number | undefined;
-} {
-	return { interval, days: interval === "day" ? 30 : undefined };
 }

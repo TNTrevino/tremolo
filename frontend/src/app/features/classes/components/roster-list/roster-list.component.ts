@@ -85,21 +85,6 @@ export class RosterListComponent {
 		return `${entry.firstName} ${entry.lastName}`;
 	}
 
-	/**
-	 * Where this student's row links to. `classId` is navigational context
-	 * only -- the server's access rule is per-teacher (does the caller own
-	 * *an* active class this student is in), not per-class, so this route
-	 * does not double as an authorization boundary.
-	 */
-	studentLink(entry: RosterEntry): string[] {
-		return [
-			"/classes",
-			String(this.classId()),
-			"students",
-			String(entry.studentId),
-		];
-	}
-
 	confirmOpenChange(open: boolean): void {
 		if (!open) this.confirming.set(null);
 	}

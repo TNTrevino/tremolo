@@ -32,6 +32,18 @@ export interface MultiMetricChartData {
 	totalQuestions: ChartDataPoint[];
 }
 
+/**
+ * The safe fallback for a chart resource that has no value yet -- e.g.
+ * `chart.value() ?? EMPTY_CHART`. Shared so the dashboard and the
+ * teacher's student-stats page don't each declare their own copy.
+ */
+export const EMPTY_CHART: MultiMetricChartData = {
+	npm: [],
+	accuracy: [],
+	sessionCount: [],
+	totalQuestions: [],
+};
+
 /** Bucket size for the chart endpoints. */
 export type ChartInterval = "day" | "week" | "month" | "year" | "all";
 
@@ -39,4 +51,18 @@ export interface ChartQueryParams {
 	interval?: ChartInterval;
 	/** Only meaningful with `interval: "day"`; the dashboard asks for 30. */
 	days?: number;
+}
+
+/**
+ * `days` is only sent for the daily view, and it is 30 -- React's
+ * `days: interval === "day" ? 30 : undefined`. Shared by every page that
+ * builds a per-user or per-class chart request (the dashboard's `chart`
+ * and `classMetrics` resources, the student-stats page's `chart`
+ * resource) so the ternary lives in one place.
+ */
+export function chartQuery(interval: ChartInterval): {
+	interval: ChartInterval;
+	days: number | undefined;
+} {
+	return { interval, days: interval === "day" ? 30 : undefined };
 }

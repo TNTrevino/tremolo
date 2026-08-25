@@ -222,3 +222,22 @@ func TestGetGeneralUserInfo_ArchivedClassForbidden(t *testing.T) {
 	_, err = services.GetGeneralUserInfo(context.Background(), database.Queries, teacherID, studentID)
 	assert.ErrorIs(t, err, services.ErrForbidden)
 }
+
+// TestGetGeneralUserInfo_NonexistentTarget_Forbidden verifies that a
+// teacher probing a user ID that does not exist gets the same 403 as
+// probing a real student they do not teach, not a 404. RequireUserStatsAccess
+// runs before the user lookup, and IsStudentOfTeacher finds no roster row
+// for a nonexistent student either way, so the caller can't use this
+// endpoint to tell "not mine" apart from "doesn't exist."
+func TestGetGeneralUserInfo_NonexistentTarget_Forbidden(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "userinfo_nonexistent_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	createTestClass(t, teacherID, "User Info Nonexistent Target Class")
+
+	nonExistentUserID := 999999999
+
+	_, err := services.GetGeneralUserInfo(context.Background(), database.Queries, teacherID, nonExistentUserID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+}

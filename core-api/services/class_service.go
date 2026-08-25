@@ -88,9 +88,12 @@ func RequireUserStatsAccess(ctx context.Context, q generated.Querier, callerID, 
 		return err
 	}
 	if !isStudent {
-		logger.Info("User attempted to access another user's chart data",
-			"authenticated_user", callerID,
-			"requested_user", targetUserID)
+		// Shared by both the chart and general-info callers, so this
+		// stays "stats", not "chart data" -- see GetUserChartData and
+		// GetGeneralUserInfo.
+		logger.Info("User attempted to access another user's stats",
+			"caller_id", callerID,
+			"target_user_id", targetUserID)
 		return ErrForbidden
 	}
 	return nil

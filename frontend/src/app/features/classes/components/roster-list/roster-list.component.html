@@ -33,7 +33,16 @@
 				<div
 					class="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-accent/50"
 				>
-					<a [routerLink]="studentLink(entry)" class="flex-1 min-w-0">
+					<!--
+						classId is navigational context only -- the server's access
+						rule is per-teacher (does the caller own *an* active class
+						this student is in), not per-class, so this route does not
+						double as an authorization boundary.
+					-->
+					<a
+						routerLink="/classes/{{ classId() }}/students/{{ entry.studentId }}"
+						class="flex-1 min-w-0"
+					>
 						<span class="text-sm font-medium truncate block hover:underline">{{
 							fullName(entry)
 						}}</span>

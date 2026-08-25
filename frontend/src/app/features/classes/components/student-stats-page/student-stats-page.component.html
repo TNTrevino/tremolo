@@ -39,7 +39,7 @@
 				<app-error [error]="chart.error()" />
 			} @else {
 				<app-performance-chart
-					[chartData]="chart.value() ?? EMPTY_CHART"
+					[chartData]="chartData()"
 					[interval]="interval()"
 					(intervalChange)="interval.set($event)"
 				/>

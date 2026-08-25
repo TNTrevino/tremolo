@@ -10,8 +10,8 @@
 
 @student_email       = kula_general_info_student_{{$timestamp}}@qa.test
 @other_student_email = kula_general_info_other_{{$timestamp}}@qa.test
-@teacher_email        = kula_general_info_teacher_{{$timestamp}}@qa.test
-@other_teacher_email  = kula_general_info_other_teacher_{{$timestamp}}@qa.test
+@teacher_email       = kula_general_info_teacher_{{$timestamp}}@qa.test
+@other_teacher_email = kula_general_info_other_teacher_{{$timestamp}}@qa.test
 
 ### RegisterStudent
 # RegisterStudent registers the student whose own info is read and

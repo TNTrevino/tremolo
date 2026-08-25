@@ -11,9 +11,11 @@ import { RouterLink } from "@angular/router";
 import { NgIcon } from "@ng-icons/core";
 
 import { AppErrorComponent } from "../../../../core/components/app-error/app-error.component";
-import type {
-	ChartInterval,
-	MultiMetricChartData,
+import {
+	chartQuery,
+	EMPTY_CHART,
+	type ChartInterval,
+	type MultiMetricChartData,
 } from "../../../../shared/models/chart.models";
 import { UserService } from "../../../../shared/services/user.service";
 import { formatTimeReading } from "../../../../shared/utils/date.utils";
@@ -75,11 +77,7 @@ export class StudentStatsPageComponent {
 	readonly chart = rxResource({
 		params: () => {
 			if (Number.isNaN(this.userId())) return undefined;
-			return {
-				id: this.userId(),
-				interval: this.interval(),
-				days: this.interval() === "day" ? 30 : undefined,
-			};
+			return { id: this.userId(), ...chartQuery(this.interval()) };
 		},
 		stream: ({ params }) =>
 			this.users.getStats(params.id, {
@@ -98,10 +96,12 @@ export class StudentStatsPageComponent {
 		return formatTimeReading(profile?.totalEntries ?? 0);
 	});
 
-	readonly EMPTY_CHART: MultiMetricChartData = {
-		npm: [],
-		accuracy: [],
-		sessionCount: [],
-		totalQuestions: [],
-	};
+	/**
+	 * Only read from the template's `chart.status() !== "loading" &&
+	 * !chart.error()` branch, same as `timeReading` above -- `.value()` is
+	 * safe there because the ladder has already ruled out an error.
+	 */
+	readonly chartData = computed<MultiMetricChartData>(
+		() => this.chart.value() ?? EMPTY_CHART,
+	);
 }
