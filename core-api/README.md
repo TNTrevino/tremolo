@@ -61,11 +61,46 @@ Optional:
 | `EMAIL_MAX_ATTEMPTS` | Tries before a message is marked dead (default `5`; retries back off from 60s, doubling, capped at 1h) |
 | `EMAIL_CLAIM_LEASE_SECONDS` | How long a claim survives before another watcher may take the row back (default `300`) |
 | `REQUIRE_EMAIL_VERIFICATION` | Gate `Login` on `users.email_verified_at` being set (default `false`/unset — soft for the pilot: signup still mails a verify link and an unverified user still sees a frontend banner, but sign-in is never blocked) |
+| `ADMIN_BOOTSTRAP_EMAIL` | Promotes this (normalized) email to `ADMIN` once at startup, if set (`services.BootstrapAdmin`). See **First admin** below. |
 
 Email is off unless **both** `EMAIL_SMTP_HOST` and `EMAIL_FROM` are set.
 With either missing, startup logs one warning naming what is absent and the
 queue holds: rows are written as usual, and the watcher declines to claim
 them rather than burning attempts against a relay that is not there.
+
+### First admin
+
+`services.RequireAdmin` gates the ADMIN-only routes below, and the only way
+to grant that role is another ADMIN (`POST /user` with `role: "ADMIN"`) —
+a chicken-and-egg problem on a fresh database, where the fake-data generator
+is otherwise the only seed path.
+
+`ADMIN_BOOTSTRAP_EMAIL` breaks that loop:
+
+1. Register a normal account through the app (any role).
+2. Set `ADMIN_BOOTSTRAP_EMAIL=<that account's email>` in `/etc/tremolo/.env`
+   (or your local env for dev).
+3. Restart core-api. `main.go` calls `services.BootstrapAdmin` once, right
+   after migrations run and before the server starts accepting requests. It
+   normalizes the email the same way login does, promotes that user to
+   `ADMIN` if they are not already, and logs the outcome with `logger.Warn`
+   so a promotion is impossible to miss in the startup logs.
+
+It is safe to leave the variable set indefinitely: promoting an
+already-ADMIN user, and an email nobody has registered yet, are both
+no-ops. The latter logs a warning instead of erroring, so setting the
+variable *before* the target account registers is also fine — the operator
+just restarts again afterward. This is preferred over a hand-written
+`update tremolo.users set role_id = ...` against production: it can't typo
+the email or the role name, every promotion is logged, and running it
+twice is harmless. The manual SQL route still works and remains the
+break-glass fallback for when the service itself won't start.
+
+Once you have an ADMIN account, sign in as it to reach the ADMIN-only
+routes in `admin_controller.go` (`GET /teachers`, `GET /students`,
+`POST /user` today; any admin routes added later, such as the teacher
+verification tooling tracked in #250, gate on the same `RequireAdmin`
+check).
 
 ## Architecture: controller → service → repository
 
