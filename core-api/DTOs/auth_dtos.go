@@ -39,17 +39,30 @@ func (req LoginRequest) Valid(ctx context.Context) map[string]string {
 // harmless, since Login only ever compares against an already-hashed
 // password, and consistent, since both routes share this one rule.
 func addPasswordProblem(problems map[string]string, password string) map[string]string {
-	switch {
-	case password == "":
-		problems["password"] = "Password is required"
-	case len(password) < 8:
-		problems["password"] = "Password must be at least 8 characters"
-	case len(password) > 72:
-		problems["password"] = "Password must be at most 72 characters"
-	case !validations.PasswordComplexity(password):
-		problems["password"] = "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
+	if msg := passwordProblem(password); msg != "" {
+		problems["password"] = msg
 	}
 	return problems
+}
+
+// passwordProblem is the password rule itself, extracted out of
+// addPasswordProblem (#249) so a request whose password field is spelled
+// differently -- ChangePasswordRequest's "new_password" -- can apply the
+// exact same rule under its own JSON key instead of a second hand-copied
+// switch. Purely mechanical: addPasswordProblem's own behavior is
+// unchanged, same messages under the same "password" key.
+func passwordProblem(password string) string {
+	switch {
+	case password == "":
+		return "Password is required"
+	case len(password) < 8:
+		return "Password must be at least 8 characters"
+	case len(password) > 72:
+		return "Password must be at most 72 characters"
+	case !validations.PasswordComplexity(password):
+		return "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
+	}
+	return ""
 }
 
 // UserResponse represents the user data returned in API responses
