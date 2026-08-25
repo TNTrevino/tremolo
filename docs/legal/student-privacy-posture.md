@@ -105,9 +105,12 @@ independent of any one user's age:
   by direct admin creation (`core-api/CLAUDE.md`, "A TEACHER row reaches
   the database through exactly two routes") -- a stranger cannot grant
   themselves visibility into student data by registering.
-- **Self-service control over one's own data**: account deletion is
-  live today (`AccountPageComponent`'s delete flow); a data export is
-  in progress this cycle.
+- **Self-service control over one's own data, on the way.** Both
+  account deletion (#202) and a data export (#243) are being added
+  this cycle -- today's delete button is UI-only and does not yet
+  reach a backend route. Until those ship, a user, a parent, or a
+  school can request deletion or export by emailing us, and we act on
+  it by hand.
 
 ### Accounts with no signal, and accounts below grade 7
 
