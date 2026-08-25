@@ -19,6 +19,7 @@ const EMAIL = "baseline.student@tremolo.test";
 const PASSWORD_URL = `${environment.coreApi}/api/users/42/password`;
 const EMAIL_URL = `${environment.coreApi}/api/users/42/email`;
 const EXPORT_URL = `${environment.coreApi}/api/users/42/export`;
+const DELETE_URL = `${environment.coreApi}/api/users/42`;
 
 const EXPORT_FIXTURE: UserExport = {
 	exported_at: "2026-08-25T00:00:00Z",
@@ -43,13 +44,14 @@ const EXPORT_FIXTURE: UserExport = {
 };
 
 /**
- * The account page's contract. Account-deletion is still a promise --
- * React answered it with a toast because the Go service has no route
- * for it -- so what that case pins is the wording of that toast and the
- * client-side validation in front of it. Password and email changes
- * (#249) and the data export (#243) are all real: AccountService's
- * PUT/POST/GET calls, asserted here the same way every other HTTP-backed
- * page in this codebase is (HttpTestingController, not a service spy).
+ * The account page's contract. Password and email changes (#249), the
+ * data export (#243), and account deletion (#202) are all real:
+ * AccountService's PUT/POST/GET/DELETE calls, asserted here the same way
+ * every other HTTP-backed page in this codebase is (HttpTestingController,
+ * not a service spy). Deletion keeps one client-side-only check in front
+ * of the network call: an instant email-match comparison that saves a
+ * round trip on an obvious typo (the server re-checks the same thing
+ * regardless), so that one case alone asserts no request went out.
  *
  * Toasts are asserted through the real `NotificationService` rather than a
  * spy: the queue *is* the observable behaviour, and a spy would pass even if
@@ -390,7 +392,7 @@ describe("AccountPageComponent", () => {
 		expect(createObjectURL).not.toHaveBeenCalled();
 	});
 
-	it("opens and dismisses the deletion modal, clearing what was typed", async () => {
+	it("opens and dismisses the deletion modal, clearing what was typed, including the password", async () => {
 		await render();
 		expect(el().textContent).not.toContain("Confirm Account Deletion");
 
@@ -399,33 +401,70 @@ describe("AccountPageComponent", () => {
 		expect(input("emailConfirmation").placeholder).toBe(EMAIL);
 
 		await type("emailConfirmation", "typed@example.com");
+		await type("deletePassword", "Some-Passw0rd!");
 		await click("Cancel");
 		expect(el().textContent).not.toContain("Confirm Account Deletion");
 
 		await click("Delete My Account");
 		expect(input("emailConfirmation").value).toBe("");
+		expect(input("deletePassword").value).toBe("");
 	});
 
-	it("refuses a deletion whose email does not match, and keeps the session", async () => {
+	it("refuses a deletion whose email does not match, keeps the session, and never reaches the network", async () => {
 		await render();
 		await click("Delete My Account");
 		await type("emailConfirmation", "someone.else@tremolo.test");
+		await type("deletePassword", "Old-Passw0rd!");
 		await submitForm(2);
 
 		expect(messages()).toEqual(["Email does not match your account email"]);
 		expect(store.isAuthenticated()).toBe(true);
 		expect(navigate).not.toHaveBeenCalled();
+		backend.expectNone(() => true);
 	});
 
-	it("signs the user out and lands on / when the email matches", async () => {
+	it("deletes the account for real, signs out, and lands on the marketing page", async () => {
 		await render();
 		await click("Delete My Account");
 		await type("emailConfirmation", EMAIL);
+		await type("deletePassword", "Old-Passw0rd!");
 		await submitForm(2);
 
-		expect(messages()).toEqual(["Account deletion would occur here"]);
+		const request = backend.expectOne(DELETE_URL);
+		expect(request.request.method).toBe("DELETE");
+		expect(request.request.body).toEqual({
+			password: "Old-Passw0rd!",
+			email_confirmation: EMAIL,
+		});
+		request.flush({ message: "Account deleted" });
+		await fixture.whenStable();
+
+		expect(el().textContent).not.toContain("Confirm Account Deletion");
 		expect(store.isAuthenticated()).toBe(false);
 		expect(store.user()).toBeNull();
-		expect(navigate).toHaveBeenCalledWith("/");
+		expect(navigate).toHaveBeenCalledWith("/home");
+		expect(messages()).toEqual(["Your account has been deleted."]);
+	});
+
+	it("shows an incorrect password inline, keeps the modal open, and does not sign out", async () => {
+		await render();
+		await click("Delete My Account");
+		await type("emailConfirmation", EMAIL);
+		await type("deletePassword", "Wrong-Passw0rd!");
+		await submitForm(2);
+
+		backend
+			.expectOne(DELETE_URL)
+			.flush({ error: "Incorrect password" }, { status: 403, statusText: "" });
+		await fixture.whenStable();
+
+		expect(el().textContent).toContain("Confirm Account Deletion");
+		expect(el().querySelector('[role="alert"]')?.textContent?.trim()).toBe(
+			"Incorrect password",
+		);
+		expect(store.isAuthenticated()).toBe(true);
+		expect(navigate).not.toHaveBeenCalled();
+		// No toast for this failure -- it is shown inline in the modal above.
+		expect(messages()).toEqual([]);
 	});
 });

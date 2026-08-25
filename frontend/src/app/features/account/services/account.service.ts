@@ -25,6 +25,14 @@ export interface ConfirmEmailChangeResponse {
 	email: string;
 }
 
+/** DELETE /api/users/{userId} body (#202). Password is blank for a
+ * Google-only account -- the server, not this shape, is the gate on
+ * whether one is actually required (core-api's DeleteAccountRequest). */
+export interface DeleteAccountRequest {
+	password: string;
+	email_confirmation: string;
+}
+
 /**
  * The account-settings HTTP calls core-api's user_info_controller.go does
  * not cover: changing the caller's own password and email address (#249),
@@ -80,5 +88,22 @@ export class AccountService {
 	 */
 	exportData(userId: number): Observable<UserExport> {
 		return this.http.get<UserExport>(`${this.usersBase}/${userId}/export`);
+	}
+
+	/**
+	 * DELETE /api/users/{userId} -- permanently deletes the caller's own
+	 * account (#202). A DELETE carrying a body is unusual, but the two
+	 * confirmations it carries (the current password, the typed email
+	 * address) must not ride along on the URL itself the way query
+	 * parameters would: a URL can land in a proxy access log or the
+	 * browser's own history entry, and this pair must not.
+	 */
+	deleteAccount(
+		userId: number,
+		body: DeleteAccountRequest,
+	): Observable<MessageResponse> {
+		return this.http.delete<MessageResponse>(`${this.usersBase}/${userId}`, {
+			body,
+		});
 	}
 }

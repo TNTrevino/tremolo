@@ -109,6 +109,11 @@ export const passwordChangeSchema = z
 
 export const deleteAccountSchema = z.object({
 	emailConfirmation: z.string().min(1, "Email confirmation is required"),
+	// Not .min(1): a Google-only account has no password, and the server
+	// accepts an empty one for exactly that account (core-api's
+	// DeleteAccountRequest). The server is the gate on whether a password
+	// is actually required here, not this schema.
+	password: z.string(),
 });
 
 /**

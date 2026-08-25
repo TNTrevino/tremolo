@@ -110,4 +110,21 @@ describe("AccountService", () => {
 
 		expect(result).toEqual(EXPORT_FIXTURE);
 	});
+
+	it("DELETEs the caller's own account with the password and email confirmation in the body", () => {
+		service
+			.deleteAccount(42, {
+				password: "Old-Passw0rd!",
+				email_confirmation: "baseline.student@tremolo.test",
+			})
+			.subscribe();
+
+		const req = backend.expectOne(`${USERS}/42`);
+		expect(req.request.method).toBe("DELETE");
+		expect(req.request.body).toEqual({
+			password: "Old-Passw0rd!",
+			email_confirmation: "baseline.student@tremolo.test",
+		});
+		req.flush({ message: "Account deleted" });
+	});
 });

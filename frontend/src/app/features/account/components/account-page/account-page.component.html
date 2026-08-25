@@ -375,6 +375,27 @@
 										[formField]="deleteForm.emailConfirmation"
 									/>
 								</app-form-field>
+								<app-form-field
+									label="Current Password"
+									htmlFor="deletePassword"
+									[field]="deleteForm.password"
+								>
+									<input
+										appFormInput
+										id="deletePassword"
+										type="password"
+										autocomplete="current-password"
+										[formField]="deleteForm.password"
+									/>
+									<p class="text-xs text-muted-foreground">
+										Leave blank if you only sign in with Google.
+									</p>
+								</app-form-field>
+								@if (deleteError()) {
+									<p role="alert" class="text-sm text-destructive">
+										{{ deleteError() }}
+									</p>
+								}
 								<div class="flex gap-2">
 									<app-button
 										type="button"
@@ -388,6 +409,7 @@
 										type="submit"
 										variant="destructive"
 										className="flex-1"
+										[loading]="deleting()"
 									>
 										Permanently Delete Account
 									</app-button>

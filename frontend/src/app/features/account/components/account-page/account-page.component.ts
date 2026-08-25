@@ -42,17 +42,19 @@ const BLANK_EMAIL_FORM: EmailChangeFormData = {
 	newEmail: "",
 };
 
-const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
+const BLANK_DELETE_FORM: DeleteAccountFormData = {
+	emailConfirmation: "",
+	password: "",
+};
 
 /**
  * Account settings. Port of frontend-react/src/pages/AccountPage.tsx.
  *
- * Five cards and a confirmation modal. The delete-account action still
- * has no backend route and stays a toast stub, ported as-is -- see
- * phase-3-subfeature-3-handoff.md. Password and email changes (#249) and
- * the data export (#243) are all real: AccountService's PUT/POST/GET
- * calls, wired the same way every other mutation on this page-tier is (a
- * one-shot `.subscribe()`, not `rxResource`).
+ * Five cards and a confirmation modal. Password and email changes (#249),
+ * the data export (#243), and now account deletion (#202) are all real:
+ * AccountService's PUT/POST/GET/DELETE calls, wired the same way every
+ * other mutation on this page-tier is (a one-shot `.subscribe()`, not
+ * `rxResource`).
  *
  * Three Signal Forms live here, exactly as React ran three separate form
  * hooks: the schemas are unrelated, and the delete form has to reset
@@ -92,6 +94,13 @@ export class AccountPageComponent {
 	readonly passwordPending = signal(false);
 	readonly emailPending = signal(false);
 	readonly exporting = signal(false);
+	readonly deleting = signal(false);
+	/** Set from a failed DeleteAccount call (e.g. an incorrect password)
+	 * and shown INLINE inside the still-open modal, unlike every other
+	 * form on this page -- there is no toast for this one failure path,
+	 * because the point is to let the visitor immediately retry in place,
+	 * not to have the reason scroll past in the notification queue. */
+	readonly deleteError = signal<string | null>(null);
 
 	private readonly passwordModel = signal<PasswordChangeFormData>({
 		...BLANK_PASSWORD_FORM,
@@ -228,13 +237,23 @@ export class AccountPageComponent {
 	closeDeleteModal(): void {
 		this.showDeleteModal.set(false);
 		this.deleteForm().reset({ ...BLANK_DELETE_FORM });
+		this.deleteError.set(null);
 	}
 
+	/** Deletes the caller's own account for real (#202). Two checks happen
+	 * before any request goes out: the schema (both fields present in
+	 * shape) and this instant client-side email match, which saves a round
+	 * trip on an obvious typo -- the server re-checks the very same
+	 * comparison against the account's real address regardless, so a typo
+	 * that slips past this one is still caught, just a beat later. */
 	submitDelete(event: Event): void {
 		event.preventDefault();
 
 		this.deleteForm().markAsTouched();
 		if (this.deleteForm().invalid()) return;
+
+		const userId = this.user()?.id;
+		if (userId === undefined || this.deleting()) return;
 
 		const email = this.user()?.email;
 		if (this.deleteModel().emailConfirmation !== email) {
@@ -242,12 +261,36 @@ export class AccountPageComponent {
 			return;
 		}
 
-		this.notifications.showSuccess("Account deletion would occur here");
-		// React ran this through `useLogout().mutate(...)` for its `onSuccess`
-		// hook; `AuthService.logout()` is local-only and synchronous (the Go
-		// service has no logout endpoint), so the navigation follows it
-		// directly.
-		this.auth.logout();
-		void this.router.navigateByUrl("/");
+		this.deleting.set(true);
+		this.deleteError.set(null);
+		this.account
+			.deleteAccount(userId, {
+				password: this.deleteModel().password,
+				email_confirmation: this.deleteModel().emailConfirmation,
+			})
+			.subscribe({
+				next: () => {
+					this.deleting.set(false);
+					this.closeDeleteModal();
+					// React ran the equivalent through `useLogout().mutate(...)`
+					// for its `onSuccess` hook; `AuthService.logout()` is
+					// local-only and synchronous (the Go service has no logout
+					// endpoint) -- there is no server-side session left to end,
+					// only the client's own copy of it, since the account it
+					// belonged to is gone.
+					this.auth.logout();
+					this.notifications.showSuccess("Your account has been deleted.");
+					// "/" redirects into a game; "/home" is the marketing page --
+					// there is no account left to own a game session.
+					void this.router.navigateByUrl("/home");
+				},
+				error: (err: unknown) => {
+					this.deleting.set(false);
+					this.deleteError.set(getErrorMessage(err));
+					// Deliberately NOT closed, logged out, or navigated: an
+					// incorrect password is exactly the kind of mistake
+					// someone retries immediately in the same modal.
+				},
+			});
 	}
 }
