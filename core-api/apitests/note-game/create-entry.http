@@ -235,6 +235,35 @@ Content-Type: application/json
 	});
 %}
 
+### NpmTooHigh
+# NpmTooHigh sends a notes-per-minute value far above what any human can
+# play. Issue #252: before the cap, an unbounded float here reached
+# int32(math.Round(entry.NPM)) in the service as an out-of-range,
+# implementation-defined conversion instead of being rejected at
+# validation.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 1e15,
+	"game_type": "note"
+}
+
+> {%
+	client.test("an implausibly high notes-per-minute is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "NPM: notes per minute cannot exceed 1000",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
 ### SubmitEntryForAnotherUser
 # SubmitEntryForAnotherUser has the student submit a body claiming to be
 # the outsider's entry. The body passes DTO validation but fails the

@@ -61,8 +61,19 @@ func (entry Entry) Valid(ctx context.Context) map[string]string {
 		problems["user_id"] = "UserID: ID is required"
 	}
 
-	if entry.NPM < 0 {
+	// NPM is a float64 with no upper bound the JSON decoder enforces (the
+	// int8 column it used to be gave that for free). World-class
+	// instrumentalists top out far below 1000 notes per minute, so the
+	// cap rejects nothing a human can produce, while keeping every
+	// accepted value far inside int32 range -- the
+	// int32(math.Round(entry.NPM)) conversion in
+	// services.CreateNoteGameEntry is implementation-defined for a value
+	// outside that range.
+	switch {
+	case entry.NPM < 0:
 		problems["notes_per_minute"] = "NPM: notes per minute cannot be negative"
+	case entry.NPM > 1000:
+		problems["notes_per_minute"] = "NPM: notes per minute cannot exceed 1000"
 	}
 
 	return problems
