@@ -152,6 +152,7 @@ export class KitPageComponent {
 		password: "",
 		confirmPassword: "",
 		role: "STUDENT",
+		inviteCode: "",
 	});
 
 	protected readonly signupForm = form(this.signupModel, (path) => {
@@ -178,6 +179,10 @@ export class KitPageComponent {
 			password: "Str0ng!pass",
 			confirmPassword: "Str0ng!pass",
 			role: "TEACHER",
+			// The role above is TEACHER, and signupSchema requires a code
+			// with it (#250) -- without one, "reset" would land the demo form
+			// straight into an error state.
+			inviteCode: "TREMOLO1",
 		});
 	}
 

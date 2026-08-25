@@ -204,6 +204,27 @@
 						<option value="TEACHER">Teacher</option>
 					</app-select>
 				</app-form-field>
+
+				@if (isTeacher()) {
+					<app-form-field
+						label="Invite code"
+						htmlFor="inviteCode"
+						[field]="signupForm.inviteCode"
+						[error]="inviteCodeError()"
+					>
+						<input
+							appFormInput
+							id="inviteCode"
+							type="text"
+							autocomplete="off"
+							placeholder="ABCD2345"
+							[formField]="signupForm.inviteCode"
+						/>
+						<p class="text-xs text-muted-foreground">
+							Ask your Tremolo contact for a code.
+						</p>
+					</app-form-field>
+				}
 			</div>
 
 			<div appCardFooter className="flex-col gap-4">

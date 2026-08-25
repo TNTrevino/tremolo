@@ -44,6 +44,8 @@ export interface RegisterRequest {
 	first_name: string;
 	last_name: string;
 	role: UserRole;
+	/** Required for, and only sent by, a TEACHER signup (#250). */
+	invite_code?: string;
 }
 
 export interface RegisterResponse {

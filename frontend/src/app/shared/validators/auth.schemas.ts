@@ -44,11 +44,23 @@ export const signupSchema = z
 			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
 		confirmPassword: z.string(),
 		role: z.enum(["STUDENT", "TEACHER"]),
+		inviteCode: z.string(),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords do not match",
 		path: ["confirmPassword"],
-	});
+	})
+	// The second cross-field rule: a teacher account needs an invite code
+	// (#250). It is a `.refine()` rather than a `.min(1)` on the field
+	// because the rule depends on `role` -- a student never sees the input,
+	// and an empty string must stay valid for them.
+	.refine(
+		(data) => data.role !== "TEACHER" || data.inviteCode.trim().length > 0,
+		{
+			message: "Invite code is required for teacher accounts",
+			path: ["inviteCode"],
+		},
+	);
 
 export const passwordChangeSchema = z
 	.object({
