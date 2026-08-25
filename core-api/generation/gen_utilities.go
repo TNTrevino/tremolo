@@ -336,8 +336,8 @@ func generateRealisticNoteGameEntries(studentID int16, entryCount int, profile S
 			TimeLength:       timeLength,
 			TotalQuestions:   int16(totalQuestions),
 			CorrectQuestions: int16(correctQuestions),
-			NPM:              int8(actualNPM),
-			UserID:           studentID,
+			NPM:              float64(actualNPM),
+			UserID:           int64(studentID),
 			CreatedDate: sql.NullString{
 				String: entryDate.Format("2006-01-02"),
 				Valid:  true,

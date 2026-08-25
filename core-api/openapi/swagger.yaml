@@ -137,11 +137,6 @@ definitions:
         description: 'Optional: tags this entry as an attempt at a class assignment.'
         type: integer
       correct_questions:
-        description: |-
-          FIXME: Valid rejects the zero value, so a game where the player got
-          nothing right cannot be saved: the POST 400s and the attempt is lost.
-          A beginner scoring 0/10 is exactly who this hits. Drop the presence
-          check and rely on the CorrectQuestions <= TotalQuestions rule.
         type: integer
       createdDate:
         $ref: '#/definitions/sql.NullString'
@@ -152,20 +147,12 @@ definitions:
       id:
         type: integer
       notes_per_minute:
-        description: |-
-          FIXME: int8 caps notes-per-minute at 127, so any score above that fails
-          the JSON bind with a 400 and the attempt is silently lost. Reachable by
-          a fast player on a short game. Widen to int16/float64 -- note the read
-          side (NoteGameEntryResponse.NotesPerMinute) is already float64.
-        type: integer
+        type: number
       time_length:
         type: string
       total_questions:
         type: integer
       user_id:
-        description: |-
-          FIXME: int16 caps user ids at 32767 and ids are already in the 1500s.
-          Headroom, but finite -- widen before it matters.
         type: integer
     type: object
   dtos.ErrorResponse:

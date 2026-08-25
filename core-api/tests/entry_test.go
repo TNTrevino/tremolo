@@ -68,10 +68,8 @@ func TestEntryValid_RejectsMissingFields(t *testing.T) {
 	t.Parallel()
 
 	for key, mutate := range map[string]func(*dtos.Entry){
-		"time_length":       func(e *dtos.Entry) { e.TimeLength = "" },
-		"correct_questions": func(e *dtos.Entry) { e.CorrectQuestions = 0 },
-		"user_id":           func(e *dtos.Entry) { e.UserID = 0 },
-		"notes_per_minute":  func(e *dtos.Entry) { e.NPM = 0 },
+		"time_length": func(e *dtos.Entry) { e.TimeLength = "" },
+		"user_id":     func(e *dtos.Entry) { e.UserID = 0 },
 	} {
 		t.Run(key, func(t *testing.T) {
 			t.Parallel()
@@ -85,15 +83,21 @@ func TestEntryValid_RejectsMissingFields(t *testing.T) {
 	}
 }
 
-// TotalQuestions has no presence rule. The switch case that was meant to
-// report it is spelled "Questions", so it never matched the field and a
-// zero total has never been reported. Pinned here so the day someone
-// adds the rule, this test fails and says so.
-//
-// A zero total forces a zero correct, and that field does have a rule, so
-// this asserts on the absence of the total_questions key rather than on
-// an empty map.
-func TestEntryValid_HasNoRuleForTotalQuestions(t *testing.T) {
+// A 0/10 game is a legitimate result (a beginner who missed everything),
+// not a missing field. Pinned so the presence-check regression this issue
+// fixed does not come back.
+func TestEntryValid_AcceptsZeroCorrectQuestions(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.CorrectQuestions = 0
+
+	assert.Empty(t, entry.Valid(context.Background()))
+}
+
+// TotalQuestions must be positive: a zero (or negative) total describes no
+// game at all.
+func TestEntryValid_RejectsZeroTotalQuestions(t *testing.T) {
 	t.Parallel()
 
 	entry := validEntry()
@@ -102,5 +106,28 @@ func TestEntryValid_HasNoRuleForTotalQuestions(t *testing.T) {
 
 	problems := entry.Valid(context.Background())
 
-	assert.NotContains(t, problems, "total_questions")
+	assert.Contains(t, problems["total_questions"], "TotalQuestions")
+}
+
+// The frontend computes npm = total/timeElapsed and rounds it, so a slow
+// game can legitimately round down to 0 -- that is not a missing value and
+// must still save.
+func TestEntryValid_AcceptsZeroNPM(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = 0
+
+	assert.Empty(t, entry.Valid(context.Background()))
+}
+
+func TestEntryValid_RejectsNegativeNPM(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = -1
+
+	problems := entry.Valid(context.Background())
+
+	assert.Contains(t, problems["notes_per_minute"], "NPM")
 }

@@ -161,10 +161,9 @@ Content-Type: application/json
 %}
 
 ### CorrectQuestionsZero
-# CorrectQuestionsZero sends a legitimate 0/10 score. This is a known
-# bug (see the FIXME on Entry.Valid): the zero-value presence check
-# rejects a real result, so a beginner's honest 0-correct attempt is
-# lost instead of saved.
+# CorrectQuestionsZero sends a legitimate 0/10 score and expects it to
+# save: a beginner's honest 0-correct attempt is a real result, not a
+# missing field.
 POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student_token}}
 Content-Type: application/json
@@ -179,12 +178,10 @@ Content-Type: application/json
 }
 
 > {%
-	client.test("a real 0-correct score is rejected, not saved (known bug)", function () {
-		client.assert(response.status === 400, "expected 400, got " + response.status);
-		client.assert(
-			response.body.error === "CorrectQuestions: the amount of correct questions are required",
-			"unexpected error string: " + response.body.error
-		);
+	client.test("a real 0-correct score is saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Note game entry saved successfully", "unexpected message: " + response.body.message);
+		client.assert(response.body.id > 0, "response carries the new entry id");
 	});
 %}
 

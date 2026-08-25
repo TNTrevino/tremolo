@@ -298,13 +298,13 @@ func TestGenerateRealisticNoteGameEntries(t *testing.T) {
 	// Verify all entries have valid data
 	for i, entry := range entries {
 		// Verify user ID
-		if entry.UserID != studentID {
+		if entry.UserID != int64(studentID) {
 			t.Errorf("Entry %d has incorrect user ID: expected %d, got %d", i, studentID, entry.UserID)
 		}
 
 		// Verify NPM is within valid range
 		if entry.NPM < MIN_NPM_BEGINNER || entry.NPM > MAX_NPM_ADVANCED {
-			t.Errorf("Entry %d has NPM %d outside valid range", i, entry.NPM)
+			t.Errorf("Entry %d has NPM %d outside valid range", i, int(entry.NPM))
 		}
 
 		// Verify correct questions <= total questions
@@ -327,8 +327,8 @@ func TestGenerateRealisticNoteGameEntries(t *testing.T) {
 	}
 
 	// Check for progression (NPM should generally increase)
-	firstNPM := entries[0].NPM
-	lastNPM := entries[len(entries)-1].NPM
+	firstNPM := int(entries[0].NPM)
+	lastNPM := int(entries[len(entries)-1].NPM)
 	if lastNPM <= firstNPM {
 		t.Logf("Warning: Expected NPM to increase from %d to higher, but got %d (could be variance)",
 			firstNPM, lastNPM)
@@ -344,12 +344,12 @@ func TestGenerateRealisticNoteGameEntries(t *testing.T) {
 	// Log first and last entries for inspection
 	t.Logf("\nFirst Entry:")
 	t.Logf("  Date: %s %s", entries[0].CreatedDate.String, entries[0].CreatedTime.String)
-	t.Logf("  NPM: %d, Questions: %d/%d (%.2f%%)", entries[0].NPM, entries[0].CorrectQuestions, entries[0].TotalQuestions, firstAccuracy)
+	t.Logf("  NPM: %d, Questions: %d/%d (%.2f%%)", int(entries[0].NPM), entries[0].CorrectQuestions, entries[0].TotalQuestions, firstAccuracy)
 	t.Logf("  Session Length: %s", entries[0].TimeLength)
 
 	t.Logf("\nLast Entry:")
 	t.Logf("  Date: %s %s", entries[len(entries)-1].CreatedDate.String, entries[len(entries)-1].CreatedTime.String)
-	t.Logf("  NPM: %d, Questions: %d/%d (%.2f%%)", entries[len(entries)-1].NPM, entries[len(entries)-1].CorrectQuestions, entries[len(entries)-1].TotalQuestions, lastAccuracy)
+	t.Logf("  NPM: %d, Questions: %d/%d (%.2f%%)", int(entries[len(entries)-1].NPM), entries[len(entries)-1].CorrectQuestions, entries[len(entries)-1].TotalQuestions, lastAccuracy)
 	t.Logf("  Session Length: %s", entries[len(entries)-1].TimeLength)
 }
 

@@ -2254,7 +2254,6 @@
                     "type": "integer"
                 },
                 "correct_questions": {
-                    "description": "FIXME: Valid rejects the zero value, so a game where the player got\nnothing right cannot be saved: the POST 400s and the attempt is lost.\nA beginner scoring 0/10 is exactly who this hits. Drop the presence\ncheck and rely on the CorrectQuestions \u003c= TotalQuestions rule.",
                     "type": "integer"
                 },
                 "createdDate": {
@@ -2270,8 +2269,7 @@
                     "type": "integer"
                 },
                 "notes_per_minute": {
-                    "description": "FIXME: int8 caps notes-per-minute at 127, so any score above that fails\nthe JSON bind with a 400 and the attempt is silently lost. Reachable by\na fast player on a short game. Widen to int16/float64 -- note the read\nside (NoteGameEntryResponse.NotesPerMinute) is already float64.",
-                    "type": "integer"
+                    "type": "number"
                 },
                 "time_length": {
                     "type": "string"
@@ -2280,7 +2278,6 @@
                     "type": "integer"
                 },
                 "user_id": {
-                    "description": "FIXME: int16 caps user ids at 32767 and ids are already in the 1500s.\nHeadroom, but finite -- widen before it matters.",
                     "type": "integer"
                 }
             }

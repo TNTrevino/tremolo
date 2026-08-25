@@ -25,7 +25,7 @@ func TestCreateNoteGameEntry_Success(t *testing.T) {
 
 	// Create a valid entry
 	entry := &dtos.Entry{
-		UserID:           int16(userID),
+		UserID:           int64(userID),
 		TimeLength:       "00:05:30",
 		TotalQuestions:   20,
 		CorrectQuestions: 15,
@@ -57,7 +57,7 @@ func TestCreateNoteGameEntry_Unauthorized(t *testing.T) {
 
 	// Try to create an entry for userID2 while authenticated as userID1
 	entry := &dtos.Entry{
-		UserID:           int16(userID2),
+		UserID:           int64(userID2),
 		TimeLength:       "00:05:30",
 		TotalQuestions:   20,
 		CorrectQuestions: 15,
@@ -303,7 +303,7 @@ func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 
 	// Create an entry with specific values
 	entry := &dtos.Entry{
-		UserID:           int16(userID),
+		UserID:           int64(userID),
 		TimeLength:       "01:30:45",
 		TotalQuestions:   50,
 		CorrectQuestions: 42,
