@@ -240,15 +240,29 @@ func (w *EmailWatcher) recordAttempt(ctx context.Context, row generated.TremoloQ
 
 // backoffFor is the delay before the next try after `attempt` failures:
 // base, doubling each time, never past maxDelay.
+//
+// It doubles one step at a time and checks the bound after every step,
+// rather than computing base<<(attempt-1) and checking once at the end. A
+// single large shift can overflow int64 before anything looks at the
+// result: for a big enough attempt it wraps through negative and, a few
+// attempts later, can land back on a small positive value indistinguishable
+// from a real backoff. Checking after every step means delay is never more
+// than maxDelay when it is doubled again, so the doubling itself can never
+// overflow, however large attempt is -- and the loop still exits in a
+// handful of iterations, since it stops the moment delay passes maxDelay.
 func backoffFor(attempt int32, base, maxDelay time.Duration) time.Duration {
 	if attempt < 1 {
 		attempt = 1
 	}
 
-	// A large attempt count would shift the sign bit or past the width of
-	// the type; either way the result is not a delay, and the cap is the
-	// right answer.
-	delay := base << (attempt - 1)
+	delay := base
+	for i := int32(1); i < attempt; i++ {
+		if delay <= 0 || delay > maxDelay {
+			break
+		}
+		delay *= 2
+	}
+
 	if delay <= 0 || delay > maxDelay {
 		return maxDelay
 	}
