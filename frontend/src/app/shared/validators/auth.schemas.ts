@@ -43,7 +43,7 @@ export const signupSchema = z
 			.regex(/\d/, "Contains number")
 			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
 		confirmPassword: z.string(),
-		role: z.enum(["STUDENT", "TEACHER", "PARENT"]),
+		role: z.enum(["STUDENT", "TEACHER"]),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords do not match",
