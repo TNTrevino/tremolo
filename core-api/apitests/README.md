@@ -7,7 +7,7 @@ More readable than a wall of `curl`, and every step asserts.
 ## Files
 
 One `.http` file per endpoint, kebab-case, grouped into a directory per
-URL path segment — 47 files for the 47 routes in
+URL path segment — 48 files for the 48 routes in
 `core-api/controllers/routes.go`. Directory walking is fully recursive
 (kulala picks up every `.http`/`.rest` file at any depth), and
 `http-client.env.json` resolution walks upward from each file's own
@@ -47,11 +47,16 @@ there is no per-group `http-client.env.json`.
   `admin_service_test.go` and `teacher_invite_controller_test.go`, which
   seed an ADMIN row directly in the test database.
 - `charts/` — dashboard chart data, per-user and per-teacher-class.
-- `users/` — a user's own profile summary, and changing the caller's own
-  password/email address. `change-email.http` covers only the request
-  side (wrong password, an already-taken address, success) for the same
-  reason `reset-password.http` stops at the token boundary — the
-  confirmation loop lives in `core-api/tests/account_service_test.go`.
+- `users/` — a user's own profile summary, changing the caller's own
+  password/email address, and exporting the caller's own data.
+  `change-email.http` covers only the request side (wrong password, an
+  already-taken address, success) for the same reason
+  `reset-password.http` stops at the token boundary — the confirmation
+  loop lives in `core-api/tests/account_service_test.go`. `export.http`
+  covers 401/403/200 only; the teacher-of-an-enrolled-student 403 lives
+  in `core-api/tests/export_controller_test.go` instead, since proving
+  it here would mean seeding a class and an enrollment just to duplicate
+  a check the Go suite already pins.
 - `note-game/` — the note game's score entries, recent-entry list,
   activity heatmap, typed per-user settings, and keyboard bindings.
 - `game-settings/` — the generic JSONB settings blob shared by every
