@@ -88,6 +88,11 @@ func NewEmailWatcher(q generated.Querier, sender email.Sender, cfg EmailWatcherC
 
 // Run ticks until ctx is cancelled, then returns.
 //
+// The first tick lands after one Interval, not immediately: Run is built
+// on time.NewTicker, which fires for the first time only once the interval
+// has elapsed. A freshly booted service therefore waits out one interval
+// -- 30 seconds by default -- before its first claim.
+//
 // A tick that is cut short by shutdown leaves its rows claimed. That is
 // what the lease is for: the next watcher to start finds them expired and
 // takes them back, rather than the messages being stranded.
@@ -174,7 +179,13 @@ func (w *EmailWatcher) deliver(ctx context.Context, row generated.TremoloQueuedE
 			// The message did go out; only the bookkeeping failed. The
 			// row stays claimed and the lease will offer it again, which
 			// risks a duplicate -- the honest trade against marking a
-			// delivered message as failed and never sending it.
+			// delivered message as failed and never sending it. The
+			// mitigation is already in place: a reclaim resends this same
+			// row, so it carries the same Message-ID (email.NewMessageID)
+			// and the same X-Entity-Ref-ID derived from it
+			// (SMTPSender.buildMsg), and a mail client collapses the two
+			// deliveries into one thread instead of showing the reader
+			// two separate messages.
 			logger.Error("Failed to mark an email as sent",
 				"error", err.Error(), "queued_email_id", row.ID)
 		}

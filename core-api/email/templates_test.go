@@ -110,12 +110,12 @@ func TestRender_LinkSurvivesTheURLContext(t *testing.T) {
 	// The link belongs on its own line in the plain-text body: mail
 	// clients that auto-link do it per line, and a URL buried mid
 	// sentence gets its trailing punctuation swallowed into the link.
-	assert.True(t, slicesContainsLine(text, resetURL),
+	assert.True(t, containsLine(text, resetURL),
 		"expected the reset URL on a line of its own in the text body")
 }
 
-// slicesContainsLine reports whether body has want as a whole line.
-func slicesContainsLine(body, want string) bool {
+// containsLine reports whether body has want as a whole line.
+func containsLine(body, want string) bool {
 	for line := range strings.SplitSeq(body, "\n") {
 		if strings.TrimSpace(line) == want {
 			return true

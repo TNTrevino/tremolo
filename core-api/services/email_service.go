@@ -59,7 +59,7 @@ func emailEnqueueDefaults() enqueueDefaults {
 func EnqueuePasswordReset(ctx context.Context, q generated.Querier, to, toName, firstName, resetURL string) error {
 	defaults := emailEnqueueDefaults()
 
-	return enqueue(ctx, q, email.TemplatePasswordReset, to, toName,
+	return enqueue(ctx, q, defaults, email.TemplatePasswordReset, to, toName,
 		fmt.Sprintf("Reset your %s password", defaults.appName),
 		email.PasswordResetData{
 			FirstName: firstName,
@@ -75,7 +75,7 @@ func EnqueuePasswordReset(ctx context.Context, q generated.Querier, to, toName, 
 func EnqueueVerifyEmail(ctx context.Context, q generated.Querier, to, toName, firstName, verifyURL string) error {
 	defaults := emailEnqueueDefaults()
 
-	return enqueue(ctx, q, email.TemplateVerifyEmail, to, toName,
+	return enqueue(ctx, q, defaults, email.TemplateVerifyEmail, to, toName,
 		fmt.Sprintf("Welcome to %s: confirm your email address", defaults.appName),
 		email.VerifyEmailData{
 			FirstName: firstName,
@@ -96,13 +96,17 @@ func EnqueueVerifyEmail(ctx context.Context, q generated.Querier, to, toName, fi
 // Rendering happens here, at enqueue, so the stored row carries final
 // bodies. A template edit tomorrow cannot rewrite a mail that is already
 // waiting to go out, and the watcher never has to load templates.
-func enqueue(ctx context.Context, q generated.Querier, template, to, toName, subject string, data any) error {
-	defaults := emailEnqueueDefaults()
-
+//
+// defaults comes from the caller rather than being read again here: both
+// EnqueuePasswordReset and EnqueueVerifyEmail already call
+// emailEnqueueDefaults for the subject line and the AppName template
+// field, and re-reading the environment a second time per call would only
+// risk the two reads disagreeing.
+func enqueue(ctx context.Context, q generated.Querier, defaults enqueueDefaults, template, to, toName, subject string, data any) error {
 	html, text, err := email.Render(template, data)
 	if err != nil {
 		logger.Error("Failed to render an email", "error", err.Error(), "template", template)
-		return err
+		return fmt.Errorf("render %q email template: %w", template, err)
 	}
 
 	// Minted once, here, and resent unchanged on every retry so a relay
@@ -110,7 +114,7 @@ func enqueue(ctx context.Context, q generated.Querier, template, to, toName, sub
 	messageID, err := email.NewMessageID(defaults.from)
 	if err != nil {
 		logger.Error("Failed to mint a Message-ID", "error", err.Error(), "template", template)
-		return err
+		return fmt.Errorf("mint a message id for %q email: %w", template, err)
 	}
 
 	if _, err := q.EnqueueEmail(ctx, generated.EnqueueEmailParams{
@@ -124,7 +128,7 @@ func enqueue(ctx context.Context, q generated.Querier, template, to, toName, sub
 		MaxAttempts:   defaults.maxAttempts,
 	}); err != nil {
 		logger.Error("Failed to queue an email", "error", err.Error(), "template", template)
-		return err
+		return fmt.Errorf("write queued %q email row: %w", template, err)
 	}
 
 	logger.Info("Email queued", "template", template, "message_id", messageID)
