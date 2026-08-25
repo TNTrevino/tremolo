@@ -1,0 +1,129 @@
+# Example reverse-proxy Caddyfile for Tremolo (issue #260).
+#
+# Not read by any workflow -- copy it to /etc/caddy/Caddyfile on the
+# reverse-proxy host (see docs/self-hosting.md's architecture diagram and
+# the `frontend-dest` input in deploy-prod.yml/deploy-test.yml) and adjust
+# the paths/hosts for real. Versioned here so the live config isn't only
+# whatever happens to be on that one box.
+#
+# ============================================================================
+# DRAFT: everything below "already served today" is UNTESTED against the
+# live app. Test it before enabling anything commented out. The two things
+# most likely to need adjustment are OSMD (renders SVG with inline
+# `style="..."` attributes -- covered by style-src 'unsafe-inline' below,
+# already accounted for) and Google OAuth (see the connect-src comment --
+# this app's flow is a plain redirect, verified in
+# frontend/src/app/auth/services/google-oauth.service.ts, so it should need
+# nothing special, but "should" is exactly what Report-Only is for).
+#
+# Recommended rollout: ship with Content-Security-Policy-Report-Only (as
+# written below) first, watch the browser console and/or a report-uri
+# across every route -- especially the OSMD-rendering game pages and the
+# Google OAuth round trip -- for a few days, THEN rename the header to
+# Content-Security-Policy (enforcing) once nothing unexpected shows up.
+# ============================================================================
+
+tremolonotes.com {
+	# Must match whichever `frontend-dest` deploy-prod.yml/deploy-test.yml
+	# rsyncs into for this host: /var/www/tremolo (prod) or
+	# /var/www/tremolo-test (qa).
+	root * /var/www/tremolo
+	file_server
+	try_files {path} /index.html
+	encode gzip
+
+	header {
+		# Already served today (docs/self-hosting.md) -- keep these as-is.
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+
+		# --- DRAFT below this line ---
+
+		# HSTS. Start low: browsers cache max-age for the DURATION given,
+		# with no way to un-cache it in a visitor's browser once sent, so a
+		# mistake at a one-year value is a one-year mistake. Confirm HTTPS
+		# is solid first at the low value, then raise it.
+		# Strict-Transport-Security "max-age=300"
+		# After a few days clean at 300, raise it:
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+		# Content-Security-Policy, Report-Only first (see the big comment
+		# above). Directive-by-directive:
+		#   default-src 'self'       -- deny-by-default baseline.
+		#   style-src 'self' 'unsafe-inline'
+		#                             -- Angular component styles AND OSMD's
+		#                                SVG rendering both set inline
+		#                                style="..." attributes. Dropping
+		#                                'unsafe-inline' needs a nonce/hash
+		#                                strategy tested against every
+		#                                route, not assumed to work -- left
+		#                                as future work, not tonight's.
+		#   img-src 'self' data:      -- inline icons/SVGs as data: URIs.
+		#   font-src 'self' https://fonts.gstatic.com
+		#                             -- verified against the current build:
+		#                                fonts are bundled locally via
+		#                                @fontsource-variable (inter,
+		#                                bricolage-grotesque) and served
+		#                                same-origin, so 'self' alone
+		#                                already covers today's app. The
+		#                                gstatic allowance is headroom in
+		#                                case that ever changes to a Google
+		#                                Fonts stylesheet link instead --
+		#                                drop it if you'd rather keep the
+		#                                policy tighter than it needs to be.
+		#   connect-src 'self' https://api.tremolonotes.com
+		#                             -- adjust the host to match whatever
+		#                                VITE_BACKEND_MAIN/VITE_BACKEND_MUSIC
+		#                                actually resolve to in
+		#                                /etc/tremolo/.env; add a second host
+		#                                if they're not the same one. Google
+		#                                OAuth needs NOTHING added here: this
+		#                                app's flow (GoogleOAuthService) is a
+		#                                full top-level redirect to
+		#                                accounts.google.com and back to our
+		#                                own /auth/google/callback, not a
+		#                                loaded script or an iframe, and CSP
+		#                                does not govern top-level
+		#                                navigation targets at all.
+		#   frame-ancestors 'none'    -- nobody should be framing this site.
+		# Content-Security-Policy-Report-Only "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.tremolonotes.com; frame-ancestors 'none'"
+		#
+		# Once Report-Only shows no unexpected violations on every route
+		# (especially a game page, for OSMD, and a full Google OAuth round
+		# trip), switch the header name to enforce it:
+		# Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.tremolonotes.com; frame-ancestors 'none'"
+	}
+}
+
+api.tremolonotes.com {
+	handle /api/* {
+		reverse_proxy localhost:5001
+	}
+
+	handle /music/* {
+		reverse_proxy localhost:8000
+	}
+
+	# Proxied through to the real, DB-aware check
+	# (core-api/controllers/health_controller.go) -- NOT a static stub.
+	# docs/self-hosting.md's older example answers this with a hardcoded
+	# `respond "OK" 200`, which would give false confidence to uptime
+	# monitoring (see docs/runbooks/monitoring.md): it would only prove
+	# this proxy is up, never that the database behind it is reachable.
+	handle /health {
+		reverse_proxy localhost:5001
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+
+		# Transport security applies regardless of content type; CSP is a
+		# page/document policy and has no real meaning on JSON responses,
+		# so it isn't repeated here. Same staged rollout as the
+		# tremolonotes.com block above.
+		# Strict-Transport-Security "max-age=300"
+	}
+}
