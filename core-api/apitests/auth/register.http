@@ -126,7 +126,32 @@ Content-Type: application/json
 				"First name must be at least 2 characters, " +
 				"Last name must be at least 2 characters, " +
 				"Password must be at least 8 characters, " +
-				"Role must be one of: STUDENT, TEACHER, PARENT",
+				"Role must be one of: STUDENT, TEACHER",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterParentRejected
+# RegisterParentRejected sends an otherwise-valid body claiming the
+# PARENT role. PARENT stays a valid DB role and an admin-creatable one,
+# but self-service signup no longer offers it (#251).
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "kula_register_parent_{{$timestamp}}@qa.test",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "PARENT"
+}
+
+> {%
+	client.test("the PARENT role is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Role must be one of: STUDENT, TEACHER",
 			"unexpected error string: " + response.body.error
 		);
 	});
