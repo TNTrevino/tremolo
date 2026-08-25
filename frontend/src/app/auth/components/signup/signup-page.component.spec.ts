@@ -88,6 +88,10 @@ describe("SignupPageComponent", () => {
 		await type("password", "E2ePassw0rd!");
 		await type("confirmPassword", "E2ePassw0rd!");
 		await choose("role", "STUDENT");
+		// signupSchema now requires a grade from a STUDENT (#244); this
+		// keeps every existing "fill the form out correctly" test isolated
+		// to the one thing it means to exercise.
+		await choose("gradeLevel", "8");
 	}
 
 	it("labels every control, with no asterisk to break an exact match", () => {
@@ -103,6 +107,7 @@ describe("SignupPageComponent", () => {
 			{ text: "Password", htmlFor: "password" },
 			{ text: "Confirm Password", htmlFor: "confirmPassword" },
 			{ text: "I am a...", htmlFor: "role" },
+			{ text: "What grade are you in?", htmlFor: "gradeLevel" },
 		]);
 	});
 
@@ -219,6 +224,7 @@ describe("SignupPageComponent", () => {
 			first_name: "Newton",
 			last_name: "Signup",
 			role: "STUDENT",
+			grade_level: "8",
 		});
 
 		request.flush({
@@ -387,5 +393,73 @@ describe("SignupPageComponent", () => {
 
 		expect(control("inviteCode")).toBeNull();
 		expect(el().textContent).not.toContain("That invite code is not valid");
+	});
+
+	// ---------- the grade level (#244) ----------
+
+	it("shows the grade field for Student, hides it for Teacher", async () => {
+		expect(control("gradeLevel")).not.toBeNull();
+		expect(
+			el().querySelector('label[for="gradeLevel"]')?.textContent?.trim(),
+		).toBe("What grade are you in?");
+
+		await choose("role", "TEACHER");
+
+		expect(control("gradeLevel")).toBeNull();
+	});
+
+	it("requires a grade for a student signup", async () => {
+		await type("firstName", "Newton");
+		await type("lastName", "Signup");
+		await type("email", "newton@tremolo.test");
+		await type("password", "E2ePassw0rd!");
+		await type("confirmPassword", "E2ePassw0rd!");
+		// role defaults to STUDENT; gradeLevel is left at "".
+		await submit();
+
+		expect(el().textContent).toContain("Please choose your grade");
+		backend.expectNone(REGISTER_URL);
+		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	it("sends grade_level for a student signup", async () => {
+		await fillValid();
+		await submit();
+
+		const request = backend.expectOne(REGISTER_URL);
+		expect(request.request.body).toMatchObject({ grade_level: "8" });
+	});
+
+	it("omits grade_level for a teacher signup", async () => {
+		await fillValidTeacher("ABCD2345");
+		await submit();
+
+		const request = backend.expectOne(REGISTER_URL);
+		expect(request.request.body).not.toHaveProperty("grade_level");
+	});
+
+	/**
+	 * `isStudent()`/`isTeacher()` only ever toggle which field is shown --
+	 * neither field's underlying value is reset by the switch, the same way
+	 * a rejected invite code's value (as opposed to its error, which
+	 * `linkedSignal` does clear) survives a round trip through Student.
+	 * This pins that the grade a user already chose is not silently
+	 * dropped by a detour through Teacher, so re-submitting as a Student
+	 * does not force them to answer the question twice.
+	 */
+	it("keeps a chosen grade across a round trip through Teacher", async () => {
+		await fillValid();
+
+		await choose("role", "TEACHER");
+		await type("inviteCode", "ABCD2345");
+		await choose("role", "STUDENT");
+
+		expect(control("gradeLevel")).not.toBeNull();
+		expect((control("gradeLevel") as HTMLSelectElement).value).toBe("8");
+
+		await submit();
+
+		const request = backend.expectOne(REGISTER_URL);
+		expect(request.request.body).toMatchObject({ grade_level: "8" });
 	});
 });

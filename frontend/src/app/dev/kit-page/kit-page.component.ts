@@ -153,6 +153,7 @@ export class KitPageComponent {
 		confirmPassword: "",
 		role: "STUDENT",
 		inviteCode: "",
+		gradeLevel: "",
 	});
 
 	protected readonly signupForm = form(this.signupModel, (path) => {
@@ -183,6 +184,9 @@ export class KitPageComponent {
 			// with it (#250) -- without one, "reset" would land the demo form
 			// straight into an error state.
 			inviteCode: "TREMOLO1",
+			// A TEACHER is never asked for a grade (#244), so this can stay
+			// empty without landing the demo form in an error state either.
+			gradeLevel: "",
 		});
 	}
 

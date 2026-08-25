@@ -225,6 +225,29 @@
 						</p>
 					</app-form-field>
 				}
+
+				@if (isStudent()) {
+					<app-form-field
+						label="What grade are you in?"
+						htmlFor="gradeLevel"
+						[field]="signupForm.gradeLevel"
+					>
+						<app-select
+							appFormSelect
+							selectId="gradeLevel"
+							[formField]="signupForm.gradeLevel"
+						>
+							<option value="">Select your grade</option>
+							@for (option of gradeOptions; track option.value) {
+								<option [value]="option.value">{{ option.label }}</option>
+							}
+						</app-select>
+						<p class="text-xs text-muted-foreground">
+							We ask so we know who the site is being used by. It is a grade,
+							not a birthday, and it is never shown to other students.
+						</p>
+					</app-form-field>
+				}
 			</div>
 
 			<div appCardFooter className="flex-col gap-4">

@@ -50,6 +50,7 @@ export const signupSchema = z
 		confirmPassword: z.string(),
 		role: z.enum(["STUDENT", "TEACHER"]),
 		inviteCode: z.string(),
+		gradeLevel: z.string(),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords do not match",
@@ -65,7 +66,15 @@ export const signupSchema = z
 			message: "Invite code is required for teacher accounts",
 			path: ["inviteCode"],
 		},
-	);
+	)
+	// #244. A student is asked; a teacher is not, and their empty string must
+	// stay valid. Same shape as the invite-code rule above and for the same
+	// reason: the requirement depends on role. The API accepts an absent
+	// grade -- this rule exists so a student consciously answers.
+	.refine((data) => data.role !== "STUDENT" || data.gradeLevel.length > 0, {
+		message: "Please choose your grade",
+		path: ["gradeLevel"],
+	});
 
 export const passwordChangeSchema = z
 	.object({

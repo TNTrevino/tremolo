@@ -46,6 +46,8 @@ export interface RegisterRequest {
 	role: UserRole;
 	/** Required for, and only sent by, a TEACHER signup (#250). */
 	invite_code?: string;
+	/** An optional age-band signal a student may supply (#244). */
+	grade_level?: string;
 }
 
 export interface RegisterResponse {

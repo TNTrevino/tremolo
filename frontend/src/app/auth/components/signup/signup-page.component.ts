@@ -101,6 +101,18 @@ const STRENGTH_BY_MET_COUNT: readonly PasswordStrength[] = [
 	},
 ];
 
+/** The grades `<select>` offers a student (#244) -- "6".."12" plus "other". */
+const GRADE_OPTIONS: readonly { value: string; label: string }[] = [
+	{ value: "6", label: "6th grade" },
+	{ value: "7", label: "7th grade" },
+	{ value: "8", label: "8th grade" },
+	{ value: "9", label: "9th grade" },
+	{ value: "10", label: "10th grade" },
+	{ value: "11", label: "11th grade" },
+	{ value: "12", label: "12th grade" },
+	{ value: "other", label: "Other" },
+];
+
 /**
  * Whether a failed registration was the invite code being rejected.
  *
@@ -164,6 +176,7 @@ export class SignupPageComponent {
 		confirmPassword: "",
 		role: "STUDENT",
 		inviteCode: "",
+		gradeLevel: "",
 	});
 
 	readonly signupForm = form(this.model, (path) => {
@@ -178,6 +191,11 @@ export class SignupPageComponent {
 
 	/** Only a teacher signup asks for an invite code (#250). */
 	readonly isTeacher = computed(() => this.model().role === "TEACHER");
+
+	/** Only a student signup asks for a grade (#244). */
+	readonly isStudent = computed(() => this.model().role === "STUDENT");
+
+	readonly gradeOptions = GRADE_OPTIONS;
 
 	/**
 	 * A rejected invite code, shown under the field rather than in the page
@@ -247,6 +265,14 @@ export class SignupPageComponent {
 				// of a field they never filled in.
 				...(data.role === "TEACHER"
 					? { invite_code: data.inviteCode.trim() }
+					: {}),
+				// Sent only by a student, and only once they answered: a
+				// teacher never sees the field, and signupSchema's refine
+				// already requires a student to have chosen something before
+				// submit can succeed, so this is a defensive `&&`, not a gate
+				// of its own (#244).
+				...(data.role === "STUDENT" && data.gradeLevel
+					? { grade_level: data.gradeLevel }
 					: {}),
 			})
 			.subscribe({
