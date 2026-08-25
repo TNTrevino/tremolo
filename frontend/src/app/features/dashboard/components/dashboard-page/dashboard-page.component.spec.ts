@@ -152,6 +152,16 @@ describe("DashboardPageComponent", () => {
 		return fixture.nativeElement as HTMLElement;
 	}
 
+	/**
+	 * Scoped to the teacher-only card, not the whole page: a chart's
+	 * Y-axis tick or the profile's join date can contain the same digits
+	 * as the roster count under test, so asserting against
+	 * `el().textContent` would still pass with the wrong count on screen.
+	 */
+	function teacherCard(): Element | null {
+		return el().querySelector("app-teacher-dashboard");
+	}
+
 	it("renders the signed-in user's full name -- the auth.spec.ts contract", async () => {
 		await renderStudent();
 
@@ -320,7 +330,7 @@ describe("DashboardPageComponent", () => {
 		await fixture.whenStable();
 
 		expect(el().textContent).toContain("Teacher Dashboard");
-		expect(el().textContent).toContain("4");
+		expect(teacherCard()?.textContent).toContain("4");
 		expect(
 			[...el().querySelectorAll("a")].map((a) => a.textContent?.trim()),
 		).toContain("My Classes");
@@ -381,7 +391,7 @@ describe("DashboardPageComponent", () => {
 		]);
 		await fixture.whenStable();
 
-		expect(el().textContent).toContain("20");
+		expect(teacherCard()?.textContent).toContain("20");
 	});
 
 	it("keeps the teacher card when the class list fails", async () => {
