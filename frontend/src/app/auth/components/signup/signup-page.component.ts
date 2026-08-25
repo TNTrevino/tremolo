@@ -240,8 +240,11 @@ export class SignupPageComponent {
 				first_name: data.firstName,
 				last_name: data.lastName,
 				role: data.role,
-				// Sent only by a teacher: a student never sees the field, and
-				// the key's presence is what the Go service gates on.
+				// Sent only by a teacher: a student never sees the field. The
+				// Go service itself gates on role, not on this key's presence
+				// -- InviteCode defaults to "" whether the key is sent or
+				// omitted -- but leaving it out keeps a student's payload free
+				// of a field they never filled in.
 				...(data.role === "TEACHER"
 					? { invite_code: data.inviteCode.trim() }
 					: {}),

@@ -144,16 +144,12 @@ func releaseTeacherInvite(ctx context.Context, q generated.Querier, codeID int32
 // teacherInviteResponse converts a row to its wire shape here rather than
 // in the DTO: DTOs may not import database/generated (see .golangci.yml).
 func teacherInviteResponse(row generated.TremoloTeacherInviteCode) dtos.TeacherInviteResponse {
-	invite := dtos.TeacherInviteResponse{
+	return dtos.TeacherInviteResponse{
 		Code:      row.Code,
 		Note:      row.Note,
 		MaxUses:   int(row.MaxUses),
 		UseCount:  int(row.UseCount),
+		ExpiresAt: ptrFromNullTime(row.ExpiresAt),
 		CreatedAt: row.CreatedAt,
 	}
-	if row.ExpiresAt.Valid {
-		expiresAt := row.ExpiresAt.Time
-		invite.ExpiresAt = &expiresAt
-	}
-	return invite
 }

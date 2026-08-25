@@ -162,11 +162,6 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 		return nil, ErrEmailTaken
 	}
 
-	passwordHash, err := HashPassword(req.Password)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
-	}
-
 	roleID, err := q.GetRoleIDByName(ctx, req.Role)
 	if err != nil {
 		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
@@ -179,6 +174,16 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Hashed last, after every DB-verified precondition above has passed:
+	// bcrypt at BcryptCost is deliberately CPU-heavy, and an unknown,
+	// expired or spent invite code is the one of those checks a legitimate
+	// caller commonly trips -- no reason to pay bcrypt's cost first only
+	// to reject the request anyway.
+	passwordHash, err := HashPassword(req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
 	}
 
 	createParams := generated.CreateUserParams{

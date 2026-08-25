@@ -258,6 +258,25 @@ describe("SignupPageComponent", () => {
 		);
 	}
 
+	/**
+	 * Runs a teacher signup with `inviteCode` and flushes the server's
+	 * standard "invalid, expired or spent" rejection for it.
+	 */
+	async function rejectInviteCode(inviteCode = "ZZZZZZZZ"): Promise<void> {
+		await fillValidTeacher(inviteCode);
+		await submit();
+
+		backend.expectOne(REGISTER_URL).flush(
+			{
+				error:
+					"That invite code is not valid, has expired, or has already been used.",
+				field: "invite_code",
+			},
+			{ status: 400, statusText: "" },
+		);
+		await fixture.whenStable();
+	}
+
 	it("hides the invite code field until Teacher is chosen", async () => {
 		expect(control("inviteCode")).toBeNull();
 		expect(el().textContent).not.toContain(
@@ -317,18 +336,7 @@ describe("SignupPageComponent", () => {
 	 * the alert at the top of a form they would have to scroll back up to.
 	 */
 	it("puts a rejected invite code on the field, not the page alert", async () => {
-		await fillValidTeacher("ZZZZZZZZ");
-		await submit();
-
-		backend.expectOne(REGISTER_URL).flush(
-			{
-				error:
-					"That invite code is not valid, has expired, or has already been used.",
-				field: "invite_code",
-			},
-			{ status: 400, statusText: "" },
-		);
-		await fixture.whenStable();
+		await rejectInviteCode();
 
 		expect(fieldMessages()).toContain(
 			"That invite code is not valid, has expired, or has already been used.",
@@ -356,18 +364,7 @@ describe("SignupPageComponent", () => {
 	});
 
 	it("clears the invite code field when switching back to Student", async () => {
-		await fillValidTeacher("ZZZZZZZZ");
-		await submit();
-
-		backend.expectOne(REGISTER_URL).flush(
-			{
-				error:
-					"That invite code is not valid, has expired, or has already been used.",
-				field: "invite_code",
-			},
-			{ status: 400, statusText: "" },
-		);
-		await fixture.whenStable();
+		await rejectInviteCode();
 
 		await choose("role", "STUDENT");
 

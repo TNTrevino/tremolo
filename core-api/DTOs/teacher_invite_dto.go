@@ -3,6 +3,8 @@ package dtos
 import (
 	"context"
 	"time"
+
+	"sight-reading/validations"
 )
 
 // TeacherInviteCodeLength is the length of generated teacher invite codes.
@@ -28,7 +30,7 @@ func (r CreateTeacherInviteRequest) Valid(ctx context.Context) map[string]string
 		problems["expires_in_days"] = "ExpiresInDays: must be between 1 and 365"
 	}
 
-	if len(r.Note) > 255 {
+	if !validations.VarChar255Length(r.Note) {
 		problems["note"] = "Note: too long"
 	}
 
