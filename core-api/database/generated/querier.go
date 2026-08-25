@@ -160,6 +160,12 @@ type Querier interface {
 	// it. A dedicated query keeps users.sql untouched.
 	//
 	GetUserCredentials(ctx context.Context, id int32) (GetUserCredentialsRow, error)
+	// Read-only queries backing GET /api/users/{userId}/export (#243). Own file
+	// so parallel branches editing users.sql do not conflict with it.
+	// The whole profile, including columns GetUserByID leaves out. Not a
+	// widening of GetUserByID: that row shape feeds every /me response.
+	// grade_level joins this select when #244 merges.
+	GetUserForExport(ctx context.Context, id int32) (GetUserForExportRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
@@ -175,6 +181,9 @@ type Querier interface {
 	// teacher chart queries.
 	IsStudentOfTeacher(ctx context.Context, arg IsStudentOfTeacherParams) (bool, error)
 	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
+	// Labelled per assignment/class so the export is readable by a human
+	// without joining anything.
+	ListAssignmentAttemptsByUser(ctx context.Context, userID int32) ([]ListAssignmentAttemptsByUserRow, error)
 	ListAssignmentsByClass(ctx context.Context, classID int32) ([]TremoloAssignment, error)
 	// Every assignment in the student's classes, with the student's own
 	// best attempt so the frontend can show progress. "Best" is one real
@@ -187,6 +196,10 @@ type Querier interface {
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
 	ListEmailSendAttempts(ctx context.Context, queuedEmailID int64) ([]TremoloEmailSendAttempt, error)
 	ListEmailTokensByUser(ctx context.Context, arg ListEmailTokensByUserParams) ([]TremoloEmailToken, error)
+	// Every per-game JSONB settings row the user has saved (key signature /
+	// scale / chord identification games -- the note game has its own typed
+	// table, covered separately by GetNoteGameSettings).
+	ListGameSettingsByUser(ctx context.Context, userID int32) ([]ListGameSettingsByUserRow, error)
 	ListPasswordResetTokensByUser(ctx context.Context, userID int32) ([]TremoloPasswordResetToken, error)
 	ListQueuedEmailsByRecipient(ctx context.Context, recipient string) ([]TremoloQueuedEmail, error)
 	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
