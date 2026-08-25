@@ -5,6 +5,7 @@
 -->
 <div class="min-h-screen bg-background text-foreground">
 	<app-navigation />
+	<app-verify-email-banner />
 	<router-outlet />
 	@if (auth.isAuthenticated()) {
 		<app-friends-panel />

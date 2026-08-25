@@ -49,6 +49,17 @@ describe("AppComponent", () => {
 	});
 
 	/**
+	 * #108: the banner slot is unconditional in the template (its own
+	 * `visible()` computed decides whether anything renders inside it), so
+	 * it should always be in the tree, right after the nav bar -- unlike
+	 * the friends panel below, which is only in the tree at all when signed
+	 * in.
+	 */
+	it("hosts the verify-email banner slot right after the nav bar", () => {
+		expect(el().querySelector("app-verify-email-banner")).toBeTruthy();
+	});
+
+	/**
 	 * The panel hangs off the shell, not off a route -- that is what
 	 * `e2e/specs/friends-and-theme.spec.ts` exists to catch -- and React
 	 * rendered it as `{isAuthenticated && <FriendsPanel />}`.

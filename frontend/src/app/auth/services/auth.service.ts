@@ -115,6 +115,27 @@ export class AuthService {
 		return this.http.post<MessageResponse>(`${this.base}/reset-password`, body);
 	}
 
+	/**
+	 * #108. No session side effects, same as resetPassword -- confirming an
+	 * address does not sign the visitor in on its own.
+	 */
+	verifyEmail(token: string): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(`${this.base}/verify-email`, {
+			token,
+		});
+	}
+
+	/**
+	 * #108. No body: the bearer token (attached by authInterceptor) is what
+	 * identifies the account to mail.
+	 */
+	resendVerification(): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(
+			`${this.base}/resend-verification`,
+			{},
+		);
+	}
+
 	private acceptSession(res: LoginResponse): void {
 		this.tokens.setTokens(res.access_token, res.refresh_token);
 		this.store.setAuthFromLogin(res);

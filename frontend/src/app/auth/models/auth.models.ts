@@ -15,6 +15,8 @@ export interface ApiUser {
 	last_name: string;
 	role: UserRole;
 	has_google?: boolean;
+	/** #108 */
+	email_verified?: boolean;
 }
 
 export interface User {
@@ -24,6 +26,8 @@ export interface User {
 	lastName: string;
 	role: UserRole;
 	hasGoogle?: boolean;
+	/** #108 */
+	emailVerified?: boolean;
 }
 
 export interface LoginRequest {

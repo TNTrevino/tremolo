@@ -37,6 +37,8 @@ describe("AuthStore", () => {
 					lastName: "User",
 					role: "TEACHER",
 					hasGoogle: false,
+					// #108: the signIn fixture defaults emailVerified to true.
+					emailVerified: true,
 				},
 				token: "access-token",
 				isAuthenticated: true,
