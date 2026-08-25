@@ -66,6 +66,30 @@ definitions:
       student_id:
         type: integer
     type: object
+  dtos.ChangeEmailRequest:
+    properties:
+      current_password:
+        type: string
+      new_email:
+        type: string
+    type: object
+  dtos.ChangeEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    type: object
+  dtos.ChangePasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dtos.ChartDataPoint:
     properties:
       x:
@@ -85,6 +109,18 @@ definitions:
         type: string
       student_count:
         type: integer
+    type: object
+  dtos.ConfirmEmailChangeRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.ConfirmEmailChangeResponse:
+    properties:
+      email:
+        type: string
+      message:
+        type: string
     type: object
   dtos.CreateAssignmentRequest:
     properties:
@@ -783,6 +819,39 @@ paths:
       summary: Get an assignment's results grid
       tags:
       - assignments
+  /api/auth/confirm-email-change:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Confirmation token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ConfirmEmailChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ConfirmEmailChangeResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Confirm an email address change
+      tags:
+      - account
   /api/auth/forgot-password:
     post:
       consumes:
@@ -1836,6 +1905,59 @@ paths:
       summary: Update the note game settings
       tags:
       - note-game-settings
+  /api/users/{userId}/email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current password and the new address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangeEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangeEmailResponse'
+        "400":
+          description: Invalid request body, wrong current password, no password set,
+            or a Google-managed address
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request an email address change
+      tags:
+      - account
   /api/users/{userId}/general-info:
     get:
       parameters:
@@ -1876,6 +1998,55 @@ paths:
       summary: Get general user info
       tags:
       - user-info
+  /api/users/{userId}/password:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangePasswordResponse'
+        "400":
+          description: Invalid request body, wrong current password, or no password
+            set
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change the caller's password
+      tags:
+      - account
   /health:
     get:
       produces:

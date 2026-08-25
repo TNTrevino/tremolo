@@ -14,6 +14,11 @@ import (
 const (
 	passwordResetExpiresIn = "1 hour"
 	verifyEmailExpiresIn   = "24 hours"
+	// changeEmailExpiresIn mirrors account_service.go's
+	// ChangeEmailTokenTTL -- if that constant ever changes, this string
+	// has to change with it, the same relationship every other
+	// *ExpiresIn constant here has with its issuer.
+	changeEmailExpiresIn = "1 hour"
 )
 
 // defaultMaxAttempts is the retry budget a queued message starts with when
@@ -101,6 +106,41 @@ func EnqueueVerifyEmail(ctx context.Context, q generated.Querier, to, toName, fi
 		})
 }
 
+// EnqueueEmailChange queues the "confirm your new address" mail, sent to
+// the NEW address (to) -- the confirm link is worthless anywhere else,
+// since clicking it is exactly what proves the requester controls that
+// address.
+func EnqueueEmailChange(ctx context.Context, q generated.Querier, to, toName, firstName, newEmail, confirmURL string) error {
+	defaults := emailEnqueueDefaults()
+
+	return enqueue(ctx, q, defaults, email.TemplateEmailChange, to, toName,
+		fmt.Sprintf("Confirm your new %s email address", defaults.appName),
+		email.EmailChangeData{
+			FirstName:  firstName,
+			ConfirmURL: confirmURL,
+			NewEmail:   newEmail,
+			ExpiresIn:  changeEmailExpiresIn,
+			AppName:    defaults.appName,
+			AppURL:     PublicBaseURL(),
+		})
+}
+
+// EnqueueEmailChangeAlert queues the "your email address is changing"
+// notice, sent to the OLD address (to) being replaced. It carries no
+// confirm link: the recipient here is being told, not asked to act.
+func EnqueueEmailChangeAlert(ctx context.Context, q generated.Querier, to, toName, firstName, newEmail string) error {
+	defaults := emailEnqueueDefaults()
+
+	return enqueue(ctx, q, defaults, email.TemplateEmailChangeAlert, to, toName,
+		fmt.Sprintf("Your %s email address is changing", defaults.appName),
+		email.EmailChangeAlertData{
+			FirstName: firstName,
+			NewEmail:  newEmail,
+			AppName:   defaults.appName,
+			AppURL:    PublicBaseURL(),
+		})
+}
+
 // enqueue renders one message and writes it to the queue.
 //
 // It never touches SMTP. That is the whole point of the queue: signing up
@@ -112,11 +152,11 @@ func EnqueueVerifyEmail(ctx context.Context, q generated.Querier, to, toName, fi
 // bodies. A template edit tomorrow cannot rewrite a mail that is already
 // waiting to go out, and the watcher never has to load templates.
 //
-// defaults comes from the caller rather than being read again here: both
-// EnqueuePasswordReset and EnqueueVerifyEmail already call
-// emailEnqueueDefaults for the subject line and the AppName template
-// field, and re-reading the environment a second time per call would only
-// risk the two reads disagreeing.
+// defaults comes from the caller rather than being read again here: every
+// Enqueue* function above already calls emailEnqueueDefaults for the
+// subject line and the AppName template field, and re-reading the
+// environment a second time per call would only risk the two reads
+// disagreeing.
 func enqueue(ctx context.Context, q generated.Querier, defaults enqueueDefaults, template, to, toName, subject string, data any) error {
 	html, text, err := email.Render(template, data)
 	if err != nil {
