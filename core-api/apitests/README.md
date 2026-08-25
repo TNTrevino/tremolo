@@ -24,13 +24,17 @@ there is no per-group `http-client.env.json`.
   explorer. Not a test: it is a browsable route list for every endpoint
   below, handy when you're not sure which group a route landed in.
 - `health/` — the service health check.
-- `auth/` — register, login, refresh, `/me`, and the two Google OAuth
-  routes. `google-callback.http` and `google-link.http` make a real
-  outbound call to Google's token endpoint with a garbage code to prove
-  the 401 path — the suite's only external network dependency.
+- `auth/` — register, login, refresh, `/me`, the two Google OAuth routes,
+  and forgot/reset password. `google-callback.http` and `google-link.http`
+  make a real outbound call to Google's token endpoint with a garbage code
+  to prove the 401 path — the suite's only external network dependency.
   `register.http` also covers the teacher invite-code gate (#250): a
   teacher signup with no code, one with a code that does not exist, and a
   student whose code is ignored rather than rejected.
+  `reset-password.http` covers only the invalid-token and validation
+  responses; the happy path needs a token that only ever exists in a
+  queued mail's body, so it lives in
+  `core-api/tests/password_reset_service_test.go` instead.
 - `admin/` — teacher/student listing and lookup, admin-created users, and
   minting/listing teacher invite codes. ADMIN-only, and there is no
   self-service way to become an ADMIN, so every file here asserts only
