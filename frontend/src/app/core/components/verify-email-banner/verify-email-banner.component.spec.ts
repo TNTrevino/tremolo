@@ -137,12 +137,49 @@ describe("VerifyEmailBannerComponent", () => {
 		// A route navigation destroys and recreates this component (it lives
 		// in the app shell, not in a route, but the same TestBed component
 		// re-creation stands in for "the page reloaded a component that
-		// reads sessionStorage fresh"). The dismissal must survive that.
+		// reads sessionStorage fresh"). The dismissal must survive that --
+		// for the SAME signed-in user (still id 1 here).
 		const second = TestBed.createComponent(VerifyEmailBannerComponent);
 		await second.whenStable();
 
 		expect(
 			(second.nativeElement as HTMLElement).querySelector('[role="status"]'),
 		).toBeNull();
+	});
+
+	/**
+	 * The reviewer scenario on #272: this component lives in the app shell
+	 * and is never destroyed across a sign-out/sign-in, so a once-seeded
+	 * signal would keep showing student A's dismissal to whoever signs in
+	 * next on the same shared classroom Chromebook. Dismissal must be keyed
+	 * per user id and re-read the moment the signed-in identity changes.
+	 */
+	it("re-shows the banner for a different user signed in on the same device, but keeps each user's own dismissal", async () => {
+		signIn(store, "STUDENT", false, 1);
+		await fixture.whenStable();
+
+		const dismiss = el().querySelector(
+			'button[aria-label="Dismiss"]',
+		) as HTMLButtonElement;
+		dismiss.click();
+		fixture.detectChanges();
+
+		expect(banner()).toBeNull();
+
+		// Student A signs out; student B -- a different id, also unverified,
+		// who never dismissed anything -- signs in on the same tab.
+		store.clear();
+		signIn(store, "STUDENT", false, 2);
+		fixture.detectChanges();
+
+		expect(banner()).not.toBeNull();
+
+		// B signs out; A comes back in the same browser session. A's own
+		// dismissal from earlier in this test still sticks.
+		store.clear();
+		signIn(store, "STUDENT", false, 1);
+		fixture.detectChanges();
+
+		expect(banner()).toBeNull();
 	});
 });

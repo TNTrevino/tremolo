@@ -3,6 +3,7 @@ import {
 	Component,
 	computed,
 	inject,
+	linkedSignal,
 	signal,
 } from "@angular/core";
 import { NgIcon } from "@ng-icons/core";
@@ -12,13 +13,28 @@ import { AuthStore } from "../../../auth/services/auth.store";
 import { resendVerification } from "../../../auth/utils/resend-verification.util";
 import { NotificationService } from "../../services/notification.service";
 
-/** sessionStorage key a dismissal is recorded under -- per session, per device. */
+/**
+ * sessionStorage key PREFIX a dismissal is recorded under -- per session,
+ * per device, per signed-in user id. #272: a shared classroom Chromebook
+ * keeps this component alive (in the app shell) across a sign-out/sign-in,
+ * so an un-scoped key would let one student's dismissal hide the banner for
+ * whoever signs in next on the same tab.
+ */
 const DISMISSED_KEY = "tremolo-verify-dismissed";
 
-/** Reads the dismissed flag. Storage can throw (private browsing, quota, a disabled setting), so a read failure just means "not dismissed". */
-function readDismissed(): boolean {
+function dismissedKey(userId: number): string {
+	return `${DISMISSED_KEY}:${userId}`;
+}
+
+/**
+ * Reads the dismissed flag for one user id. Storage can throw (private
+ * browsing, quota, a disabled setting), so a read failure just means "not
+ * dismissed". No id (nobody signed in) never has a stored dismissal either.
+ */
+function readDismissed(userId: number | undefined): boolean {
+	if (userId === undefined) return false;
 	try {
-		return sessionStorage.getItem(DISMISSED_KEY) === "1";
+		return sessionStorage.getItem(dismissedKey(userId)) === "1";
 	} catch {
 		return false;
 	}
@@ -43,6 +59,12 @@ function readDismissed(): boolean {
  *
  * Dismissal is sessionStorage, not the server: it is a "not now" for this
  * browser tab's session, not an acknowledgement anything remembers.
+ *
+ * That dismissal is scoped to `store.user()?.id` and re-read from storage
+ * every time that id changes (`dismissed` is a `linkedSignal`, not a
+ * once-seeded one) -- this component is never destroyed across a
+ * sign-out/sign-in, so without that it would keep showing the PREVIOUS
+ * user's dismissal to whoever signs in next on the same shared device.
  */
 @Component({
 	selector: "app-verify-email-banner",
@@ -85,7 +107,16 @@ export class VerifyEmailBannerComponent {
 	private readonly auth = inject(AuthService);
 	private readonly notifications = inject(NotificationService);
 
-	private readonly dismissed = signal(readDismissed());
+	/**
+	 * Resets to storage's value for the CURRENT user id whenever
+	 * `store.user()` changes identity (sign-in, sign-out, sign-in as
+	 * someone else) instead of only seeding once at construction.
+	 * `dismiss()` overrides it locally until the next identity change reads
+	 * storage again.
+	 */
+	private readonly dismissed = linkedSignal(() =>
+		readDismissed(this.store.user()?.id),
+	);
 
 	protected readonly resending = signal(false);
 
@@ -98,8 +129,12 @@ export class VerifyEmailBannerComponent {
 
 	protected dismiss(): void {
 		this.dismissed.set(true);
+
+		const userId = this.store.user()?.id;
+		if (userId === undefined) return;
+
 		try {
-			sessionStorage.setItem(DISMISSED_KEY, "1");
+			sessionStorage.setItem(dismissedKey(userId), "1");
 		} catch {
 			// The in-memory signal above already hid the banner for the rest
 			// of this page load, which is what actually matters -- a failed
