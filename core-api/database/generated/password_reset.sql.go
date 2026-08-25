@@ -15,36 +15,29 @@ const consumePasswordResetToken = `-- name: ConsumePasswordResetToken :one
 update tremolo.password_reset_tokens
 set used_at = now()
 where token_hash = $1 and used_at is null and expires_at > now()
-returning id, user_id, token_hash, expires_at, used_at, created_at
+returning user_id
 `
 
 // ConsumePasswordResetToken is the single-use gate: claimed and returned in
 // one UPDATE statement, so two concurrent resets racing on the same token
 // cannot both win. sql.ErrNoRows means exactly "unknown, used, or expired"
 // -- there is no way to tell which from this query, and that is
-// deliberate (see services.ErrResetTokenInvalid).
-func (q *Queries) ConsumePasswordResetToken(ctx context.Context, tokenHash string) (TremoloPasswordResetToken, error) {
+// deliberate (see services.ErrResetTokenInvalid). Only user_id comes back:
+// it's the only column ResetPassword reads.
+func (q *Queries) ConsumePasswordResetToken(ctx context.Context, tokenHash string) (int32, error) {
 	row := q.db.QueryRowContext(ctx, consumePasswordResetToken, tokenHash)
-	var i TremoloPasswordResetToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TokenHash,
-		&i.ExpiresAt,
-		&i.UsedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	var user_id int32
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
-const createPasswordResetToken = `-- name: CreatePasswordResetToken :one
+const createPasswordResetToken = `-- name: CreatePasswordResetToken :exec
 insert into tremolo.password_reset_tokens (
     user_id,
     token_hash,
     expires_at
 )
 values ($1, $2, $3)
-returning id, user_id, token_hash, expires_at, used_at, created_at
 `
 
 type CreatePasswordResetTokenParams struct {
@@ -53,18 +46,9 @@ type CreatePasswordResetTokenParams struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (TremoloPasswordResetToken, error) {
-	row := q.db.QueryRowContext(ctx, createPasswordResetToken, arg.UserID, arg.TokenHash, arg.ExpiresAt)
-	var i TremoloPasswordResetToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.TokenHash,
-		&i.ExpiresAt,
-		&i.UsedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error {
+	_, err := q.db.ExecContext(ctx, createPasswordResetToken, arg.UserID, arg.TokenHash, arg.ExpiresAt)
+	return err
 }
 
 const invalidateUserPasswordResetTokens = `-- name: InvalidateUserPasswordResetTokens :exec

@@ -3,11 +3,7 @@ package testutil
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -514,24 +510,23 @@ func CreateTestOAuthUser(t *testing.T, email string) int {
 // token. This is the only way a test can mint an already-expired token, or
 // pin a token to a caller-chosen TTL -- a live request through the service
 // always uses services.PasswordResetTokenTTL and can't produce either.
+//
+// Token minting goes through services.NewResetToken, the same algorithm a
+// real request uses, rather than a second hand-rolled copy of it.
 func CreatePasswordResetToken(t *testing.T, userID int, ttl time.Duration) string {
 	t.Helper()
 	SetupTestDB(t)
 
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	token, hash, err := services.NewResetToken()
+	if err != nil {
 		t.Fatalf("Failed to generate a test reset token: %v", err)
 	}
-	token := base64.RawURLEncoding.EncodeToString(raw)
-	sum := sha256.Sum256([]byte(token))
-	hash := hex.EncodeToString(sum[:])
 
-	_, err := database.Queries.CreatePasswordResetToken(context.Background(), generated.CreatePasswordResetTokenParams{
+	if err := database.Queries.CreatePasswordResetToken(context.Background(), generated.CreatePasswordResetTokenParams{
 		UserID:    int32(userID),
 		TokenHash: hash,
 		ExpiresAt: time.Now().Add(ttl),
-	})
-	if err != nil {
+	}); err != nil {
 		t.Fatalf("Failed to create test password reset token: %v", err)
 	}
 

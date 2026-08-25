@@ -32,9 +32,10 @@ type Querier interface {
 	// one UPDATE statement, so two concurrent resets racing on the same token
 	// cannot both win. sql.ErrNoRows means exactly "unknown, used, or expired"
 	// -- there is no way to tell which from this query, and that is
-	// deliberate (see services.ErrResetTokenInvalid).
+	// deliberate (see services.ErrResetTokenInvalid). Only user_id comes back:
+	// it's the only column ResetPassword reads.
 	//
-	ConsumePasswordResetToken(ctx context.Context, tokenHash string) (TremoloPasswordResetToken, error)
+	ConsumePasswordResetToken(ctx context.Context, tokenHash string) (int32, error)
 	// Assignment queries. The results grid is derived from
 	// note_game_entries tagged with assignment_id -- there is no separate
 	// submissions table to keep in sync.
@@ -52,7 +53,7 @@ type Querier interface {
 	// CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
 	// column just defaults NULL for these rows (#244).
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
-	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (TremoloPasswordResetToken, error)
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
 	// Teacher invite codes. Redemption is deliberately a single conditional
 	// UPDATE rather than a select-then-update: see 00011_teacher_invite_codes.sql.

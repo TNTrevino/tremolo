@@ -31,10 +31,12 @@ const (
 )
 
 // RequestPasswordReset never reveals whether an account exists for the
-// requested address: the controller answers the same 200 on every path,
-// and the only errors returned here are infrastructure failures (a
-// database error, a broken template) that leak nothing about the address
-// either -- an outage is account-independent too.
+// requested address: the controller answers 200 with an identical message
+// for every outcome below, and the only errors returned here are
+// infrastructure failures (a database error, a broken template). Those
+// leak nothing about the address either -- the controller's failure
+// branch answers the same account-independent way success does, so even
+// an outage says nothing about whether the address has an account.
 //
 // Three outcomes, all answered identically by the caller:
 //   - no account for the address: nothing is enqueued.
@@ -70,13 +72,13 @@ func RequestPasswordReset(ctx context.Context, q generated.Querier, req dtos.For
 		return EnqueuePasswordResetGoogle(ctx, q, user.Email.String, toName, user.FirstName)
 	}
 
-	token, hash, err := newResetToken()
+	token, hash, err := NewResetToken()
 	if err != nil {
 		logger.Error("Failed to generate a password reset token", "error", err.Error())
 		return fmt.Errorf("generate password reset token: %w", err)
 	}
 
-	if _, err := q.CreatePasswordResetToken(ctx, generated.CreatePasswordResetTokenParams{
+	if err := q.CreatePasswordResetToken(ctx, generated.CreatePasswordResetTokenParams{
 		UserID:    user.ID,
 		TokenHash: hash,
 		ExpiresAt: time.Now().Add(PasswordResetTokenTTL),
@@ -99,7 +101,7 @@ func RequestPasswordReset(ctx context.Context, q generated.Querier, req dtos.For
 // sign in because of a stale lockout or a second live link can always ask
 // for another reset.
 func ResetPassword(ctx context.Context, q generated.Querier, req dtos.ResetPasswordRequest) error {
-	consumed, err := q.ConsumePasswordResetToken(ctx, hashResetToken(req.Token))
+	userID, err := q.ConsumePasswordResetToken(ctx, HashResetToken(req.Token))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrResetTokenInvalid
@@ -114,42 +116,43 @@ func ResetPassword(ctx context.Context, q generated.Querier, req dtos.ResetPassw
 	}
 
 	if err := q.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
-		ID:       consumed.UserID,
+		ID:       userID,
 		Password: sql.NullString{String: hashed, Valid: true},
 	}); err != nil {
 		logger.Error("Failed to update password after reset", "error", err.Error())
 		return fmt.Errorf("update user password: %w", err)
 	}
 
-	if err := q.InvalidateUserPasswordResetTokens(ctx, consumed.UserID); err != nil {
-		logger.Error("Failed to invalidate other password reset tokens", "error", err.Error(), "user_id", consumed.UserID)
+	if err := q.InvalidateUserPasswordResetTokens(ctx, userID); err != nil {
+		logger.Error("Failed to invalidate other password reset tokens", "error", err.Error(), "user_id", userID)
 	}
 
-	if user, err := q.GetUserByID(ctx, consumed.UserID); err != nil {
-		logger.Error("Failed to look up user to clear lockout after reset", "error", err.Error(), "user_id", consumed.UserID)
+	if user, err := q.GetUserByID(ctx, userID); err != nil {
+		logger.Error("Failed to look up user to clear lockout after reset", "error", err.Error(), "user_id", userID)
 	} else if err := q.ResetLockout(ctx, user.Email); err != nil {
-		logger.Error("Failed to clear lockout after password reset", "error", err.Error(), "user_id", consumed.UserID)
+		logger.Error("Failed to clear lockout after password reset", "error", err.Error(), "user_id", userID)
 	}
 
 	return nil
 }
 
-// newResetToken mints a fresh reset token and returns both the plaintext
+// NewResetToken mints a fresh reset token and returns both the plaintext
 // (mailed to the user, never stored) and its sha256 hash (stored, never
 // mailed) -- see the 00013 migration's comment for why sha256 rather than
-// a slow password hash.
-func newResetToken() (token, hash string, err error) {
+// a slow password hash. Exported so tests can mint a token through the
+// same algorithm the service uses, rather than a second copy of it.
+func NewResetToken() (token, hash string, err error) {
 	raw := make([]byte, resetTokenBytes)
 	if _, err := rand.Read(raw); err != nil {
 		return "", "", fmt.Errorf("generate random token: %w", err)
 	}
 
 	token = base64.RawURLEncoding.EncodeToString(raw)
-	return token, hashResetToken(token), nil
+	return token, HashResetToken(token), nil
 }
 
-// hashResetToken sha256-hashes a plaintext token for storage or lookup.
-func hashResetToken(token string) string {
+// HashResetToken sha256-hashes a plaintext token for storage or lookup.
+func HashResetToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }
