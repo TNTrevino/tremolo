@@ -890,7 +890,7 @@ paths:
   /api/charts/user/{userId}/metrics:
     get:
       parameters:
-      - description: User ID (must match the authenticated user)
+      - description: User ID (self, or a student in a class you own)
         in: path
         name: userId
         required: true
@@ -1592,7 +1592,7 @@ paths:
   /api/users/{userId}/general-info:
     get:
       parameters:
-      - description: User ID (must match the authenticated user)
+      - description: User ID (self, or a student in a class you own)
         in: path
         name: userId
         required: true

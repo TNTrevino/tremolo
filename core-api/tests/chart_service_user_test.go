@@ -49,6 +49,50 @@ func TestGetUserChartData_Unauthorized(t *testing.T) {
 	assert.ErrorIs(t, err, services.ErrForbidden)
 }
 
+// TestGetUserChartData_OwningTeacherAllowed verifies the #254 rule at the
+// chart service: a teacher who owns a class the target student is enrolled
+// in may read that student's personal chart data.
+func TestGetUserChartData_OwningTeacherAllowed(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "chart_owning_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "chart_owning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
+
+	class := createTestClass(t, teacherID, "Chart Owning Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	response, err := services.GetUserChartData(context.Background(), database.Queries, teacherID, studentID, "day", 30)
+	require.NoError(t, err)
+	assert.NotNil(t, response.NPM)
+}
+
+// TestGetUserChartData_NonOwningTeacherForbidden verifies that owning *a*
+// class is not a blanket pass -- the teacher must own a class the target
+// student is actually enrolled in.
+func TestGetUserChartData_NonOwningTeacherForbidden(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	owningTeacherEmail := testutil.UniqueEmail(t, "chart_nonowning_owner")
+	owningTeacherID := testutil.CreateTestUserWithDefaults(t, owningTeacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "chart_nonowning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, owningTeacherID, "Chart Non-Owning Target Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	otherTeacherEmail := testutil.UniqueEmail(t, "chart_nonowning_other")
+	otherTeacherID := testutil.CreateTestUserWithDefaults(t, otherTeacherEmail, "TEACHER")
+	createTestClass(t, otherTeacherID, "Chart Non-Owning Other's Own Class")
+
+	_, err := services.GetUserChartData(context.Background(), database.Queries, otherTeacherID, studentID, "day", 30)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+}
+
 // TestGetUserChartData_AllIntervals tests that all interval values work correctly
 func TestGetUserChartData_AllIntervals(t *testing.T) {
 	testutil.SetupTestDB(t)

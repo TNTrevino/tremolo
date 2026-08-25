@@ -129,6 +129,75 @@ func TestChartRoutes_OwnData_ReturnsOK(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
 }
 
+// TestChartRoutes_TeacherReadsEnrolledStudent_ReturnsOK verifies the #254
+// rule at the chart route: a teacher who owns a class the target student is
+// enrolled in gets 200 for that student's personal metrics.
+func TestChartRoutes_TeacherReadsEnrolledStudent_ReturnsOK(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "chart_route_owning_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	token := testAccessToken(t, teacherID)
+
+	studentEmail := testutil.UniqueEmail(t, "chart_route_owning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "Chart Route Owning Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	router := chartTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, chartUserPath(studentID), token, nil))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+}
+
+// TestChartRoutes_TeacherReadsNonStudent_ReturnsForbidden verifies that
+// owning *a* class is not a blanket pass at the route level, and that the
+// access guard still fires before interval validation (the
+// ?interval=fortnight variant), mirroring
+// TestChartRoutes_OtherUsersDataWithBadInterval_ReturnsForbidden's ordering
+// guarantee for the self-only case.
+func TestChartRoutes_TeacherReadsNonStudent_ReturnsForbidden(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	owningTeacherEmail := testutil.UniqueEmail(t, "chart_route_nonowning_owner")
+	owningTeacherID := testutil.CreateTestUserWithDefaults(t, owningTeacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "chart_route_nonowning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, owningTeacherID, "Chart Route Non-Owning Target Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	otherTeacherEmail := testutil.UniqueEmail(t, "chart_route_nonowning_other")
+	otherTeacherID := testutil.CreateTestUserWithDefaults(t, otherTeacherEmail, "TEACHER")
+	createTestClass(t, otherTeacherID, "Chart Route Non-Owning Other's Own Class")
+	token := testAccessToken(t, otherTeacherID)
+
+	router := chartTestRouter()
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, chartUserPath(studentID), token, nil))
+	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Access denied", resp["error"])
+
+	// Same guard, now with a query string that would fail its own
+	// validation -- still 403, not 400, so the ordering guarantee holds
+	// for the teacher-access rule too.
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, bearerRequest(t, http.MethodGet,
+		chartUserPath(studentID)+"?interval=fortnight", token, nil))
+	assert.Equal(t, http.StatusForbidden, w2.Code, "Response body: %s", w2.Body.String())
+	var resp2 map[string]any
+	testutil.ParseJSONResponse(t, w2, &resp2)
+	assert.Equal(t, "Access denied", resp2["error"])
+}
+
 func TestChartRoutes_ClassMetricsNonTeacher_ReturnsForbidden(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

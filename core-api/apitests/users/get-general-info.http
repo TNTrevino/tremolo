@@ -1,10 +1,17 @@
-# A user's own profile summary (name, role, join date, entry totals).
-# Self-access only, same pattern as charts/get-user-metrics.http.
+# A user's own profile summary (name, role, join date, entry totals) --
+# or, for a teacher, an enrolled student's summary. Self-access always
+# works; a teacher may additionally read a student's info if the teacher
+# owns an active class the student is enrolled in
+# (services.RequireUserStatsAccess, core-api/services/class_service.go).
+# The per-user chart endpoint (charts/get-user-metrics.http) follows the
+# same rule.
 #
 # Run:  kulala run --tests --env local users/get-general-info.http
 
 @student_email       = kula_general_info_student_{{$timestamp}}@qa.test
 @other_student_email = kula_general_info_other_{{$timestamp}}@qa.test
+@teacher_email        = kula_general_info_teacher_{{$timestamp}}@qa.test
+@other_teacher_email  = kula_general_info_other_teacher_{{$timestamp}}@qa.test
 
 ### RegisterStudent
 # RegisterStudent registers the student whose own info is read and
@@ -35,7 +42,7 @@ Content-Type: application/json
 
 ### RegisterOtherStudent
 # RegisterOtherStudent registers a second student used to prove the
-# self-only access rule.
+# peer-student access rule.
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
@@ -55,6 +62,79 @@ Content-Type: application/json
 
 > {%
 	client.global.set("other_student_token", response.body.access_token);
+%}
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher who will own a class the student
+# joins, to prove the teacher-visibility rule.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class to enroll the student in.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "General Info Class" }
+
+> {%
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### StudentJoinsClass
+# StudentJoinsClass enrolls the student in the teacher's class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student joins the teacher's class", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### RegisterOtherTeacher
+# RegisterOtherTeacher registers a second teacher who owns no class the
+# student is in, to prove owning *a* class is not a blanket pass.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{other_teacher_email}}", "password": "{{password}}", "first_name": "Other", "last_name": "Teacher", "role": "TEACHER" }
+
+> {%
+	client.global.set("other_teacher_login_email", response.body.user.email);
+%}
+
+### LoginOtherTeacher
+# LoginOtherTeacher logs the other teacher in and stashes the access
+# token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{other_teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("other_teacher_token", response.body.access_token);
 %}
 
 ### GetGeneralInfo
@@ -79,6 +159,33 @@ Authorization: Bearer {{other_student_token}}
 
 > {%
 	client.test("a caller cannot read another user's general info", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Access denied", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### GetGeneralInfoOwningTeacher
+# GetGeneralInfoOwningTeacher has the owning teacher read the enrolled
+# student's info and expects 200 -- the #254 rule.
+GET {{baseUrl}}/api/users/{{student_id}}/general-info
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("an owning teacher reads an enrolled student's general info", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.first_name === "Sam", "first name matches");
+	});
+%}
+
+### GetGeneralInfoNonOwningTeacher
+# GetGeneralInfoNonOwningTeacher has a teacher who owns no class the
+# student is in try to read the student's info and expects 403 -- owning
+# *a* class is not a blanket pass.
+GET {{baseUrl}}/api/users/{{student_id}}/general-info
+Authorization: Bearer {{other_teacher_token}}
+
+> {%
+	client.test("a non-owning teacher cannot read a student's general info", function () {
 		client.assert(response.status === 403, "expected 403, got " + response.status);
 		client.assert(response.body.error === "Access denied", "unexpected error string: " + response.body.error);
 	});
