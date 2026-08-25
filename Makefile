@@ -108,32 +108,37 @@ lint-go: vet-go
 	@$(call banner,Linting go service (golangci-lint)...)
 	cd core-api && golangci-lint run
 
+# gofumpt, not gofmt: it is a strict superset of `gofmt -s` (every -s
+# simplification plus its own rules), and the one rule that matters here is
+# that it splits imports into a stdlib group and everything else. The version
+# is pinned by the `tool` directive in core-api/go.mod, so `go tool` and the
+# pre-commit hook and CI can never run three different gofumpts.
 format-go:
-	@$(call banner,Formatting go service (gofmt)...)
-	cd core-api && gofmt -s -w .
+	@$(call banner,Formatting go service (gofumpt)...)
+	cd core-api && go tool gofumpt -w .
 
 format-check-go:
-	@$(call banner,Checking go service formatting (gofmt)...)
+	@$(call banner,Checking go service formatting (gofumpt)...)
 	@cd core-api && \
-	files="$$(gofmt -s -l .)" && \
+	files="$$(go tool gofumpt -l .)" && \
 	if [ -n "$$files" ]; then \
-		echo "gofmt needed on:"; echo "$$files"; exit 1; \
+		echo "gofumpt needed on:"; echo "$$files"; exit 1; \
 	else \
-		echo "gofmt: all files formatted"; \
+		echo "gofumpt: all files formatted"; \
 	fi
 
 check-go: format-check-go lint-go test-go
 
 # Regenerates core-api/openapi/{swagger.json,swagger.yaml} from the swag
 # annotations on each handler (controllers/*.go) plus the general API info
-# in main.go. Requires the swag CLI: go install
-# github.com/swaggo/swag/cmd/swag@latest. Mutates files, like format-go --
+# in main.go. swag is pinned by the `tool` directive in core-api/go.mod, so
+# `go tool swag` needs no separate install. Mutates files, like format-go --
 # CI verifies the result is committed via a `git diff --exit-code` step.
 # --parseDependency is needed because DTOs live in a separate package from
 # the handlers that reference them in @Param/@Success/@Failure.
 openapi-go:
 	@$(call banner,Generating core API OpenAPI spec...)
-	cd core-api && swag init -g main.go --output openapi --outputTypes json,yaml --parseDependency
+	cd core-api && go tool swag init -g main.go --output openapi --outputTypes json,yaml --parseDependency
 
 # ---- API smoke tests (kulala) ----
 # End-to-end HTTP tests against a RUNNING service (default :5001). Unlike

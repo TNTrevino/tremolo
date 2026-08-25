@@ -276,8 +276,8 @@ go test ./tests/ -run TestName         # single test
     (`GameType` defaults to `"note"`).
 - Tests live both next to services (`services/*_test.go`) and under `tests/`.
 - CI (`.github/workflows/core-api.yml`) spins up Postgres 16 and runs
-  `gofmt -s` (fails on any unformatted file), `go vet ./...`, `golangci-lint`,
-  and `go test -race` with coverage.
+  `go tool gofumpt -l .` (fails on any unformatted file), `go vet ./...`,
+  `golangci-lint`, and `go test -race` with coverage.
 
 ## How to add things
 

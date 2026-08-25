@@ -34,7 +34,7 @@ This also be a technical exercise for myself as I will be learning a huge amount
 ## Run the Project Locally
 
 Once per clone, activate the git pre-commit hook (formats staged files per
-service — Prettier / Black / gofmt):
+service — Prettier / Black / goimports+gofumpt):
 
 ```bash
 make hooks

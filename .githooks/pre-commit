@@ -62,26 +62,33 @@ if has_staged_files_in "^core-api/"; then
   STAGED_GO_FILES=$(staged_files_matching "^core-api/.*\.go$")
 
   if [ -n "$STAGED_GO_FILES" ]; then
-    echo "Running gofmt on staged Go files..."
-    echo "$STAGED_GO_FILES" | xargs gofmt -w
+    # goimports, gofumpt and swag are `tool` directives in core-api/go.mod, so
+    # `go tool <name>` builds each one at the version the module pins. No PATH
+    # lookup and no `go install` step, which is why none of the three needs a
+    # `command -v` guard: the old guards silently skipped the whole step on any
+    # machine that had not installed the binary by hand.
+    #
+    # Two consequences for the invocation. `go tool` needs the module, so it
+    # runs from core-api. And the staged names are relative to the repo root,
+    # so they are rewritten to absolute paths first.
+    ABS_GO_FILES=$(echo "$STAGED_GO_FILES" | sed "s|^|$REPO_ROOT/|")
 
-    if [ $? -ne 0 ]; then
-      echo "gofmt formatting failed."
+    echo "Running goimports on staged Go files..."
+    echo "$ABS_GO_FILES" | (cd "$REPO_ROOT/core-api" && xargs go tool goimports -w) || {
+      echo "goimports formatting failed."
       exit 1
-    fi
+    }
 
-    if command -v goimports >/dev/null 2>&1; then
-      echo "Running goimports on staged Go files..."
-      echo "$STAGED_GO_FILES" | xargs goimports -w
-
-      if [ $? -ne 0 ]; then
-        echo "goimports formatting failed."
-        exit 1
-      fi
-    else
-      echo "Warning: goimports not installed. Skipping import formatting."
-      echo "  Run: go install golang.org/x/tools/cmd/goimports@latest"
-    fi
+    # gofumpt is a strict superset of `gofmt -s`, so it replaces the plain
+    # gofmt pass that used to run here. It has to come AFTER goimports:
+    # goimports decides WHICH imports exist, gofumpt then splits them into a
+    # stdlib group and the rest. Running it first would leave a new import in
+    # the wrong group.
+    echo "Running gofumpt on staged Go files..."
+    echo "$ABS_GO_FILES" | (cd "$REPO_ROOT/core-api" && xargs go tool gofumpt -w) || {
+      echo "gofumpt formatting failed."
+      exit 1
+    }
 
     for file in $STAGED_GO_FILES; do
       git add "$REPO_ROOT/$file"
@@ -93,16 +100,11 @@ if has_staged_files_in "^core-api/"; then
     # Any staged .go file can affect the generated spec -- a handler's
     # swag comment, a DTO's fields, or main.go's general API info -- so
     # this runs whenever Go files are staged, not just controllers/.
-    if command -v swag >/dev/null 2>&1; then
-      echo "Regenerating core-api OpenAPI spec..."
-      (cd "$REPO_ROOT" && make openapi-go) || {
-        echo "OpenAPI generation failed."
-        exit 1
-      }
-      git add "$REPO_ROOT/core-api/openapi/"
-    else
-      echo "Warning: swag CLI not installed. Skipping OpenAPI regeneration."
-      echo "  Run: go install github.com/swaggo/swag/cmd/swag@v1.16.6"
-    fi
+    echo "Regenerating core-api OpenAPI spec..."
+    (cd "$REPO_ROOT" && make openapi-go) || {
+      echo "OpenAPI generation failed."
+      exit 1
+    }
+    git add "$REPO_ROOT/core-api/openapi/"
   fi
 fi

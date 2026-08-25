@@ -1,8 +1,9 @@
 package dtos
 
 import (
-	"sight-reading/validations"
 	"time"
+
+	"sight-reading/validations"
 )
 
 // ChartDataPoint represents a single point on the chart

@@ -7,12 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sight-reading/database"
-	"sight-reading/database/generated"
-	"sight-reading/services"
 	"sync"
 	"testing"
 	"time"
+
+	"sight-reading/database"
+	"sight-reading/database/generated"
+	"sight-reading/services"
 )
 
 var (

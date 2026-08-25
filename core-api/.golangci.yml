@@ -109,5 +109,11 @@ issues:
 #
 #   cd core-api
 #   golangci-lint run --fix
-#   go run golang.org/x/tools/cmd/goimports@v0.49.0 -w .
-#   gofmt -s -w .
+#   go tool goimports -w .
+#   go tool gofumpt -w .
+#
+# Note for anyone tempted to move formatting into golangci-lint's own
+# `formatters:` block instead: its gofumpt needs an explicit
+# `module-path: sight-reading`. Without it gofumpt reads "sight-reading" as
+# a stdlib path (no dot in the first element) and JOINS the import groups,
+# which is the exact opposite of what `go tool gofumpt` does here.

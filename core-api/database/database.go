@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"sight-reading/database/generated"
 	"strings"
+
+	"sight-reading/database/generated"
 
 	_ "github.com/lib/pq"
 )

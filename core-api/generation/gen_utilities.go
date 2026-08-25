@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand/v2"
-	"sight-reading/services"
 	"time"
+
+	"sight-reading/services"
 
 	dtos "sight-reading/DTOs"
 

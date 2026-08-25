@@ -7,11 +7,12 @@ import (
 	"log"
 	"math/rand/v2"
 	"os"
+	"strings"
+	"time"
+
 	"sight-reading/database"
 	"sight-reading/database/generated"
 	"sight-reading/services"
-	"strings"
-	"time"
 
 	dtos "sight-reading/DTOs"
 )

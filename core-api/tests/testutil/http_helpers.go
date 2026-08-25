@@ -4,9 +4,10 @@ package testutil
 import (
 	"encoding/json"
 	"net/http/httptest"
-	"sight-reading/logger"
 	"sync"
 	"testing"
+
+	"sight-reading/logger"
 
 	"github.com/stretchr/testify/require"
 )
