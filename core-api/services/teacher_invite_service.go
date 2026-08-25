@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -100,6 +101,44 @@ func ListTeacherInvites(ctx context.Context, q generated.Querier) ([]dtos.Teache
 		invites = append(invites, teacherInviteResponse(row))
 	}
 	return invites, nil
+}
+
+// redeemTeacherInvite spends one use of a code and returns the row id, so
+// the caller can hand that use back if the signup it gates then fails.
+//
+// The whole check is the WHERE clause of one UPDATE: the code exists, has
+// not expired, and has uses left. Two people racing the last use of a code
+// therefore cannot both win -- Postgres serializes the two writers on the
+// row, and the loser's WHERE no longer matches, so it updates nothing.
+// A select-then-update would let both readers see the same use_count.
+//
+// A code that does not exist, one that expired, and one that is spent are
+// deliberately indistinguishable: all three are ErrInvalidInviteCode, so
+// the response cannot be used to probe which codes are real.
+func redeemTeacherInvite(ctx context.Context, q generated.Querier, rawCode string) (int32, error) {
+	codeID, err := q.RedeemTeacherInviteCode(ctx, normalizeJoinCode(rawCode))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInvalidInviteCode
+		}
+		logger.Error("Failed to redeem teacher invite code", "error", err.Error())
+		return 0, fmt.Errorf("redeem teacher invite code: %w", err)
+	}
+	return codeID, nil
+}
+
+// releaseTeacherInvite hands back a use that redeemTeacherInvite spent on
+// a signup that then failed.
+//
+// Best-effort on purpose: the caller is already returning the real
+// failure, and losing one use of a code is a smaller problem than
+// replacing that failure with this one.
+func releaseTeacherInvite(ctx context.Context, q generated.Querier, codeID int32) {
+	if err := q.ReleaseTeacherInviteCode(ctx, codeID); err != nil {
+		logger.Error("Failed to release teacher invite code",
+			"error", err.Error(),
+			"invite_id", codeID)
+	}
 }
 
 // teacherInviteResponse converts a row to its wire shape here rather than

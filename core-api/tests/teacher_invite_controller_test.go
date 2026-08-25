@@ -142,3 +142,83 @@ func TestListTeacherInvitesRoute_ReturnsMintedCodes(t *testing.T) {
 	}
 	assert.Contains(t, codes, seeded)
 }
+
+// ---------- POST /api/auth/register, the invite-code gate ----------
+
+// TestRegisterRoute_TeacherWithoutCode_Returns400 pins the DTO's message
+// on the wire: the frontend shows it verbatim under the field.
+func TestRegisterRoute_TeacherWithoutCode_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/register", "", dtos.RegisterRequest{
+		Email:     testutil.UniqueEmail(t, "invite_route_no_code"),
+		Password:  "TestPass123!",
+		FirstName: "Terry",
+		LastName:  "Teacher",
+		Role:      "TEACHER",
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Invite code is required for teacher accounts", resp["error"])
+}
+
+// TestRegisterRoute_TeacherWithBadCode_Returns400WithFieldMarker pins the
+// "field" key. It is the wire contract the signup page routes on: with it
+// the message lands under the invite-code input, without it in the page
+// alert.
+func TestRegisterRoute_TeacherWithBadCode_Returns400WithFieldMarker(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/register", "", dtos.RegisterRequest{
+		Email:      testutil.UniqueEmail(t, "invite_route_bad_code"),
+		Password:   "TestPass123!",
+		FirstName:  "Terry",
+		LastName:   "Teacher",
+		Role:       "TEACHER",
+		InviteCode: "ZZZZZZZZ",
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "That invite code is not valid, has expired, or has already been used.", resp["error"])
+	assert.Equal(t, "invite_code", resp["field"])
+}
+
+func TestRegisterRoute_TeacherWithGoodCode_Returns201(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	code := testutil.CreateTestTeacherInviteCode(t, testutil.CreateTestTeacherInviteCodeParams{})
+	email := testutil.UniqueEmail(t, "invite_route_good_code")
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/register", "", dtos.RegisterRequest{
+		Email:      email,
+		Password:   "TestPass123!",
+		FirstName:  "Terry",
+		LastName:   "Teacher",
+		Role:       "TEACHER",
+		InviteCode: code,
+	}))
+
+	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
+
+	var resp dtos.RegisterResponse
+	testutil.ParseJSONResponse(t, w, &resp)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, resp.User.ID) })
+
+	assert.Equal(t, "TEACHER", resp.User.Role)
+	assert.Equal(t, int32(1), testutil.TeacherInviteUseCount(t, code))
+}

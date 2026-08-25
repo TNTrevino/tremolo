@@ -108,6 +108,55 @@ func TestRegisterRequestValid_RejectsBadFields(t *testing.T) {
 	}
 }
 
+// TestRegisterRequestValid_TeacherRequiresInviteCode pins the shape rule
+// behind the TEACHER gate (#250). The DTO only checks that a code was
+// typed; whether it is a real one is a database question the service
+// answers.
+func TestRegisterRequestValid_TeacherRequiresInviteCode(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		inviteCode string
+		want       string
+	}{
+		"missing":         {inviteCode: "", want: "Invite code is required for teacher accounts"},
+		"only whitespace": {inviteCode: "   ", want: "Invite code is required for teacher accounts"},
+		"present":         {inviteCode: "ABCD2345", want: ""},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			req := validRegisterRequest()
+			req.Role = "TEACHER"
+			req.InviteCode = tc.inviteCode
+
+			problems := req.Valid(context.Background())
+
+			if tc.want == "" {
+				assert.Empty(t, problems)
+				return
+			}
+			assert.Equal(t, tc.want, problems["invite_code"])
+		})
+	}
+}
+
+// TestRegisterRequestValid_StudentIgnoresInviteCode keeps the gate off
+// the student path: a student never sees the field, so an absent code
+// must not become a problem for them.
+func TestRegisterRequestValid_StudentIgnoresInviteCode(t *testing.T) {
+	t.Parallel()
+
+	req := validRegisterRequest()
+	req.InviteCode = ""
+
+	problems := req.Valid(context.Background())
+
+	assert.NotContains(t, problems, "invite_code")
+	assert.Empty(t, problems)
+}
+
 func TestGoogleCallbackRequestValid(t *testing.T) {
 	t.Parallel()
 

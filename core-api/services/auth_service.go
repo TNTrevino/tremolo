@@ -140,7 +140,13 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), nil
 }
 
-// Register creates a new email/password user (student/teacher/parent).
+// Register creates a new email/password user (student or teacher).
+//
+// A TEACHER signup additionally spends one use of an invite code (#250).
+// Where that happens is load-bearing: after the email-taken check, so a
+// teacher retrying a signup they already completed does not burn a second
+// use; and before CreateUser, so no TEACHER row can exist that was not
+// gated. If CreateUser then fails, the use is handed back.
 func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest) (*dtos.RegisterResponse, error) {
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
@@ -167,6 +173,14 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 		return nil, fmt.Errorf("%w: %w", ErrInvalidRole, err)
 	}
 
+	var inviteCodeID int32
+	if req.Role == string(dtos.Teacher) {
+		inviteCodeID, err = redeemTeacherInvite(ctx, q, req.InviteCode)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	createParams := generated.CreateUserParams{
 		FirstName: strings.TrimSpace(req.FirstName),
 		LastName:  strings.TrimSpace(req.LastName),
@@ -179,6 +193,9 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	createdUser, err := q.CreateUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create user", "error", err.Error())
+		if inviteCodeID != 0 {
+			releaseTeacherInvite(ctx, q, inviteCodeID)
+		}
 		return nil, fmt.Errorf("%w: %w", ErrUserCreateFailed, err)
 	}
 

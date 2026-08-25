@@ -2759,6 +2759,10 @@
                 "first_name": {
                     "type": "string"
                 },
+                "invite_code": {
+                    "description": "InviteCode is required for, and only read by, a TEACHER signup:\nself-service cannot claim that role without one (#250). Whether the\ncode is real is a database question services.Register answers.",
+                    "type": "string"
+                },
                 "last_name": {
                     "type": "string"
                 },

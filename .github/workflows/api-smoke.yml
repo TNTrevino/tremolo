@@ -99,6 +99,22 @@ jobs:
           cat /tmp/tremolo-main.log >&2 || true
           exit 1
 
+      # A TEACHER signup must redeem an invite code (#250), and minting one
+      # needs an ADMIN token that no self-service route grants. The suite
+      # therefore seeds one code by hand, the same way the pilot does --
+      # see core-api/README.md, "Teacher invite codes". It must match
+      # `teacherInviteCode` in core-api/apitests/http-client.env.json, and
+      # it needs enough uses to cover every teacher the suite registers.
+      # The service has already run its migrations by this point.
+      - name: Seed the teacher invite code
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d tremolo -v ON_ERROR_STOP=1 -c \
+            "insert into tremolo.teacher_invite_codes (code, note, max_uses)
+             values ('KULATEST', 'kulala api-smoke suite', 100000)
+             on conflict (code) do nothing;"
+
       # kulala is pinned via the Makefile's KULALA var so CI and local
       # dev run the exact same command.
       - name: Run API smoke tests

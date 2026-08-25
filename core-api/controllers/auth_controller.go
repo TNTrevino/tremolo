@@ -253,6 +253,15 @@ func respondRegisterError(w http.ResponseWriter, err error) {
 		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Email already exists"})
 	case errors.Is(err, services.ErrPasswordHashFailed):
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Failed to process password"})
+	case errors.Is(err, services.ErrInvalidInviteCode):
+		// "field" is the wire contract the signup page routes on: it puts
+		// this message under the invite-code input instead of in the page
+		// alert. The three failure modes stay merged into one sentence so
+		// the response cannot be used to probe which codes exist.
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{
+			"error": "That invite code is not valid, has expired, or has already been used.",
+			"field": "invite_code",
+		})
 	case errors.Is(err, services.ErrInvalidRole):
 		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Invalid role"})
 	case errors.Is(err, services.ErrUserCreateFailed):

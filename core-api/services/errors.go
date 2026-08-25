@@ -42,6 +42,10 @@ var (
 	// ErrInvalidRole means registration was attempted with a role the
 	// roles table doesn't recognize.
 	ErrInvalidRole = errors.New("invalid role")
+	// ErrInvalidInviteCode means a TEACHER signup presented a code that
+	// does not exist, has expired, or has no uses left. The three are
+	// deliberately indistinguishable to the caller.
+	ErrInvalidInviteCode = errors.New("invalid teacher invite code")
 	// ErrInvalidRefreshToken means the supplied refresh token failed
 	// signature or expiry validation.
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")

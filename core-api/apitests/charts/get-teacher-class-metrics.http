@@ -16,7 +16,7 @@
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
-{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER" }
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
 
 > {%
 	client.global.set("teacher_login_email", response.body.user.email);

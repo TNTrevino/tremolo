@@ -398,6 +398,12 @@ definitions:
         type: string
       first_name:
         type: string
+      invite_code:
+        description: |-
+          InviteCode is required for, and only read by, a TEACHER signup:
+          self-service cannot claim that role without one (#250). Whether the
+          code is real is a database question services.Register answers.
+        type: string
       last_name:
         type: string
       password:
