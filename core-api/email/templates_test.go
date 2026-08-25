@@ -51,6 +51,28 @@ func TestRender_EveryTemplatePairRenders(t *testing.T) {
 				AppURL:    "https://tremolonotes.com",
 			},
 		},
+		{
+			name:     "email change",
+			template: TemplateEmailChange,
+			data: EmailChangeData{
+				FirstName:  "Avery",
+				ConfirmURL: "https://tremolonotes.com/confirm-email-change?token=abc123",
+				NewEmail:   "avery.new@tremolonotes.com",
+				ExpiresIn:  "1 hour",
+				AppName:    "Tremolo",
+				AppURL:     "https://tremolonotes.com",
+			},
+		},
+		{
+			name:     "email change alert",
+			template: TemplateEmailChangeAlert,
+			data: EmailChangeAlertData{
+				FirstName: "Avery",
+				NewEmail:  "avery.new@tremolonotes.com",
+				AppName:   "Tremolo",
+				AppURL:    "https://tremolonotes.com",
+			},
+		},
 	}
 
 	for _, tt := range tests {

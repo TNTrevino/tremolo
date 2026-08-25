@@ -1,0 +1,17 @@
+Confirm your new email address
+
+Hi {{.FirstName}},
+
+We got a request to change the email address on your {{.AppName}} account
+to {{.NewEmail}}. Open this address to confirm the change:
+
+{{.ConfirmURL}}
+
+This link works for {{.ExpiresIn}}, and only once.
+
+If you did not ask for this, you can ignore this message — your email
+address stays as it is.
+
+--
+This message was sent by {{.AppName}}. Please do not reply to it.
+{{.AppURL}}

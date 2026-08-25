@@ -22,22 +22,17 @@ const (
 	// moment would halve the daily send quota for no added value.
 	TemplateVerifyEmail = "verify-email"
 
-	// The two below are declared now so the names are settled in one
-	// place, but their template FILES ship with the parts that use them.
-	// Adding a constant here does nothing on its own — a pair only
-	// becomes renderable when it is added to the templates map below,
-	// and the map may only name files that exist.
-
 	// TemplatePasswordResetGoogle tells a Google-only account that it
 	// has no password to reset.
 	TemplatePasswordResetGoogle = "password-reset-google"
 
-	// TemplateEmailChange confirms a requested new address. Files ship
-	// in Part D.
+	// TemplateEmailChange confirms a requested new address (#249). Sent
+	// to the NEW address -- see EmailChangeData.
 	TemplateEmailChange = "email-change"
 
 	// TemplateEmailChangeAlert warns the OLD address that a change was
-	// requested. Files ship in Part D.
+	// requested (#249). Sent to the address being replaced -- see
+	// EmailChangeAlertData.
 	TemplateEmailChangeAlert = "email-change-alert"
 )
 
@@ -69,6 +64,28 @@ type PasswordResetGoogleData struct {
 	AppURL    string
 }
 
+// EmailChangeData fills the email-change pair, mailed to the NEW address
+// with the link that confirms the move.
+type EmailChangeData struct {
+	FirstName  string
+	ConfirmURL string
+	NewEmail   string
+	ExpiresIn  string
+	AppName    string
+	AppURL     string
+}
+
+// EmailChangeAlertData fills the email-change-alert pair, mailed to the
+// OLD address being replaced. There is no confirm/cancel link -- the
+// recipient here is not the one taking action, only being told about it --
+// so it carries no ExpiresIn either.
+type EmailChangeAlertData struct {
+	FirstName string
+	NewEmail  string
+	AppName   string
+	AppURL    string
+}
+
 // templatePair is one message's two bodies. The HTML side is
 // html/template, which escapes by context and is what keeps a user's own
 // first name from becoming markup. The text side is text/template, where
@@ -84,12 +101,14 @@ type templatePair struct {
 // process down at start, where it is obvious, rather than at the moment
 // someone asks for a password reset.
 //
-// Parts B-D append their entries here as their files land. Only pairs
-// whose files exist may appear — mustPair panics on a missing file.
+// Only pairs whose files exist may appear — mustPair panics on a missing
+// file.
 var templates = map[string]templatePair{
 	TemplatePasswordReset:       mustPair(TemplatePasswordReset),
 	TemplateVerifyEmail:         mustPair(TemplateVerifyEmail),
 	TemplatePasswordResetGoogle: mustPair(TemplatePasswordResetGoogle),
+	TemplateEmailChange:         mustPair(TemplateEmailChange),
+	TemplateEmailChangeAlert:    mustPair(TemplateEmailChangeAlert),
 }
 
 // mustPair parses one template pair or panics.
