@@ -48,6 +48,11 @@ describe("AppComponent", () => {
 		expect(el().querySelector("router-outlet")).toBeTruthy();
 	});
 
+	/** The footer (#242) belongs on every route, not just whichever renders. */
+	it("renders the footer on the shell", () => {
+		expect(el().querySelector("app-footer")).not.toBeNull();
+	});
+
 	/**
 	 * #108: the banner slot is unconditional in the template (its own
 	 * `visible()` computed decides whether anything renders inside it), so
