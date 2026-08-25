@@ -88,4 +88,30 @@ test.describe("authentication", () => {
 		await page.getByRole("button", { name: "Sign In", exact: true }).click();
 		await expect(page).toHaveURL(/\/dashboard$/);
 	});
+
+	/**
+	 * New behaviour, not a parity spec: #250 put the TEACHER role behind an
+	 * invite code. The field only exists once Teacher is chosen, and a code
+	 * the server rejects is shown next to the input the user has to retype.
+	 */
+	test("gates a teacher signup on an invite code", async ({ page }) => {
+		await page.goto("/signup");
+		await expect(page.getByLabel("Invite code")).toBeHidden();
+
+		await page.getByLabel("I am a...").selectOption("TEACHER");
+		await expect(page.getByLabel("Invite code")).toBeVisible();
+
+		await page.getByLabel("First Name").fill("Tina");
+		await page.getByLabel("Last Name").fill("Teacher");
+		await page
+			.getByLabel("Email Address")
+			.fill(`${unique("e2e-signup-teacher")}@tremolo.test`);
+		await page.getByLabel("Password", { exact: true }).fill("E2ePassw0rd!");
+		await page.getByLabel("Confirm Password").fill("E2ePassw0rd!");
+		await page.getByLabel("Invite code").fill("ZZZZZZZZ");
+		await page.getByRole("button", { name: "Create Account" }).click();
+
+		await expect(page.getByText(/invite code is not valid/i)).toBeVisible();
+		await expect(page).toHaveURL(/\/signup$/);
+	});
 });

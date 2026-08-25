@@ -25,10 +25,33 @@ npm run e2e                                      # runs against :4200
 E2E_BASE_URL=http://localhost:4300 npm run e2e   # or any other port
 ```
 
-| Variable       | Default                 | What it points at           |
-| -------------- | ----------------------- | --------------------------- |
-| `E2E_BASE_URL` | `http://localhost:4200` | the frontend under test     |
-| `E2E_MAIN_API` | `http://localhost:5001` | the Go service, for seeding |
+| Variable                  | Default                 | What it points at                        |
+| ------------------------- | ----------------------- | ---------------------------------------- |
+| `E2E_BASE_URL`            | `http://localhost:4200` | the frontend under test                  |
+| `E2E_MAIN_API`            | `http://localhost:5001` | the Go service, for seeding              |
+| `E2E_TEACHER_INVITE_CODE` | _(none — required)_     | a live invite code, for seeding teachers |
+
+### Seeding the teacher invite code
+
+Since #250 a TEACHER signup must redeem an invite code, and minting one
+needs an ADMIN token that no self-service route grants. Every spec that
+seeds a teacher (`classes.spec.ts`, `navigation.spec.ts`) therefore needs
+one code, seeded by hand once per database:
+
+```sql
+insert into tremolo.teacher_invite_codes (code, note, max_uses)
+values ('E2ESEED1', 'playwright e2e suite', 100000);
+```
+
+```bash
+export E2E_TEACHER_INVITE_CODE=E2ESEED1
+```
+
+`max_uses` is deliberately huge: the suite registers a fresh teacher on
+every run, and a spent code fails the run rather than a spec. Codes are
+uppercase (a CHECK constraint enforces it) and drawn from A–Z minus I, L
+and O, plus 2–9. `support/api.ts` prints this whole recipe if the variable
+is missing or the code is rejected.
 
 ## Screenshot baselines
 
