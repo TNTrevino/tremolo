@@ -9,7 +9,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { AuthService } from "../../../auth/services/auth.service";
 import { AuthStore } from "../../../auth/services/auth.store";
-import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { resendVerification } from "../../../auth/utils/resend-verification.util";
 import { NotificationService } from "../../services/notification.service";
 
 /** sessionStorage key a dismissal is recorded under -- per session, per device. */
@@ -108,18 +108,6 @@ export class VerifyEmailBannerComponent {
 	}
 
 	protected resend(): void {
-		if (this.resending()) return;
-		this.resending.set(true);
-
-		this.auth.resendVerification().subscribe({
-			next: (res) => {
-				this.resending.set(false);
-				this.notifications.showSuccess(res.message);
-			},
-			error: (err: unknown) => {
-				this.resending.set(false);
-				this.notifications.showError(getErrorMessage(err));
-			},
-		});
+		resendVerification(this.auth, this.notifications, this.resending);
 	}
 }
