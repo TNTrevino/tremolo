@@ -222,3 +222,84 @@ func ConfirmEmailChange(ctx context.Context, q generated.Querier, req dtos.Confi
 func confirmEmailChangeURL(token string) string {
 	return PublicBaseURL() + "/confirm-email-change?token=" + url.QueryEscape(token)
 }
+
+// DeleteAccount permanently deletes the caller's own account and
+// everything a foreign key ties to it.
+//
+// The order below is load-bearing:
+//
+//  1. GetUserCredentials looks up the account. sql.ErrNoRows becomes
+//     ErrNotFound, same as every other account-service lookup.
+//  2. The email confirmation is checked FIRST, before the password: it
+//     is the deliberate-intent signal (see DeleteAccountRequest), and
+//     checking it before touching bcrypt means a mismatched
+//     confirmation never depends on whether a password happens to be
+//     set. Both sides go through the same normalizeEmail ChangePassword
+//     and RequestEmailChange already use, so case and stray whitespace
+//     don't turn a correct confirmation into a mismatch. A mismatch is
+//     ErrValidation, not a bespoke sentinel -- there is nothing about it
+//     a caller needs to distinguish from any other bad request.
+//  3. Password re-authentication branches on whether the account HAS a
+//     password hash, exactly like ChangePassword's ErrNoPasswordSet
+//     split: a hash present but req.Password empty is ErrPasswordRequired
+//     (distinct from a wrong, non-empty guess so the two 400s stay
+//     distinguishable); a present, non-empty guess is bcrypt-verified,
+//     and a mismatch is ErrIncorrectPassword. An account with NO
+//     password (Google-only) skips this branch entirely -- the typed
+//     email confirmation from step 2 is the whole gate, same as the
+//     account page's own copy says ("Leave blank if you only sign in
+//     with Google"). A real Google re-authentication (redirecting
+//     through the OAuth flow again before allowing deletion) is a
+//     follow-up, not this ticket.
+//  4. DeleteQueuedEmailsByRecipient runs BEFORE the user is deleted. No
+//     foreign key covers queued_emails -- it keys on the recipient
+//     ADDRESS STRING (see migration 00017's header) -- so a pending
+//     password-reset or email-change link addressed to this account
+//     would otherwise survive the delete and could still be delivered
+//     and redeemed after the account is gone. A failure here is logged
+//     and swallowed, not surfaced: a leftover queued row only matters if
+//     the account delete that follows actually succeeds, so this must
+//     not block that attempt.
+//  5. DeleteUserByID is the entire deletion: ONE statement. Services here
+//     take generated.Querier, not a transaction, so there is no way to
+//     roll back a multi-statement delete if a later step failed --
+//     migration 00017 is what makes a single `delete from tremolo.users`
+//     safe to run against an account with real history, by making every
+//     foreign key that used to block it (or leave orphaned rows behind
+//     it) cascade instead.
+func DeleteAccount(ctx context.Context, q generated.Querier, userID int, req dtos.DeleteAccountRequest) error {
+	user, err := q.GetUserCredentials(ctx, int32(userID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("look up user credentials: %w", err)
+	}
+
+	if normalizeEmail(req.EmailConfirmation) != normalizeEmail(user.Email.String) {
+		return validationErr(errors.New("email confirmation does not match this account"))
+	}
+
+	if user.Password != "" {
+		if req.Password == "" {
+			return ErrPasswordRequired
+		}
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+			return ErrIncorrectPassword
+		}
+	}
+	// Else: a Google-only account has no password hash to check --
+	// the email confirmation above is the whole re-authentication gate
+	// for it.
+
+	if err := q.DeleteQueuedEmailsByRecipient(ctx, user.Email.String); err != nil {
+		logger.Error("Failed to delete queued emails before account deletion", "error", err.Error(), "user_id", userID)
+	}
+
+	if err := q.DeleteUserByID(ctx, user.ID); err != nil {
+		logger.Error("Failed to delete user account", "error", err.Error(), "user_id", userID)
+		return fmt.Errorf("delete user by id: %w", err)
+	}
+
+	return nil
+}

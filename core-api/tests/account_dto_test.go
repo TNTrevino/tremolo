@@ -114,3 +114,24 @@ func TestConfirmEmailChangeRequestValid(t *testing.T) {
 	good := dtos.ConfirmEmailChangeRequest{Token: "some-token"}
 	assert.Empty(t, good.Valid(context.Background()))
 }
+
+// TestDeleteAccountRequestValid only requires the email confirmation:
+// Password is validated by services.DeleteAccount, not here, because
+// whether the account HAS a password to check is a database question a
+// request DTO cannot answer on its own (see DeleteAccountRequest's doc
+// comment). An empty Password must therefore never appear as a problem
+// below.
+func TestDeleteAccountRequestValid(t *testing.T) {
+	t.Parallel()
+
+	empty := dtos.DeleteAccountRequest{Password: "", EmailConfirmation: ""}
+	problems := empty.Valid(context.Background())
+	assert.Equal(t, "Email confirmation is required", problems["email_confirmation"])
+	assert.NotContains(t, problems, "password")
+
+	blankPassword := dtos.DeleteAccountRequest{Password: "", EmailConfirmation: "student@example.com"}
+	assert.Empty(t, blankPassword.Valid(context.Background()), "a blank password is a valid shape -- it's the server's job to decide if it's enough")
+
+	good := dtos.DeleteAccountRequest{Password: "Old-Passw0rd!", EmailConfirmation: "student@example.com"}
+	assert.Empty(t, good.Valid(context.Background()))
+}

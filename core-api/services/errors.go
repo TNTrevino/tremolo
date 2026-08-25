@@ -125,6 +125,12 @@ var (
 	// ErrNoPasswordSet means the account authenticates through Google and
 	// has no password to check against (ChangePassword, RequestEmailChange).
 	ErrNoPasswordSet = errors.New("account has no password set")
+	// ErrPasswordRequired means DeleteAccount found a password hash on the
+	// account but the request supplied an empty one. Deliberately distinct
+	// from ErrIncorrectPassword (a wrong, non-empty guess) so the two 400s
+	// stay distinguishable in tests and logs -- one means "you forgot to
+	// type it," the other means "that's not it."
+	ErrPasswordRequired = errors.New("password is required to delete this account")
 	// ErrEmailManagedByGoogle means the account's email address IS its
 	// Google identity, so RequestEmailChange has no address to move: the
 	// address the caller would be "changing" is the one Google

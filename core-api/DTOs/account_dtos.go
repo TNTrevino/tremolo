@@ -88,3 +88,33 @@ type ConfirmEmailChangeResponse struct {
 	Message string `json:"message"`
 	Email   string `json:"email"`
 }
+
+// DeleteAccountRequest is the DELETE /api/users/{userId} body.
+//
+// Deletion asks for two confirmations, not one, because it is
+// irreversible and the account it destroys may be a minor's record:
+//
+//   - EmailConfirmation is the deliberate-intent signal the account page
+//     already collects in its delete modal -- until now it was only
+//     checked in the browser, which is not a check at all. The service
+//     re-verifies it against the account's real address.
+//   - Password is the re-authentication step every other sensitive
+//     change on this page requires. It is validated by the SERVICE, not
+//     here: whether the account has a password to check is a database
+//     question (a Google-only account has none), not something a
+//     request DTO can know. Valid() below only requires the email
+//     confirmation for that reason.
+type DeleteAccountRequest struct {
+	Password          string `json:"password"`
+	EmailConfirmation string `json:"email_confirmation"`
+}
+
+func (req DeleteAccountRequest) Valid(ctx context.Context) map[string]string {
+	problems := map[string]string{}
+
+	if strings.TrimSpace(req.EmailConfirmation) == "" {
+		problems["email_confirmation"] = "Email confirmation is required"
+	}
+
+	return problems
+}
