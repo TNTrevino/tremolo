@@ -14,8 +14,9 @@ import type { UserProfile } from "../../../../shared/models/user.models";
  * Port of frontend-react/src/features/dashboard/components/TeacherDashboard.tsx.
  * Rendered only for a signed-in teacher, below the stats grid.
  *
- * `studentCount` is still the placeholder React left: unset renders
- * "Coming soon".
+ * `studentCount` is the summed roster size the dashboard page reads from
+ * the teacher's class list. `null` -- while that list is loading, if it
+ * fails, or for anyone who isn't a teacher -- still renders "Coming soon".
  */
 @Component({
 	selector: "app-teacher-dashboard",

@@ -87,7 +87,7 @@
 			/>
 
 			@if (isTeacher()) {
-				<app-teacher-dashboard [user]="user" />
+				<app-teacher-dashboard [user]="user" [studentCount]="studentCount()" />
 			}
 		</div>
 	</div>
