@@ -95,6 +95,13 @@ var (
 	// ErrGoogleIDConflict means the Google account being linked is already
 	// linked to a different user.
 	ErrGoogleIDConflict = errors.New("google account already linked to another user")
+
+	// ErrResetTokenInvalid means a password reset token was unknown,
+	// already used, or expired. The three cases are deliberately
+	// indistinguishable: ConsumePasswordResetToken's WHERE clause folds
+	// them into the same sql.ErrNoRows, and telling them apart in the
+	// response would hand an attacker information a generic 400 does not.
+	ErrResetTokenInvalid = errors.New("invalid or expired password reset token")
 )
 
 // LockoutTriggeredError is returned by Login when a failed attempt is

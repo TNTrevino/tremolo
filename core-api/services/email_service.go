@@ -70,6 +70,21 @@ func EnqueuePasswordReset(ctx context.Context, q generated.Querier, to, toName, 
 		})
 }
 
+// EnqueuePasswordResetGoogle queues the "you sign in with Google" notice,
+// sent instead of a reset link when the requester's account has no
+// password to reset.
+func EnqueuePasswordResetGoogle(ctx context.Context, q generated.Querier, to, toName, firstName string) error {
+	defaults := emailEnqueueDefaults()
+
+	return enqueue(ctx, q, defaults, email.TemplatePasswordResetGoogle, to, toName,
+		fmt.Sprintf("About your %s password reset request", defaults.appName),
+		email.PasswordResetGoogleData{
+			FirstName: firstName,
+			AppName:   defaults.appName,
+			AppURL:    PublicBaseURL(),
+		})
+}
+
 // EnqueueVerifyEmail queues the mail that confirms a new account's
 // address. It doubles as the welcome mail; there is no second one.
 func EnqueueVerifyEmail(ctx context.Context, q generated.Querier, to, toName, firstName, verifyURL string) error {

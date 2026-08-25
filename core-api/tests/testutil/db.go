@@ -3,7 +3,11 @@ package testutil
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -460,4 +464,89 @@ func ClearQueuedEmails(t *testing.T) {
 	if _, err := database.DBConn.ExecContext(context.Background(), "delete from tremolo.queued_emails"); err != nil {
 		t.Fatalf("Failed to clear the email queue: %v", err)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Password reset helpers
+// ---------------------------------------------------------------------------
+
+// CreateTestOAuthUser creates a Google-linked user with no password set
+// (password NULL, google_id present) and returns the user ID. It mirrors
+// createOAuthTestUser in tests/google_auth_test.go; this copy lives in
+// testutil because password reset's Google-only-account tests are not the
+// only callers that need one.
+func CreateTestOAuthUser(t *testing.T, email string) int {
+	t.Helper()
+	SetupTestDB(t)
+
+	roleID, err := database.Queries.GetRoleIDByName(context.Background(), "BASIC")
+	if err != nil {
+		t.Fatalf("Failed to resolve BASIC role: %v", err)
+	}
+
+	row, err := database.Queries.CreateOAuthUser(context.Background(), generated.CreateOAuthUserParams{
+		FirstName: "Test",
+		LastName:  "OAuthUser",
+		Email:     sql.NullString{String: email, Valid: true},
+		GoogleID:  sql.NullString{String: "test-google-" + email, Valid: true},
+		RoleID:    roleID,
+		SchoolID:  sql.NullInt32{Valid: false},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test OAuth user: %v", err)
+	}
+
+	uid := int(row.ID)
+	t.Cleanup(func() {
+		DeleteQueuedEmails(t, email)
+		DeleteTestUser(t, uid)
+	})
+
+	if err := services.CreateDefaultKeyboardBindings(context.Background(), database.Queries, uid); err != nil {
+		t.Fatalf("failed to seed default keyboard bindings for test OAuth user %d: %v", uid, err)
+	}
+
+	return uid
+}
+
+// CreatePasswordResetToken inserts one password reset token row directly
+// (bypassing services.RequestPasswordReset) and returns the plaintext
+// token. This is the only way a test can mint an already-expired token, or
+// pin a token to a caller-chosen TTL -- a live request through the service
+// always uses services.PasswordResetTokenTTL and can't produce either.
+func CreatePasswordResetToken(t *testing.T, userID int, ttl time.Duration) string {
+	t.Helper()
+	SetupTestDB(t)
+
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		t.Fatalf("Failed to generate a test reset token: %v", err)
+	}
+	token := base64.RawURLEncoding.EncodeToString(raw)
+	sum := sha256.Sum256([]byte(token))
+	hash := hex.EncodeToString(sum[:])
+
+	_, err := database.Queries.CreatePasswordResetToken(context.Background(), generated.CreatePasswordResetTokenParams{
+		UserID:    int32(userID),
+		TokenHash: hash,
+		ExpiresAt: time.Now().Add(ttl),
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test password reset token: %v", err)
+	}
+
+	return token
+}
+
+// PasswordResetTokensFor returns every password reset token row for one
+// user.
+func PasswordResetTokensFor(t *testing.T, userID int) []generated.TremoloPasswordResetToken {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListPasswordResetTokensByUser(context.Background(), int32(userID))
+	if err != nil {
+		t.Fatalf("Failed to list password reset tokens for user %d: %v", userID, err)
+	}
+	return rows
 }
