@@ -27,7 +27,8 @@ func TestGetTeacherClassChartData_Success(t *testing.T) {
 	studentEmail := testutil.UniqueEmail(t, "student_chart_success")
 	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
 
-	testutil.CreateTeacherStudentAssociation(t, teacherID, studentID)
+	class := createTestClass(t, teacherID, "Chart Success Class")
+	joinTestClass(t, studentID, class.JoinCode)
 	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
 
 	require.NoError(t, services.RequireTeacherRole(context.Background(), database.Queries, teacherID))
@@ -35,10 +36,13 @@ func TestGetTeacherClassChartData_Success(t *testing.T) {
 	response, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherID, "day", 30)
 	require.NoError(t, err)
 
-	assert.NotNil(t, response.NPM)
-	assert.NotNil(t, response.Accuracy)
-	assert.NotNil(t, response.SessionCount)
-	assert.NotNil(t, response.TotalQuestions)
+	// emit_empty_slices makes every series non-nil, so NotNil asserted
+	// nothing -- that is how #253 shipped.
+	require.Len(t, response.NPM, 1)
+	assert.Equal(t, float64(3), response.NPM[0].Value)
+	assert.InDelta(t, 75.0, response.Accuracy[0].Value, 0.001)
+	assert.Len(t, response.SessionCount, 1)
+	assert.Equal(t, float64(20), response.TotalQuestions[0].Value)
 }
 
 // TestRequireTeacherRole_NotTeacher tests that non-teachers are rejected
@@ -94,8 +98,9 @@ func TestGetTeacherClassChartData_WithStudents(t *testing.T) {
 	student2Email := testutil.UniqueEmail(t, "student2_with_entries")
 	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "STUDENT")
 
-	testutil.CreateTeacherStudentAssociation(t, teacherID, student1ID)
-	testutil.CreateTeacherStudentAssociation(t, teacherID, student2ID)
+	class := createTestClass(t, teacherID, "Chart With Students Class")
+	joinTestClass(t, student1ID, class.JoinCode)
+	joinTestClass(t, student2ID, class.JoinCode)
 
 	testutil.CreateTestNoteGameEntry(t, testutil.CreateTestNoteGameEntryParams{
 		UserID:           student1ID,
@@ -148,7 +153,8 @@ func TestGetTeacherClassChartData_AllIntervals(t *testing.T) {
 	studentEmail := testutil.UniqueEmail(t, "student_intervals")
 	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
 
-	testutil.CreateTeacherStudentAssociation(t, teacherID, studentID)
+	class := createTestClass(t, teacherID, "Chart Intervals Class")
+	joinTestClass(t, studentID, class.JoinCode)
 	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
 
 	intervals := []string{"day", "week", "month", "year", "all"}
@@ -157,7 +163,7 @@ func TestGetTeacherClassChartData_AllIntervals(t *testing.T) {
 		t.Run("interval_"+interval, func(t *testing.T) {
 			response, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherID, interval, 30)
 			require.NoError(t, err, "failed for interval: %s", interval)
-			assert.NotNil(t, response.NPM)
+			assert.Len(t, response.NPM, 1)
 		})
 	}
 }
@@ -211,8 +217,9 @@ func TestGetTeacherClassChartData_StudentsWithNoEntries(t *testing.T) {
 	student2Email := testutil.UniqueEmail(t, "student_no_entry2")
 	student2ID := testutil.CreateTestUserWithDefaults(t, student2Email, "STUDENT")
 
-	testutil.CreateTeacherStudentAssociation(t, teacherID, student1ID)
-	testutil.CreateTeacherStudentAssociation(t, teacherID, student2ID)
+	class := createTestClass(t, teacherID, "Chart No Entries Class")
+	joinTestClass(t, student1ID, class.JoinCode)
+	joinTestClass(t, student2ID, class.JoinCode)
 
 	response, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherID, "day", 30)
 	require.NoError(t, err)
@@ -239,4 +246,113 @@ func TestGetTeacherClassChartData_DefaultQueryParams(t *testing.T) {
 	assert.NotNil(t, response.Accuracy)
 	assert.NotNil(t, response.SessionCount)
 	assert.NotNil(t, response.TotalQuestions)
+}
+
+// TestGetTeacherClassChartData_DoesNotDoubleCountMultiClassStudent tests
+// that a student enrolled in two of the teacher's classes still
+// contributes each entry exactly once -- the roster join is a semi-join,
+// not a plain join.
+func TestGetTeacherClassChartData_DoesNotDoubleCountMultiClassStudent(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "teacher_multi_class")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "student_multi_class")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	classA := createTestClass(t, teacherID, "Multi Class A")
+	classB := createTestClass(t, teacherID, "Multi Class B")
+	joinTestClass(t, studentID, classA.JoinCode)
+	joinTestClass(t, studentID, classB.JoinCode)
+
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
+
+	response, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherID, "day", 30)
+	require.NoError(t, err)
+
+	require.Len(t, response.NPM, 1, "a student in two of the teacher's classes must contribute their entry once")
+	assert.Len(t, response.SessionCount, 1)
+}
+
+// TestGetTeacherClassChartData_ExcludesOtherTeachersRoster tests that one
+// teacher's roster never leaks another teacher's chart data.
+func TestGetTeacherClassChartData_ExcludesOtherTeachersRoster(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherAEmail := testutil.UniqueEmail(t, "teacher_a_roster")
+	teacherAID := testutil.CreateTestUserWithDefaults(t, teacherAEmail, "TEACHER")
+	studentAEmail := testutil.UniqueEmail(t, "student_a_roster")
+	studentAID := testutil.CreateTestUserWithDefaults(t, studentAEmail, "STUDENT")
+	classA := createTestClass(t, teacherAID, "Teacher A Class")
+	joinTestClass(t, studentAID, classA.JoinCode)
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentAID)
+
+	teacherBEmail := testutil.UniqueEmail(t, "teacher_b_roster")
+	teacherBID := testutil.CreateTestUserWithDefaults(t, teacherBEmail, "TEACHER")
+	studentBEmail := testutil.UniqueEmail(t, "student_b_roster")
+	studentBID := testutil.CreateTestUserWithDefaults(t, studentBEmail, "STUDENT")
+	classB := createTestClass(t, teacherBID, "Teacher B Class")
+	joinTestClass(t, studentBID, classB.JoinCode)
+
+	responseA, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherAID, "day", 30)
+	require.NoError(t, err)
+	require.Len(t, responseA.NPM, 1)
+
+	responseB, err := services.GetTeacherClassChartData(context.Background(), database.Queries, teacherBID, "day", 30)
+	require.NoError(t, err)
+	assert.Empty(t, responseB.NPM)
+}
+
+// TestGetTeacherClassChartData_ExcludesArchivedClass tests that a class
+// the teacher archived drops out of the roster.
+func TestGetTeacherClassChartData_ExcludesArchivedClass(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "teacher_archived_class")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	studentEmail := testutil.UniqueEmail(t, "student_archived_class")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "Archived Class")
+	joinTestClass(t, studentID, class.JoinCode)
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
+
+	ctx := context.Background()
+	require.NoError(t, services.ArchiveClass(ctx, database.Queries, teacherID, class.ID))
+
+	response, err := services.GetTeacherClassChartData(ctx, database.Queries, teacherID, "day", 30)
+	require.NoError(t, err)
+
+	assert.Empty(t, response.NPM)
+	assert.Empty(t, response.Accuracy)
+	assert.Empty(t, response.SessionCount)
+	assert.Empty(t, response.TotalQuestions)
+}
+
+// TestGetTeacherClassChartData_ExcludesRemovedStudent tests that a
+// student the teacher removed from the class drops out of the roster,
+// taking their historical entries with them.
+func TestGetTeacherClassChartData_ExcludesRemovedStudent(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "teacher_removed_student")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	studentEmail := testutil.UniqueEmail(t, "student_removed")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "Removed Student Class")
+	joinTestClass(t, studentID, class.JoinCode)
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
+
+	ctx := context.Background()
+	require.NoError(t, services.RemoveStudentFromClass(ctx, database.Queries, teacherID, class.ID, studentID))
+
+	response, err := services.GetTeacherClassChartData(ctx, database.Queries, teacherID, "day", 30)
+	require.NoError(t, err)
+
+	assert.Empty(t, response.NPM)
+	assert.Empty(t, response.Accuracy)
+	assert.Empty(t, response.SessionCount)
+	assert.Empty(t, response.TotalQuestions)
 }

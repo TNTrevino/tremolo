@@ -53,8 +53,18 @@ type Querier interface {
 	// Chart data queries for individual users
 	FetchChartDataAll(ctx context.Context, userID int32) ([]FetchChartDataAllRow, error)
 	FetchChartDataInRange(ctx context.Context, arg FetchChartDataInRangeParams) ([]FetchChartDataInRangeRow, error)
-	// Teacher aggregate queries (joining with teacher_student table)
+	// Every score entry by a student on the teacher's roster: the students
+	// enrolled in any active class the teacher owns. class_students is the
+	// roster (migration 00010); the legacy teacher_student table is written
+	// by nothing but the seeders.
+	// The roster is a SEMI-JOIN, not a plain join, because a student may be
+	// enrolled in two classes owned by the same teacher -- a join would emit
+	// that student's entries once per class and double every metric. A
+	// `select distinct` would be worse: it would also collapse two real
+	// entries that share a date, time and identical scores.
 	FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error)
+	// FetchTeacherChartDataAll windowed to the last @days_back days. Same
+	// roster semi-join, for the same double-counting reason.
 	FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error)
 	// Every attempt (score entry) tagged with the assignment for one
 	// student, oldest to newest -- the drill-down behind the results grid.

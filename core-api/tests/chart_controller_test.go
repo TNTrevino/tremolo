@@ -6,11 +6,13 @@ import (
 	"strconv"
 	"testing"
 
+	dtos "sight-reading/DTOs"
 	"sight-reading/controllers"
 	"sight-reading/database"
 	"sight-reading/tests/testutil"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // chartUserPath builds the personal-metrics path for a user ID.
@@ -159,4 +161,35 @@ func TestChartRoutes_ClassMetricsTeacher_ReturnsOK(t *testing.T) {
 	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, "/api/charts/teacher/class-metrics", token, nil))
 
 	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+}
+
+// TestChartRoutes_ClassMetricsTeacherWithRoster_ReturnsPopulatedSeries
+// covers #253 at the HTTP layer: a teacher with a real class_students
+// roster (not the legacy teacher_student table) must get back populated
+// series, not empty ones.
+func TestChartRoutes_ClassMetricsTeacherWithRoster_ReturnsPopulatedSeries(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "chart_class_metrics_roster")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	token := testAccessToken(t, teacherID)
+
+	studentEmail := testutil.UniqueEmail(t, "chart_class_metrics_roster_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "Chart Route Roster Class")
+	joinTestClass(t, studentID, class.JoinCode)
+	testutil.CreateTestNoteGameEntryWithDefaults(t, studentID)
+
+	router := chartTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodGet, "/api/charts/teacher/class-metrics", token, nil))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var resp dtos.MultiMetricChartData
+	testutil.ParseJSONResponse(t, w, &resp)
+	require.Len(t, resp.NPM, 1)
+	assert.InDelta(t, 75.0, resp.Accuracy[0].Value, 0.001)
 }

@@ -179,7 +179,6 @@ func (q *Queries) FetchChartDataInRange(ctx context.Context, arg FetchChartDataI
 }
 
 const fetchTeacherChartDataAll = `-- name: FetchTeacherChartDataAll :many
-
 select
     nge.created_date,
     nge.created_time,
@@ -187,8 +186,13 @@ select
     nge.correct_questions,
     nge.total_questions
 from tremolo.note_game_entries nge
-inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
-where ts.teacher_id = $1
+where nge.user_id in (
+    select cs.student_id
+    from tremolo.class_students cs
+    join tremolo.classes c on c.id = cs.class_id
+    where c.teacher_id = $1
+      and c.archived_at is null
+)
 order by nge.created_date, nge.created_time asc
 `
 
@@ -200,7 +204,15 @@ type FetchTeacherChartDataAllRow struct {
 	TotalQuestions   int32        `json:"total_questions"`
 }
 
-// Teacher aggregate queries (joining with teacher_student table)
+// Every score entry by a student on the teacher's roster: the students
+// enrolled in any active class the teacher owns. class_students is the
+// roster (migration 00010); the legacy teacher_student table is written
+// by nothing but the seeders.
+// The roster is a SEMI-JOIN, not a plain join, because a student may be
+// enrolled in two classes owned by the same teacher -- a join would emit
+// that student's entries once per class and double every metric. A
+// `select distinct` would be worse: it would also collapse two real
+// entries that share a date, time and identical scores.
 func (q *Queries) FetchTeacherChartDataAll(ctx context.Context, teacherID int32) ([]FetchTeacherChartDataAllRow, error) {
 	rows, err := q.db.QueryContext(ctx, fetchTeacherChartDataAll, teacherID)
 	if err != nil {
@@ -238,8 +250,13 @@ select
     nge.correct_questions,
     nge.total_questions
 from tremolo.note_game_entries nge
-inner join tremolo.teacher_student ts on nge.user_id = ts.student_id
-where ts.teacher_id = $1
+where nge.user_id in (
+    select cs.student_id
+    from tremolo.class_students cs
+    join tremolo.classes c on c.id = cs.class_id
+    where c.teacher_id = $1
+      and c.archived_at is null
+)
   and nge.created_date >= current_date - interval '1 day' * $2::int
 order by nge.created_date, nge.created_time asc
 `
@@ -257,6 +274,8 @@ type FetchTeacherChartDataInRangeRow struct {
 	TotalQuestions   int32        `json:"total_questions"`
 }
 
+// FetchTeacherChartDataAll windowed to the last @days_back days. Same
+// roster semi-join, for the same double-counting reason.
 func (q *Queries) FetchTeacherChartDataInRange(ctx context.Context, arg FetchTeacherChartDataInRangeParams) ([]FetchTeacherChartDataInRangeRow, error) {
 	rows, err := q.db.QueryContext(ctx, fetchTeacherChartDataInRange, arg.TeacherID, arg.DaysBack)
 	if err != nil {

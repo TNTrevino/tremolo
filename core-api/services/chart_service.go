@@ -73,9 +73,12 @@ func RequireTeacherRole(ctx context.Context, q generated.Querier, teacherID int)
 }
 
 // GetTeacherClassChartData fetches aggregated metrics for all students of
-// a teacher. Callers must have already established the caller is a
-// teacher (see RequireTeacherRole) — this only validates interval/days
-// and fetches/transforms the data.
+// a teacher. The roster is every student enrolled in an active class the
+// teacher owns (class_students); a student in two of the teacher's
+// classes still has each of their entries counted once. Callers must
+// have already established the caller is a teacher (see
+// RequireTeacherRole) — this only validates interval/days and
+// fetches/transforms the data.
 func GetTeacherClassChartData(ctx context.Context, q generated.Querier, teacherID int, interval string, days int) (dtos.MultiMetricChartData, error) {
 	strategy, err := resolveIntervalStrategy(interval, days)
 	if err != nil {
