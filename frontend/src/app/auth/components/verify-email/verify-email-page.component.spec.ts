@@ -122,6 +122,19 @@ describe("VerifyEmailPageComponent", () => {
 		expect(link.getAttribute("href")).toBe("/dashboard");
 	});
 
+	it("marks the signed-in user's own record verified, so VerifyEmailBannerComponent stops showing without a fresh login", async () => {
+		signIn(store, "STUDENT", false);
+		fixture.componentRef.setInput("token", "kula-verify-token");
+		await fixture.whenStable();
+
+		backend
+			.expectOne(VERIFY_URL)
+			.flush({ message: "Your email address is verified." });
+		await fixture.whenStable();
+
+		expect(store.user()?.emailVerified).toBe(true);
+	});
+
 	it("renders the API message for an expired link", async () => {
 		fixture.componentRef.setInput("token", "kula-expired-token");
 		await fixture.whenStable();

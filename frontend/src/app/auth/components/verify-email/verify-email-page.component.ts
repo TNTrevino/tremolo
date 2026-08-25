@@ -85,6 +85,16 @@ export class VerifyEmailPageComponent implements OnInit {
 			next: (res) => {
 				this.status.set("success");
 				this.message.set(res.message);
+
+				// A signed-in visitor who just verified must not keep
+				// seeing VerifyEmailBannerComponent's nag: that banner
+				// reads store.user()?.emailVerified, and nothing else
+				// updates the store between now and this session's next
+				// login/rehydrate.
+				const user = this.store.user();
+				if (user) {
+					this.store.setUser({ ...user, emailVerified: true });
+				}
 			},
 			error: (err: unknown) => {
 				this.status.set("failure");
