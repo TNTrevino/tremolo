@@ -16,6 +16,7 @@ import { VerifyEmailPageComponent } from "./verify-email-page.component";
 
 const VERIFY_URL = `${environment.coreApi}/api/auth/verify-email`;
 const RESEND_URL = `${environment.coreApi}/api/auth/resend-verification`;
+const ME_URL = `${environment.coreApi}/api/auth/me`;
 
 /**
  * Toasts are asserted through the real `NotificationService`, not a spy --
@@ -116,13 +117,33 @@ describe("VerifyEmailPageComponent", () => {
 		backend
 			.expectOne(VERIFY_URL)
 			.flush({ message: "Your email address is verified." });
+
+		// Being signed in means success now re-fetches /me (see the two specs
+		// below) -- flush it so this request doesn't stay outstanding.
+		backend.expectOne(ME_URL).flush({
+			id: 1,
+			email: "user@tremolo.test",
+			first_name: "Test",
+			last_name: "User",
+			role: "STUDENT",
+			email_verified: true,
+		});
 		await fixture.whenStable();
 
 		const link = el().querySelector("a") as HTMLAnchorElement;
 		expect(link.getAttribute("href")).toBe("/dashboard");
 	});
 
-	it("marks the signed-in user's own record verified, so VerifyEmailBannerComponent stops showing without a fresh login", async () => {
+	/**
+	 * #272: the server response never says WHICH account a token verified,
+	 * so success no longer patches emailVerified onto whoever happens to be
+	 * signed in. Instead it re-fetches /me and stores that response --
+	 * same pattern as ConfirmEmailChangePageComponent (#249). When /me
+	 * confirms the signed-in user IS the verified account, the store's
+	 * emailVerified becomes true and VerifyEmailBannerComponent stops
+	 * nagging without a fresh login.
+	 */
+	it("re-fetches the current user on success when signed in, and stores the SERVER's emailVerified", async () => {
 		signIn(store, "STUDENT", false);
 		fixture.componentRef.setInput("token", "kula-verify-token");
 		await fixture.whenStable();
@@ -130,9 +151,46 @@ describe("VerifyEmailPageComponent", () => {
 		backend
 			.expectOne(VERIFY_URL)
 			.flush({ message: "Your email address is verified." });
+
+		backend.expectOne(ME_URL).flush({
+			id: 1,
+			email: "user@tremolo.test",
+			first_name: "Test",
+			last_name: "User",
+			role: "STUDENT",
+			email_verified: true,
+		});
 		await fixture.whenStable();
 
 		expect(store.user()?.emailVerified).toBe(true);
+	});
+
+	/**
+	 * The other half of #272: on a shared device the signed-in user here
+	 * might NOT be the account the token verified. /me reports that
+	 * account's own, real, still-unverified state, and the store must keep
+	 * it rather than assume the verification was theirs.
+	 */
+	it("keeps the signed-in user's real emailVerified when /me reports a different, unverified account", async () => {
+		signIn(store, "STUDENT", false);
+		fixture.componentRef.setInput("token", "kula-verify-token");
+		await fixture.whenStable();
+
+		backend
+			.expectOne(VERIFY_URL)
+			.flush({ message: "Your email address is verified." });
+
+		backend.expectOne(ME_URL).flush({
+			id: 2,
+			email: "someone-else@tremolo.test",
+			first_name: "Someone",
+			last_name: "Else",
+			role: "STUDENT",
+			email_verified: false,
+		});
+		await fixture.whenStable();
+
+		expect(store.user()?.emailVerified).toBe(false);
 	});
 
 	it("renders the API message for an expired link", async () => {

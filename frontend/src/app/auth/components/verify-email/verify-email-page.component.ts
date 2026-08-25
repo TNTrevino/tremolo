@@ -15,6 +15,7 @@ import { NotificationService } from "../../../core/services/notification.service
 import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { mapApiUserToUser } from "../../models/user.mapper";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
 import { resendVerification } from "../../utils/resend-verification.util";
@@ -86,14 +87,24 @@ export class VerifyEmailPageComponent implements OnInit {
 				this.status.set("success");
 				this.message.set(res.message);
 
-				// A signed-in visitor who just verified must not keep
-				// seeing VerifyEmailBannerComponent's nag: that banner
-				// reads store.user()?.emailVerified, and nothing else
-				// updates the store between now and this session's next
-				// login/rehydrate.
-				const user = this.store.user();
-				if (user) {
-					this.store.setUser({ ...user, emailVerified: true });
+				// The server response confirms A token was redeemed, not
+				// WHICH account it belonged to -- on a shared device the
+				// signed-in user here might not be the account that got
+				// verified. Blindly patching emailVerified onto
+				// store.user() (as this once did) could flip that flag for
+				// the wrong account. Re-fetching /me instead asks the
+				// server for THIS session's own truth: if it is the
+				// account this token verified, email_verified now comes
+				// back true and VerifyEmailBannerComponent stops nagging
+				// without a fresh login; if not, /me returns that
+				// account's real, unaffected state. Same pattern as
+				// ConfirmEmailChangePageComponent (#249). A signed-out
+				// visitor has no access token for /me to identify an
+				// account with, so there is no store work to do.
+				if (this.store.isAuthenticated()) {
+					this.auth.getCurrentUser().subscribe((apiUser) => {
+						this.store.setUser(mapApiUserToUser(apiUser));
+					});
 				}
 			},
 			error: (err: unknown) => {
