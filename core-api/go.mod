@@ -9,6 +9,7 @@ require (
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/stretchr/testify v1.11.1
+	github.com/wneessen/go-mail v0.7.2
 	golang.org/x/crypto v0.55.0
 	google.golang.org/api v0.275.0
 )
