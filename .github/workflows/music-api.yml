@@ -46,6 +46,8 @@ jobs:
           pip install -r requirements.txt
 
       # The checks themselves live in the Makefile so CI and local dev
-      # can't drift: black --check + flake8 + pytest.
-      - name: Check (format + lint + test)
+      # can't drift: black --check + flake8 + build (import check) + pytest.
+      # Build runs before the test suite so a broken import fails fast,
+      # before paying for the slower pytest run.
+      - name: Check (format + lint + build + test)
         run: make check-music

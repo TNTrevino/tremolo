@@ -80,6 +80,14 @@ jobs:
           version: v2.13
           working-directory: core-api
 
+      # `go build .` compiles the whole package, the same way deploy.yml's
+      # build step does -- the direct, obvious analog to the deploy build,
+      # so a broken package build fails the PR instead of only failing at
+      # deploy. Runs before the test suite: a build failure is cheaper to
+      # hit than -race + Postgres + coverage, so fail fast on that first.
+      - name: Build
+        run: make build-go
+
       - name: Run tests
         run: make test-go
 
