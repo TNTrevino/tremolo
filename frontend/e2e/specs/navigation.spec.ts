@@ -85,6 +85,18 @@ test.describe("routing", () => {
 
 		await expect(page).toHaveURL(/\/note-game$/);
 	});
+
+	/**
+	 * Not in ROUTES (that list is the React parity set), so this is the
+	 * only e2e coverage of the `**` wildcard added in #263.
+	 */
+	test("shows the 404 page for an unknown route", async ({ page }) => {
+		await page.goto("/definitely-not-a-route");
+
+		await expect(
+			page.getByRole("heading", { name: "This page is off the staff" }),
+		).toBeVisible();
+	});
 });
 
 /**

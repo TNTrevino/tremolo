@@ -1,0 +1,27 @@
+<!--
+	#263. `<ng-icon>` sets `role="img"` on its host, so the decorative note
+	glyph is `aria-hidden` -- it sits beside the h1, not in place of one.
+-->
+<div
+	class="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center"
+>
+	<ng-icon
+		name="lucideMusic2"
+		size="2.5rem"
+		aria-hidden="true"
+		class="text-muted-foreground"
+	/>
+	<h1 class="text-4xl font-bold">This page is off the staff</h1>
+	<p class="text-lg text-muted-foreground max-w-md">
+		We could not find that page. The address may have a typo, or the link that
+		brought you here may be out of date.
+	</p>
+	<div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
+		<a routerLink="/note-game">
+			<app-button size="lg" variant="brass">Start practicing</app-button>
+		</a>
+		<a routerLink="/home">
+			<app-button size="lg" variant="outline">Go to the home page</app-button>
+		</a>
+	</div>
+</div>

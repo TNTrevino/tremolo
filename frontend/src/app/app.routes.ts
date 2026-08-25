@@ -3,6 +3,7 @@ import { Routes } from "@angular/router";
 import { authGuard } from "./auth/services/security/auth.guard";
 import { guestGuard } from "./auth/services/security/guest.guard";
 import { teacherGuard } from "./auth/services/security/teacher.guard";
+import { devOnlyGuard } from "./dev/dev-only.guard";
 
 /**
  * The routes ported from frontend-react/src/App.tsx, plus additions with
@@ -135,10 +136,14 @@ export const routes: Routes = [
 	},
 
 	// --- Not part of the app ---------------------------------------------
-	// The Phase 2 UI-kit showcase. Unguarded, imported by nothing, and
-	// removable by deleting this entry plus src/app/dev/.
+	// The Phase 2 UI-kit showcase. Dev-only: devOnlyGuard's canMatch keeps
+	// it out of production builds (see dev/dev-only.guard.ts) by falling
+	// through to the ** wildcard below instead of matching this route.
+	// Removable by deleting this entry, the devOnlyGuard import above, and
+	// src/app/dev/.
 	{
 		path: "dev/kit",
+		canMatch: [devOnlyGuard],
 		loadComponent: () =>
 			import("./dev/kit-page/kit-page.component").then(
 				(m) => m.KitPageComponent,
@@ -269,6 +274,17 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import("./auth/components/confirm-email-change/confirm-email-change-page.component").then(
 				(m) => m.ConfirmEmailChangePageComponent,
+			),
+	},
+
+	// --- Not found (must stay last) ---------------------------------------
+	// A ** route matches anything, so every route added later has to go
+	// above it. app.routes.spec.ts fails if one lands below.
+	{
+		path: "**",
+		loadComponent: () =>
+			import("./public/not-found-page/not-found-page.component").then(
+				(m) => m.NotFoundPageComponent,
 			),
 	},
 ];
