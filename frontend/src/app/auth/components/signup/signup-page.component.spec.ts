@@ -182,6 +182,23 @@ describe("SignupPageComponent", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * bcrypt's hard limit (#269 review): a password this long previously
+	 * reached the Go service and errored out of bcrypt.GenerateFromPassword.
+	 * `signupSchema`'s `.max(72, ...)` catches it client-side first.
+	 */
+	it("rejects a password over bcrypt's 72-byte limit and sends no request", async () => {
+		const tooLong = "Aa1!" + "a".repeat(69); // 73 characters
+		await fillValid();
+		await type("password", tooLong);
+		await type("confirmPassword", tooLong);
+		await submit();
+
+		expect(el().textContent).toContain("At most 72 characters");
+		backend.expectNone(REGISTER_URL);
+		expect(navigate).not.toHaveBeenCalled();
+	});
+
 	it("shows every schema message on an empty submit and sends no request", async () => {
 		await submit();
 

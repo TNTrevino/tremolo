@@ -38,6 +38,11 @@ export const signupSchema = z
 		password: z
 			.string()
 			.min(8, "At least 8 characters")
+			// bcrypt's hard limit (#269 review): a password past this
+			// silently reaches bcrypt.GenerateFromPassword server-side and
+			// errors, so this is a courtesy that matches the Go DTO's own
+			// cap, not a new policy choice.
+			.max(72, "At most 72 characters")
 			.regex(/[A-Z]/, "Contains uppercase letter")
 			.regex(/[a-z]/, "Contains lowercase letter")
 			.regex(/\d/, "Contains number")

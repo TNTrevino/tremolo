@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	dtos "sight-reading/DTOs"
@@ -49,6 +50,16 @@ func TestLoginRequestValid_RejectsBadCredentials(t *testing.T) {
 			req:  dtos.LoginRequest{Email: "test@example.com", Password: "simplepassword"},
 			key:  "password",
 			want: "Password must contain at least 1 uppercase letter",
+		},
+		// addPasswordProblem is shared with RegisterRequest.Valid, so
+		// bcrypt's 72-byte cap (#269 review) lands on Login too. That is
+		// deliberate, not a side effect: it is the same harmless,
+		// consistent rule applied everywhere a password is compared or
+		// hashed.
+		"long password": {
+			req:  dtos.LoginRequest{Email: "test@example.com", Password: strings.Repeat("a", 73)},
+			key:  "password",
+			want: "Password must be at most 72 characters",
 		},
 	}
 
@@ -106,6 +117,26 @@ func TestRegisterRequestValid_RejectsBadFields(t *testing.T) {
 			assert.Contains(t, problems[tc.key], tc.want)
 		})
 	}
+}
+
+// TestRegisterRequestValid_PasswordLengthCap pins bcrypt's 72-byte limit
+// as a DTO rule (#269 review). Password length was previously bounded only
+// below (>= 8): a password over 72 bytes reached bcrypt.GenerateFromPassword
+// in services.Register and errored with ErrPasswordTooLong, permanently
+// burning a single-use teacher invite code with no account created. Go's
+// len() on a string counts bytes, which is exactly bcrypt's unit, so this
+// check needs no separate byte-counting helper.
+func TestRegisterRequestValid_PasswordLengthCap(t *testing.T) {
+	t.Parallel()
+
+	tooLong := validRegisterRequest()
+	tooLong.Password = strings.Repeat("a", 73)
+	assert.Equal(t, "Password must be at most 72 characters",
+		tooLong.Valid(context.Background())["password"])
+
+	atLimit := validRegisterRequest()
+	atLimit.Password = "Aa1!" + strings.Repeat("a", 68) // exactly 72 bytes
+	assert.Empty(t, atLimit.Valid(context.Background()), "a 72-byte password is still at the limit, not over it")
 }
 
 // TestRegisterRequestValid_TeacherRequiresInviteCode pins the shape rule
