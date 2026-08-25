@@ -150,7 +150,8 @@ To add a column or a new query:
 
 Existing query files: `users.sql`, `friends.sql`, `relationships.sql`,
 `note_game_entries.sql`, `note_game_settings.sql`, `game_settings.sql`,
-`keyboard_bindings.sql`, `seeders.sql`.
+`keyboard_bindings.sql`, `classes.sql`, `assignments.sql`,
+`teacher_invites.sql`, `seeders.sql`.
 
 ## The games domain
 
@@ -225,6 +226,7 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
 | GET | `/teachers`, `/teacher/{id}`, `/students`, `/student/{id}`; POST `/user` | JWT (ADMIN role) | `admin_controller.go` (legacy teacher/user routes) |
+| GET / POST | `/api/admin/teacher-invites` (list / mint an invite code) | JWT (ADMIN role) | `teacher_invite_controller.go` |
 | GET | `/api/charts/user/{userId}/metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/charts/teacher/class-metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/users/{userId}/general-info` | JWT (own data only) | `user_info_controller.go` |
@@ -257,6 +259,59 @@ pattern in `services/chart_strategies.go`) and `days` (default 30).
   `SetTokenVerifier` for tests), then logs in an existing Google user, links,
   or creates one. `POST /api/auth/google/link` links Google to an existing
   logged-in account. **Full details: [`docs/google-oauth-flow.md`](../../docs/google-oauth-flow.md).**
+
+### Teacher invite codes
+
+The TEACHER role grants classes, rosters and other students' scores, so
+self-service signup cannot simply ask for it (#250). A registration body
+claiming `"role": "TEACHER"` must carry an `invite_code`, and
+`services.Register` spends one use of it before the user row exists.
+
+Where that happens inside `Register` is load-bearing: **after** the
+email-taken check, so a teacher retrying a signup they already completed
+does not burn a second use, and **before** `CreateUser`, so no TEACHER row
+can exist that was not gated. A failed `CreateUser` hands the use back
+(`releaseTeacherInvite`). Redemption itself is a single conditional UPDATE
+(`RedeemTeacherInviteCode`) rather than a select-then-update, so two people
+racing the last use of a code cannot both win —
+`tests/teacher_invite_service_test.go` races eight signups at one
+single-use code to prove it.
+
+Unknown, expired and spent codes all answer the same sentence with a
+`"field": "invite_code"` key, which is the only response in this API that
+carries a `field`: the signup page reads it to put the message under the
+input rather than in the page alert.
+
+Two paths deliberately skip the gate:
+
+- **Google OAuth** needs none. `services/google_auth_service.go` hard-codes
+  `BASIC` for a new account, and no query in `database/queries/` updates a
+  role, so an OAuth signup cannot reach TEACHER at all.
+- **`POST /user`** (admin-created users) bypasses it on purpose. That route
+  is already ADMIN-only, so requiring a code there would mean an admin
+  minting one to hand to themselves.
+
+Codes are minted by an ADMIN at `POST /api/admin/teacher-invites` (body:
+`note`, `max_uses`, `expires_in_days` — all optional; the defaults are one
+use and no expiry), or by hand in SQL during the pilot:
+
+```sql
+insert into tremolo.teacher_invite_codes (code, note, max_uses)
+values ('K7M2QP4R', 'Ms. Rivera, Jefferson MS', 1);
+```
+
+```sql
+select code, note, use_count, max_uses, expires_at
+from tremolo.teacher_invite_codes
+order by created_at desc;
+```
+
+A hand-written code must be **uppercase** and drawn from the same
+unambiguous alphabet generated ones use — A–Z minus `I`, `L`, `O`, plus
+2–9 — because a teacher reads it off an email or a whiteboard. The
+uppercase half is enforced by a CHECK constraint rather than trusted:
+redemption uppercases the submitted code first, so a lowercase row would
+otherwise sit in the table permanently unredeemable.
 
 ## Testing
 

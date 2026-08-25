@@ -22,6 +22,15 @@ Invariants:
   edit an existing one — they run automatically at startup), queries in
   `database/queries/*.sql`, then `sqlc generate`. Never hand-edit
   `database/generated/`.
+- A TEACHER row reaches the database through exactly two routes:
+  `POST /api/auth/register` with an invite code the request redeems, and
+  admin-only `POST /user`. Google OAuth always creates BASIC
+  (`services/google_auth_service.go` hard-codes it) and no query in
+  `database/queries/` updates a role, so there is no third way in over
+  HTTP. (`go run main.go -fake-it` writes rows directly via
+  `CreateUserWithPassword`; it is a dev seeder, not a route.) Adding a
+  route means adding the gate too — see the README's "Teacher invite
+  codes".
 - `dtos.ValidGameTypes` (`DTOs/game_types.go`) is the single source of truth
   for game identifiers; `ValidSettingsGameTypes` derives from it. A new game
   is one entry here + the TS `GameType` union.
