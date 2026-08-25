@@ -1,11 +1,16 @@
+import { GAME_DEFINITIONS } from "@features/identification-game/data";
+
 import type { GameType } from "../../../shared/models/game.models";
 import {
 	defaultAssignmentConfig,
+	defaultGameSettings,
 	GAME_TYPE_LABELS,
 	GAME_TYPE_OPTIONS,
 	GENERIC_GAME_TYPES,
 	isGenericGameType,
 	isKnownGameType,
+	settingsSchemaFor,
+	toAssignmentConfig,
 } from "./game-definitions";
 
 /**
@@ -113,5 +118,88 @@ describe("defaultAssignmentConfig", () => {
 		expect(defaultAssignmentConfig("key_signature")["keySignatures"]).toEqual([
 			-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7,
 		]);
+	});
+});
+
+/**
+ * Added for issue #261: the assignment dialog now needs a settings object it
+ * can hold and patch *before* freezing it, which is what split
+ * `defaultAssignmentConfig` into these three. The composition invariant --
+ * `defaultAssignmentConfig` is `toAssignmentConfig` run on
+ * `defaultGameSettings` -- is the one thing every caller of the old function
+ * still depends on, so it is asserted directly rather than just implied by
+ * the two halves being separately correct.
+ */
+describe("defaultGameSettings / toAssignmentConfig / settingsSchemaFor", () => {
+	const ALL_TYPES: GameType[] = [
+		"note",
+		"key_signature",
+		"scale",
+		"chord",
+		"interval",
+	];
+
+	it("composes back into defaultAssignmentConfig for every game type", () => {
+		for (const gameType of ALL_TYPES) {
+			expect(
+				toAssignmentConfig(gameType, defaultGameSettings(gameType)),
+			).toEqual(defaultAssignmentConfig(gameType));
+		}
+	});
+
+	it("hands back a fresh settings object each call, so patching one cannot leak", () => {
+		const first = defaultGameSettings("scale");
+		first["timeLimit"] = 999;
+
+		expect(defaultGameSettings("scale")["timeLimit"]).toBe(60);
+	});
+
+	it("keeps the note game's settings camelCase, unlike the config it freezes into", () => {
+		// Unlike `defaultAssignmentConfig`, the settings a teacher tunes are
+		// camelCase even for the note game -- the snake_case conversion is
+		// `toAssignmentConfig`'s job alone.
+		expect(defaultGameSettings("note")).toMatchObject({
+			gameMode: "time",
+			timeLimit: 30,
+			clef: "treble",
+		});
+		expect(defaultGameSettings("key_signature")).toMatchObject({
+			gameMode: "time",
+			timeLimit: 30,
+			clefs: ["treble"],
+		});
+	});
+
+	it("freezes a tuned note game settings object to the snake_case config shape", () => {
+		const tuned = { ...defaultGameSettings("note"), scale: "G Major" };
+
+		expect(toAssignmentConfig("note", tuned)).toMatchObject({
+			scale: "G Major",
+			game_mode: "time",
+			time_limit: 30,
+		});
+	});
+
+	it("freezes a tuned generic game settings object verbatim, as a fresh clone", () => {
+		const tuned = {
+			...defaultGameSettings("scale"),
+			questionMode: "key_signature",
+		};
+
+		const frozen = toAssignmentConfig("scale", tuned);
+		expect(frozen).toEqual(tuned);
+		expect(frozen).not.toBe(tuned);
+	});
+
+	it("has no settings schema for the note game", () => {
+		expect(settingsSchemaFor("note")).toBeNull();
+	});
+
+	it("hands back each generic game's own settings schema", () => {
+		for (const gameType of GENERIC_GAME_TYPES) {
+			expect(settingsSchemaFor(gameType)).toBe(
+				GAME_DEFINITIONS[gameType].settingsSchema,
+			);
+		}
 	});
 });
