@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { RouterLink } from "@angular/router";
 
+import { CONTACT_EMAIL } from "../../../shared/constants/contact";
+
 /**
  * The site footer (#242): Privacy, Terms, About and a mailto Contact link,
  * rendered once in app.component.html, outside the router outlet -- the
@@ -19,7 +21,7 @@ import { RouterLink } from "@angular/router";
 })
 export class FooterComponent {
 	protected readonly year = new Date().getFullYear();
-	protected readonly contactEmail = "contact@tremolonotes.com";
+	protected readonly contactEmail = CONTACT_EMAIL;
 	protected readonly links = [
 		{ to: "/privacy", label: "Privacy" },
 		{ to: "/terms", label: "Terms" },

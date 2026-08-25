@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { RouterLink } from "@angular/router";
 
+import { CONTACT_EMAIL } from "../../shared/constants/contact";
 import { CARD_DIRECTIVES } from "../../shared/components/ui/card.directive";
 
 /**
@@ -19,5 +20,5 @@ import { CARD_DIRECTIVES } from "../../shared/components/ui/card.directive";
 })
 export class PrivacyPageComponent {
 	protected readonly lastUpdated = "August 25, 2026";
-	protected readonly contactEmail = "contact@tremolonotes.com";
+	protected readonly contactEmail = CONTACT_EMAIL;
 }
