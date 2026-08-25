@@ -15,6 +15,22 @@ import {
 } from "@angular/forms/signals";
 import { z } from "zod";
 
+import type { BaseGameSettings } from "@features/identification-game/data";
+// Deep-imported, not from the `@features/identification-game` barrel: the
+// barrel also re-exports `GameStaffComponent`, which reaches
+// `opensheetmusicdisplay`, a ~1 MB engraver. This dialog only wants two
+// settings controls, so importing them by path keeps that engraver out of
+// the classes bundle chunk. Same reasoning as the `/data` entry-point
+// comment on `../../models/game-definitions.ts:1-5`; see also
+// `frontend/CLAUDE.md`, "Barrel vs data entry point".
+import { GameModeLimitControlsComponent } from "@features/identification-game/settings/game-mode-limit-controls.component";
+import { SettingsControlsComponent } from "@features/identification-game/settings/settings-controls.component";
+import { NoteRangeSettingComponent } from "@features/note-game/components/note-range-setting/note-range-setting.component";
+import {
+	SCALES,
+	type GameSettings,
+} from "@features/note-game/models/note-game.models";
+
 import { NotificationService } from "../../../../core/services/notification.service";
 import { FormFieldComponent } from "../../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
@@ -28,9 +44,11 @@ import type {
 	CreateAssignmentRequest,
 } from "../../models/classes.models";
 import {
-	defaultAssignmentConfig,
+	defaultGameSettings,
 	GAME_TYPE_LABELS,
 	GAME_TYPE_OPTIONS,
+	settingsSchemaFor,
+	toAssignmentConfig,
 } from "../../models/game-definitions";
 import { ClassesService } from "../../services/classes.service";
 
@@ -71,19 +89,21 @@ export type CreateAssignmentFormData = z.infer<typeof createAssignmentSchema>;
  * Port of
  * frontend-react/src/features/classes/components/CreateAssignmentDialog.tsx.
  *
- * **Scope boundary.** React's dialog embedded each game's own settings UI
- * (`SettingsControls`, `GameModeLimitControls`, `StaffRangePicker`) so a
- * teacher could tune the frozen config before creating the assignment.
- * Those controls are the game engine's (Phase 5) and the note game's
- * (Phase 6); this slice ports everything around them and freezes the
- * chosen game's **defaults** as the config, which is what React froze when
- * a teacher touched nothing. `defaultAssignmentConfig()` carries those
- * defaults and names the phase that has to replace it.
+ * React's dialog embedded each game's own settings UI (`SettingsControls`,
+ * `GameModeLimitControls`, `NoteRangeSetting`) so a teacher could tune the
+ * frozen config before creating the assignment. Issue #261 closed that gap:
+ * `gameSettings` holds the live, always-camelCase settings a teacher is
+ * tuning; `config` freezes them into the blob the request actually sends.
+ * The two are deliberately different signals -- the settings controls patch
+ * `gameSettings` the same way they patch a live game's settings, and the
+ * snake_case conversion for the note game happens once, in
+ * `toAssignmentConfig`, not in the dialog.
  *
- * `gameType` and `config` stay plain signals rather than form fields: the
- * config is an opaque JSONB blob, not something zod has an opinion about,
- * and switching games snapshots the new game's defaults rather than
- * migrating the old ones -- the same reset React did in `changeGameType`.
+ * `gameType` and `gameSettings` stay plain signals rather than form fields:
+ * the config is an opaque JSONB blob, not something zod has an opinion
+ * about, and switching games reseeds the new game's own defaults rather
+ * than migrating the old settings -- the same reset React did in
+ * `changeGameType`.
  */
 @Component({
 	selector: "app-create-assignment-dialog",
@@ -92,7 +112,10 @@ export type CreateAssignmentFormData = z.infer<typeof createAssignmentSchema>;
 		FormField,
 		FormFieldComponent,
 		FormInputDirective,
+		GameModeLimitControlsComponent,
+		NoteRangeSettingComponent,
 		SelectComponent,
+		SettingsControlsComponent,
 		...DIALOG_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -113,6 +136,7 @@ export class CreateAssignmentDialogComponent {
 	private readonly notifications = inject(NotificationService);
 
 	readonly gameTypeOptions = GAME_TYPE_OPTIONS;
+	protected readonly scales = SCALES;
 
 	private readonly formModel = signal<CreateAssignmentFormData>({
 		title: "",
@@ -126,18 +150,51 @@ export class CreateAssignmentDialogComponent {
 	});
 
 	readonly gameType = signal<GameType>("note");
-	readonly config = signal<Record<string, unknown>>(
-		defaultAssignmentConfig("note"),
+
+	/** The live settings a teacher is tuning -- always camelCase, unfrozen. */
+	readonly gameSettings = signal<Record<string, unknown>>(
+		defaultGameSettings("note"),
 	);
+
+	/** The frozen blob the request actually sends. */
+	readonly config = computed(() =>
+		toAssignmentConfig(this.gameType(), this.gameSettings()),
+	);
+
+	/** `null` for the note game, which has no schema -- see the template. */
+	readonly settingsSchema = computed(() => settingsSchemaFor(this.gameType()));
+
 	readonly pending = signal(false);
 
 	readonly gameLabel = computed(() => GAME_TYPE_LABELS[this.gameType()]);
 
+	protected readonly isNoteGame = computed(() => this.gameType() === "note");
+
+	/** Cast for `<app-note-range-setting>` and the scale select; note game only. */
+	protected readonly noteSettings = computed(
+		() => this.gameSettings() as unknown as GameSettings,
+	);
+
+	/** Cast for `<app-game-mode-limit-controls>`; every game's settings have these. */
+	protected readonly baseSettings = computed(
+		() => this.gameSettings() as unknown as BaseGameSettings,
+	);
+
 	changeGameType(value: string): void {
 		const next = value as GameType;
 		this.gameType.set(next);
-		// Switching games snapshots that game's own defaults as the config.
-		this.config.set(defaultAssignmentConfig(next));
+		// Switching games discards any tuning and reseeds that game's own
+		// defaults.
+		this.gameSettings.set(defaultGameSettings(next));
+	}
+
+	/** A partial patch from a settings control, merged over the live settings. */
+	applySettings(patch: Record<string, unknown>): void {
+		this.gameSettings.update((current) => ({ ...current, ...patch }));
+	}
+
+	resetSettings(): void {
+		this.gameSettings.set(defaultGameSettings(this.gameType()));
 	}
 
 	close(): void {
@@ -148,7 +205,7 @@ export class CreateAssignmentDialogComponent {
 			targetAccuracy: "",
 		});
 		this.gameType.set("note");
-		this.config.set(defaultAssignmentConfig("note"));
+		this.gameSettings.set(defaultGameSettings("note"));
 		this.pending.set(false);
 		this.open.set(false);
 	}
