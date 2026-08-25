@@ -97,7 +97,35 @@ export const deleteAccountSchema = z.object({
 	emailConfirmation: z.string().min(1, "Email confirmation is required"),
 });
 
+/** #248: request a password reset link. */
+export const forgotPasswordSchema = z.object({
+	email: z.email("Invalid email format"),
+});
+
+/**
+ * #248: choose a new password from an emailed reset link. Same five
+ * password rules as `signupSchema`, copied verbatim -- the Go service
+ * enforces the same complexity on both routes via `addPasswordProblem`.
+ */
+export const resetPasswordSchema = z
+	.object({
+		password: z
+			.string()
+			.min(8, "At least 8 characters")
+			.regex(/[A-Z]/, "Contains uppercase letter")
+			.regex(/[a-z]/, "Contains lowercase letter")
+			.regex(/\d/, "Contains number")
+			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
+		confirmPassword: z.string(),
+	})
+	.refine((data) => data.password === data.confirmPassword, {
+		message: "Passwords do not match",
+		path: ["confirmPassword"],
+	});
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignupFormData = z.infer<typeof signupSchema>;
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 export type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>;
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

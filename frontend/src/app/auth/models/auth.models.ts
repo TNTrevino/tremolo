@@ -69,6 +69,22 @@ export interface GoogleCallbackRequest {
 	redirect_uri: string;
 }
 
+/** #248 */
+export interface ForgotPasswordRequest {
+	email: string;
+}
+
+/** #248 */
+export interface ResetPasswordRequest {
+	token: string;
+	password: string;
+}
+
+/** The `{ message: string }` shape both password-reset endpoints answer. */
+export interface MessageResponse {
+	message: string;
+}
+
 /** One line of the signup page's password checklist. */
 export interface PasswordRequirement {
 	label: string;

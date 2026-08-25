@@ -140,6 +140,14 @@ describe("LoginPageComponent", () => {
 		expect(el().textContent).toContain("Sign in with Google");
 	});
 
+	it("offers a forgot-password link", async () => {
+		await render();
+
+		expect(
+			[...el().querySelectorAll("a")].map((a) => a.textContent?.trim()),
+		).toContain("Forgot password?");
+	});
+
 	it("toggles the password field between hidden and visible", async () => {
 		await render();
 
