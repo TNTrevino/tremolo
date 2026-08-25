@@ -239,6 +239,44 @@ func TestRegister_DuplicateEmailDoesNotConsumeTheCode(t *testing.T) {
 	assert.Equal(t, int32(0), testutil.TeacherInviteUseCount(t, code), "a taken email must not spend a use")
 }
 
+// TestRegister_OverlongPasswordDoesNotConsumeTheCode pins the release
+// backstop (#269 review). Unlike TestRegister_DuplicateEmailDoesNotConsumeTheCode
+// -- which fails BEFORE redeemTeacherInvite runs -- this fails AFTER: the
+// code is legitimately redeemed, then HashPassword rejects a password over
+// bcrypt's 72-byte limit with ErrPasswordTooLong.
+//
+// services.Register never calls RegisterRequest.Valid() itself -- the
+// controller does, via httpx.DecodeValid, before the service ever sees the
+// request (core-api/CLAUDE.md: "services take already-valid input and do
+// not re-check request shapes"). So calling the service directly, as this
+// test does, bypasses the new DTO-level length cap entirely and reaches
+// HashPassword with the overlong password, exercising exactly the
+// unreleased-code path the review flagged. Without the release backstop in
+// Register's HashPassword-error branch, TeacherInviteUseCount ends at 1
+// with no user ever created -- a single-use code burned for nothing.
+func TestRegister_OverlongPasswordDoesNotConsumeTheCode(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	code := testutil.CreateTestTeacherInviteCode(t, testutil.CreateTestTeacherInviteCodeParams{})
+	email := testutil.UniqueEmail(t, "invite_overlong_password")
+
+	result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
+		Email:      email,
+		Password:   strings.Repeat("a", 100),
+		FirstName:  "Terry",
+		LastName:   "Teacher",
+		Role:       "TEACHER",
+		InviteCode: code,
+	})
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, services.ErrPasswordHashFailed)
+	assert.Nil(t, result)
+	assert.Nil(t, testutil.GetTestUserByEmail(t, email), "no user row may exist for a failed signup")
+	assert.Equal(t, int32(0), testutil.TeacherInviteUseCount(t, code), "a failed signup must not burn the code it redeemed")
+}
+
 // TestRegister_StudentWithAnInviteCode_ConsumesNothing keeps the gate on
 // the TEACHER path only: a student who somehow posts a real code still
 // signs up as a student, and the code is untouched.

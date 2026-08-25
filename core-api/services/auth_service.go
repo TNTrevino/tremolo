@@ -146,7 +146,10 @@ func HashPassword(password string) (string, error) {
 // Where that happens is load-bearing: after the email-taken check, so a
 // teacher retrying a signup they already completed does not burn a second
 // use; and before CreateUser, so no TEACHER row can exist that was not
-// gated. If CreateUser then fails, the use is handed back.
+// gated. Every failure after that redemption -- HashPassword or CreateUser
+// -- hands the use back (#269 review: HashPassword's branch used to be the
+// one exception, so an overlong password, which bcrypt rejects outright,
+// silently burned a single-use code with no account created).
 func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest) (*dtos.RegisterResponse, error) {
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
@@ -183,6 +186,9 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	// to reject the request anyway.
 	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
+		if inviteCodeID != 0 {
+			releaseTeacherInvite(ctx, q, inviteCodeID)
+		}
 		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
 	}
 
