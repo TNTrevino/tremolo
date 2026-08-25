@@ -74,7 +74,7 @@ func CreateClass(ctx context.Context, q generated.Querier, teacherID int, req *d
 		return nil, err
 	}
 
-	for attempt := 0; attempt < joinCodeMaxAttempts; attempt++ {
+	for range joinCodeMaxAttempts {
 		code, err := generateJoinCode()
 		if err != nil {
 			return nil, err

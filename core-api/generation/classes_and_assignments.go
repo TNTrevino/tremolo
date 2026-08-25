@@ -163,10 +163,7 @@ func takeStudents(studentIDs []int32, offset, n int) []int32 {
 	if offset >= len(studentIDs) {
 		return nil
 	}
-	end := offset + n
-	if end > len(studentIDs) {
-		end = len(studentIDs)
-	}
+	end := min(offset+n, len(studentIDs))
 	return studentIDs[offset:end]
 }
 
@@ -293,10 +290,7 @@ func insertAssignmentAttempt(
 	// on the last, with a little per-attempt jitter.
 	progress := float64(attemptIndex) / float64(max(attemptCount-1, 1))
 	accuracy := 0.55 + 0.35*progress + rand.Float64()*0.1
-	correct := int32(float64(total) * accuracy)
-	if correct > total {
-		correct = total
-	}
+	correct := min(int32(float64(total)*accuracy), total)
 	npm := int32(40+rand.IntN(31)) + int32(40*progress) // rises with practice
 	seconds := 60 + rand.IntN(181)                      // 1-4 minutes
 	timeLength := time.Date(0, 1, 1, 0, seconds/60, seconds%60, 0, time.UTC)

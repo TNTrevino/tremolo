@@ -148,7 +148,7 @@ func allowedOrigins() []string {
 
 	// parse comma-separated origins and trim whitespace
 	origins := make([]string, 0)
-	for _, origin := range strings.Split(raw, ",") {
+	for origin := range strings.SplitSeq(raw, ",") {
 		if trimmed := strings.TrimSpace(origin); trimmed != "" {
 			origins = append(origins, trimmed)
 		}
