@@ -15,9 +15,11 @@ import (
 
 	"sight-reading/controllers"
 	"sight-reading/database"
+	"sight-reading/email"
 	"sight-reading/generation"
 	"sight-reading/logger"
 	"sight-reading/middleware"
+	"sight-reading/services"
 )
 
 // Server timeouts. net/http sets none by default, which means a single
@@ -41,6 +43,13 @@ const (
 
 	// shutdownTimeout is how long in-flight requests get to finish after
 	// a stop signal before the process exits anyway.
+	//
+	// The email watcher is bounded by this too, and one send may take
+	// longer than the whole grace period: EMAIL_SEND_TIMEOUT_SECONDS
+	// defaults to 20s. The select at the end of run deliberately stops
+	// waiting rather than letting a slow relay hold the process open --
+	// an interrupted send leaves its row claimed, and the claim lease
+	// hands it to the next watcher.
 	shutdownTimeout = 15 * time.Second
 )
 
@@ -77,6 +86,27 @@ func run(ctx context.Context, args []string) error {
 	middleware.InitJWTSecret()
 	controllers.InitGoogleOAuth()
 
+	// Outbound email. A missing relay is not a startup failure: the
+	// service runs, mail is queued, and the watcher holds it until there
+	// is somewhere to send it. That is what lets a fresh checkout -- and
+	// the CI smoke test -- boot with no EMAIL_* variables at all.
+	emailCfg := email.ConfigFromEnv()
+	if emailCfg.Enabled() {
+		logger.Info("email is configured", "host", emailCfg.Addr(), "from", emailCfg.From)
+	} else {
+		logger.Warn("email is not configured; messages will queue and hold",
+			"missing", strings.Join(emailCfg.Missing(), ", "))
+	}
+	logger.Info("public base url", "url", services.PublicBaseURL())
+
+	// The sender is built either way. It reports ErrNotConfigured rather
+	// than dialling nowhere, so nothing downstream has to hold a nil.
+	watcher := services.NewEmailWatcher(
+		database.Queries,
+		email.NewSMTPSender(emailCfg),
+		services.EmailWatcherConfigFromEnv(emailCfg.Enabled()),
+	)
+
 	// faker flag
 	flags := flag.NewFlagSet("core-api", flag.ContinueOnError)
 	runPackage := flags.Bool("fake-it", false, "use this flag to generate data")
@@ -103,6 +133,12 @@ func run(ctx context.Context, args []string) error {
 		IdleTimeout:       idleTimeout,
 	}
 
+	watcherDone := make(chan struct{})
+	go func() {
+		defer close(watcherDone)
+		watcher.Run(ctx)
+	}()
+
 	serveErr := make(chan error, 1)
 	go func() {
 		logger.Info("core-api listening", "port", port)
@@ -126,6 +162,15 @@ func run(ctx context.Context, args []string) error {
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("graceful shutdown failed: %w", err)
+	}
+
+	// ctx is already cancelled, so the watcher is on its way out; this
+	// only waits for a send that was already in flight, and gives up when
+	// the grace period does.
+	select {
+	case <-watcherDone:
+	case <-shutdownCtx.Done():
+		logger.Warn("email watcher did not stop within the grace period")
 	}
 
 	if err := <-serveErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
