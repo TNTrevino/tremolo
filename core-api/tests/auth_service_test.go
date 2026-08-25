@@ -170,6 +170,61 @@ func TestLogin_EmailNormalization(t *testing.T) {
 	require.NotNil(t, result)
 }
 
+// TestLogin_UnverifiedAccount_SucceedsByDefault is #108's SOFT policy:
+// REQUIRE_EMAIL_VERIFICATION is unset in the test environment, so an
+// unverified account still signs in -- only a banner nudges it, and that
+// is frontend-side.
+func TestLogin_UnverifiedAccount_SucceedsByDefault(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "login_unverified_default")
+	password := "TestPass123!"
+	testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  password,
+		FirstName: "Test",
+		LastName:  "User",
+		Role:      "STUDENT",
+	})
+
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
+		Email:    email,
+		Password: password,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.False(t, result.User.EmailVerified)
+}
+
+// TestLogin_UnverifiedAccount_IsRejectedWhenVerificationIsRequired uses
+// t.Setenv, which panics if this test (or another still running
+// concurrently with it) calls t.Parallel -- so this one runs serially.
+func TestLogin_UnverifiedAccount_IsRejectedWhenVerificationIsRequired(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Setenv("REQUIRE_EMAIL_VERIFICATION", "true")
+
+	email := testutil.UniqueEmail(t, "login_unverified_required")
+	password := "TestPass123!"
+	testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  password,
+		FirstName: "Test",
+		LastName:  "User",
+		Role:      "STUDENT",
+	})
+
+	result, err := services.Login(context.Background(), database.Queries, dtos.LoginRequest{
+		Email:    email,
+		Password: password,
+	})
+
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.True(t, errors.Is(err, services.ErrEmailNotVerified))
+}
+
 func TestRegister_Success(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

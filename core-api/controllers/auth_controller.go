@@ -205,6 +205,8 @@ func respondLoginError(w http.ResponseWriter, err error) {
 			"error":    "Internal server error",
 			"scenario": "AS.12",
 		})
+	case errors.Is(err, services.ErrEmailNotVerified):
+		httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Please verify your email address before signing in."})
 	case errors.Is(err, services.ErrInvalidCredentials):
 		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid credentials"})
 	case errors.Is(err, services.ErrAccessTokenGeneration):

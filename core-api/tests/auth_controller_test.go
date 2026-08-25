@@ -75,6 +75,36 @@ func TestLoginRoute_Success(t *testing.T) {
 	assert.NotEmpty(t, response.RefreshToken)
 }
 
+// TestLoginRoute_UnverifiedWhenRequired_Returns403 uses t.Setenv, so
+// unlike the rest of this file it does not call t.Parallel.
+func TestLoginRoute_UnverifiedWhenRequired_Returns403(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Setenv("REQUIRE_EMAIL_VERIFICATION", "true")
+
+	email := testutil.UniqueEmail(t, "login_route_unverified")
+	password := "TestPass123!"
+	testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  password,
+		FirstName: "Test",
+		LastName:  "User",
+		Role:      "STUDENT",
+	})
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/login", "", dtos.LoginRequest{
+		Email:    email,
+		Password: password,
+	}))
+
+	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Please verify your email address before signing in.", response["error"])
+}
+
 // ---------- POST /api/auth/register ----------
 
 func TestRegisterRoute_InvalidRequestBody(t *testing.T) {

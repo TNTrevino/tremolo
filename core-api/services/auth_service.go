@@ -97,6 +97,16 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 		logger.Error("Failed to reset lockout", "error", err.Error())
 	}
 
+	// Soft by default (#108): REQUIRE_EMAIL_VERIFICATION is off for the
+	// pilot, so an unverified account can still sign in and just sees the
+	// banner. Checked after the password/lockout gates, not before, so a
+	// wrong password on an unverified account still reports invalid
+	// credentials rather than leaking verification state to a caller who
+	// hasn't even proven they know the password.
+	if RequireEmailVerification() && !user.EmailVerifiedAt.Valid {
+		return nil, ErrEmailNotVerified
+	}
+
 	accessToken, err := middleware.GenerateAccessToken(int(user.ID))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrAccessTokenGeneration, err)
