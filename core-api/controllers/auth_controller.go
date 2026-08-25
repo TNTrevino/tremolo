@@ -24,6 +24,10 @@ func RegisterAuthRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.HandleFunc("POST /api/auth/reset-password", handleResetPassword(q))
 	mux.HandleFunc("POST /api/auth/verify-email", handleVerifyEmail(q))
 	mux.Handle("POST /api/auth/resend-verification", middleware.RequireAuth(handleResendVerification(q)))
+	// handleConfirmEmailChange is defined in account_controller.go, next
+	// to the rest of #249's account flow -- see RegisterAccountRoutes's
+	// doc comment for why this one route is registered here instead.
+	mux.HandleFunc("POST /api/auth/confirm-email-change", handleConfirmEmailChange(q))
 
 	mux.Handle("GET /api/auth/me", middleware.RequireAuth(handleGetCurrentUser(q)))
 
