@@ -88,6 +88,11 @@ TODO: automate this plz
   export EMAIL_BATCH_SIZE=10               # messages one drain claims
   export EMAIL_MAX_ATTEMPTS=5              # tries before a message is marked dead
   export EMAIL_CLAIM_LEASE_SECONDS=300     # before another watcher may retake a claimed row
+
+  # Email verification is soft while unset/false: signup still mails a
+  # verify link and an unverified user still sees a banner, but login is
+  # never blocked. Keep this off for the pilot.
+  export REQUIRE_EMAIL_VERIFICATION=false
 ```
 
 The frontend needs **none** of these. It is an Angular app and reads its

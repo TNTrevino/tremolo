@@ -60,6 +60,7 @@ Optional:
 | `EMAIL_BATCH_SIZE` | Messages one drain claims (default `10`) |
 | `EMAIL_MAX_ATTEMPTS` | Tries before a message is marked dead (default `5`; retries back off from 60s, doubling, capped at 1h) |
 | `EMAIL_CLAIM_LEASE_SECONDS` | How long a claim survives before another watcher may take the row back (default `300`) |
+| `REQUIRE_EMAIL_VERIFICATION` | Gate `Login` on `users.email_verified_at` being set (default `false`/unset — soft for the pilot: signup still mails a verify link and an unverified user still sees a frontend banner, but sign-in is never blocked) |
 
 Email is off unless **both** `EMAIL_SMTP_HOST` and `EMAIL_FROM` are set.
 With either missing, startup logs one warning naming what is absent and the
@@ -239,6 +240,8 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 | GET | `/health` | — | `health_controller.go` (DB ping) |
 | POST | `/api/auth/login`, `/register`, `/refresh` | — | `auth_controller.go` |
 | POST | `/api/auth/forgot-password`, `/reset-password` | — | `auth_controller.go` |
+| POST | `/api/auth/verify-email` | — | `auth_controller.go` |
+| POST | `/api/auth/resend-verification` | JWT | `auth_controller.go` |
 | GET | `/api/auth/me` | JWT | `auth_controller.go` |
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
