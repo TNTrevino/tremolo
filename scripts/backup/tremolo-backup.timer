@@ -1,0 +1,15 @@
+[Unit]
+Description=Run tremolo-backup nightly
+
+[Timer]
+OnCalendar=daily
+# Spreads the actual run time up to 30 minutes after the OnCalendar mark,
+# so a fleet of these (or this timer plus whatever else runs at midnight)
+# doesn't all hit disk/CPU/the database at exactly 00:00:00.
+RandomizedDelaySec=1800
+# If the host was off/asleep at the scheduled time, run once on the next
+# boot instead of silently skipping a day.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
