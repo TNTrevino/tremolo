@@ -3,8 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 
 	"sight-reading/database/generated"
 	"sight-reading/email"
@@ -47,15 +45,10 @@ func emailEnqueueDefaults() enqueueDefaults {
 		from = defaultFromAddress
 	}
 
-	maxAttempts := defaultMaxAttempts
-	if parsed, err := strconv.Atoi(os.Getenv("EMAIL_MAX_ATTEMPTS")); err == nil && parsed > 0 {
-		maxAttempts = parsed
-	}
-
 	return enqueueDefaults{
 		from:        from,
 		appName:     cfg.FromName,
-		maxAttempts: int32(maxAttempts),
+		maxAttempts: int32(envPositiveInt("EMAIL_MAX_ATTEMPTS", defaultMaxAttempts)),
 	}
 }
 
