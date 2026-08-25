@@ -217,6 +217,14 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 			"user_id", createdUser.ID)
 	}
 
+	// Best effort: signup does not fail because mail could not be queued,
+	// and it never waits on SMTP -- the watcher owns delivery.
+	if err := SendVerificationEmail(ctx, q, int(createdUser.ID), normalizedEmail, createdUser.FirstName); err != nil {
+		logger.Error("Failed to enqueue verification email for new user",
+			"error", err.Error(),
+			"user_id", createdUser.ID)
+	}
+
 	return &dtos.RegisterResponse{
 		Message: "User created successfully",
 		User:    convertCreateUserRowToUserResponse(createdUser, req.Role),

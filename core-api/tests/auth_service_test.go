@@ -9,6 +9,7 @@ import (
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
+	"sight-reading/database/generated"
 	"sight-reading/middleware"
 	"sight-reading/services"
 	"sight-reading/tests/testutil"
@@ -398,6 +399,69 @@ func TestRefreshToken_Invalid(t *testing.T) {
 	require.Error(t, err)
 	assert.Empty(t, accessToken)
 	assert.True(t, errors.Is(err, services.ErrInvalidRefreshToken))
+}
+
+// TestRegister_EnqueuesTheVerificationEmail is #108: a successful
+// registration must also queue the "confirm your address" mail.
+func TestRegister_EnqueuesTheVerificationEmail(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "register_verify")
+
+	result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "John",
+		LastName:  "Doe",
+		Role:      "STUDENT",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+	queued := testutil.QueuedEmailsFor(t, email)
+	require.Len(t, queued, 1, "expected exactly one queued email")
+	assert.Equal(t, "verify-email", queued[0].Template)
+
+	tokens := testutil.EmailTokensFor(t, result.User.ID, services.PurposeVerifyEmail)
+	assert.Len(t, tokens, 1, "expected exactly one verify-email token row")
+}
+
+// enqueueEmailFailsQuerier fails EnqueueEmail and delegates everything
+// else. Embedding the interface keeps the stub to the one method under
+// test, mirroring roleLookupFailsQuerier in create_user_role_test.go.
+type enqueueEmailFailsQuerier struct {
+	generated.Querier
+}
+
+func (enqueueEmailFailsQuerier) EnqueueEmail(context.Context, generated.EnqueueEmailParams) (generated.TremoloQueuedEmail, error) {
+	return generated.TremoloQueuedEmail{}, errors.New("queue insert failed")
+}
+
+// TestRegister_SucceedsWhenTheQueueInsertFails proves the "best effort"
+// doc comment on Register's SendVerificationEmail call: a broken email
+// queue must not turn a successful signup into a failed one.
+func TestRegister_SucceedsWhenTheQueueInsertFails(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "register_queue_fails")
+
+	result, err := services.Register(context.Background(), enqueueEmailFailsQuerier{Querier: database.Queries}, dtos.RegisterRequest{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "John",
+		LastName:  "Doe",
+		Role:      "STUDENT",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+	assert.Equal(t, email, result.User.Email)
 }
 
 func TestRefreshToken_AccessTokenAsRefresh(t *testing.T) {
