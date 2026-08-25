@@ -168,6 +168,7 @@ type Querier interface {
 	GetUserForExport(ctx context.Context, id int32) (GetUserForExportRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
 	GetUserRole(ctx context.Context, id int32) (string, error)
+	GetUserRoleNameByEmail(ctx context.Context, email sql.NullString) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
 	InvalidateEmailTokens(ctx context.Context, arg InvalidateEmailTokensParams) error
@@ -211,6 +212,11 @@ type Querier interface {
 	// once, on the first success, and never moves after that.
 	//
 	MarkEmailVerified(ctx context.Context, id int32) error
+	// Promotes a user to ADMIN by email, unless they already hold that role.
+	// Matching zero rows is ambiguous by design (no such email vs. already
+	// ADMIN) -- callers that need to tell those apart follow up with
+	// GetUserRoleNameByEmail. See services.BootstrapAdmin.
+	PromoteUserToAdmin(ctx context.Context, email sql.NullString) (int32, error)
 	RecordEmailSendAttempt(ctx context.Context, arg RecordEmailSendAttemptParams) error
 	RedeemTeacherInviteCode(ctx context.Context, code string) (int32, error)
 	ReleaseTeacherInviteCode(ctx context.Context, id int32) error

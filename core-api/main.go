@@ -83,6 +83,17 @@ func run(ctx context.Context, args []string) error {
 	logger.InitLogger()
 	database.InitializeDBConnection()
 	database.RunMigrations(database.DBConn)
+
+	// Must run after migrations (the roles/users tables have to exist)
+	// and before the server starts serving, so the promotion -- or the
+	// warning that no such user exists yet -- is at the top of this
+	// process's logs. A failure here is logged, not fatal: an operator
+	// mistake in ADMIN_BOOTSTRAP_EMAIL should not stop the service from
+	// otherwise starting normally.
+	if err := services.BootstrapAdmin(ctx, database.Queries); err != nil {
+		logger.Error("admin bootstrap failed", "error", err)
+	}
+
 	middleware.InitJWTSecret()
 	controllers.InitGoogleOAuth()
 
