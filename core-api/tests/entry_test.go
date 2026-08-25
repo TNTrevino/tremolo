@@ -64,23 +64,17 @@ func TestEntryValid_RejectsMoreCorrectThanTotal(t *testing.T) {
 	assert.Contains(t, problems["correct_questions"], "CorrectQuestions")
 }
 
-func TestEntryValid_RejectsMissingFields(t *testing.T) {
+// The time_length-missing case lives in TestEntryValid_RejectsABadTimeLength
+// (its "empty" case), so it isn't repeated here.
+func TestEntryValid_RejectsMissingUserID(t *testing.T) {
 	t.Parallel()
 
-	for key, mutate := range map[string]func(*dtos.Entry){
-		"time_length": func(e *dtos.Entry) { e.TimeLength = "" },
-		"user_id":     func(e *dtos.Entry) { e.UserID = 0 },
-	} {
-		t.Run(key, func(t *testing.T) {
-			t.Parallel()
-			entry := validEntry()
-			mutate(&entry)
+	entry := validEntry()
+	entry.UserID = 0
 
-			problems := entry.Valid(context.Background())
+	problems := entry.Valid(context.Background())
 
-			assert.NotEmpty(t, problems[key])
-		})
-	}
+	assert.Contains(t, problems["user_id"], "UserID")
 }
 
 // A 0/10 game is a legitimate result (a beginner who missed everything),

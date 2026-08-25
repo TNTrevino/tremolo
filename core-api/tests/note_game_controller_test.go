@@ -24,6 +24,27 @@ func noteGameTestRouter() *http.ServeMux {
 	return mux
 }
 
+// assertNoteGameEntryCreated POSTs entry, asserts the standard 201 response
+// shape (saved message + an id), and registers cleanup for the saved row.
+// Shared by the create-entry tests that only vary the entry itself.
+func assertNoteGameEntryCreated(t *testing.T, router *http.ServeMux, token string, entry dtos.Entry) {
+	t.Helper()
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
+
+	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Note game entry saved successfully", resp["message"])
+	require.Contains(t, resp, "id")
+
+	t.Cleanup(func() {
+		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
+	})
+}
+
 // TestCreateNoteGameEntryRoute_Unauthenticated verifies the route requires
 // authentication, i.e. that middleware.RequireAuth is actually wired in
 // front of the handler.
@@ -61,20 +82,7 @@ func TestCreateNoteGameEntryRoute_Success(t *testing.T) {
 		NPM:              3,
 	}
 
-	router := noteGameTestRouter()
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
-
-	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var resp map[string]any
-	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Note game entry saved successfully", resp["message"])
-	require.Contains(t, resp, "id")
-
-	t.Cleanup(func() {
-		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
-	})
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
 }
 
 // TestCreateNoteGameEntryRoute_Forbidden verifies that a user cannot create
@@ -154,20 +162,7 @@ func TestCreateNoteGameEntryRoute_ZeroCorrectSaves(t *testing.T) {
 		NPM:              3,
 	}
 
-	router := noteGameTestRouter()
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
-
-	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var resp map[string]any
-	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Note game entry saved successfully", resp["message"])
-	require.Contains(t, resp, "id")
-
-	t.Cleanup(func() {
-		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
-	})
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
 }
 
 // TestCreateNoteGameEntryRoute_NPMAboveOldInt8CapSaves verifies an NPM value
@@ -188,20 +183,7 @@ func TestCreateNoteGameEntryRoute_NPMAboveOldInt8CapSaves(t *testing.T) {
 		NPM:              200,
 	}
 
-	router := noteGameTestRouter()
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
-
-	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var resp map[string]any
-	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Note game entry saved successfully", resp["message"])
-	require.Contains(t, resp, "id")
-
-	t.Cleanup(func() {
-		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
-	})
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
 }
 
 // TestCreateNoteGameEntryRoute_UserIDAboveOldInt16Cap verifies a UserID
