@@ -545,3 +545,67 @@ func PasswordResetTokensFor(t *testing.T, userID int) []generated.TremoloPasswor
 	}
 	return rows
 }
+
+// ---------------------------------------------------------------------------
+// Email verification helpers (#108)
+// ---------------------------------------------------------------------------
+
+// CreateEmailToken inserts one email_tokens row directly (bypassing
+// services.SendVerificationEmail) and returns the plaintext token. This is
+// the only way a test can mint an already-expired token, or pin a token to
+// a caller-chosen TTL -- a live request through the service always uses
+// services.VerifyEmailTokenTTL and can't produce either.
+//
+// Token minting goes through services.NewResetToken, the same algorithm a
+// real request uses (Part B's helper, reused rather than duplicated), and
+// purpose is caller-supplied so this also seeds #249's change_email rows.
+func CreateEmailToken(t *testing.T, userID int, purpose, email string, ttl time.Duration) string {
+	t.Helper()
+	SetupTestDB(t)
+
+	token, hash, err := services.NewResetToken()
+	if err != nil {
+		t.Fatalf("Failed to generate a test email token: %v", err)
+	}
+
+	if _, err := database.Queries.CreateEmailToken(context.Background(), generated.CreateEmailTokenParams{
+		UserID:    int32(userID),
+		Purpose:   purpose,
+		TokenHash: hash,
+		Email:     email,
+		ExpiresAt: time.Now().Add(ttl),
+	}); err != nil {
+		t.Fatalf("Failed to create test email token: %v", err)
+	}
+
+	return token
+}
+
+// EmailTokensFor returns every email_tokens row for one user and purpose.
+// No separate cleanup is needed: the rows cascade when the test user is
+// deleted (same as password_reset_tokens).
+func EmailTokensFor(t *testing.T, userID int, purpose string) []generated.TremoloEmailToken {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListEmailTokensByUser(context.Background(), generated.ListEmailTokensByUserParams{
+		UserID:  int32(userID),
+		Purpose: purpose,
+	})
+	if err != nil {
+		t.Fatalf("Failed to list email tokens for user %d/%s: %v", userID, purpose, err)
+	}
+	return rows
+}
+
+// MarkTestUserVerified sets email_verified_at directly, bypassing the
+// verify-email flow entirely -- for tests that need an already-verified
+// account going in (e.g. ResendVerification's already-verified no-op).
+func MarkTestUserVerified(t *testing.T, userID int) {
+	t.Helper()
+	SetupTestDB(t)
+
+	if err := database.Queries.MarkEmailVerified(context.Background(), int32(userID)); err != nil {
+		t.Fatalf("Failed to mark test user %d verified: %v", userID, err)
+	}
+}

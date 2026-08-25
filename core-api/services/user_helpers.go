@@ -82,17 +82,22 @@ func convertGetUserByRoleAndIDRowToDTO(user generated.GetUserByRoleAndIDRow) dto
 
 func convertGetUserByIDRowToUserResponse(user generated.GetUserByIDRow) dtos.UserResponse {
 	return dtos.UserResponse{
-		ID:        int(user.ID),
-		Email:     user.Email.String,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
+		ID:            int(user.ID),
+		Email:         user.Email.String,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Role:          user.Role,
+		EmailVerified: user.EmailVerifiedAt.Valid,
 	}
 }
 
 // convertCreateUserRowToUserResponse converts a CreateUserRow to a UserResponse DTO.
 // Note: CreateUserRow now returns role_id (int32) instead of the role name string.
 // The caller must look up the role name separately or pass it in.
+//
+// EmailVerified is left at its zero value (false) deliberately: CreateUser
+// does not select email_verified_at, and a just-registered account has not
+// verified anything yet regardless.
 func convertCreateUserRowToUserResponse(user generated.CreateUserRow, roleName string) dtos.UserResponse {
 	return dtos.UserResponse{
 		ID:        int(user.ID),
@@ -127,32 +132,44 @@ func convertGetUserGeneralInfoRowToDTO(userInfo generated.GetUserGeneralInfoRow)
 
 func convertGetUserByEmailRowToUserResponse(user generated.GetUserByEmailRow) dtos.UserResponse {
 	return dtos.UserResponse{
-		ID:        int(user.ID),
-		Email:     user.Email.String,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
+		ID:            int(user.ID),
+		Email:         user.Email.String,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Role:          user.Role,
+		EmailVerified: user.EmailVerifiedAt.Valid,
 	}
 }
 
+// convertGetUserByGoogleIDRowToUserResponse always reports EmailVerified
+// true: reaching this row means the account signed in via Google, and
+// google_auth_service.go rejects a Google ID token whose email_verified
+// claim is false, so a Google-linked account's address is verified by
+// construction.
 func convertGetUserByGoogleIDRowToUserResponse(user generated.GetUserByGoogleIDRow) dtos.UserResponse {
 	return dtos.UserResponse{
-		ID:        int(user.ID),
-		Email:     user.Email.String,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
-		HasGoogle: user.GoogleID.Valid,
+		ID:            int(user.ID),
+		Email:         user.Email.String,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Role:          user.Role,
+		HasGoogle:     user.GoogleID.Valid,
+		EmailVerified: true,
 	}
 }
 
+// convertGetUserByEmailForOAuthRowToUserResponse: same reasoning as
+// convertGetUserByGoogleIDRowToUserResponse above -- every caller of this
+// converter reaches it through the Google auto-link or link flows, both of
+// which already required a verified Google email_verified claim.
 func convertGetUserByEmailForOAuthRowToUserResponse(user generated.GetUserByEmailForOAuthRow) dtos.UserResponse {
 	return dtos.UserResponse{
-		ID:        int(user.ID),
-		Email:     user.Email.String,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      user.Role,
-		HasGoogle: user.GoogleID.Valid,
+		ID:            int(user.ID),
+		Email:         user.Email.String,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
+		Role:          user.Role,
+		HasGoogle:     user.GoogleID.Valid,
+		EmailVerified: true,
 	}
 }

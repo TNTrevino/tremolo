@@ -102,6 +102,16 @@ var (
 	// them into the same sql.ErrNoRows, and telling them apart in the
 	// response would hand an attacker information a generic 400 does not.
 	ErrResetTokenInvalid = errors.New("invalid or expired password reset token")
+
+	// ErrEmailTokenInvalid means an email_tokens row (verify_email or
+	// change_email) was unknown, already used, or expired.
+	// ConsumeEmailToken's WHERE clause folds all three into the same
+	// sql.ErrNoRows -- deliberately indistinguishable, same reasoning as
+	// ErrResetTokenInvalid.
+	ErrEmailTokenInvalid = errors.New("invalid or expired email token")
+	// ErrEmailNotVerified means REQUIRE_EMAIL_VERIFICATION is on and the
+	// account attempting to log in has not confirmed its email address.
+	ErrEmailNotVerified = errors.New("email address not verified")
 )
 
 // LockoutTriggeredError is returned by Login when a failed attempt is

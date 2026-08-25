@@ -3065,6 +3065,9 @@
                 "email": {
                     "type": "string"
                 },
+                "email_verified": {
+                    "type": "boolean"
+                },
                 "first_name": {
                     "type": "string"
                 },

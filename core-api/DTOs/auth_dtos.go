@@ -54,12 +54,13 @@ func addPasswordProblem(problems map[string]string, password string) map[string]
 
 // UserResponse represents the user data returned in API responses
 type UserResponse struct {
-	ID        int    `json:"id" db:"id"`
-	Email     string `json:"email" db:"email"`
-	FirstName string `json:"first_name" db:"first_name"`
-	LastName  string `json:"last_name" db:"last_name"`
-	Role      string `json:"role" db:"role"`
-	HasGoogle bool   `json:"has_google,omitempty"`
+	ID            int    `json:"id" db:"id"`
+	Email         string `json:"email" db:"email"`
+	FirstName     string `json:"first_name" db:"first_name"`
+	LastName      string `json:"last_name" db:"last_name"`
+	Role          string `json:"role" db:"role"`
+	HasGoogle     bool   `json:"has_google,omitempty"`
+	EmailVerified bool   `json:"email_verified"`
 }
 
 // LoginResponse represents the response body for successful login

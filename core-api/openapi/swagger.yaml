@@ -549,6 +549,8 @@ definitions:
     properties:
       email:
         type: string
+      email_verified:
+        type: boolean
       first_name:
         type: string
       has_google:
