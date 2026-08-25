@@ -22,14 +22,14 @@ const (
 	// moment would halve the daily send quota for no added value.
 	TemplateVerifyEmail = "verify-email"
 
-	// The three below are declared now so the names are settled in one
+	// The two below are declared now so the names are settled in one
 	// place, but their template FILES ship with the parts that use them.
 	// Adding a constant here does nothing on its own — a pair only
 	// becomes renderable when it is added to the templates map below,
 	// and the map may only name files that exist.
 
 	// TemplatePasswordResetGoogle tells a Google-only account that it
-	// has no password to reset. Files ship in Part B.
+	// has no password to reset.
 	TemplatePasswordResetGoogle = "password-reset-google"
 
 	// TemplateEmailChange confirms a requested new address. Files ship
@@ -62,6 +62,13 @@ type VerifyEmailData struct {
 	AppURL    string
 }
 
+// PasswordResetGoogleData fills the password-reset-google pair.
+type PasswordResetGoogleData struct {
+	FirstName string
+	AppName   string
+	AppURL    string
+}
+
 // templatePair is one message's two bodies. The HTML side is
 // html/template, which escapes by context and is what keeps a user's own
 // first name from becoming markup. The text side is text/template, where
@@ -80,8 +87,9 @@ type templatePair struct {
 // Parts B-D append their entries here as their files land. Only pairs
 // whose files exist may appear — mustPair panics on a missing file.
 var templates = map[string]templatePair{
-	TemplatePasswordReset: mustPair(TemplatePasswordReset),
-	TemplateVerifyEmail:   mustPair(TemplateVerifyEmail),
+	TemplatePasswordReset:       mustPair(TemplatePasswordReset),
+	TemplateVerifyEmail:         mustPair(TemplateVerifyEmail),
+	TemplatePasswordResetGoogle: mustPair(TemplatePasswordResetGoogle),
 }
 
 // mustPair parses one template pair or panics.

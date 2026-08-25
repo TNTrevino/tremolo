@@ -42,6 +42,15 @@ func TestRender_EveryTemplatePairRenders(t *testing.T) {
 				AppURL:    "https://tremolonotes.com",
 			},
 		},
+		{
+			name:     "password reset google",
+			template: TemplatePasswordResetGoogle,
+			data: PasswordResetGoogleData{
+				FirstName: "Avery",
+				AppName:   "Tremolo",
+				AppURL:    "https://tremolonotes.com",
+			},
+		},
 	}
 
 	for _, tt := range tests {
