@@ -2118,6 +2118,69 @@
                 }
             }
         },
+        "/api/users/{userId}/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Export the caller's own data",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (must match the authenticated user)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.UserExport"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID parameter",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/{userId}/general-info": {
             "get": {
                 "security": [
@@ -2844,6 +2907,219 @@
                 }
             }
         },
+        "dtos.ExportAttempt": {
+            "type": "object",
+            "properties": {
+                "assignment_id": {
+                    "type": "integer"
+                },
+                "assignment_title": {
+                    "type": "string"
+                },
+                "class_name": {
+                    "type": "string"
+                },
+                "correct_questions": {
+                    "type": "integer"
+                },
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "entry_id": {
+                    "type": "integer"
+                },
+                "game_type": {
+                    "type": "string"
+                },
+                "notes_per_minute": {
+                    "type": "integer"
+                },
+                "time_length": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportClasses": {
+            "type": "object",
+            "properties": {
+                "joined": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportJoinedClass"
+                    }
+                },
+                "owned": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportOwnedClass"
+                    }
+                }
+            }
+        },
+        "dtos.ExportFriend": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instrument": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "school": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportGameSettings": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "game_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportJoinedClass": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "teacher_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportOwnedClass": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "join_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "student_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportProfile": {
+            "type": "object",
+            "properties": {
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "has_google": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instrument": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "school": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportScoreEntry": {
+            "type": "object",
+            "properties": {
+                "assignment_id": {
+                    "description": "Nil when the entry was not an attempt at a class assignment.",
+                    "type": "integer"
+                },
+                "correct_questions": {
+                    "type": "integer"
+                },
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "game_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "notes_per_minute": {
+                    "type": "integer"
+                },
+                "time_length": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportSettings": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportGameSettings"
+                    }
+                },
+                "note_game": {
+                    "description": "The existing note-game settings response shape, reused as-is: nil\nwhen the user never saved any (same absence rule as\nKeyboardBindings above).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dtos.NoteGameSettingsResponse"
+                        }
+                    ]
+                }
+            }
+        },
         "dtos.ForgotPasswordRequest": {
             "type": "object",
             "properties": {
@@ -3401,6 +3677,50 @@
                 },
                 "school_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "dtos.UserExport": {
+            "type": "object",
+            "properties": {
+                "assignment_attempts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportAttempt"
+                    }
+                },
+                "classes": {
+                    "$ref": "#/definitions/dtos.ExportClasses"
+                },
+                "exported_at": {
+                    "type": "string"
+                },
+                "friends": {
+                    "description": "Friend connections are not on the ticket's list of sections, but\nthey are included anyway: the privacy policy enumerates friend\nconnections as data this service holds about a user, and an export\nthat silently dropped a category the policy promises would make\nthe policy false.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportFriend"
+                    }
+                },
+                "keyboard_bindings": {
+                    "description": "The existing keyboard-bindings response shape, reused as-is: nil\n(not an empty struct) when the user never saved bindings of their\nown, the same \"absence, not failure\" rule GetKeyboardBindings\nalready applies everywhere else it's called.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dtos.KeyboardBindingsResponse"
+                        }
+                    ]
+                },
+                "profile": {
+                    "$ref": "#/definitions/dtos.ExportProfile"
+                },
+                "score_entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportScoreEntry"
+                    }
+                },
+                "settings": {
+                    "$ref": "#/definitions/dtos.ExportSettings"
                 }
             }
         },

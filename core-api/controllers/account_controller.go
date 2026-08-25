@@ -13,14 +13,14 @@ import (
 	"sight-reading/services"
 )
 
-// RegisterAccountRoutes registers the change-password and change-email
-// routes. Both act on the authenticated caller's OWN account: userId in
-// the path exists only so the URL matches the shape
+// RegisterAccountRoutes registers the change-password, change-email and
+// data-export routes. All three act on the authenticated caller's OWN
+// account: userId in the path exists only so the URL matches the shape
 // /api/users/{userId}/... already uses (general-info, note-game data),
 // and every handler here checks it against the JWT before doing anything
 // (see requireSelf).
 //
-// POST /api/auth/confirm-email-change is this feature's third route; it
+// POST /api/auth/confirm-email-change is this feature's fourth route; it
 // is registered by RegisterAuthRoutes instead (auth_controller.go),
 // alongside verify-email and reset-password -- the other token-bearing
 // links a mailed message carries, none of which are scoped to a userId
@@ -29,6 +29,7 @@ import (
 func RegisterAccountRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.Handle("PUT /api/users/{userId}/password", middleware.RequireAuth(handleChangePassword(q)))
 	mux.Handle("POST /api/users/{userId}/email", middleware.RequireAuth(handleRequestEmailChange(q)))
+	mux.Handle("GET /api/users/{userId}/export", middleware.RequireAuth(handleExportUserData(q)))
 }
 
 // requireSelf extracts the {userId} path value and checks it against the
@@ -141,6 +142,60 @@ func handleRequestEmailChange(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// handleExportUserData handles GET /api/users/{userId}/export.
+// Protected: requires JWT authentication; SELF ONLY -- requireSelf
+// applies here with no exception, even for a teacher of an enrolled
+// student. That is deliberate, not an oversight:
+//
+// A teacher's legitimate interest is how a student is doing in their
+// class, which general-info and per-user charts already serve (scoped,
+// or in the process of being scoped, to a class the teacher actually
+// owns -- see those handlers). An export is a different thing entirely:
+// it is the data SUBJECT's own portability right, and the bundle it
+// hands back goes well past classroom performance -- the account's
+// email address, every saved setting, and the names of every class the
+// student has joined, including ones owned by OTHER teachers. Handing
+// that to one teacher would disclose another teacher's roster, which no
+// amount of "they teach this student" justifies.
+//
+// A district that needs bulk data for its own reporting gets it through
+// a data privacy agreement negotiated at the district level, not by
+// borrowing a teacher's browser session -- this route exists for the
+// one person the data is actually about.
+// @Summary  Export the caller's own data
+// @Tags     account
+// @Security BearerAuth
+// @Produce  json
+// @Param    userId path int true "User ID (must match the authenticated user)"
+// @Success  200 {object} dtos.UserExport
+// @Failure  400 {object} dtos.ErrorResponse "Invalid user ID parameter"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  403 {object} dtos.ErrorResponse "Access denied"
+// @Failure  404 {object} dtos.ErrorResponse "User not found"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/users/{userId}/export [get]
+func handleExportUserData(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authenticatedUserID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		userID, ok := requireSelf(w, r, authenticatedUserID)
+		if !ok {
+			return
+		}
+
+		export, err := services.ExportUserData(r.Context(), q, userID)
+		if err != nil {
+			respondAccountError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, export)
+	}
+}
+
 // handleConfirmEmailChange handles POST /api/auth/confirm-email-change.
 // Unauthenticated: the token itself is the credential, same as
 // verify-email and reset-password. Registered by RegisterAuthRoutes (see
@@ -181,8 +236,9 @@ func handleConfirmEmailChange(q database.Querier) http.HandlerFunc {
 	}
 }
 
-// respondAccountError maps ChangePassword's, RequestEmailChange's and
-// ConfirmEmailChange's sentinel errors onto their response bodies.
+// respondAccountError maps ChangePassword's, RequestEmailChange's,
+// ExportUserData's and ConfirmEmailChange's sentinel errors onto their
+// response bodies.
 //
 // Every failure here is a 400, not a 401 -- even ErrIncorrectPassword,
 // which IS a failed password check. That is deliberate:

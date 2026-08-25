@@ -205,6 +205,147 @@ definitions:
       error:
         type: string
     type: object
+  dtos.ExportAttempt:
+    properties:
+      assignment_id:
+        type: integer
+      assignment_title:
+        type: string
+      class_name:
+        type: string
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      entry_id:
+        type: integer
+      game_type:
+        type: string
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportClasses:
+    properties:
+      joined:
+        items:
+          $ref: '#/definitions/dtos.ExportJoinedClass'
+        type: array
+      owned:
+        items:
+          $ref: '#/definitions/dtos.ExportOwnedClass'
+        type: array
+    type: object
+  dtos.ExportFriend:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportGameSettings:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      game_type:
+        type: string
+    type: object
+  dtos.ExportJoinedClass:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      teacher_name:
+        type: string
+    type: object
+  dtos.ExportOwnedClass:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      join_code:
+        type: string
+      name:
+        type: string
+      student_count:
+        type: integer
+    type: object
+  dtos.ExportProfile:
+    properties:
+      created_date:
+        type: string
+      created_time:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      has_google:
+        type: boolean
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportScoreEntry:
+    properties:
+      assignment_id:
+        description: Nil when the entry was not an attempt at a class assignment.
+        type: integer
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      game_type:
+        type: string
+      id:
+        type: integer
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportSettings:
+    properties:
+      games:
+        items:
+          $ref: '#/definitions/dtos.ExportGameSettings'
+        type: array
+      note_game:
+        allOf:
+        - $ref: '#/definitions/dtos.NoteGameSettingsResponse'
+        description: |-
+          The existing note-game settings response shape, reused as-is: nil
+          when the user never saved any (same absence rule as
+          KeyboardBindings above).
+    type: object
   dtos.ForgotPasswordRequest:
     properties:
       email:
@@ -580,6 +721,43 @@ definitions:
         $ref: '#/definitions/dtos.Role'
       school_id:
         type: integer
+    type: object
+  dtos.UserExport:
+    properties:
+      assignment_attempts:
+        items:
+          $ref: '#/definitions/dtos.ExportAttempt'
+        type: array
+      classes:
+        $ref: '#/definitions/dtos.ExportClasses'
+      exported_at:
+        type: string
+      friends:
+        description: |-
+          Friend connections are not on the ticket's list of sections, but
+          they are included anyway: the privacy policy enumerates friend
+          connections as data this service holds about a user, and an export
+          that silently dropped a category the policy promises would make
+          the policy false.
+        items:
+          $ref: '#/definitions/dtos.ExportFriend'
+        type: array
+      keyboard_bindings:
+        allOf:
+        - $ref: '#/definitions/dtos.KeyboardBindingsResponse'
+        description: |-
+          The existing keyboard-bindings response shape, reused as-is: nil
+          (not an empty struct) when the user never saved bindings of their
+          own, the same "absence, not failure" rule GetKeyboardBindings
+          already applies everywhere else it's called.
+      profile:
+        $ref: '#/definitions/dtos.ExportProfile'
+      score_entries:
+        items:
+          $ref: '#/definitions/dtos.ExportScoreEntry'
+        type: array
+      settings:
+        $ref: '#/definitions/dtos.ExportSettings'
     type: object
   dtos.UserResponse:
     properties:
@@ -1956,6 +2134,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Request an email address change
+      tags:
+      - account
+  /api/users/{userId}/export:
+    get:
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UserExport'
+        "400":
+          description: Invalid user ID parameter
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export the caller's own data
       tags:
       - account
   /api/users/{userId}/general-info:
