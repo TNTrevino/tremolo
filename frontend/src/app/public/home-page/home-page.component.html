@@ -52,80 +52,88 @@
 	<section class="py-20 px-4">
 		<div class="container mx-auto max-w-6xl">
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<div
-					appCard
-					className="group hover:border-primary hover:shadow-lg transition-all"
-				>
-					<div appCardHeader>
-						<div
-							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<ng-icon
-								name="lucideMusic2"
-								size="1.5rem"
-								aria-hidden="true"
-								class="text-primary"
-							/>
+				<a routerLink="/note-game" class="block">
+					<div
+						appCard
+						className="group hover:border-primary hover:shadow-lg transition-all"
+					>
+						<div appCardHeader>
+							<div
+								class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+							>
+								<ng-icon
+									name="lucideMusic2"
+									size="1.5rem"
+									aria-hidden="true"
+									class="text-primary"
+								/>
+							</div>
+							<h3 appCardTitle>Note Recognition Game</h3>
 						</div>
-						<h3 appCardTitle>Note Recognition Game</h3>
+						<div appCardContent>
+							<p appCardDescription className="text-base">
+								Interactive games that help you identify notes quickly and
+								accurately. Track your speed and accuracy in real-time.
+							</p>
+						</div>
 					</div>
-					<div appCardContent>
-						<p appCardDescription className="text-base">
-							Interactive games that help you identify notes quickly and
-							accurately. Track your speed and accuracy in real-time.
-						</p>
-					</div>
-				</div>
+				</a>
 
-				<div
-					appCard
-					className="group hover:border-primary hover:shadow-lg transition-all"
-				>
-					<div appCardHeader>
-						<div
-							class="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<ng-icon
-								name="lucideTarget"
-								size="1.5rem"
-								aria-hidden="true"
-								class="text-brass"
-							/>
+				<a routerLink="/sheet-music" class="block">
+					<div
+						appCard
+						className="group hover:border-primary hover:shadow-lg transition-all"
+					>
+						<div appCardHeader>
+							<div
+								class="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+							>
+								<ng-icon
+									name="lucideTarget"
+									size="1.5rem"
+									aria-hidden="true"
+									class="text-brass"
+								/>
+							</div>
+							<h3 appCardTitle>Sheet-Music Generator</h3>
 						</div>
-						<h3 appCardTitle>Rhythm Practice</h3>
+						<div appCardContent>
+							<p appCardDescription className="text-base">
+								Pick a scale, an octave and a 16th- or 8th-note rhythm pattern,
+								and get a fresh line of notation to read. Every generation is
+								different, so there is nothing to memorize.
+							</p>
+						</div>
 					</div>
-					<div appCardContent>
-						<p appCardDescription className="text-base">
-							Customizable exercises focusing on specific rhythm patterns.
-							Perfect for UIL preparation and auditions.
-						</p>
-					</div>
-				</div>
+				</a>
 
-				<div
-					appCard
-					className="group hover:border-primary hover:shadow-lg transition-all"
-				>
-					<div appCardHeader>
-						<div
-							class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<ng-icon
-								name="lucideTrendingUp"
-								size="1.5rem"
-								aria-hidden="true"
-								class="text-primary"
-							/>
+				<a routerLink="/dashboard" class="block">
+					<div
+						appCard
+						className="group hover:border-primary hover:shadow-lg transition-all"
+					>
+						<div appCardHeader>
+							<div
+								class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+							>
+								<ng-icon
+									name="lucideTrendingUp"
+									size="1.5rem"
+									aria-hidden="true"
+									class="text-primary"
+								/>
+							</div>
+							<h3 appCardTitle>Track Progress</h3>
 						</div>
-						<h3 appCardTitle>Track Progress</h3>
+						<div appCardContent>
+							<p appCardDescription className="text-base">
+								Every finished game is saved. Your dashboard charts accuracy and
+								notes-per-minute over time, so improvement is something you can
+								point at.
+							</p>
+						</div>
 					</div>
-					<div appCardContent>
-						<p appCardDescription className="text-base">
-							Detailed analytics showing your improvement over time. Set goals
-							and celebrate your musical growth.
-						</p>
-					</div>
-				</div>
+				</a>
 			</div>
 		</div>
 	</section>
@@ -229,8 +237,9 @@
 					</div>
 					<div appCardContent>
 						<p appCardDescription className="text-base">
-							Advanced practice for specific chord structures, scale patterns,
-							and complex rhythms. Take your skills to the next level.
+							Drill the things that stay hard: chord quality, four scale types,
+							and interval recognition across all seven clefs. Narrow any game
+							down to exactly the subset you need.
 						</p>
 					</div>
 				</div>
@@ -245,7 +254,7 @@
 				Ready to Improve Your Sight Reading?
 			</h2>
 			<p class="text-xl text-muted-foreground">
-				Join students and teachers who are already seeing results
+				Free for pilot teachers for the whole 2026–27 school year.
 			</p>
 			<div
 				class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
@@ -269,7 +278,7 @@
 							aria-hidden="true"
 							class="mr-2"
 						/>
-						Try Rhythm Practice
+						Generate Sheet Music
 					</app-button>
 				</a>
 			</div>

@@ -42,7 +42,7 @@ export class HomePageComponent {
 			step: 1,
 			title: "Choose Your Exercise",
 			description:
-				"Select from note games, rhythm practice, or custom exercises tailored to your needs.",
+				"Pick one of the five games, or generate a sheet-music exercise from a scale and a rhythm pattern.",
 		},
 		{
 			step: 2,
