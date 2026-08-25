@@ -117,6 +117,9 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 
 	// Register cleanup to delete the user after the test
 	t.Cleanup(func() {
+		// Queue rows key on the address string rather than a user id, so
+		// there is no foreign key and nothing cascades from the user.
+		DeleteQueuedEmails(t, params.Email)
 		DeleteTestUser(t, int(createdUser.ID))
 	})
 
@@ -340,4 +343,122 @@ func GetTestUserGradeLevel(t *testing.T, email string) sql.NullString {
 		t.Fatalf("Failed to read grade_level for %q: %v", email, err)
 	}
 	return gradeLevel
+}
+
+// ---------------------------------------------------------------------------
+// Email queue helpers
+// ---------------------------------------------------------------------------
+
+// QueuedEmailsFor returns every queued email for one recipient, newest
+// first.
+func QueuedEmailsFor(t *testing.T, recipient string) []generated.TremoloQueuedEmail {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListQueuedEmailsByRecipient(context.Background(), recipient)
+	if err != nil {
+		t.Fatalf("Failed to list queued emails for %s: %v", recipient, err)
+	}
+	return rows
+}
+
+// LatestQueuedEmail returns the most recently queued email for a
+// recipient, or nil when there is none.
+//
+// It picks the highest id rather than trusting the created_at ordering:
+// two rows inserted in the same instant would otherwise come back in an
+// unspecified order.
+func LatestQueuedEmail(t *testing.T, recipient string) *generated.TremoloQueuedEmail {
+	t.Helper()
+
+	rows := QueuedEmailsFor(t, recipient)
+	if len(rows) == 0 {
+		return nil
+	}
+
+	latest := rows[0]
+	for _, row := range rows[1:] {
+		if row.ID > latest.ID {
+			latest = row
+		}
+	}
+	return &latest
+}
+
+// EmailSendAttempts returns the attempt log for one queued email, oldest
+// first.
+func EmailSendAttempts(t *testing.T, queuedEmailID int64) []generated.TremoloEmailSendAttempt {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListEmailSendAttempts(context.Background(), queuedEmailID)
+	if err != nil {
+		t.Fatalf("Failed to list send attempts for queued email %d: %v", queuedEmailID, err)
+	}
+	return rows
+}
+
+// DeleteQueuedEmails removes every queued email for one recipient. The
+// attempt rows cascade.
+func DeleteQueuedEmails(t *testing.T, recipient string) {
+	t.Helper()
+	if database.Queries == nil || recipient == "" {
+		return
+	}
+
+	if err := database.Queries.DeleteQueuedEmailsByRecipient(context.Background(), recipient); err != nil {
+		t.Logf("Warning: Failed to delete queued emails for %s: %v", recipient, err)
+	}
+}
+
+// EnqueueTestEmail inserts one pending queue row for a recipient with the
+// production default of five attempts.
+func EnqueueTestEmail(t *testing.T, recipient string) generated.TremoloQueuedEmail {
+	t.Helper()
+	return EnqueueTestEmailWithMaxAttempts(t, recipient, 5)
+}
+
+// EnqueueTestEmailWithMaxAttempts inserts one pending queue row whose
+// retry budget the caller chooses, which is how a test reaches the dead
+// state without sending five times.
+func EnqueueTestEmailWithMaxAttempts(t *testing.T, recipient string, maxAttempts int32) generated.TremoloQueuedEmail {
+	t.Helper()
+	SetupTestDB(t)
+
+	row, err := database.Queries.EnqueueEmail(context.Background(), generated.EnqueueEmailParams{
+		Recipient:     recipient,
+		RecipientName: "Test Recipient",
+		Subject:       "Test message",
+		Template:      "password-reset",
+		BodyHtml:      "<html><body>test</body></html>",
+		BodyText:      "test",
+		// message_id is UNIQUE, so every row needs its own.
+		MessageID:   fmt.Sprintf("test-%d@test.com", time.Now().UnixNano()),
+		MaxAttempts: maxAttempts,
+	})
+	if err != nil {
+		t.Fatalf("Failed to enqueue test email for %s: %v", recipient, err)
+	}
+
+	t.Cleanup(func() {
+		DeleteQueuedEmails(t, recipient)
+	})
+
+	return row
+}
+
+// ClearQueuedEmails empties the whole queue.
+//
+// The watcher's claim query is global by design — it claims whatever is
+// claimable, which is the point — so a watcher test has to start from an
+// empty queue to be able to assert on counts. Every email test runs
+// without t.Parallel for the same reason.
+func ClearQueuedEmails(t *testing.T) {
+	t.Helper()
+	SetupTestDB(t)
+
+	if _, err := database.DBConn.ExecContext(context.Background(), "delete from tremolo.queued_emails"); err != nil {
+		t.Fatalf("Failed to clear the email queue: %v", err)
+	}
+
 }
