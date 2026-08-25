@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -369,6 +370,24 @@ func handleRefreshToken() http.HandlerFunc {
 	}
 }
 
+// forgotPasswordMinDuration is a floor under handleForgotPassword's
+// response time. RequestPasswordReset's two paths differ measurably: the
+// unknown-address path returns after one SELECT, while the known-address
+// path mints a token and does two INSERTs plus a template render. That is
+// a repeatable timing difference, and a repeatable timing difference is an
+// account-enumeration side channel -- the exact thing this endpoint's
+// identical response bodies already exist to prevent. Sleeping out to this
+// floor on every request, success or failure, swamps that difference so
+// response time no longer distinguishes known from unknown addresses:
+// 400ms sits far above the slow path's normal latency, yet is invisible
+// next to human-scale form submission.
+//
+// This narrows the channel; it does not perfectly close it. Under extreme
+// load the slow path's own work could exceed 400ms on its own, and at that
+// point the floor no longer hides it -- said honestly rather than claimed
+// away.
+const forgotPasswordMinDuration = 400 * time.Millisecond
+
 // handleForgotPassword handles POST /api/auth/forgot-password.
 // @Summary  Request a password reset
 // @Tags     auth
@@ -387,11 +406,20 @@ func handleForgotPassword(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		if err := services.RequestPasswordReset(r.Context(), q, reqBody); err != nil {
+		// See forgotPasswordMinDuration: the floor applies identically to
+		// the success and error branches below, since the timing side
+		// channel it closes doesn't care which branch fired.
+		start := time.Now()
+		resetErr := services.RequestPasswordReset(r.Context(), q, reqBody)
+		if elapsed := time.Since(start); elapsed < forgotPasswordMinDuration {
+			time.Sleep(forgotPasswordMinDuration - elapsed)
+		}
+
+		if resetErr != nil {
 			// The failure branch answers the same account-independent way
 			// success does: an outage says nothing about whether the
 			// address has an account either.
-			logger.Error("unexpected forgot password error", "error", err)
+			logger.Error("unexpected forgot password error", "error", resetErr)
 			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
 			return
 		}

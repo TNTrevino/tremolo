@@ -306,6 +306,42 @@ func TestForgotPasswordRoute_InvalidBody_Returns400(t *testing.T) {
 	assert.Equal(t, "Invalid request body", response["error"])
 }
 
+// TestForgotPasswordRoute_UnknownEmail_RespectsMinimumDuration guards the
+// timing floor documented at forgotPasswordMinDuration (auth_controller.go):
+// the unknown-address path returns after a single SELECT, measurably
+// faster than the known-address path's token mint plus two INSERTs plus a
+// template render, which is a timing side channel that leaks account
+// existence even though the two response bodies are byte-identical. This
+// deliberately does NOT assert that known- and unknown-address requests
+// take equal time -- comparing two independently measured live durations
+// against each other is flaky. It asserts only that the floor itself
+// holds on the fast (unknown-address) path, which is the actual
+// mitigation: if every response is floored to at least
+// forgotPasswordMinDuration, the gap between the two paths is swamped
+// regardless of how it moves around underneath.
+//
+// Not parallel: this test measures wall-clock time, and t.Parallel()
+// would let unrelated tests' scheduler/CPU contention move that
+// measurement around. Running it alone keeps the measurement meaningful.
+func TestForgotPasswordRoute_UnknownEmail_RespectsMinimumDuration(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+
+	start := time.Now()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/forgot-password", "", dtos.ForgotPasswordRequest{
+		Email: testutil.UniqueEmail(t, "forgot_unknown_timing"),
+	}))
+	elapsed := time.Since(start)
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+	// Assert a generous 350ms rather than the exact 400ms floor to dodge
+	// clock skew and scheduler jitter in CI.
+	assert.GreaterOrEqual(t, elapsed, 350*time.Millisecond,
+		"unknown-address response returned faster than the timing floor -- it no longer masks the known-address path's extra DB work")
+}
+
 // ---------- POST /api/auth/reset-password ----------
 
 func TestResetPasswordRoute_Success_Returns200(t *testing.T) {

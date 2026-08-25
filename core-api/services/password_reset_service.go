@@ -45,6 +45,11 @@ const (
 //     Google-notice mail, via EnqueuePasswordResetGoogle -- so a Google
 //     user who mistakenly asks for a reset is never left staring at an
 //     empty inbox wondering whether the request even went through.
+//
+// The three outcomes above still cost measurably different amounts of
+// time (one SELECT vs. token-mint-plus-two-INSERTs-plus-render); the
+// controller (handleForgotPassword's forgotPasswordMinDuration) is what
+// floors the response time so that difference doesn't leak through.
 func RequestPasswordReset(ctx context.Context, q generated.Querier, req dtos.ForgotPasswordRequest) error {
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
