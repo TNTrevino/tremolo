@@ -203,4 +203,13 @@ export const routes: Routes = [
 				(m) => m.ClassDetailPageComponent,
 			),
 	},
+	{
+		path: "classes/:id/students/:studentId",
+		canActivate: [teacherGuard],
+		runGuardsAndResolvers: "always",
+		loadComponent: () =>
+			import("./features/classes/components/student-stats-page/student-stats-page.component").then(
+				(m) => m.StudentStatsPageComponent,
+			),
+	},
 ];

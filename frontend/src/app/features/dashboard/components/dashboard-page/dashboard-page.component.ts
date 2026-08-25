@@ -17,6 +17,7 @@ import type {
 	MultiMetricChartData,
 } from "../../../../shared/models/chart.models";
 import { UserService } from "../../../../shared/services/user.service";
+import { formatTimeReading } from "../../../../shared/utils/date.utils";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import { DashboardSkeletonComponent } from "../dashboard-skeleton/dashboard-skeleton.component";
 import { DashboardStatsComponent } from "../dashboard-stats/dashboard-stats.component";
@@ -229,16 +230,4 @@ function chartQuery(interval: ChartInterval): {
 	days: number | undefined;
 } {
 	return { interval, days: interval === "day" ? 30 : undefined };
-}
-
-/**
- * "Time reading" is an estimate, not a measurement: the Go service stores no
- * session duration, so React multiplied sessions by an assumed five minutes.
- * Carried over so the number on the dashboard does not silently change.
- */
-function formatTimeReading(totalSessions: number): string {
-	const totalMinutes = totalSessions * 5;
-	const hours = Math.floor(totalMinutes / 60);
-	const minutes = totalMinutes % 60;
-	return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }

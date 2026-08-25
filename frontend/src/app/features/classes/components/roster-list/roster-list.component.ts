@@ -8,6 +8,7 @@ import {
 	signal,
 } from "@angular/core";
 import { rxResource } from "@angular/core/rxjs-interop";
+import { RouterLink } from "@angular/router";
 import { NgIcon } from "@ng-icons/core";
 
 import { AppErrorComponent } from "../../../../core/components/app-error/app-error.component";
@@ -41,6 +42,7 @@ import { ClassesService } from "../../services/classes.service";
 		ButtonComponent,
 		ConfirmDialogComponent,
 		NgIcon,
+		RouterLink,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,6 +83,21 @@ export class RosterListComponent {
 
 	fullName(entry: RosterEntry): string {
 		return `${entry.firstName} ${entry.lastName}`;
+	}
+
+	/**
+	 * Where this student's row links to. `classId` is navigational context
+	 * only -- the server's access rule is per-teacher (does the caller own
+	 * *an* active class this student is in), not per-class, so this route
+	 * does not double as an authorization boundary.
+	 */
+	studentLink(entry: RosterEntry): string[] {
+		return [
+			"/classes",
+			String(this.classId()),
+			"students",
+			String(entry.studentId),
+		];
 	}
 
 	confirmOpenChange(open: boolean): void {

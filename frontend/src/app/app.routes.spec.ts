@@ -153,7 +153,7 @@ describe("logout and the route table", () => {
 			),
 		);
 
-		expect(guarded).toHaveLength(7);
+		expect(guarded).toHaveLength(8);
 		for (const route of guarded) {
 			expect(`${route.path}: ${route.runGuardsAndResolvers}`).toBe(
 				`${route.path}: always`,

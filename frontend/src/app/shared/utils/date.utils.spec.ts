@@ -1,4 +1,4 @@
-import { formatDate, formatShortDate } from "./date.utils";
+import { formatDate, formatShortDate, formatTimeReading } from "./date.utils";
 
 /**
  * The React app had no spec for these two, but both are now on user-visible
@@ -41,5 +41,13 @@ describe("formatShortDate", () => {
 		// The bug this guards: `new Date("2026-01-01")` is UTC midnight, which
 		// is 31 December in every negative-offset timezone.
 		expect(formatShortDate("2026-01-01")).toMatch(/Jan.*1\b/);
+	});
+});
+
+describe("formatTimeReading", () => {
+	it("multiplies sessions by the assumed five minutes and formats hours and minutes", () => {
+		// 12 sessions x 5 assumed minutes = 60 minutes = "1h 0m", matching the
+		// dashboard's own stat-grid spec (dashboard-page.component.spec.ts).
+		expect(formatTimeReading(12)).toBe("1h 0m");
 	});
 });
