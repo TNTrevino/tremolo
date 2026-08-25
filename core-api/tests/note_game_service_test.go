@@ -340,3 +340,44 @@ func TestCreateNoteGameEntry_VerifyStoredData(t *testing.T) {
 	assert.Equal(t, 42, found.CorrectQuestions)
 	assert.Equal(t, 28.0, found.NotesPerMinute)
 }
+
+// TestCreateNoteGameEntry_RoundsFractionalNPM verifies a fractional NPM
+// (e.g. from a client that doesn't pre-round) is stored rounded rather
+// than truncated: the notes_per_minute column is an int, and 45.7 must
+// read back as 46, not 45. Issue #252.
+func TestCreateNoteGameEntry_RoundsFractionalNPM(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	email := testutil.UniqueEmail(t, "rounds_fractional_npm")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+	entry := &dtos.Entry{
+		UserID:           int64(userID),
+		TimeLength:       "00:05:30",
+		TotalQuestions:   20,
+		CorrectQuestions: 15,
+		NPM:              45.7,
+	}
+
+	entryID, err := services.CreateNoteGameEntry(context.Background(), database.Queries, userID, entry)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		testutil.DeleteTestNoteGameEntry(t, entryID)
+	})
+
+	entries, err := services.GetRecentNoteGameEntries(context.Background(), database.Queries, userID, "note")
+	require.NoError(t, err)
+
+	var found *dtos.NoteGameEntryResponse
+	for i := range entries {
+		if entries[i].ID == int(entryID) {
+			found = &entries[i]
+			break
+		}
+	}
+
+	require.NotNil(t, found, "Could not find created entry with ID %d", entryID)
+	assert.Equal(t, 46.0, found.NotesPerMinute, "45.7 should round up to 46, not truncate to 45")
+}
