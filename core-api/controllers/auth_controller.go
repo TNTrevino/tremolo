@@ -22,6 +22,8 @@ func RegisterAuthRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.HandleFunc("POST /api/auth/refresh", handleRefreshToken())
 	mux.HandleFunc("POST /api/auth/forgot-password", handleForgotPassword(q))
 	mux.HandleFunc("POST /api/auth/reset-password", handleResetPassword(q))
+	mux.HandleFunc("POST /api/auth/verify-email", handleVerifyEmail(q))
+	mux.Handle("POST /api/auth/resend-verification", middleware.RequireAuth(handleResendVerification(q)))
 
 	mux.Handle("GET /api/auth/me", middleware.RequireAuth(handleGetCurrentUser(q)))
 
@@ -468,5 +470,88 @@ func respondResetPasswordError(w http.ResponseWriter, err error) {
 	default:
 		logger.Error("unexpected reset password error", "error", err)
 		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+	}
+}
+
+// handleVerifyEmail handles POST /api/auth/verify-email.
+//
+// This is a POST, not the GET a mailed link would normally carry: the
+// mailed link (services.verifyEmailURL) points at the FRONTEND page, and
+// that page is what POSTs the token here. A GET on this endpoint would be
+// consumed by a corporate mail scanner or link-preview bot before the
+// human ever clicks it, burning the single-use token before it reaches
+// the person it was mailed to.
+// @Summary  Verify an email address
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.VerifyEmailRequest true "Verification token"
+// @Success  200 {object} dtos.VerifyEmailResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/verify-email [post]
+func handleVerifyEmail(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.VerifyEmailRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.VerifyEmail(r.Context(), q, reqBody); err != nil {
+			respondVerifyEmailError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.VerifyEmailResponse{
+			Message: "Your email address is verified.",
+		})
+	}
+}
+
+// respondVerifyEmailError maps VerifyEmail's sentinel errors onto their
+// response bodies.
+func respondVerifyEmailError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrEmailTokenInvalid):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "This verification link is invalid or has expired."})
+	default:
+		logger.Error("unexpected verify email error", "error", err)
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+	}
+}
+
+// handleResendVerification handles POST /api/auth/resend-verification.
+// Protected: requires JWT authentication. There is no request body -- the
+// JWT identifies which account to mail, the same way GET /api/auth/me
+// needs nothing but the token.
+// @Summary  Resend the email verification link
+// @Tags     auth
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.VerifyEmailResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/resend-verification [post]
+func handleResendVerification(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		if err := services.ResendVerification(r.Context(), q, uid); err != nil {
+			logger.Error("unexpected resend verification error", "error", err.Error())
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+			return
+		}
+
+		// Same body whether or not the account was already verified:
+		// ResendVerification's already-verified no-op must not read any
+		// differently than a real send, or the response itself would leak
+		// verification state to a caller who should just see "sent".
+		httpx.JSON(w, http.StatusOK, dtos.VerifyEmailResponse{
+			Message: "Verification email sent.",
+		})
 	}
 }

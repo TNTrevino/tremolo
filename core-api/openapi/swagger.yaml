@@ -562,6 +562,16 @@ definitions:
       role:
         type: string
     type: object
+  dtos.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.VerifyEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
   sql.NullString:
     properties:
       string:
@@ -1005,6 +1015,28 @@ paths:
       summary: Register a new account
       tags:
       - auth
+  /api/auth/resend-verification:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resend the email verification link
+      tags:
+      - auth
   /api/auth/reset-password:
     post:
       consumes:
@@ -1032,6 +1064,35 @@ paths:
           schema:
             $ref: '#/definitions/dtos.ErrorResponse'
       summary: Reset a password with a token
+      tags:
+      - auth
+  /api/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Verification token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Verify an email address
       tags:
       - auth
   /api/charts/teacher/class-metrics:

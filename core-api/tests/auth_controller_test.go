@@ -11,6 +11,7 @@ import (
 	"sight-reading/controllers"
 	"sight-reading/database"
 	"sight-reading/middleware"
+	"sight-reading/services"
 	"sight-reading/tests/testutil"
 
 	"github.com/stretchr/testify/assert"
@@ -400,6 +401,93 @@ func TestResetPasswordRoute_WeakPassword_Returns400(t *testing.T) {
 	var response map[string]any
 	testutil.ParseJSONResponse(t, w, &response)
 	assert.Equal(t, "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character", response["error"])
+}
+
+// ---------- POST /api/auth/verify-email ----------
+
+func TestVerifyEmailRoute_Success_Returns200(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "verify_route_success")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testutil.CreateEmailToken(t, userID, services.PurposeVerifyEmail, email, services.VerifyEmailTokenTTL)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/verify-email", "", dtos.VerifyEmailRequest{
+		Token: token,
+	}))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var response dtos.VerifyEmailResponse
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Your email address is verified.", response.Message)
+}
+
+func TestVerifyEmailRoute_BadToken_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/verify-email", "", dtos.VerifyEmailRequest{
+		Token: "not-a-real-token",
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "This verification link is invalid or has expired.", response["error"])
+}
+
+func TestVerifyEmailRoute_EmptyBody_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/verify-email", "", dtos.VerifyEmailRequest{}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Token is required", response["error"])
+}
+
+// ---------- POST /api/auth/resend-verification ----------
+
+func TestResendVerificationRoute_Unauthenticated_Returns401(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/resend-verification", "", nil))
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code, "Response body: %s", w.Body.String())
+}
+
+func TestResendVerificationRoute_Authenticated_Returns200(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "resend_route_success")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/resend-verification", token, nil))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var response dtos.VerifyEmailResponse
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Verification email sent.", response.Message)
 }
 
 // ---------- Auth requirement of each route ----------
