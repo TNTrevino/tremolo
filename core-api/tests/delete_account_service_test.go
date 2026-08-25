@@ -20,10 +20,16 @@ import (
 
 // TestDeleteAccount_CascadesEverything seeds one row in every table that
 // used to block DeleteUserByID with a foreign key violation --
-// note_game_entries, a mutual friendship, and (for good measure,
-// already-correct-before-this-ticket coverage) note_game_settings, a
-// JSONB game_settings row, keyboard bindings, a class membership and a
-// password reset token -- then deletes the account in one call.
+// note_game_entries, a mutual friendship, a teacher_student association,
+// a teacher_parent association and a parent_child association (all nine
+// of migration 00017's fixed columns, not just the note_game_entries and
+// friends ones -- the three legacy relationship tables have no read
+// query of their own, so a dropped or misdirected cascade on any of them
+// would otherwise go unnoticed by every other test in this suite), and
+// (for good measure, already-correct-before-this-ticket coverage)
+// note_game_settings, a JSONB game_settings row, keyboard bindings, a
+// class membership and a password reset token -- then deletes the
+// account in one call.
 //
 // Without migration 00017's cascades, this fails at the DeleteAccount
 // call itself: Postgres aborts the whole `delete from tremolo.users`
@@ -88,6 +94,39 @@ func TestDeleteAccount_CascadesEverything(t *testing.T) {
 		FriendID: int32(friendID),
 	}))
 
+	// teacher_student.student_id -- reuses the existing testutil helper
+	// (its own t.Cleanup best-effort deletes the row again, which is a
+	// harmless no-op once the cascade below has already removed it).
+	testutil.CreateTeacherStudentAssociation(t, teacherID, userID)
+
+	// teacher_parent.parent_id and parent_child.child_id -- the last two
+	// legacy tables. Neither has an insert query of its own (they are
+	// write-only from the app's side -- see relationships.sql), so this
+	// reaches for the same raw-SQL fallback
+	// TestExportUserData_FullySeededStudent uses for its friends
+	// cleanup, for the same reason. teacherID plays the "other party" in
+	// both rows purely for the FK -- neither table constrains it to an
+	// actual TEACHER/PARENT role.
+	_, err = database.DBConn.ExecContext(ctx,
+		"insert into tremolo.teacher_parent (teacher_id, parent_id) values ($1, $2)",
+		teacherID, userID)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = database.DBConn.ExecContext(context.Background(),
+			"delete from tremolo.teacher_parent where teacher_id = $1 and parent_id = $2",
+			teacherID, userID)
+	})
+
+	_, err = database.DBConn.ExecContext(ctx,
+		"insert into tremolo.parent_child (parent_id, child_id) values ($1, $2)",
+		teacherID, userID)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = database.DBConn.ExecContext(context.Background(),
+			"delete from tremolo.parent_child where parent_id = $1 and child_id = $2",
+			teacherID, userID)
+	})
+
 	// password_reset_tokens.user_id (already cascaded)
 	testutil.CreatePasswordResetToken(t, userID, services.PasswordResetTokenTTL)
 
@@ -113,6 +152,26 @@ func TestDeleteAccount_CascadesEverything(t *testing.T) {
 	friends, err := database.Queries.GetFriendsByUserID(ctx, int32(friendID))
 	require.NoError(t, err)
 	assert.Empty(t, friends, "the friendship must not survive the deleted party")
+
+	// The three legacy relationship tables have no read query of their
+	// own (see the seeding above), so these count directly.
+	var teacherStudentCount int
+	require.NoError(t, database.DBConn.QueryRowContext(ctx,
+		"select count(*) from tremolo.teacher_student where student_id = $1", userID,
+	).Scan(&teacherStudentCount))
+	assert.Zero(t, teacherStudentCount, "teacher_student must not survive the deleted student")
+
+	var teacherParentCount int
+	require.NoError(t, database.DBConn.QueryRowContext(ctx,
+		"select count(*) from tremolo.teacher_parent where parent_id = $1", userID,
+	).Scan(&teacherParentCount))
+	assert.Zero(t, teacherParentCount, "teacher_parent must not survive the deleted parent")
+
+	var parentChildCount int
+	require.NoError(t, database.DBConn.QueryRowContext(ctx,
+		"select count(*) from tremolo.parent_child where child_id = $1", userID,
+	).Scan(&parentChildCount))
+	assert.Zero(t, parentChildCount, "parent_child must not survive the deleted child")
 }
 
 func TestDeleteAccount_WrongPassword(t *testing.T) {
