@@ -13,14 +13,14 @@ import (
 	"sight-reading/services"
 )
 
-// RegisterAccountRoutes registers the change-password, change-email and
-// data-export routes. All three act on the authenticated caller's OWN
-// account: userId in the path exists only so the URL matches the shape
-// /api/users/{userId}/... already uses (general-info, note-game data),
-// and every handler here checks it against the JWT before doing anything
-// (see requireSelf).
+// RegisterAccountRoutes registers the change-password, change-email,
+// data-export and delete-account routes. All four act on the
+// authenticated caller's OWN account: userId in the path exists only so
+// the URL matches the shape /api/users/{userId}/... already uses
+// (general-info, note-game data), and every handler here checks it
+// against the JWT before doing anything (see requireSelf).
 //
-// POST /api/auth/confirm-email-change is this feature's fourth route; it
+// POST /api/auth/confirm-email-change is this feature's fifth route; it
 // is registered by RegisterAuthRoutes instead (auth_controller.go),
 // alongside verify-email and reset-password -- the other token-bearing
 // links a mailed message carries, none of which are scoped to a userId
@@ -30,6 +30,7 @@ func RegisterAccountRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.Handle("PUT /api/users/{userId}/password", middleware.RequireAuth(handleChangePassword(q)))
 	mux.Handle("POST /api/users/{userId}/email", middleware.RequireAuth(handleRequestEmailChange(q)))
 	mux.Handle("GET /api/users/{userId}/export", middleware.RequireAuth(handleExportUserData(q)))
+	mux.Handle("DELETE /api/users/{userId}", middleware.RequireAuth(handleDeleteAccount(q)))
 }
 
 // requireSelf extracts the {userId} path value and checks it against the
@@ -196,6 +197,53 @@ func handleExportUserData(q database.Querier) http.HandlerFunc {
 	}
 }
 
+// handleDeleteAccount handles DELETE /api/users/{userId}.
+// Protected: requires JWT authentication; the caller may only delete
+// their own account. No conflict with the GET/PUT/POST handlers
+// registered on the same /api/users/{userId}/... family above: they
+// differ by HTTP method and none share this exact pattern
+// (/api/users/{userId} with no further path segment).
+// @Summary  Delete the caller's own account
+// @Tags     account
+// @Security BearerAuth
+// @Accept   json
+// @Produce  json
+// @Param    userId path int true "User ID (must match the authenticated user)"
+// @Param    body body dtos.DeleteAccountRequest true "Email confirmation, and the current password if the account has one"
+// @Success  200 {object} map[string]interface{} "message"
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body, mismatched email confirmation, or a missing password"
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  403 {object} dtos.ErrorResponse "Access denied, or an incorrect password"
+// @Failure  404 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/users/{userId} [delete]
+func handleDeleteAccount(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authenticatedUserID, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		userID, ok := requireSelf(w, r, authenticatedUserID)
+		if !ok {
+			return
+		}
+
+		req, problems, err := httpx.DecodeValid[dtos.DeleteAccountRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.DeleteAccount(r.Context(), q, userID, req); err != nil {
+			respondDeleteAccountError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, httpx.M{"message": "Account deleted"})
+	}
+}
+
 // handleConfirmEmailChange handles POST /api/auth/confirm-email-change.
 // Unauthenticated: the token itself is the credential, same as
 // verify-email and reset-password. Registered by RegisterAuthRoutes (see
@@ -252,6 +300,10 @@ func handleConfirmEmailChange(q database.Querier) http.HandlerFunc {
 // /api/auth/login keeps its own 401 because it IS a session endpoint
 // (the interceptor's exclusion list already carves it out) and has no
 // access token to refresh in the first place.
+//
+// DeleteAccount's errors are NOT mapped here -- see
+// respondDeleteAccountError, a deliberate sibling rather than an
+// extension of this switch.
 func respondAccountError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, services.ErrIncorrectPassword):
@@ -266,6 +318,51 @@ func respondAccountError(w http.ResponseWriter, err error) {
 		httpx.JSON(w, http.StatusConflict, httpx.M{"error": "That email address is already in use."})
 	case errors.Is(err, services.ErrEmailTokenInvalid):
 		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "This email confirmation link is invalid or has expired."})
+	case errors.Is(err, services.ErrNotFound):
+		httpx.JSON(w, http.StatusNotFound, httpx.M{"error": "User not found"})
+	default:
+		logger.Error("unexpected account error", "error", err)
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+	}
+}
+
+// respondDeleteAccountError maps DeleteAccount's sentinel errors onto
+// their response bodies. A sibling of respondAccountError, not an
+// extension of it, because two of DeleteAccount's sentinels need
+// different treatment than ChangePassword and RequestEmailChange give
+// the very same sentinels:
+//
+//   - ErrValidation means something specific here -- the typed email
+//     confirmation does not match this account -- so it gets that exact
+//     message instead of respondAccountError's generic "Invalid
+//     request". The account page's delete modal collects this
+//     confirmation deliberately (see DeleteAccountRequest's doc
+//     comment); the caller acted on a wrong assumption about their own
+//     account and can be told so directly, unlike a malformed request
+//     body (DecodeValid already rejects those before this is reached).
+//
+//   - ErrIncorrectPassword is a 403 here, not respondAccountError's 400.
+//     That 400 exists for one reason, spelled out on
+//     respondAccountError itself: refresh.interceptor.ts retries any
+//     401 once after refreshing the access token, and a 401 on a wrong
+//     *current* password would burn that round trip and silently
+//     resubmit the same wrong password. A 403 is outside that
+//     interceptor's reach entirely -- it only ever intercepts 401 -- so
+//     none of that risk applies here, and 403 is also the more
+//     honest status for what actually happened: the session is valid,
+//     the caller is exactly who they claim to be, and this one
+//     irreversible action is refused anyway. Deleting an account is the
+//     single place on this page where the harder stop is the right
+//     stop, not the softer, same-request-retriable 400 every other
+//     credential check on this page gets.
+func respondDeleteAccountError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrValidation):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Email confirmation does not match this account"})
+	case errors.Is(err, services.ErrPasswordRequired):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "Password is required to delete this account"})
+	case errors.Is(err, services.ErrIncorrectPassword):
+		httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Incorrect password"})
 	case errors.Is(err, services.ErrNotFound):
 		httpx.JSON(w, http.StatusNotFound, httpx.M{"error": "User not found"})
 	default:

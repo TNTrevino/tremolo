@@ -176,6 +176,13 @@ definitions:
       game_count:
         type: integer
     type: object
+  dtos.DeleteAccountRequest:
+    properties:
+      email_confirmation:
+        type: string
+      password:
+        type: string
+    type: object
   dtos.Entry:
     properties:
       assignment_id:
@@ -2083,6 +2090,57 @@ paths:
       summary: Update the note game settings
       tags:
       - note-game-settings
+  /api/users/{userId}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Email confirmation, and the current password if the account has
+          one
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body, mismatched email confirmation, or a missing
+            password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied, or an incorrect password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete the caller's own account
+      tags:
+      - account
   /api/users/{userId}/email:
     post:
       consumes:
