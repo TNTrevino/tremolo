@@ -7,7 +7,7 @@ More readable than a wall of `curl`, and every step asserts.
 ## Files
 
 One `.http` file per endpoint, kebab-case, grouped into a directory per
-URL path segment — 44 files for the 44 routes in
+URL path segment — 47 files for the 47 routes in
 `core-api/controllers/routes.go`. Directory walking is fully recursive
 (kulala picks up every `.http`/`.rest` file at any depth), and
 `http-client.env.json` resolution walks upward from each file's own
@@ -25,18 +25,20 @@ there is no per-group `http-client.env.json`.
   below, handy when you're not sure which group a route landed in.
 - `health/` — the service health check.
 - `auth/` — register, login, refresh, `/me`, the two Google OAuth routes,
-  forgot/reset password, and verify-email/resend-verification.
-  `google-callback.http` and `google-link.http` make a real outbound call
-  to Google's token endpoint with a garbage code to prove the 401 path —
-  the suite's only external network dependency. `register.http` also
-  covers the teacher invite-code gate (#250): a teacher signup with no
-  code, one with a code that does not exist, and a student whose code is
-  ignored rather than rejected. `reset-password.http` and
-  `verify-email.http` both cover only the invalid-token and validation
-  responses; the happy path in each case needs a token that only ever
-  exists in a queued mail's body, so those live in
-  `core-api/tests/password_reset_service_test.go` and
-  `core-api/tests/email_verification_service_test.go` instead.
+  forgot/reset password, verify-email/resend-verification, and
+  confirm-email-change. `google-callback.http` and `google-link.http`
+  make a real outbound call to Google's token endpoint with a garbage
+  code to prove the 401 path — the suite's only external network
+  dependency. `register.http` also covers the teacher invite-code gate
+  (#250): a teacher signup with no code, one with a code that does not
+  exist, and a student whose code is ignored rather than rejected.
+  `reset-password.http`, `verify-email.http` and
+  `confirm-email-change.http` all cover only the invalid-token and
+  validation responses; the happy path in each case needs a token that
+  only ever exists in a queued mail's body, so those live in
+  `core-api/tests/password_reset_service_test.go`,
+  `core-api/tests/email_verification_service_test.go` and
+  `core-api/tests/account_service_test.go` respectively.
 - `admin/` — teacher/student listing and lookup, admin-created users, and
   minting/listing teacher invite codes. ADMIN-only, and there is no
   self-service way to become an ADMIN, so every file here asserts only
@@ -45,7 +47,11 @@ there is no per-group `http-client.env.json`.
   `admin_service_test.go` and `teacher_invite_controller_test.go`, which
   seed an ADMIN row directly in the test database.
 - `charts/` — dashboard chart data, per-user and per-teacher-class.
-- `users/` — a user's own profile summary.
+- `users/` — a user's own profile summary, and changing the caller's own
+  password/email address. `change-email.http` covers only the request
+  side (wrong password, an already-taken address, success) for the same
+  reason `reset-password.http` stops at the token boundary — the
+  confirmation loop lives in `core-api/tests/account_service_test.go`.
 - `note-game/` — the note game's score entries, recent-entry list,
   activity heatmap, typed per-user settings, and keyboard bindings.
 - `game-settings/` — the generic JSONB settings blob shared by every
