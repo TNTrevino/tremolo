@@ -120,7 +120,7 @@ func TestLogin_LockoutTriggered(t *testing.T) {
 	})
 
 	var lastErr error
-	for i := 0; i < services.MaxLoginAttempts; i++ {
+	for range services.MaxLoginAttempts {
 		_, lastErr = services.Login(context.Background(), database.Queries, dtos.LoginRequest{
 			Email:    email,
 			Password: "WrongPassword123!",

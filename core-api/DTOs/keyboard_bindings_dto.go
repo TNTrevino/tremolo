@@ -82,11 +82,11 @@ func (kb KeyBindings) bindingFields() []struct {
 // name "KeyCSharp". The messages name the Go field, which is what the
 // tag-driven version reported.
 func goFieldName(jsonKey string) string {
-	out := ""
-	for _, part := range strings.Split(jsonKey, "_") {
-		out += strings.ToUpper(part[:1]) + part[1:]
+	var out strings.Builder
+	for part := range strings.SplitSeq(jsonKey, "_") {
+		out.WriteString(strings.ToUpper(part[:1]) + part[1:])
 	}
-	return out
+	return out.String()
 }
 
 func (r KeyboardBindingsRequest) Valid(ctx context.Context) map[string]string {
