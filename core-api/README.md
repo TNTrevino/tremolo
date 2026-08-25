@@ -165,10 +165,10 @@ To add a column or a new query:
 5. Migrations apply automatically the next time the service (or a DB-backed
    test) starts.
 
-Existing query files: `users.sql`, `friends.sql`, `relationships.sql`,
-`note_game_entries.sql`, `note_game_settings.sql`, `game_settings.sql`,
-`keyboard_bindings.sql`, `classes.sql`, `assignments.sql`,
-`teacher_invites.sql`, `seeders.sql`.
+Existing query files: `users.sql`, `account.sql`, `friends.sql`,
+`relationships.sql`, `note_game_entries.sql`, `note_game_settings.sql`,
+`game_settings.sql`, `keyboard_bindings.sql`, `classes.sql`,
+`assignments.sql`, `teacher_invites.sql`, `seeders.sql`.
 
 ## The games domain
 
@@ -242,6 +242,7 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 | POST | `/api/auth/forgot-password`, `/reset-password` | — | `auth_controller.go` |
 | POST | `/api/auth/verify-email` | — | `auth_controller.go` |
 | POST | `/api/auth/resend-verification` | JWT | `auth_controller.go` |
+| POST | `/api/auth/confirm-email-change` | — | `account_controller.go` (registered by `RegisterAuthRoutes`, alongside verify-email/reset-password -- see that route's doc comment) |
 | GET | `/api/auth/me` | JWT | `auth_controller.go` |
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
@@ -250,6 +251,8 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 | GET | `/api/charts/user/{userId}/metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/charts/teacher/class-metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/users/{userId}/general-info` | JWT (own data only) | `user_info_controller.go` |
+| PUT | `/api/users/{userId}/password` | JWT (own data only) | `account_controller.go` |
+| POST | `/api/users/{userId}/email` | JWT (own data only) | `account_controller.go` |
 | GET / POST | `/api/friends`, GET `/api/friends/search?q=` | JWT | `friends_controller.go` |
 | GET / POST | `/api/classes` (teacher's classes / create), POST `/api/classes/join`, GET `/api/classes/joined` | JWT | `class_controller.go` |
 | GET / DELETE | `/api/classes/{id}/roster`, DELETE `/api/classes/{id}` (archive), `/api/classes/{id}/students/{studentId}` | JWT (role/ownership in service) | `class_controller.go` |
