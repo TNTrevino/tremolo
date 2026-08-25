@@ -84,7 +84,7 @@ jobs:
       - name: Build Go Service
         working-directory: core-api
         run: |
-          go build -o tremolo-api main.go
+          go build -o tremolo-api .
 
       - name: Setup Python venv
         working-directory: music-api
