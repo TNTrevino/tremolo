@@ -28,6 +28,13 @@ type Querier interface {
 	// have no way to tell that was intended. They stay explicit.
 	//
 	ClaimQueuedEmails(ctx context.Context, arg ClaimQueuedEmailsParams) ([]TremoloQueuedEmail, error)
+	// ConsumePasswordResetToken is the single-use gate: claimed and returned in
+	// one UPDATE statement, so two concurrent resets racing on the same token
+	// cannot both win. sql.ErrNoRows means exactly "unknown, used, or expired"
+	// -- there is no way to tell which from this query, and that is
+	// deliberate (see services.ErrResetTokenInvalid).
+	//
+	ConsumePasswordResetToken(ctx context.Context, tokenHash string) (TremoloPasswordResetToken, error)
 	// Assignment queries. The results grid is derived from
 	// note_game_entries tagged with assignment_id -- there is no separate
 	// submissions table to keep in sync.
@@ -45,6 +52,7 @@ type Querier interface {
 	// CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
 	// column just defaults NULL for these rows (#244).
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (TremoloPasswordResetToken, error)
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
 	// Teacher invite codes. Redemption is deliberately a single conditional
 	// UPDATE rather than a select-then-update: see 00011_teacher_invite_codes.sql.
@@ -130,6 +138,7 @@ type Querier interface {
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
+	InvalidateUserPasswordResetTokens(ctx context.Context, userID int32) error
 	IsStudentInClass(ctx context.Context, arg IsStudentInClassParams) (bool, error)
 	// Does the caller own an ACTIVE class this student is enrolled in? This is
 	// the teacher-visibility rule behind another user's stats. Archived classes
@@ -150,6 +159,7 @@ type Querier interface {
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
 	ListEmailSendAttempts(ctx context.Context, queuedEmailID int64) ([]TremoloEmailSendAttempt, error)
+	ListPasswordResetTokensByUser(ctx context.Context, userID int32) ([]TremoloPasswordResetToken, error)
 	ListQueuedEmailsByRecipient(ctx context.Context, recipient string) ([]TremoloQueuedEmail, error)
 	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
@@ -164,6 +174,11 @@ type Querier interface {
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	// UpdateUserPassword lives here, not users.sql, so this feature's
+	// migration and queries stay in their own file rather than touching one a
+	// parallel branch may also be editing.
+	//
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertGameSettings(ctx context.Context, arg UpsertGameSettingsParams) (TremoloGameSetting, error)
 	UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error)
 	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)

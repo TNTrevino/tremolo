@@ -117,6 +117,15 @@ type TremoloParentChild struct {
 	ChildID  int32 `json:"child_id"`
 }
 
+type TremoloPasswordResetToken struct {
+	ID        int64        `json:"id"`
+	UserID    int32        `json:"user_id"`
+	TokenHash string       `json:"token_hash"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
 type TremoloQueuedEmail struct {
 	ID            int64          `json:"id"`
 	Recipient     string         `json:"recipient"`
