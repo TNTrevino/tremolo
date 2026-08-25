@@ -124,6 +124,17 @@ type TremoloSchool struct {
 	CreatedTime sql.NullTime `json:"created_time"`
 }
 
+type TremoloTeacherInviteCode struct {
+	ID        int32         `json:"id"`
+	Code      string        `json:"code"`
+	Note      string        `json:"note"`
+	MaxUses   int32         `json:"max_uses"`
+	UseCount  int32         `json:"use_count"`
+	ExpiresAt sql.NullTime  `json:"expires_at"`
+	CreatedBy sql.NullInt32 `json:"created_by"`
+	CreatedAt time.Time     `json:"created_at"`
+}
+
 type TremoloTeacherParent struct {
 	TeacherID int32 `json:"teacher_id"`
 	ParentID  int32 `json:"parent_id"`
