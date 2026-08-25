@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/controllers"
@@ -243,6 +244,127 @@ func TestGetCurrentUserRoute_ValidToken(t *testing.T) {
 // exercise it. TestGetCurrentUserRoute_Unauthenticated and
 // TestGetCurrentUserRoute_ValidToken cover the behaviour that remains
 // reachable instead.
+
+// ---------- POST /api/auth/forgot-password ----------
+
+func TestForgotPasswordRoute_UnknownEmail_Returns200WithTheSameBody(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/forgot-password", "", dtos.ForgotPasswordRequest{
+		Email: testutil.UniqueEmail(t, "forgot_unknown"),
+	}))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var response dtos.ForgotPasswordResponse
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "If an account exists for that address, a password reset link is on its way.", response.Message)
+}
+
+// TestForgotPasswordRoute_KnownEmail_ReturnsTheSameBodyAsUnknown is the
+// point of the endpoint: a known and an unknown address must be
+// byte-identical, or the response itself leaks account existence.
+func TestForgotPasswordRoute_KnownEmail_ReturnsTheSameBodyAsUnknown(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "forgot_known")
+	testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+	router := authTestRouter()
+
+	known := httptest.NewRecorder()
+	router.ServeHTTP(known, bearerRequest(t, http.MethodPost, "/api/auth/forgot-password", "", dtos.ForgotPasswordRequest{Email: email}))
+
+	unknown := httptest.NewRecorder()
+	router.ServeHTTP(unknown, bearerRequest(t, http.MethodPost, "/api/auth/forgot-password", "", dtos.ForgotPasswordRequest{
+		Email: testutil.UniqueEmail(t, "forgot_unknown_cmp"),
+	}))
+
+	assert.Equal(t, http.StatusOK, known.Code, "Response body: %s", known.Body.String())
+	assert.Equal(t, http.StatusOK, unknown.Code, "Response body: %s", unknown.Body.String())
+	assert.Equal(t, unknown.Body.Bytes(), known.Body.Bytes(), "known and unknown addresses must get byte-identical bodies")
+}
+
+func TestForgotPasswordRoute_InvalidBody_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/forgot-password", bytes.NewBufferString("invalid json"))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Invalid request body", response["error"])
+}
+
+// ---------- POST /api/auth/reset-password ----------
+
+func TestResetPasswordRoute_Success_Returns200(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "reset_route_success")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testutil.CreatePasswordResetToken(t, userID, time.Hour)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/reset-password", "", dtos.ResetPasswordRequest{
+		Token:    token,
+		Password: "NewTestPass456!",
+	}))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var response dtos.ResetPasswordResponse
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Password updated. You can now sign in.", response.Message)
+}
+
+func TestResetPasswordRoute_BadToken_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/reset-password", "", dtos.ResetPasswordRequest{
+		Token:    "not-a-real-token",
+		Password: "NewTestPass456!",
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "This password reset link is invalid or has expired.", response["error"])
+}
+
+func TestResetPasswordRoute_WeakPassword_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/reset-password", "", dtos.ResetPasswordRequest{
+		Token:    "irrelevant-because-validation-fails-first",
+		Password: "alllowercase",
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character", response["error"])
+}
 
 // ---------- Auth requirement of each route ----------
 

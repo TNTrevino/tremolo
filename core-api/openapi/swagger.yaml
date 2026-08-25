@@ -169,6 +169,16 @@ definitions:
       error:
         type: string
     type: object
+  dtos.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  dtos.ForgotPasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dtos.FriendDTO:
     properties:
       avatar_url:
@@ -425,6 +435,18 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/dtos.UserResponse'
+    type: object
+  dtos.ResetPasswordRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  dtos.ResetPasswordResponse:
+    properties:
+      message:
+        type: string
     type: object
   dtos.Role:
     enum:
@@ -749,6 +771,35 @@ paths:
       summary: Get an assignment's results grid
       tags:
       - assignments
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ForgotPasswordResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Request a password reset
+      tags:
+      - auth
   /api/auth/google/callback:
     post:
       consumes:
@@ -950,6 +1001,35 @@ paths:
           schema:
             $ref: '#/definitions/dtos.ErrorResponse'
       summary: Register a new account
+      tags:
+      - auth
+  /api/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ResetPasswordResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Reset a password with a token
       tags:
       - auth
   /api/charts/teacher/class-metrics:

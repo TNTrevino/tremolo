@@ -19,6 +19,8 @@ func RegisterAuthRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.HandleFunc("POST /api/auth/login", handleLogin(q))
 	mux.HandleFunc("POST /api/auth/register", handleRegister(q))
 	mux.HandleFunc("POST /api/auth/refresh", handleRefreshToken())
+	mux.HandleFunc("POST /api/auth/forgot-password", handleForgotPassword(q))
+	mux.HandleFunc("POST /api/auth/reset-password", handleResetPassword(q))
 
 	mux.Handle("GET /api/auth/me", middleware.RequireAuth(handleGetCurrentUser(q)))
 
@@ -364,5 +366,79 @@ func handleRefreshToken() http.HandlerFunc {
 		httpx.JSON(w, http.StatusOK, httpx.M{
 			"access_token": newAccessToken,
 		})
+	}
+}
+
+// handleForgotPassword handles POST /api/auth/forgot-password.
+// @Summary  Request a password reset
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.ForgotPasswordRequest true "Email address"
+// @Success  200 {object} dtos.ForgotPasswordResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/forgot-password [post]
+func handleForgotPassword(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.ForgotPasswordRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.RequestPasswordReset(r.Context(), q, reqBody); err != nil {
+			// The failure branch answers the same account-independent way
+			// success does: an outage says nothing about whether the
+			// address has an account either.
+			logger.Error("unexpected forgot password error", "error", err)
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.ForgotPasswordResponse{
+			Message: "If an account exists for that address, a password reset link is on its way.",
+		})
+	}
+}
+
+// handleResetPassword handles POST /api/auth/reset-password.
+// @Summary  Reset a password with a token
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.ResetPasswordRequest true "Token and new password"
+// @Success  200 {object} dtos.ResetPasswordResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/reset-password [post]
+func handleResetPassword(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.ResetPasswordRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.ResetPassword(r.Context(), q, reqBody); err != nil {
+			respondResetPasswordError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.ResetPasswordResponse{
+			Message: "Password updated. You can now sign in.",
+		})
+	}
+}
+
+// respondResetPasswordError maps ResetPassword's sentinel errors onto
+// their response bodies.
+func respondResetPasswordError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrResetTokenInvalid):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "This password reset link is invalid or has expired."})
+	default:
+		logger.Error("unexpected reset password error", "error", err)
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
 	}
 }
