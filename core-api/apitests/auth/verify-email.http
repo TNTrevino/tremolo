@@ -1,0 +1,50 @@
+# Redeeming an email verification token. The happy path is NOT covered
+# here -- the token only ever exists in the body of a queued mail, and
+# this suite has no mailbox to read from. That path lives in
+# core-api/tests/email_verification_service_test.go
+# (TestVerifyEmail_EndToEnd_TheEmailedLinkWorks), which pulls the token
+# straight out of the queued row. This file only exercises what a
+# token-less request can: the invalid-token and validation responses.
+#
+# Run:  kulala run --tests --env local auth/verify-email.http
+
+### VerifyEmailBadToken
+# VerifyEmailBadToken sends a token that was never issued and expects 400
+# with the generic "invalid or expired" sentence -- unknown, used and
+# expired tokens are deliberately indistinguishable.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/verify-email
+Content-Type: application/json
+
+{
+	"token": "kula-never-issued-{{$timestamp}}"
+}
+
+> {%
+	client.test("an unknown token is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "This verification link is invalid or has expired.",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### VerifyEmailEmptyBody
+# VerifyEmailEmptyBody sends {} and expects the missing-token message.
+POST {{baseUrl}}/api/auth/verify-email
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("an empty body reports the missing token", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Token is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

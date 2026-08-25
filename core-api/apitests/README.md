@@ -7,7 +7,7 @@ More readable than a wall of `curl`, and every step asserts.
 ## Files
 
 One `.http` file per endpoint, kebab-case, grouped into a directory per
-URL path segment — 42 files for the 42 routes in
+URL path segment — 44 files for the 44 routes in
 `core-api/controllers/routes.go`. Directory walking is fully recursive
 (kulala picks up every `.http`/`.rest` file at any depth), and
 `http-client.env.json` resolution walks upward from each file's own
@@ -25,16 +25,18 @@ there is no per-group `http-client.env.json`.
   below, handy when you're not sure which group a route landed in.
 - `health/` — the service health check.
 - `auth/` — register, login, refresh, `/me`, the two Google OAuth routes,
-  and forgot/reset password. `google-callback.http` and `google-link.http`
-  make a real outbound call to Google's token endpoint with a garbage code
-  to prove the 401 path — the suite's only external network dependency.
-  `register.http` also covers the teacher invite-code gate (#250): a
-  teacher signup with no code, one with a code that does not exist, and a
-  student whose code is ignored rather than rejected.
-  `reset-password.http` covers only the invalid-token and validation
-  responses; the happy path needs a token that only ever exists in a
-  queued mail's body, so it lives in
-  `core-api/tests/password_reset_service_test.go` instead.
+  forgot/reset password, and verify-email/resend-verification.
+  `google-callback.http` and `google-link.http` make a real outbound call
+  to Google's token endpoint with a garbage code to prove the 401 path —
+  the suite's only external network dependency. `register.http` also
+  covers the teacher invite-code gate (#250): a teacher signup with no
+  code, one with a code that does not exist, and a student whose code is
+  ignored rather than rejected. `reset-password.http` and
+  `verify-email.http` both cover only the invalid-token and validation
+  responses; the happy path in each case needs a token that only ever
+  exists in a queued mail's body, so those live in
+  `core-api/tests/password_reset_service_test.go` and
+  `core-api/tests/email_verification_service_test.go` instead.
 - `admin/` — teacher/student listing and lookup, admin-created users, and
   minting/listing teacher invite codes. ADMIN-only, and there is no
   self-service way to become an ADMIN, so every file here asserts only
