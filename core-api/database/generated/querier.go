@@ -13,6 +13,21 @@ type Querier interface {
 	AddStudentToClass(ctx context.Context, arg AddStudentToClassParams) error
 	ArchiveClass(ctx context.Context, id int32) error
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	// ClaimQueuedEmails takes ownership of a batch in one statement: select
+	// and update together, so two watchers cannot hand the same message to
+	// two relays. FOR UPDATE SKIP LOCKED is what makes the second watcher
+	// move on to the next row instead of blocking on the first one's lock.
+	//
+	// The second arm of the WHERE re-claims a stale 'sending' row: a watcher
+	// that was killed mid-send leaves a row claimed forever otherwise, so a
+	// claim older than the lease is treated as abandoned.
+	//
+	// The parentheses in the WHERE clause are load-bearing. `A and B or C`
+	// parses as `(A and B) or C`, which is what we want here -- but only by
+	// accident of precedence, and the next person to add a condition would
+	// have no way to tell that was intended. They stay explicit.
+	//
+	ClaimQueuedEmails(ctx context.Context, arg ClaimQueuedEmailsParams) ([]TremoloQueuedEmail, error)
 	// Assignment queries. The results grid is derived from
 	// note_game_entries tagged with assignment_id -- there is no separate
 	// submissions table to keep in sync.
@@ -51,11 +66,13 @@ type Querier interface {
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
 	DeleteNoteGameSettings(ctx context.Context, userID int32) error
 	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
+	DeleteQueuedEmailsByRecipient(ctx context.Context, recipient string) error
 	DeleteTeacherInviteCode(ctx context.Context, id int32) error
 	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
 	// relationship queries
 	DeleteTeacherStudentRelationship(ctx context.Context, arg DeleteTeacherStudentRelationshipParams) error
 	DeleteUserByID(ctx context.Context, id int32) error
+	EnqueueEmail(ctx context.Context, arg EnqueueEmailParams) (TremoloQueuedEmail, error)
 	// Chart data queries for individual users
 	FetchChartDataAll(ctx context.Context, userID int32) ([]FetchChartDataAllRow, error)
 	FetchChartDataInRange(ctx context.Context, arg FetchChartDataInRangeParams) ([]FetchChartDataInRangeRow, error)
@@ -100,6 +117,7 @@ type Querier interface {
 	GetGameSettings(ctx context.Context, arg GetGameSettingsParams) (TremoloGameSetting, error)
 	GetKeyboardBindings(ctx context.Context, userID int32) (TremoloKeyboardBinding, error)
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
+	GetQueuedEmailByID(ctx context.Context, id int64) (TremoloQueuedEmail, error)
 	GetRecentEntriesByUserID(ctx context.Context, arg GetRecentEntriesByUserIDParams) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetTeacherInviteCodeByCode(ctx context.Context, code string) (TremoloTeacherInviteCode, error)
@@ -131,11 +149,17 @@ type Querier interface {
 	ListClassRoster(ctx context.Context, classID int32) ([]ListClassRosterRow, error)
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
+	ListEmailSendAttempts(ctx context.Context, queuedEmailID int64) ([]TremoloEmailSendAttempt, error)
+	ListQueuedEmailsByRecipient(ctx context.Context, recipient string) ([]TremoloQueuedEmail, error)
 	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
+	MarkEmailDead(ctx context.Context, arg MarkEmailDeadParams) error
+	MarkEmailSent(ctx context.Context, id int64) error
+	RecordEmailSendAttempt(ctx context.Context, arg RecordEmailSendAttemptParams) error
 	RedeemTeacherInviteCode(ctx context.Context, code string) (int32, error)
 	ReleaseTeacherInviteCode(ctx context.Context, id int32) error
 	RemoveStudentFromClass(ctx context.Context, arg RemoveStudentFromClassParams) error
+	RescheduleEmail(ctx context.Context, arg RescheduleEmailParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
