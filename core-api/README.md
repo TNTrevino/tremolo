@@ -238,6 +238,7 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 |---|---|---|---|
 | GET | `/health` | — | `health_controller.go` (DB ping) |
 | POST | `/api/auth/login`, `/register`, `/refresh` | — | `auth_controller.go` |
+| POST | `/api/auth/forgot-password`, `/reset-password` | — | `auth_controller.go` |
 | GET | `/api/auth/me` | JWT | `auth_controller.go` |
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
