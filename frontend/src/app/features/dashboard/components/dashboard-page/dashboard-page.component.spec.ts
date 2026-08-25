@@ -67,6 +67,19 @@ const METRICS: MultiMetricChartData = {
 };
 
 /**
+ * One row from `/api/classes`. Teacher specs only ever assert
+ * `student_count` (or how many rows come back), so they override just
+ * that field rather than restating the other four.
+ */
+const CLASS_FIXTURE = {
+	id: 1,
+	name: "Symphonic Band",
+	join_code: "BAND23",
+	student_count: 4,
+	created_at: "2026-07-12T04:00:00Z",
+};
+
+/**
  * The dashboard, driven through the DOM the way the parity suite drives it.
  *
  * The first spec here is `e2e/specs/auth.spec.ts`'s
@@ -160,6 +173,23 @@ describe("DashboardPageComponent", () => {
 	 */
 	function teacherCard(): Element | null {
 		return el().querySelector("app-teacher-dashboard");
+	}
+
+	/**
+	 * Signs in as a teacher and renders, flushing every request but the
+	 * class list -- every test below varies that payload (a roster, an
+	 * empty class list, or a failure), so callers flush `classes()`
+	 * themselves and then await stability.
+	 */
+	function startTeacherRender(): void {
+		signIn("TEACHER");
+		create();
+		backend
+			.expectOne(PROFILE_URL)
+			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
+		metrics().flush(METRICS);
+		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
+		backend.expectOne(ACTIVITY_URL).flush([]);
 	}
 
 	it("renders the signed-in user's full name -- the auth.spec.ts contract", async () => {
@@ -308,25 +338,8 @@ describe("DashboardPageComponent", () => {
 	});
 
 	it("gives a teacher the class-metrics fetch and the teacher card", async () => {
-		signIn("TEACHER");
-		create();
-		backend.expectOne(`${BASE}/api/users/9/general-info`).flush({
-			...PROFILE,
-			last_name: "Teacher",
-			role: "TEACHER",
-		});
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
-		classes().flush([
-			{
-				id: 1,
-				name: "Symphonic Band",
-				join_code: "BAND23",
-				student_count: 4,
-				created_at: "2026-07-12T04:00:00Z",
-			},
-		]);
+		startTeacherRender();
+		classes().flush([CLASS_FIXTURE]);
 		await fixture.whenStable();
 
 		expect(el().textContent).toContain("Teacher Dashboard");
@@ -340,14 +353,7 @@ describe("DashboardPageComponent", () => {
 	});
 
 	it("switches a teacher between their own data and the class aggregate", async () => {
-		signIn("TEACHER");
-		create();
-		backend
-			.expectOne(PROFILE_URL)
-			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
+		startTeacherRender();
 		classes().flush([]);
 		await fixture.whenStable();
 
@@ -365,23 +371,11 @@ describe("DashboardPageComponent", () => {
 	});
 
 	it("sums the roster across every class the teacher owns", async () => {
-		signIn("TEACHER");
-		create();
-		backend
-			.expectOne(PROFILE_URL)
-			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
+		startTeacherRender();
 		classes().flush([
+			{ ...CLASS_FIXTURE, student_count: 12 },
 			{
-				id: 1,
-				name: "Symphonic Band",
-				join_code: "BAND23",
-				student_count: 12,
-				created_at: "2026-07-12T04:00:00Z",
-			},
-			{
+				...CLASS_FIXTURE,
 				id: 2,
 				name: "Jazz Ensemble",
 				join_code: "JAZZ23",
@@ -395,14 +389,7 @@ describe("DashboardPageComponent", () => {
 	});
 
 	it("keeps the teacher card when the class list fails", async () => {
-		signIn("TEACHER");
-		create();
-		backend
-			.expectOne(PROFILE_URL)
-			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
+		startTeacherRender();
 		classes().flush({ error: "boom" }, { status: 500, statusText: "" });
 		await fixture.whenStable();
 
