@@ -16,14 +16,7 @@ type LoginRequest struct {
 }
 
 func (req LoginRequest) Valid(ctx context.Context) map[string]string {
-	problems := map[string]string{}
-
-	switch {
-	case req.Email == "":
-		problems["email"] = "Email is required"
-	case !validations.IsEmail(req.Email):
-		problems["email"] = "Email must be a valid email address"
-	}
+	problems := addEmailProblem(map[string]string{}, req.Email)
 
 	return addPasswordProblem(problems, req.Password)
 }
@@ -61,6 +54,31 @@ func passwordProblem(password string) string {
 		return "Password must be at most 72 characters"
 	case !validations.PasswordComplexity(password):
 		return "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
+	}
+	return ""
+}
+
+// addEmailProblem applies the email-shape rule Login and Register share
+// under the "email" key -- the same addX/X split as
+// addPasswordProblem/passwordProblem, and for the same reason (#249): a
+// request whose email field is spelled differently -- ChangeEmailRequest's
+// "new_email" -- can apply emailProblem directly under its own JSON key
+// instead of a second hand-copied switch.
+func addEmailProblem(problems map[string]string, email string) map[string]string {
+	if msg := emailProblem(email); msg != "" {
+		problems["email"] = msg
+	}
+	return problems
+}
+
+// emailProblem is the email-shape rule itself: required, and must look
+// like an email address.
+func emailProblem(email string) string {
+	switch {
+	case email == "":
+		return "Email is required"
+	case !validations.IsEmail(email):
+		return "Email must be a valid email address"
 	}
 	return ""
 }
@@ -130,13 +148,7 @@ var gradeLevels = map[string]bool{
 func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
 	problems := map[string]string{}
 
-	switch {
-	case req.Email == "":
-		problems["email"] = "Email is required"
-	case !validations.IsEmail(req.Email):
-		problems["email"] = "Email must be a valid email address"
-	}
-
+	problems = addEmailProblem(problems, req.Email)
 	problems = addPasswordProblem(problems, req.Password)
 
 	switch {

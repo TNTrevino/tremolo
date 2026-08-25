@@ -3,8 +3,6 @@ package dtos
 import (
 	"context"
 	"strings"
-
-	"sight-reading/validations"
 )
 
 // ChangePasswordRequest is the PUT /api/users/{userId}/password body.
@@ -20,9 +18,9 @@ func (req ChangePasswordRequest) Valid(ctx context.Context) map[string]string {
 		problems["current_password"] = "Current password is required"
 	}
 
-	switch {
-	case passwordProblem(req.NewPassword) != "":
-		problems["new_password"] = passwordProblem(req.NewPassword)
+	switch msg := passwordProblem(req.NewPassword); {
+	case msg != "":
+		problems["new_password"] = msg
 	case req.NewPassword == req.CurrentPassword:
 		// Only reachable once NewPassword has already cleared the
 		// complexity rule above, so CurrentPassword being empty (its own
@@ -54,14 +52,8 @@ func (req ChangeEmailRequest) Valid(ctx context.Context) map[string]string {
 		problems["current_password"] = "Current password is required"
 	}
 
-	// Same messages ForgotPasswordRequest uses for its "email" field,
-	// copied verbatim under "new_email" -- one email-shape rule, spelled
-	// out twice because the two requests validate different JSON keys.
-	switch {
-	case req.NewEmail == "":
-		problems["new_email"] = "Email is required"
-	case !validations.IsEmail(req.NewEmail):
-		problems["new_email"] = "Email must be a valid email address"
+	if msg := emailProblem(req.NewEmail); msg != "" {
+		problems["new_email"] = msg
 	}
 
 	return problems
