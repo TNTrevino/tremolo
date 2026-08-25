@@ -153,3 +153,69 @@ func TestDeleteAccountRoute_Success_Returns200(t *testing.T) {
 	_, err := database.Queries.GetUserByID(context.Background(), int32(userID))
 	assert.True(t, errors.Is(err, sql.ErrNoRows), "the account must actually be gone")
 }
+
+// TestDeleteAccountRoute_WrongPassword_Returns403 pins the 403 the same
+// way TestChangePasswordRoute_WrongCurrentPassword_Returns400 pins that
+// route's 400 for the identical ErrIncorrectPassword sentinel: this is
+// respondDeleteAccountError's own mapping, not respondAccountError's --
+// see that function's doc comment for why deletion is the one place on
+// this page where the harder, non-retriable-by-the-refresh-interceptor
+// stop is correct. The service-level equivalent is
+// TestDeleteAccount_WrongPassword; this is the same check through the
+// real router.
+func TestDeleteAccountRoute_WrongPassword_Returns403(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "delete_account_route_wrong_password")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	router := accountTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodDelete, "/api/users/"+strconv.Itoa(userID), token, dtos.DeleteAccountRequest{
+		Password:          "definitely-wrong",
+		EmailConfirmation: email,
+	}))
+
+	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Incorrect password", response["error"])
+
+	_, err := database.Queries.GetUserByID(context.Background(), int32(userID))
+	assert.NoError(t, err, "a rejected delete must not touch the account")
+}
+
+// TestDeleteAccountRoute_EmptyPasswordOnPasswordAccount_Returns400 covers
+// the other half of DeleteAccount's password branch: a hash IS on file
+// for this account, but Password is blank, which is ErrPasswordRequired,
+// not ErrIncorrectPassword -- a different 400 kept distinguishable from
+// the 403 above in tests and logs (see services/errors.go). The
+// service-level equivalent is TestDeleteAccount_PasswordAccountEmptyPassword;
+// this is the same check through the real router.
+func TestDeleteAccountRoute_EmptyPasswordOnPasswordAccount_Returns400(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "delete_account_route_empty_password")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	router := accountTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodDelete, "/api/users/"+strconv.Itoa(userID), token, dtos.DeleteAccountRequest{
+		Password:          "",
+		EmailConfirmation: email,
+	}))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var response map[string]any
+	testutil.ParseJSONResponse(t, w, &response)
+	assert.Equal(t, "Password is required to delete this account", response["error"])
+
+	_, err := database.Queries.GetUserByID(context.Background(), int32(userID))
+	assert.NoError(t, err, "a rejected delete must not touch the account")
+}
