@@ -1,3 +1,8 @@
+import type {
+	KeyboardBindingsDto,
+	NoteGameSettingsDto,
+} from "@shared/models/game.models";
+
 /**
  * GET /api/users/{userId}/export response tree (#243) -- the data export
  * the account page downloads as a file.
@@ -7,12 +12,18 @@
  * into `JSON.stringify` and out to the browser as a download (see
  * account-page.component.ts's `saveExport`). Round-tripping it through a
  * mapper would be work that immediately gets undone.
+ *
+ * `settings.note_game` and `keyboard_bindings` reuse the shared
+ * `NoteGameSettingsDto`/`KeyboardBindingsDto` wire shapes from
+ * `@shared/models/game.models` rather than redeclaring them: the Go side
+ * reuses its own existing response DTOs for these two sections, so the
+ * frontend types should match instead of drifting out of sync with them.
  */
 export interface UserExport {
 	exported_at: string;
 	profile: ExportProfile;
 	settings: ExportSettings;
-	keyboard_bindings: ExportKeyboardBindings | null;
+	keyboard_bindings: KeyboardBindingsDto | null;
 	score_entries: ExportScoreEntry[];
 	classes: ExportClasses;
 	assignment_attempts: ExportAttempt[];
@@ -33,57 +44,14 @@ export interface ExportProfile {
 }
 
 export interface ExportSettings {
-	note_game: ExportNoteGameSettings | null;
+	note_game: NoteGameSettingsDto | null;
 	games: ExportGameSettings[];
-}
-
-export interface ExportNoteGameSettings {
-	id: number;
-	user_id: number;
-	game_mode: string;
-	time_limit: number;
-	note_limit: number;
-	scale: string;
-	octave: number;
-	low_note: string;
-	high_note: string;
-	clef: string;
 }
 
 /** One saved game's JSONB config -- passed straight through, never read. */
 export interface ExportGameSettings {
 	game_type: string;
 	config: unknown;
-}
-
-export interface ExportKeyBindings {
-	key_c: string;
-	key_d: string;
-	key_e: string;
-	key_f: string;
-	key_g: string;
-	key_a: string;
-	key_b: string;
-	key_c_sharp: string;
-	key_d_sharp: string;
-	key_e_sharp: string;
-	key_f_sharp: string;
-	key_g_sharp: string;
-	key_a_sharp: string;
-	key_b_sharp: string;
-	key_c_flat: string;
-	key_d_flat: string;
-	key_e_flat: string;
-	key_f_flat: string;
-	key_g_flat: string;
-	key_a_flat: string;
-	key_b_flat: string;
-}
-
-export interface ExportKeyboardBindings {
-	id: number;
-	user_id: number;
-	key_bindings: ExportKeyBindings;
 }
 
 export interface ExportScoreEntry {
