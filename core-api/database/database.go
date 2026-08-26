@@ -39,9 +39,42 @@ func InitializeDBConnection() {
 	}
 
 	DBConn = conn
-	Queries = generated.New(conn)
+
+	// DBConn stays the raw handle: goose runs its migrations through it,
+	// and those are not sqlc queries.
+	Queries = newLoggedQueries(conn)
 
 	log.Println(strings.Repeat("------------------------------", 2))
 	log.Println("Connected to database successfully")
 	log.Println(strings.Repeat("------------------------------", 2))
+}
+
+// WithTx returns a Queries bound to tx, with the query log still in place.
+//
+// Use this instead of generated.Queries.WithTx. That method takes a raw
+// *sql.Tx and builds a fresh Queries from it, without reading the db field
+// of the receiver, so the wrapper never reaches the new value:
+//
+//	func (q *Queries) WithTx(tx *sql.Tx) *Queries {
+//		return &Queries{db: tx}
+//	}
+//
+// Every statement run through such a Queries goes straight to the driver.
+// It logs no name, no duration and no error, while queries outside the
+// transaction keep logging as usual. That leaves a log that reads as
+// complete and is silently missing whatever someone thought important
+// enough to wrap in a transaction.
+//
+// *sql.Tx satisfies generated.DBTX on its own, so the wrapper takes it the
+// same way it takes the connection.
+func WithTx(tx *sql.Tx) *generated.Queries {
+	return newLoggedQueries(tx)
+}
+
+// newLoggedQueries builds the sqlc Queries over the query log.
+//
+// It is the one place that hands generated.New its DBTX. Both the shared
+// Queries and WithTx go through it, so neither can end up unwrapped.
+func newLoggedQueries(db generated.DBTX) *generated.Queries {
+	return generated.New(newQueryLogger(db))
 }

@@ -44,7 +44,10 @@ Optional:
 | `USER_SERVICE_PORT` | Listen port (default `5001`) |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins (default `http://localhost:5173`) |
 | `ACCOUNT_LOCKOUT_DURATION_MINUTES` | Lockout duration after failed logins (default 15; the max-attempts count is the `MaxLoginAttempts` constant in `services/auth_service.go`, currently 5) |
-| `LOG_LEVEL` / `LOG_FORMAT` | slog level (`DEBUG`/`WARN`/`ERROR`) and format (`json`/`text`) — `logger/logger.go` |
+| `LOG_LEVEL` / `LOG_FORMAT` | slog level (`DEBUG`/`INFO`/`WARN`/`ERROR`) and format — `logger/logger.go`. `json` for deployed machines, `text` for plain logfmt, anything else (including unset) for the readable [charm](https://charm.land/log/v2) output |
+| `LOG_SQL_ARGS` | `true` adds query arguments to each query log line (`database/query_logger.go`). Off by default — arguments carry email addresses, reset tokens and password hashes |
+| `LOG_SQL_TEXT` | `true` prints the whole statement under each query log line, with sqlc's `-- name:` header stripped because `name=` already carries it. Off by default for volume, not for secrecy |
+| `CLICOLOR_FORCE` | `1` keeps the colour when the output is piped. charm calls `colorprofile.Detect` once at startup and strips every escape when stdout is not a terminal, so `air` (and `\| tee`) produce plain text without this. `NO_COLOR` overrides it |
 | `TREMOLO_DATABASE_USER` / `_PW` / `TREMOLO_FIRST_NAME` / `_LAST_NAME` | Only for the fake-data generator (`go run main.go -fake-it`, see `generation/`) |
 
 ## Architecture: controller → service → repository
