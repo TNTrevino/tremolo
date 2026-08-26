@@ -58,6 +58,8 @@ TODO: automate this plz
   export LOG_LEVEL=DEBUG # or INFO/WARN/ERROR. DEBUG also turns on the query log
   export LOG_FORMAT=json # or text. Leave unset on a laptop for readable colour output
   # export LOG_SQL_ARGS=true # adds query arguments to the log; they carry tokens and emails
+  # export LOG_SQL_TEXT=true # prints the whole statement under each query line
+  export CLICOLOR_FORCE=1 # keeps the log colour under air, which pipes the output
 
   export JWT_SECRET="your-very-secure-random-string-at-least-32-characters" # min 32 chars required
 
