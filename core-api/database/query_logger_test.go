@@ -78,6 +78,42 @@ func newTestQueryLogger(db generated.DBTX, out *bytes.Buffer, logArgs bool) *que
 	}
 }
 
+// runQuery drives the wrapper's QueryContext and disposes of the cursor.
+//
+// fakeDBTX hands back a nil *sql.Rows, because a usable one can only come
+// from a real driver. The nil guard is what lets the test still close and
+// check the cursor the way a real caller has to, which is also what
+// satisfies rowserrcheck and sqlclosecheck.
+func runQuery(t *testing.T, q *queryLogger, query string, args ...any) {
+	t.Helper()
+
+	rows, err := q.QueryContext(context.Background(), query, args...)
+	if err != nil {
+		t.Fatalf("QueryContext() error = %v", err)
+	}
+	if rows == nil {
+		return
+	}
+
+	defer rows.Close() //nolint:errcheck // nothing to do with a close error in a test
+
+	if err := rows.Err(); err != nil {
+		t.Fatalf("rows.Err() = %v", err)
+	}
+}
+
+// runPrepare drives the wrapper's PrepareContext and closes the statement.
+func runPrepare(t *testing.T, q *queryLogger, query string) error {
+	t.Helper()
+
+	stmt, err := q.PrepareContext(context.Background(), query)
+	if stmt != nil {
+		defer stmt.Close() //nolint:errcheck // nothing to do with a close error in a test
+	}
+
+	return err
+}
+
 func TestQueryNameReadsTheSqlcHeader(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -168,9 +204,7 @@ func TestQueryContextLogsNoRowCount(t *testing.T) {
 	db := &fakeDBTX{}
 	q := newTestQueryLogger(db, &out, false)
 
-	if _, err := q.QueryContext(context.Background(), claimSQL, 300); err != nil {
-		t.Fatalf("QueryContext() error = %v", err)
-	}
+	runQuery(t, q, claimSQL, 300)
 
 	logged := out.String()
 	if strings.Contains(logged, "rows=") {
@@ -202,7 +236,7 @@ func TestPrepareContextCallsThrough(t *testing.T) {
 	db := &fakeDBTX{prepareErr: wantErr}
 	q := newTestQueryLogger(db, &out, false)
 
-	_, err := q.PrepareContext(context.Background(), claimSQL)
+	err := runPrepare(t, q, claimSQL)
 
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("PrepareContext() error = %v, want %v", err, wantErr)
@@ -251,9 +285,7 @@ func TestSqlTextIsOmittedByDefault(t *testing.T) {
 	db := &fakeDBTX{}
 	q := newTestQueryLogger(db, &out, false)
 
-	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
-		t.Fatalf("QueryContext() error = %v", err)
-	}
+	runQuery(t, q, claimSQL)
 
 	logged := out.String()
 	if strings.Contains(logged, "sql=") {
@@ -270,9 +302,7 @@ func TestSqlTextIsLoggedWhenEnabled(t *testing.T) {
 	q := newTestQueryLogger(db, &out, false)
 	q.logSQL = true
 
-	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
-		t.Fatalf("QueryContext() error = %v", err)
-	}
+	runQuery(t, q, claimSQL)
 
 	logged := out.String()
 	for _, want := range []string{"with claimable", "tremolo.queued_emails"} {
@@ -290,9 +320,7 @@ func TestSqlTextDropsTheSqlcHeader(t *testing.T) {
 	q := newTestQueryLogger(db, &out, false)
 	q.logSQL = true
 
-	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
-		t.Fatalf("QueryContext() error = %v", err)
-	}
+	runQuery(t, q, claimSQL)
 
 	logged := out.String()
 	if strings.Contains(logged, sqlcNamePrefix) {
