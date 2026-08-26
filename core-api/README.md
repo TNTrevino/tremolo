@@ -44,7 +44,8 @@ Optional:
 | `USER_SERVICE_PORT` | Listen port (default `5001`) |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins (default `http://localhost:5173`) |
 | `ACCOUNT_LOCKOUT_DURATION_MINUTES` | Lockout duration after failed logins (default 15; the max-attempts count is the `MaxLoginAttempts` constant in `services/auth_service.go`, currently 5) |
-| `LOG_LEVEL` / `LOG_FORMAT` | slog level (`DEBUG`/`WARN`/`ERROR`) and format (`json`/`text`) — `logger/logger.go` |
+| `LOG_LEVEL` / `LOG_FORMAT` | slog level (`DEBUG`/`INFO`/`WARN`/`ERROR`) and format — `logger/logger.go`. `json` for deployed machines, `text` for plain logfmt, anything else (including unset) for the readable [charm](https://charm.land/log/v2) output |
+| `LOG_SQL_ARGS` | `true` adds query arguments to each query log line (`database/query_logger.go`). Off by default — arguments carry email addresses, reset tokens and password hashes |
 | `TREMOLO_DATABASE_USER` / `_PW` / `TREMOLO_FIRST_NAME` / `_LAST_NAME` | Only for the fake-data generator (`go run main.go -fake-it`, see `generation/`) |
 
 ## Architecture: controller → service → repository
