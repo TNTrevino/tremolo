@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"sight-reading/database/generated"
+	"sight-reading/logger"
 )
 
 // claimSQL is the shape sqlc actually generates. The `-- name:` header
@@ -112,6 +113,32 @@ func runPrepare(t *testing.T, q *queryLogger, query string) error {
 	}
 
 	return err
+}
+
+// TestLoggedQueriesLogThroughGeneratedCode drives a real generated method
+// end to end. It is the guard against handing generated.New a bare DBTX,
+// which is exactly what generated.Queries.WithTx does and why this package
+// has its own WithTx.
+func TestLoggedQueriesLogThroughGeneratedCode(t *testing.T) {
+	var out bytes.Buffer
+	saved := logger.Default()
+	t.Cleanup(func() { logger.SetDefault(saved) })
+	logger.SetDefault(slog.New(slog.NewTextHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug})))
+
+	db := &fakeDBTX{execResult: fakeResult{rows: 1}}
+	queries := newLoggedQueries(db)
+
+	if err := queries.DeleteAllParentChildrenByChild(context.Background(), 7); err != nil {
+		t.Fatalf("DeleteAllParentChildrenByChild() error = %v", err)
+	}
+
+	logged := out.String()
+	if !strings.Contains(logged, "name=DeleteAllParentChildrenByChild") {
+		t.Errorf("a generated query must log its name, got %q", logged)
+	}
+	if db.calls != 1 {
+		t.Errorf("the statement reached the handle %d times, want 1", db.calls)
+	}
 }
 
 func TestQueryNameReadsTheSqlcHeader(t *testing.T) {
