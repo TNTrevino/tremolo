@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"sight-reading/database"
 	"sight-reading/database/generated"
 	"sight-reading/services"
@@ -57,17 +59,39 @@ type CreateTestUserParams struct {
 	SchoolID  *int64
 }
 
+// testPasswordHashes memoizes one bcrypt hash per distinct password so
+// the suite pays for each string once, at bcrypt.MinCost. These hashes
+// protect nothing; they only need to verify. At the production cost of
+// 12, hashing alone puts the tests package past go test's 10-minute
+// timeout under CI's -race and coverage run.
+var (
+	testPasswordHashesMu sync.Mutex
+	testPasswordHashes   = map[string]string{}
+)
+
+func hashTestPassword(t *testing.T, password string) string {
+	t.Helper()
+	testPasswordHashesMu.Lock()
+	defer testPasswordHashesMu.Unlock()
+
+	if hash, ok := testPasswordHashes[password]; ok {
+		return hash
+	}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	if err != nil {
+		t.Fatalf("Failed to hash password: %v", err)
+	}
+	testPasswordHashes[password] = string(hashed)
+	return testPasswordHashes[password]
+}
+
 // CreateTestUser creates a user in the database for testing and returns the user ID.
 // The password is hashed before storing.
 func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 	t.Helper()
 	SetupTestDB(t)
 
-	// Hash the password
-	hashedPassword, err := services.HashPassword(params.Password)
-	if err != nil {
-		t.Fatalf("Failed to hash password: %v", err)
-	}
+	hashedPassword := hashTestPassword(t, params.Password)
 
 	roleID, err := database.Queries.GetRoleIDByName(context.Background(), params.Role)
 	if err != nil {
