@@ -46,6 +46,10 @@ type queryLogger struct {
 	// query arguments carry email addresses, reset tokens and password
 	// hashes, and a debug log is not a place for those to sit.
 	logArgs bool
+	// logSQL turns on the full statement text. It is off by default for
+	// volume rather than for secrecy: one query becomes twenty lines, and
+	// the request log gets lost between them.
+	logSQL bool
 }
 
 // Compile-time proof that the wrapper can stand in for the real handle.
@@ -54,13 +58,15 @@ var _ generated.DBTX = (*queryLogger)(nil)
 // newQueryLogger wraps db with the service's configured logger.
 func newQueryLogger(db generated.DBTX) *queryLogger {
 	// ParseBool's error is dropped on purpose: an unset or misspelled
-	// value leaves arguments off, which is the safe direction.
+	// value leaves the setting off, which is the safe direction.
 	logArgs, _ := strconv.ParseBool(os.Getenv("LOG_SQL_ARGS"))
+	logSQL, _ := strconv.ParseBool(os.Getenv("LOG_SQL_TEXT"))
 
 	return &queryLogger{
 		db:      db,
 		log:     logger.Default(),
 		logArgs: logArgs,
+		logSQL:  logSQL,
 	}
 }
 
@@ -136,6 +142,13 @@ func (q *queryLogger) record(started time.Time, query string, args []any, err er
 		fields = append(fields, "args", args)
 	}
 
+	// The charm handler splits a value on its newlines and writes each
+	// line behind a gutter, so the statement reads as an indented block
+	// rather than one escaped string.
+	if q.logSQL {
+		fields = append(fields, "sql", queryBody(query))
+	}
+
 	if err != nil {
 		fields = append(fields, "err", err.Error())
 		q.log.Error("query", fields...)
@@ -143,6 +156,24 @@ func (q *queryLogger) record(started time.Time, query string, args []any, err er
 	}
 
 	q.log.Debug("query", fields...)
+}
+
+// queryBody is the statement text as it goes into the log.
+//
+// It drops sqlc's own header line, because the name key on the same log
+// line already says what that header says. Everything below the header
+// stays exactly as it is written in database/queries, line breaks and
+// indentation included: the point of this setting is to read the query
+// you wrote, not a reformatted version of it.
+func queryBody(query string) string {
+	body := strings.TrimSpace(query)
+
+	first, rest, found := strings.Cut(body, "\n")
+	if found && strings.HasPrefix(strings.TrimSpace(first), sqlcNamePrefix) {
+		return strings.TrimRight(rest, "\n")
+	}
+
+	return body
 }
 
 // queryName is the short label for a statement.

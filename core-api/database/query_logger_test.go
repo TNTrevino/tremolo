@@ -246,6 +246,94 @@ func TestArgumentsAreLoggedWhenEnabled(t *testing.T) {
 	}
 }
 
+func TestSqlTextIsOmittedByDefault(t *testing.T) {
+	var out bytes.Buffer
+	db := &fakeDBTX{}
+	q := newTestQueryLogger(db, &out, false)
+
+	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
+		t.Fatalf("QueryContext() error = %v", err)
+	}
+
+	logged := out.String()
+	if strings.Contains(logged, "sql=") {
+		t.Errorf("there should be no sql key by default, got %q", logged)
+	}
+	if strings.Contains(logged, "with claimable") {
+		t.Errorf("the query body must not be logged by default, got %q", logged)
+	}
+}
+
+func TestSqlTextIsLoggedWhenEnabled(t *testing.T) {
+	var out bytes.Buffer
+	db := &fakeDBTX{}
+	q := newTestQueryLogger(db, &out, false)
+	q.logSQL = true
+
+	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
+		t.Fatalf("QueryContext() error = %v", err)
+	}
+
+	logged := out.String()
+	for _, want := range []string{"with claimable", "tremolo.queued_emails"} {
+		if !strings.Contains(logged, want) {
+			t.Errorf("log line %q is missing %q", logged, want)
+		}
+	}
+}
+
+// TestSqlTextDropsTheSqlcHeader keeps the line from saying the same thing
+// twice. The name key already carries what the header says.
+func TestSqlTextDropsTheSqlcHeader(t *testing.T) {
+	var out bytes.Buffer
+	db := &fakeDBTX{}
+	q := newTestQueryLogger(db, &out, false)
+	q.logSQL = true
+
+	if _, err := q.QueryContext(context.Background(), claimSQL); err != nil {
+		t.Fatalf("QueryContext() error = %v", err)
+	}
+
+	logged := out.String()
+	if strings.Contains(logged, sqlcNamePrefix) {
+		t.Errorf("the sqlc header should be stripped from the body, got %q", logged)
+	}
+	if !strings.Contains(logged, "name=ClaimQueuedEmails") {
+		t.Errorf("the query name should survive as its own key, got %q", logged)
+	}
+}
+
+func TestQueryBodyKeepsHandWrittenSqlWhole(t *testing.T) {
+	const plain = "select 1\nfrom users"
+
+	if got := queryBody(plain); got != plain {
+		t.Errorf("queryBody() = %q, want %q", got, plain)
+	}
+}
+
+func TestNewQueryLoggerReadsLogSqlText(t *testing.T) {
+	tests := []struct {
+		value string
+		want  bool
+	}{
+		{value: "true", want: true},
+		{value: "1", want: true},
+		{value: "false", want: false},
+		{value: "", want: false},
+		{value: "nonsense", want: false},
+	}
+
+	for _, tc := range tests {
+		t.Run("LOG_SQL_TEXT="+tc.value, func(t *testing.T) {
+			t.Setenv("LOG_SQL_TEXT", tc.value)
+
+			if got := newQueryLogger(&fakeDBTX{}).logSQL; got != tc.want {
+				t.Errorf("logSQL = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestNewQueryLoggerReadsLogSqlArgs covers the opt-in. Anything that is
 // not a recognised truth value must leave arguments off, so that a typo
 // fails closed rather than starting to log tokens.
