@@ -1,8 +1,10 @@
 package logger
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
+	"strings"
 	"testing"
 
 	charm "charm.land/log/v2"
@@ -89,6 +91,22 @@ func TestCharmHandlerHonoursLogLevel(t *testing.T) {
 				t.Errorf("error enabled = %v, want %v", got, tc.wantError)
 			}
 		})
+	}
+}
+
+// TestSetDefaultReplacesTheLogger covers the seam a test uses to read what
+// another package logged.
+func TestSetDefaultReplacesTheLogger(t *testing.T) {
+	saved := defaultLogger
+	t.Cleanup(func() { defaultLogger = saved })
+
+	var out bytes.Buffer
+	SetDefault(slog.New(slog.NewTextHandler(&out, nil)))
+
+	Info("hello", "key", "value")
+
+	if !strings.Contains(out.String(), "hello") {
+		t.Errorf("the replacement logger received nothing, got %q", out.String())
 	}
 }
 

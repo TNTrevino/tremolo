@@ -59,6 +59,12 @@ func Default() *slog.Logger {
 	return defaultLogger
 }
 
+// SetDefault replaces the configured logger, in the same spirit as
+// slog.SetDefault. A test uses it to read what another package logged.
+func SetDefault(l *slog.Logger) {
+	defaultLogger = l
+}
+
 // parse log level from a string
 func parseLogLevel(level string) slog.Level {
 	switch strings.ToUpper(level) {
