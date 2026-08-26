@@ -39,7 +39,11 @@ func InitializeDBConnection() {
 	}
 
 	DBConn = conn
-	Queries = generated.New(conn)
+
+	// sqlc talks to the wrapper rather than to conn, so every generated
+	// query logs one line. DBConn stays the raw handle: goose runs its
+	// migrations through it, and those are not sqlc queries.
+	Queries = generated.New(newQueryLogger(conn))
 
 	log.Println(strings.Repeat("------------------------------", 2))
 	log.Println("Connected to database successfully")
