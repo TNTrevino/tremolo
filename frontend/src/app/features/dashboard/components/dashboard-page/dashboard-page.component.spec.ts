@@ -20,6 +20,7 @@ const PROFILE_URL = `${BASE}/api/users/9/general-info`;
 const METRICS_URL = `${BASE}/api/charts/user/9/metrics`;
 const CLASS_METRICS_URL = `${BASE}/api/charts/teacher/class-metrics`;
 const ACTIVITY_URL = `${BASE}/api/note-game/activity`;
+const CLASSES_URL = `${BASE}/api/classes`;
 
 /**
  * The **live** `general-info` payload -- all six fields the Go service sends
@@ -63,6 +64,19 @@ const METRICS: MultiMetricChartData = {
 		{ x: "2026-08-02T00:00:00Z", y: 20 },
 		{ x: "2026-08-03T00:00:00Z", y: 10 },
 	],
+};
+
+/**
+ * One row from `/api/classes`. Teacher specs only ever assert
+ * `student_count` (or how many rows come back), so they override just
+ * that field rather than restating the other four.
+ */
+const CLASS_FIXTURE = {
+	id: 1,
+	name: "Symphonic Band",
+	join_code: "BAND23",
+	student_count: 4,
+	created_at: "2026-07-12T04:00:00Z",
 };
 
 /**
@@ -130,6 +144,11 @@ describe("DashboardPageComponent", () => {
 		return backend.expectOne((r) => r.url === METRICS_URL);
 	}
 
+	/** Mirrors `metrics()` for the teacher card's class-list request. */
+	function classes(): TestRequest {
+		return backend.expectOne((r) => r.url === CLASSES_URL);
+	}
+
 	/** Signs in, renders, and answers all four requests a student makes. */
 	async function renderStudent(
 		chart: MultiMetricChartData = METRICS,
@@ -144,6 +163,33 @@ describe("DashboardPageComponent", () => {
 
 	function el(): HTMLElement {
 		return fixture.nativeElement as HTMLElement;
+	}
+
+	/**
+	 * Scoped to the teacher-only card, not the whole page: a chart's
+	 * Y-axis tick or the profile's join date can contain the same digits
+	 * as the roster count under test, so asserting against
+	 * `el().textContent` would still pass with the wrong count on screen.
+	 */
+	function teacherCard(): Element | null {
+		return el().querySelector("app-teacher-dashboard");
+	}
+
+	/**
+	 * Signs in as a teacher and renders, flushing every request but the
+	 * class list -- every test below varies that payload (a roster, an
+	 * empty class list, or a failure), so callers flush `classes()`
+	 * themselves and then await stability.
+	 */
+	function startTeacherRender(): void {
+		signIn("TEACHER");
+		create();
+		backend
+			.expectOne(PROFILE_URL)
+			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
+		metrics().flush(METRICS);
+		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
+		backend.expectOne(ACTIVITY_URL).flush([]);
 	}
 
 	it("renders the signed-in user's full name -- the auth.spec.ts contract", async () => {
@@ -280,30 +326,24 @@ describe("DashboardPageComponent", () => {
 		expect(el().textContent).toContain("Baseline Student");
 	});
 
-	it("never asks a student for class metrics", async () => {
+	it("never asks a student for class metrics or the class list", async () => {
 		await renderStudent();
 
-		// The endpoint 403s for a student; React gated it with `enabled`, and
-		// here an `undefined` params keeps the resource idle.
+		// Both endpoints reject/ignore a student; React gated the metrics call
+		// with `enabled`, and here an `undefined` params keeps each resource
+		// idle.
 		backend.expectNone((r) => r.url === CLASS_METRICS_URL);
+		backend.expectNone((r) => r.url === CLASSES_URL);
 		expect(el().textContent).not.toContain("Teacher Dashboard");
 	});
 
 	it("gives a teacher the class-metrics fetch and the teacher card", async () => {
-		signIn("TEACHER");
-		create();
-		backend.expectOne(`${BASE}/api/users/9/general-info`).flush({
-			...PROFILE,
-			last_name: "Teacher",
-			role: "TEACHER",
-		});
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
+		startTeacherRender();
+		classes().flush([CLASS_FIXTURE]);
 		await fixture.whenStable();
 
 		expect(el().textContent).toContain("Teacher Dashboard");
-		expect(el().textContent).toContain("Coming soon");
+		expect(teacherCard()?.textContent).toContain("4");
 		expect(
 			[...el().querySelectorAll("a")].map((a) => a.textContent?.trim()),
 		).toContain("My Classes");
@@ -313,14 +353,8 @@ describe("DashboardPageComponent", () => {
 	});
 
 	it("switches a teacher between their own data and the class aggregate", async () => {
-		signIn("TEACHER");
-		create();
-		backend
-			.expectOne(PROFILE_URL)
-			.flush({ ...PROFILE, last_name: "Teacher", role: "TEACHER" });
-		metrics().flush(METRICS);
-		backend.expectOne((r) => r.url === CLASS_METRICS_URL).flush(EMPTY_METRICS);
-		backend.expectOne(ACTIVITY_URL).flush([]);
+		startTeacherRender();
+		classes().flush([]);
 		await fixture.whenStable();
 
 		expect(el().querySelectorAll("path.tremolo-line")).toHaveLength(1);
@@ -334,6 +368,34 @@ describe("DashboardPageComponent", () => {
 		// The class series came back empty, so the chart falls to its
 		// not-enough-data note rather than showing the teacher's own line.
 		expect(el().textContent).toContain("Not enough data yet");
+	});
+
+	it("sums the roster across every class the teacher owns", async () => {
+		startTeacherRender();
+		classes().flush([
+			{ ...CLASS_FIXTURE, student_count: 12 },
+			{
+				...CLASS_FIXTURE,
+				id: 2,
+				name: "Jazz Ensemble",
+				join_code: "JAZZ23",
+				student_count: 8,
+				created_at: "2026-07-13T04:00:00Z",
+			},
+		]);
+		await fixture.whenStable();
+
+		expect(teacherCard()?.textContent).toContain("20");
+	});
+
+	it("keeps the teacher card when the class list fails", async () => {
+		startTeacherRender();
+		classes().flush({ error: "boom" }, { status: 500, statusText: "" });
+		await fixture.whenStable();
+
+		expect(el().textContent).toContain("Teacher Dashboard");
+		expect(el().textContent).toContain("Coming soon");
+		expect(el().textContent).not.toContain("Error Loading Dashboard");
 	});
 
 	it("shows the server's message when the dashboard cannot load", async () => {

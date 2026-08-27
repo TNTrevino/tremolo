@@ -7,6 +7,8 @@ import {
 } from "@angular/core";
 import { rxResource } from "@angular/core/rxjs-interop";
 
+import { ClassesService } from "@features/classes/services/classes.service";
+
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { ActivityHeatmapComponent } from "../../../../shared/components/charts/activity-heatmap.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
@@ -28,14 +30,16 @@ import { UserProfileCardComponent } from "../user-profile-card/user-profile-card
  * (which endpoint, what makes it refetch, how the three loading flags
  * combine); its TanStack machinery does not (D6).
  *
- * Four resources, one per endpoint, exactly as React had four queries:
+ * Five resources, one per endpoint -- the four React had, plus `classList`
+ * for the teacher card's roster count:
  *
- * | resource       | endpoint                              | refetches when      |
- * | -------------- | ------------------------------------- | ------------------- |
- * | `profile`      | `/api/users/:id/general-info`         | the signed-in id    |
- * | `chart`        | `/api/charts/user/:id/metrics`        | id or interval      |
- * | `classMetrics` | `/api/charts/teacher/class-metrics`   | interval (teachers) |
- * | `activity`     | `/api/note-game/activity`             | the signed-in id    |
+ * | resource       | endpoint                              | refetches when              |
+ * | -------------- | ------------------------------------- | ---------------------------- |
+ * | `profile`      | `/api/users/:id/general-info`         | the signed-in id            |
+ * | `chart`        | `/api/charts/user/:id/metrics`        | id or interval              |
+ * | `classMetrics` | `/api/charts/teacher/class-metrics`   | interval (teachers)         |
+ * | `activity`     | `/api/note-game/activity`             | the signed-in id            |
+ * | `classList`    | `/api/classes`                        | the signed-in id (teachers) |
  *
  * `params` returning `undefined` is how a resource stays idle, and it is the
  * port of TanStack's `enabled`: a student's `classMetrics` never fires (the
@@ -65,6 +69,7 @@ import { UserProfileCardComponent } from "../user-profile-card/user-profile-card
 export class DashboardPageComponent {
 	private readonly users = inject(UserService);
 	private readonly store = inject(AuthStore);
+	private readonly classesApi = inject(ClassesService);
 
 	protected readonly interval = signal<ChartInterval>("day");
 	protected readonly viewMode = signal<"my" | "class">("my");
@@ -112,6 +117,35 @@ export class DashboardPageComponent {
 		stream: () => this.users.getActivityHeatmap(),
 		defaultValue: [],
 	});
+
+	/**
+	 * The teacher card's "Number of Students", read from the class list the
+	 * /classes page already uses -- no new endpoint. Idle for anyone but a
+	 * teacher.
+	 *
+	 * Deliberately NOT in `showSkeleton()` or `failure()`: a slow or failing
+	 * class list must not blank or error the whole dashboard -- it degrades
+	 * to the "Coming soon" label instead (`studentCount() === null`).
+	 *
+	 * No `defaultValue` here: `defaultValue: []` would make `hasValue()`
+	 * true while the request is still in flight and flash "0" before the
+	 * real count arrives.
+	 */
+	protected readonly classList = rxResource({
+		params: () => (this.isTeacher() ? this.store.user()?.id : undefined),
+		stream: () => this.classesApi.getTeacherClasses(),
+	});
+
+	/**
+	 * Sum of each class's roster. A student enrolled in two of the
+	 * teacher's classes counts twice here; an exact dedup needs a
+	 * server-side `count(distinct student_id)` -- follow-up.
+	 */
+	protected readonly studentCount = computed(() =>
+		this.classList.hasValue()
+			? this.classList.value().reduce((total, c) => total + c.studentCount, 0)
+			: null,
+	);
 
 	/** First load only. A refetch keeps the old dashboard on screen. */
 	protected readonly showSkeleton = computed(
