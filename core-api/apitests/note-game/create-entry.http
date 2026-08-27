@@ -110,9 +110,10 @@ Content-Type: application/json
 
 ### EmptyBody
 # EmptyBody submits {} and expects every rule that fires on a zero
-# value to report, sorted alphabetically by JSON key. total_questions
-# has no presence rule (see the FIXME on Entry.Valid), and game_type
-# has no rule in Valid() at all, so neither appears here.
+# value to report, sorted alphabetically by JSON key. correct_questions
+# and notes_per_minute both accept a zero value now (a real 0-correct
+# score, a rounded-down-to-0 NPM), and game_type has no rule in Valid()
+# at all, so none of the three appear here.
 POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student_token}}
 Content-Type: application/json
@@ -124,9 +125,8 @@ Content-Type: application/json
 		client.assert(response.status === 400, "expected 400, got " + response.status);
 		client.assert(
 			response.body.error ===
-				"CorrectQuestions: the amount of correct questions are required, " +
-				"NPM: notes per minute is required, " +
 				"TimeLength: Time length is required, " +
+				"TotalQuestions: Total questions must be greater than zero, " +
 				"UserID: ID is required",
 			"unexpected error string: " + response.body.error
 		);
@@ -161,10 +161,9 @@ Content-Type: application/json
 %}
 
 ### CorrectQuestionsZero
-# CorrectQuestionsZero sends a legitimate 0/10 score. This is a known
-# bug (see the FIXME on Entry.Valid): the zero-value presence check
-# rejects a real result, so a beginner's honest 0-correct attempt is
-# lost instead of saved.
+# CorrectQuestionsZero sends a legitimate 0/10 score and expects it to
+# save: a beginner's honest 0-correct attempt is a real result, not a
+# missing field.
 POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student_token}}
 Content-Type: application/json
@@ -179,12 +178,10 @@ Content-Type: application/json
 }
 
 > {%
-	client.test("a real 0-correct score is rejected, not saved (known bug)", function () {
-		client.assert(response.status === 400, "expected 400, got " + response.status);
-		client.assert(
-			response.body.error === "CorrectQuestions: the amount of correct questions are required",
-			"unexpected error string: " + response.body.error
-		);
+	client.test("a real 0-correct score is saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Note game entry saved successfully", "unexpected message: " + response.body.message);
+		client.assert(response.body.id > 0, "response carries the new entry id");
 	});
 %}
 
@@ -214,7 +211,9 @@ Content-Type: application/json
 %}
 
 ### NpmZero
-# NpmZero omits notes_per_minute and expects 400.
+# NpmZero sends a legitimate zero notes-per-minute value and expects it
+# to save: the frontend rounds npm = total/timeElapsed, so a slow game
+# can legitimately round down to 0, and that is not a missing value.
 POST {{baseUrl}}/api/note-game/entry
 Authorization: Bearer {{student_token}}
 Content-Type: application/json
@@ -229,10 +228,37 @@ Content-Type: application/json
 }
 
 > {%
-	client.test("a zero notes-per-minute is rejected", function () {
+	client.test("a zero notes-per-minute is saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Note game entry saved successfully", "unexpected message: " + response.body.message);
+		client.assert(response.body.id > 0, "response carries the new entry id");
+	});
+%}
+
+### NpmTooHigh
+# NpmTooHigh sends a notes-per-minute value far above what any human can
+# play. Issue #252: before the cap, an unbounded float here reached
+# int32(math.Round(entry.NPM)) in the service as an out-of-range,
+# implementation-defined conversion instead of being rejected at
+# validation.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 1e15,
+	"game_type": "note"
+}
+
+> {%
+	client.test("an implausibly high notes-per-minute is rejected", function () {
 		client.assert(response.status === 400, "expected 400, got " + response.status);
 		client.assert(
-			response.body.error === "NPM: notes per minute is required",
+			response.body.error === "NPM: notes per minute cannot exceed 1000",
 			"unexpected error string: " + response.body.error
 		);
 	});

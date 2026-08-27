@@ -19,18 +19,19 @@ import (
 // Note: Users enter notes at these speeds:
 //   - Beginner: ~1 note/second = 60 NPM
 //   - Intermediate: ~2 notes/second = 120 NPM
-//   - Advanced: ~4 notes/second = 240 NPM (capped at 127 due to int8 database field)
+//   - Advanced: ~4 notes/second = 240 NPM (capped at 127 here for demo realism)
 const (
 	// Notes Per Minute ranges (accounting for thinking time and UI interaction)
-	// NOTE: NPM is stored as int8 in database (max 127), so we cap at 127
+	// NOTE: 127 is a realism cap chosen for generated demo data, not a type
+	// or database limit -- dtos.Entry.NPM is a float64 with no upper bound.
 	MIN_NPM_BEGINNER     = 40  // ~0.67 notes/sec
 	MAX_NPM_BEGINNER     = 80  // ~1.33 notes/sec
 	MIN_NPM_INTERMEDIATE = 80  // ~1.33 notes/sec
 	MAX_NPM_INTERMEDIATE = 110 // ~1.83 notes/sec
 	MIN_NPM_ADVANCED     = 110 // ~1.83 notes/sec
-	MAX_NPM_ADVANCED     = 127 // ~2.12 notes/sec (max int8 value)
+	MAX_NPM_ADVANCED     = 127 // ~2.12 notes/sec (realism cap, not a hard limit)
 
-	// Question count ranges based on session length (updated for int8 NPM cap of 127)
+	// Question count ranges based on session length (derived from the 127 NPM cap above)
 	// Short session: 5-10 minutes
 	// Medium session: 10-20 minutes
 	MIN_QUESTIONS_MEDIUM = 400  // 10 min * 40 NPM
@@ -336,8 +337,8 @@ func generateRealisticNoteGameEntries(studentID int16, entryCount int, profile S
 			TimeLength:       timeLength,
 			TotalQuestions:   int16(totalQuestions),
 			CorrectQuestions: int16(correctQuestions),
-			NPM:              int8(actualNPM),
-			UserID:           studentID,
+			NPM:              float64(actualNPM),
+			UserID:           int64(studentID),
 			CreatedDate: sql.NullString{
 				String: entryDate.Format("2006-01-02"),
 				Valid:  true,

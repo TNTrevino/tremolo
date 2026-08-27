@@ -62,7 +62,7 @@ func DemoRealisticDataGeneration() {
 		fmt.Printf("   %-5d | %s | %-3d | %4d/%-5d | %5.1f%%  | %s\n",
 			i+1,
 			entry.CreatedDate.String,
-			entry.NPM,
+			int(entry.NPM),
 			entry.CorrectQuestions,
 			entry.TotalQuestions,
 			accuracy,
@@ -73,11 +73,13 @@ func DemoRealisticDataGeneration() {
 	// Calculate improvement
 	firstAccuracy := float64(entries[0].CorrectQuestions) / float64(entries[0].TotalQuestions) * 100
 	lastAccuracy := float64(entries[len(entries)-1].CorrectQuestions) / float64(entries[len(entries)-1].TotalQuestions) * 100
-	npmImprovement := int(entries[len(entries)-1].NPM) - int(entries[0].NPM)
+	firstNPM := int(entries[0].NPM)
+	lastNPM := int(entries[len(entries)-1].NPM)
+	npmImprovement := lastNPM - firstNPM
 	accuracyImprovement := lastAccuracy - firstAccuracy
 
 	fmt.Printf("\n   📊 Progress Summary:\n")
-	fmt.Printf("      NPM: %d → %d (+%d)\n", entries[0].NPM, entries[len(entries)-1].NPM, npmImprovement)
+	fmt.Printf("      NPM: %d → %d (+%d)\n", firstNPM, lastNPM, npmImprovement)
 	fmt.Printf("      Accuracy: %.1f%% → %.1f%% (+%.1f%%)\n", firstAccuracy, lastAccuracy, accuracyImprovement)
 
 	// Demo 3: Show correlation between metrics
@@ -87,13 +89,14 @@ func DemoRealisticDataGeneration() {
 
 	entry := entries[5]
 	sessionMinutes := 20
-	expectedQuestions := sessionMinutes * int(entry.NPM)
+	npm := int(entry.NPM)
+	expectedQuestions := sessionMinutes * npm
 	actualQuestions := int(entry.TotalQuestions)
 	variance := float64(actualQuestions-expectedQuestions) / float64(expectedQuestions) * 100
 
 	fmt.Printf("   Example Entry Analysis:\n")
 	fmt.Printf("     - Session Length: ~%d minutes\n", sessionMinutes)
-	fmt.Printf("     - NPM: %d notes/minute\n", entry.NPM)
+	fmt.Printf("     - NPM: %d notes/minute\n", npm)
 	fmt.Printf("     - Expected Questions: ~%d\n", expectedQuestions)
 	fmt.Printf("     - Actual Questions: %d\n", actualQuestions)
 	fmt.Printf("     - Variance: %.1f%% (realistic variance)\n", variance)

@@ -64,36 +64,34 @@ func TestEntryValid_RejectsMoreCorrectThanTotal(t *testing.T) {
 	assert.Contains(t, problems["correct_questions"], "CorrectQuestions")
 }
 
-func TestEntryValid_RejectsMissingFields(t *testing.T) {
+// The time_length-missing case lives in TestEntryValid_RejectsABadTimeLength
+// (its "empty" case), so it isn't repeated here.
+func TestEntryValid_RejectsMissingUserID(t *testing.T) {
 	t.Parallel()
 
-	for key, mutate := range map[string]func(*dtos.Entry){
-		"time_length":       func(e *dtos.Entry) { e.TimeLength = "" },
-		"correct_questions": func(e *dtos.Entry) { e.CorrectQuestions = 0 },
-		"user_id":           func(e *dtos.Entry) { e.UserID = 0 },
-		"notes_per_minute":  func(e *dtos.Entry) { e.NPM = 0 },
-	} {
-		t.Run(key, func(t *testing.T) {
-			t.Parallel()
-			entry := validEntry()
-			mutate(&entry)
+	entry := validEntry()
+	entry.UserID = 0
 
-			problems := entry.Valid(context.Background())
+	problems := entry.Valid(context.Background())
 
-			assert.NotEmpty(t, problems[key])
-		})
-	}
+	assert.Contains(t, problems["user_id"], "UserID")
 }
 
-// TotalQuestions has no presence rule. The switch case that was meant to
-// report it is spelled "Questions", so it never matched the field and a
-// zero total has never been reported. Pinned here so the day someone
-// adds the rule, this test fails and says so.
-//
-// A zero total forces a zero correct, and that field does have a rule, so
-// this asserts on the absence of the total_questions key rather than on
-// an empty map.
-func TestEntryValid_HasNoRuleForTotalQuestions(t *testing.T) {
+// A 0/10 game is a legitimate result (a beginner who missed everything),
+// not a missing field. Pinned so the presence-check regression this issue
+// fixed does not come back.
+func TestEntryValid_AcceptsZeroCorrectQuestions(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.CorrectQuestions = 0
+
+	assert.Empty(t, entry.Valid(context.Background()))
+}
+
+// TotalQuestions must be positive: a zero (or negative) total describes no
+// game at all.
+func TestEntryValid_RejectsZeroTotalQuestions(t *testing.T) {
 	t.Parallel()
 
 	entry := validEntry()
@@ -102,5 +100,72 @@ func TestEntryValid_HasNoRuleForTotalQuestions(t *testing.T) {
 
 	problems := entry.Valid(context.Background())
 
-	assert.NotContains(t, problems, "total_questions")
+	assert.Contains(t, problems["total_questions"], "TotalQuestions")
+}
+
+// The frontend computes npm = total/timeElapsed and rounds it, so a slow
+// game can legitimately round down to 0 -- that is not a missing value and
+// must still save.
+func TestEntryValid_AcceptsZeroNPM(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = 0
+
+	assert.Empty(t, entry.Valid(context.Background()))
+}
+
+func TestEntryValid_RejectsNegativeNPM(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = -1
+
+	problems := entry.Valid(context.Background())
+
+	assert.Contains(t, problems["notes_per_minute"], "NPM")
+}
+
+// Issue #252: widening NPM from int8 to float64 removed the implicit upper
+// bound JSON decoding used to enforce, so an unbounded value like this
+// passed Valid() and reached int32(math.Round(entry.NPM)) in
+// services.CreateNoteGameEntry -- an out-of-range float-to-int32
+// conversion, which Go leaves implementation-defined. The exact message is
+// pinned (not just Contains, like the other rules above) because the cap
+// number itself is the point of the fix.
+func TestEntryValid_RejectsNPMAboveCap(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = 1e15
+
+	problems := entry.Valid(context.Background())
+
+	assert.Equal(t, "NPM: notes per minute cannot exceed 1000", problems["notes_per_minute"])
+}
+
+// 1000 itself must still save: world-class instrumentalists top out far
+// below it, so the cap must reject only values beyond it, not the
+// boundary value.
+func TestEntryValid_AcceptsNPMAtCap(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = 1000
+
+	assert.Empty(t, entry.Valid(context.Background()))
+}
+
+// Validation runs on the raw submitted value, before the service's
+// math.Round -- so 1000.4 is rejected even though it would round to
+// exactly 1000. Pinning that ordering here so it doesn't drift.
+func TestEntryValid_RejectsNPMJustOverCap(t *testing.T) {
+	t.Parallel()
+
+	entry := validEntry()
+	entry.NPM = 1000.4
+
+	problems := entry.Valid(context.Background())
+
+	assert.Equal(t, "NPM: notes per minute cannot exceed 1000", problems["notes_per_minute"])
 }

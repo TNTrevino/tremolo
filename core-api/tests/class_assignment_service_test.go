@@ -215,7 +215,7 @@ func TestAssignmentAttempts_FlowThroughEntries(t *testing.T) {
 		TimeLength:       "00:01:00",
 		TotalQuestions:   20,
 		CorrectQuestions: 15,
-		UserID:           int16(studentID),
+		UserID:           int64(studentID),
 		NPM:              20,
 		GameType:         "note",
 		AssignmentID:     &assignment.ID,
@@ -232,7 +232,7 @@ func TestAssignmentAttempts_FlowThroughEntries(t *testing.T) {
 
 	// A student outside the class cannot attach attempts.
 	outsiderEntry := *entry
-	outsiderEntry.UserID = int16(outsiderID)
+	outsiderEntry.UserID = int64(outsiderID)
 	_, err = services.CreateNoteGameEntry(context.Background(), database.Queries, outsiderID, &outsiderEntry)
 	assert.ErrorIs(t, err, services.ErrForbidden)
 
@@ -311,7 +311,7 @@ func TestAssignmentResults_BestReflectsASingleAttempt(t *testing.T) {
 			TimeLength:       "00:01:00",
 			TotalQuestions:   a.total,
 			CorrectQuestions: a.correct,
-			UserID:           int16(studentID),
+			UserID:           int64(studentID),
 			NPM:              10,
 			GameType:         "note",
 			AssignmentID:     &assignment.ID,
@@ -385,7 +385,7 @@ func TestGetAssignmentAttempts_OrderedAndAuthorized(t *testing.T) {
 			TimeLength:       "00:01:00",
 			TotalQuestions:   a.total,
 			CorrectQuestions: a.correct,
-			UserID:           int16(studentID),
+			UserID:           int64(studentID),
 			NPM:              12,
 			GameType:         "note",
 			AssignmentID:     &assignment.ID,
@@ -461,7 +461,7 @@ func TestDeleteAssignment_KeepsEntries(t *testing.T) {
 		TimeLength:       "00:01:00",
 		TotalQuestions:   10,
 		CorrectQuestions: 9,
-		UserID:           int16(studentID),
+		UserID:           int64(studentID),
 		NPM:              10,
 		GameType:         "note",
 		AssignmentID:     &assignment.ID,

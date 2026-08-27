@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"math"
 	"time"
 
 	dtos "sight-reading/DTOs"
@@ -71,9 +72,11 @@ func CreateNoteGameEntry(ctx context.Context, q generated.Querier, authenticated
 		TimeLength:       timeLength,
 		TotalQuestions:   int32(entry.TotalQuestions),
 		CorrectQuestions: int32(entry.CorrectQuestions),
-		NotesPerMinute:   int32(entry.NPM),
-		GameType:         gameType,
-		AssignmentID:     assignmentID,
+		// notes_per_minute is an int column; round half-up instead of
+		// truncating so a fractional NPM doesn't silently lose precision.
+		NotesPerMinute: int32(math.Round(entry.NPM)),
+		GameType:       gameType,
+		AssignmentID:   assignmentID,
 	}
 
 	entryID, err := q.CreateNoteGameEntry(ctx, params)

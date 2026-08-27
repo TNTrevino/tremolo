@@ -24,6 +24,27 @@ func noteGameTestRouter() *http.ServeMux {
 	return mux
 }
 
+// assertNoteGameEntryCreated POSTs entry, asserts the standard 201 response
+// shape (saved message + an id), and registers cleanup for the saved row.
+// Shared by the create-entry tests that only vary the entry itself.
+func assertNoteGameEntryCreated(t *testing.T, router *http.ServeMux, token string, entry dtos.Entry) {
+	t.Helper()
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
+
+	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Note game entry saved successfully", resp["message"])
+	require.Contains(t, resp, "id")
+
+	t.Cleanup(func() {
+		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
+	})
+}
+
 // TestCreateNoteGameEntryRoute_Unauthenticated verifies the route requires
 // authentication, i.e. that middleware.RequireAuth is actually wired in
 // front of the handler.
@@ -54,27 +75,14 @@ func TestCreateNoteGameEntryRoute_Success(t *testing.T) {
 	token := testAccessToken(t, userID)
 
 	entry := dtos.Entry{
-		UserID:           int16(userID),
+		UserID:           int64(userID),
 		TimeLength:       "00:05:30",
 		TotalQuestions:   20,
 		CorrectQuestions: 15,
 		NPM:              3,
 	}
 
-	router := noteGameTestRouter()
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
-
-	require.Equal(t, http.StatusCreated, w.Code, "Response body: %s", w.Body.String())
-
-	var resp map[string]any
-	testutil.ParseJSONResponse(t, w, &resp)
-	assert.Equal(t, "Note game entry saved successfully", resp["message"])
-	require.Contains(t, resp, "id")
-
-	t.Cleanup(func() {
-		testutil.DeleteTestNoteGameEntry(t, int64(resp["id"].(float64)))
-	})
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
 }
 
 // TestCreateNoteGameEntryRoute_Forbidden verifies that a user cannot create
@@ -92,7 +100,7 @@ func TestCreateNoteGameEntryRoute_Forbidden(t *testing.T) {
 	userID2 := testutil.CreateTestUserWithDefaults(t, email2, "STUDENT")
 
 	entry := dtos.Entry{
-		UserID:           int16(userID2),
+		UserID:           int64(userID2),
 		TimeLength:       "00:05:30",
 		TotalQuestions:   20,
 		CorrectQuestions: 15,
@@ -133,6 +141,113 @@ func TestCreateNoteGameEntryRoute_InvalidBody(t *testing.T) {
 	var resp map[string]any
 	testutil.ParseJSONResponse(t, w, &resp)
 	assert.Equal(t, "Invalid request body", resp["error"])
+}
+
+// TestCreateNoteGameEntryRoute_ZeroCorrectSaves verifies a legitimate 0/10
+// score -- CorrectQuestions == 0 -- is not rejected by the presence check
+// that used to guard the field. Issue #252.
+func TestCreateNoteGameEntryRoute_ZeroCorrectSaves(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "note_game_route_zero_correct")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	entry := dtos.Entry{
+		UserID:           int64(userID),
+		TimeLength:       "00:05:30",
+		TotalQuestions:   10,
+		CorrectQuestions: 0,
+		NPM:              3,
+	}
+
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
+}
+
+// TestCreateNoteGameEntryRoute_NPMAboveOldInt8CapSaves verifies an NPM value
+// above the old int8 cap (127) survives JSON decode and saves. Issue #252.
+func TestCreateNoteGameEntryRoute_NPMAboveOldInt8CapSaves(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "note_game_route_npm_above_cap")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	entry := dtos.Entry{
+		UserID:           int64(userID),
+		TimeLength:       "00:05:30",
+		TotalQuestions:   20,
+		CorrectQuestions: 15,
+		NPM:              200,
+	}
+
+	assertNoteGameEntryCreated(t, noteGameTestRouter(), token, entry)
+}
+
+// TestCreateNoteGameEntryRoute_NPMAboveCapRejected verifies an NPM value far
+// above what any human can play is rejected with 400 and the exact
+// dtos.Entry.Valid() message, instead of silently reaching the
+// out-of-range float-to-int32 conversion in the service. Issue #252.
+func TestCreateNoteGameEntryRoute_NPMAboveCapRejected(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "note_game_route_npm_above_cap_rejected")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	entry := dtos.Entry{
+		UserID:           int64(userID),
+		TimeLength:       "00:05:30",
+		TotalQuestions:   20,
+		CorrectQuestions: 15,
+		NPM:              1e15,
+	}
+
+	router := noteGameTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "NPM: notes per minute cannot exceed 1000", resp["error"])
+}
+
+// TestCreateNoteGameEntryRoute_UserIDAboveOldInt16Cap verifies a UserID
+// value above the old int16 cap (32767) survives JSON decode and Valid().
+// No user with this ID is seeded: the request instead reaches the
+// service's caller-matches-user_id authorization check and is rejected
+// with 403, not 400 -- proving decode+Valid passed for the wide value
+// without needing to seed 40000 users. Issue #252.
+func TestCreateNoteGameEntryRoute_UserIDAboveOldInt16Cap(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "note_game_route_userid_above_cap")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	entry := dtos.Entry{
+		UserID:           40000,
+		TimeLength:       "00:05:30",
+		TotalQuestions:   20,
+		CorrectQuestions: 15,
+		NPM:              3,
+	}
+
+	router := noteGameTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/note-game/entry", token, entry))
+
+	assert.Equal(t, http.StatusForbidden, w.Code, "Response body: %s", w.Body.String())
+
+	var resp map[string]any
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.Equal(t, "Not authorized", resp["error"])
 }
 
 // TestGetRecentNoteGameEntriesRoute_Unauthenticated verifies the route
