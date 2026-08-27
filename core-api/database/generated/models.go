@@ -159,4 +159,5 @@ type TremoloUser struct {
 	Instrument          sql.NullString `json:"instrument"`
 	RoleID              int32          `json:"role_id"`
 	GoogleID            sql.NullString `json:"google_id"`
+	GradeLevel          sql.NullString `json:"grade_level"`
 }

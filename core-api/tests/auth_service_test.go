@@ -286,6 +286,57 @@ func TestRegister_AllRoles(t *testing.T) {
 	}
 }
 
+// TestRegister_GradeLevel pins storage, not just validation (#244): a
+// supplied grade is stored as sent, and an absent one reads back as a SQL
+// NULL rather than an empty string -- "declined to say" and "created
+// before we asked" must not be distinguishable in the data.
+func TestRegister_GradeLevel(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	t.Run("stores the supplied grade", func(t *testing.T) {
+		t.Parallel()
+
+		email := testutil.UniqueEmail(t, "register_grade_set")
+		result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
+			Email:      email,
+			Password:   "TestPass123!",
+			FirstName:  "Test",
+			LastName:   "User",
+			Role:       "STUDENT",
+			GradeLevel: "8",
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+		stored := testutil.GetTestUserGradeLevel(t, email)
+		require.True(t, stored.Valid, "expected grade_level to be set, got NULL")
+		assert.Equal(t, "8", stored.String)
+	})
+
+	t.Run("an absent grade stores NULL, not an empty string", func(t *testing.T) {
+		t.Parallel()
+
+		email := testutil.UniqueEmail(t, "register_grade_absent")
+		result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
+			Email:     email,
+			Password:  "TestPass123!",
+			FirstName: "Test",
+			LastName:  "User",
+			Role:      "STUDENT",
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		t.Cleanup(func() { testutil.DeleteTestUser(t, result.User.ID) })
+
+		stored := testutil.GetTestUserGradeLevel(t, email)
+		assert.False(t, stored.Valid, "an absent grade must read back as NULL")
+	})
+}
+
 func TestGetCurrentUser_ValidUserID(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)

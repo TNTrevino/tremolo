@@ -188,6 +188,98 @@ func TestRegisterRequestValid_StudentIgnoresInviteCode(t *testing.T) {
 	assert.Empty(t, problems)
 }
 
+// TestRegisterRequestValid_AcceptsGoodGradeLevels pins the full allowed
+// set (#244): "6".."12" are the grades this app targets, and "other"
+// covers an adult or anyone the band does not describe -- an answer, not
+// a refusal.
+func TestRegisterRequestValid_AcceptsGoodGradeLevels(t *testing.T) {
+	t.Parallel()
+
+	for _, grade := range []string{"6", "7", "8", "9", "10", "11", "12", "other"} {
+		t.Run(grade, func(t *testing.T) {
+			t.Parallel()
+			req := validRegisterRequest()
+			req.GradeLevel = grade
+
+			problems := req.Valid(context.Background())
+
+			assert.NotContains(t, problems, "grade_level")
+			assert.Empty(t, problems)
+		})
+	}
+}
+
+// TestRegisterRequestValid_GradeLevelOptional keeps the field optional:
+// it gates nothing, every pre-#244 account has none, and a request body
+// that never sends the key -- which decodes to the same "" zero value as
+// one that sends it empty -- must stay valid either way.
+func TestRegisterRequestValid_GradeLevelOptional(t *testing.T) {
+	t.Parallel()
+
+	req := validRegisterRequest()
+	req.GradeLevel = ""
+
+	problems := req.Valid(context.Background())
+
+	assert.NotContains(t, problems, "grade_level")
+	assert.Empty(t, problems)
+}
+
+// TestRegisterRequestValid_RejectsBadGradeLevels pins the exact message
+// and the shape of the allowed set: one grade past the top of the band,
+// a value that is not a grade at all, and the right word in the wrong
+// case (the map is an exact match, not case-insensitive).
+func TestRegisterRequestValid_RejectsBadGradeLevels(t *testing.T) {
+	t.Parallel()
+
+	const want = "Grade level must be one of: 6, 7, 8, 9, 10, 11, 12, other"
+
+	for _, grade := range []string{"13", "kindergarten", "OTHER"} {
+		t.Run(grade, func(t *testing.T) {
+			t.Parallel()
+			req := validRegisterRequest()
+			req.GradeLevel = grade
+
+			problems := req.Valid(context.Background())
+
+			assert.Equal(t, want, problems["grade_level"])
+		})
+	}
+}
+
+// TestRegisterRequestValid_GradeLevelTrimsWhitespace pins TrimSpace: a
+// value padded by, say, a form field's autofill must not be rejected for
+// whitespace that was never part of the answer.
+func TestRegisterRequestValid_GradeLevelTrimsWhitespace(t *testing.T) {
+	t.Parallel()
+
+	req := validRegisterRequest()
+	req.GradeLevel = " 7 "
+
+	problems := req.Valid(context.Background())
+
+	assert.NotContains(t, problems, "grade_level")
+	assert.Empty(t, problems)
+}
+
+// TestRegisterRequestValid_TeacherGradeLevelNotRejected keeps the rule
+// presence-based, not role-based: the signup page never shows a teacher
+// this field, but Valid() does not check role either, so a client that
+// sends one anyway is validated exactly like a student's would be.
+func TestRegisterRequestValid_TeacherGradeLevelNotRejected(t *testing.T) {
+	t.Parallel()
+
+	req := validRegisterRequest()
+	req.Role = "TEACHER"
+	req.InviteCode = "ABCD2345"
+	req.GradeLevel = "8"
+
+	problems := req.Valid(context.Background())
+
+	assert.NotContains(t, problems, "grade_level")
+	assert.Empty(t, problems)
+}
+
 func TestGoogleCallbackRequestValid(t *testing.T) {
 	t.Parallel()
 

@@ -286,3 +286,82 @@ Content-Type: application/json
 		);
 	});
 %}
+
+### RegisterStudentWithGradeLevel
+# RegisterStudentWithGradeLevel sends a valid grade alongside an
+# otherwise-valid student signup (#244) and expects 201 -- the field is
+# additive, not a new required part of the shape.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "kula_register_grade_{{$timestamp}}@qa.test",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT",
+	"grade_level": "8"
+}
+
+> {%
+	client.test("a student's grade level is accepted", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.user.role === "STUDENT", "role is echoed back");
+	});
+%}
+
+### RegisterInvalidGradeLevel
+# RegisterInvalidGradeLevel sends a grade outside the allowed set. The
+# rule is a DTO rule, so the message comes back through the same
+# ProblemsError join as every other field above.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "kula_register_badgrade_{{$timestamp}}@qa.test",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT",
+	"grade_level": "13"
+}
+
+> {%
+	client.test("an invalid grade level is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"Grade level must be one of: 6, 7, 8, 9, 10, 11, 12, other",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterGradeLevelSortsBetweenNameFields
+# RegisterGradeLevelSortsBetweenNameFields makes both grade_level and
+# last_name invalid at once. httpx.ProblemsError sorts by JSON field
+# name, and "grade_level" sorts before "last_name" ('g' < 'l'), so the
+# grade message must come first in the joined string.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "kula_register_gradesort_{{$timestamp}}@qa.test",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "B",
+	"role": "STUDENT",
+	"grade_level": "13"
+}
+
+> {%
+	client.test("grade_level's message sorts before last_name's", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error ===
+				"Grade level must be one of: 6, 7, 8, 9, 10, 11, 12, other, " +
+				"Last name must be at least 2 characters",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

@@ -63,7 +63,8 @@ insert into tremolo.users (
     email,
     password,
     role_id,
-    school_id
+    school_id,
+    grade_level
 )
 values (
     $1,
@@ -71,9 +72,10 @@ values (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
-returning id, first_name, last_name, email, role_id, school_id, created_date;
+returning id, first_name, last_name, email, role_id, school_id, created_date, grade_level;
 
 -- name: GetUserGeneralInfo :one
 select
@@ -105,6 +107,8 @@ from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.email = $1;
 
+-- CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
+-- column just defaults NULL for these rows (#244).
 -- name: CreateOAuthUser :one
 insert into tremolo.users (
     first_name,
