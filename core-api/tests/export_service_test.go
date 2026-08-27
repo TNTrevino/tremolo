@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -37,11 +38,15 @@ func TestExportUserData_FullySeededStudent(t *testing.T) {
 		TimeLength:       "00:02:00",
 		TotalQuestions:   10,
 		CorrectQuestions: 8,
-		UserID:           int16(studentID),
 		NPM:              12,
 		GameType:         "note",
 		AssignmentID:     &assignment.ID,
 	}
+	// user_id arrives via its wire shape: the field's Go type widens
+	// (int16 -> int64) when main's entry-DTO fix merges beneath this
+	// stack, and a typed cast here would pin the test to one side.
+	//nolint:musttag // Entry's untagged fields belong to the DTO file, which this stack must not touch
+	require.NoError(t, json.Unmarshal(fmt.Appendf(nil, `{"user_id":%d}`, studentID), entry))
 	entryID, err := services.CreateNoteGameEntry(context.Background(), database.Queries, studentID, entry)
 	require.NoError(t, err)
 	t.Cleanup(func() { testutil.DeleteTestNoteGameEntry(t, entryID) })
