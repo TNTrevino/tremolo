@@ -27,7 +27,7 @@ func TestGetGeneralUserInfo_Success(t *testing.T) {
 		Role:      "STUDENT",
 	})
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -44,7 +44,7 @@ func TestGetGeneralUserInfo_UserNotFound(t *testing.T) {
 	// Use a very large ID that won't exist
 	nonExistentUserID := 999999999
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, nonExistentUserID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, nonExistentUserID, nonExistentUserID)
 
 	assert.ErrorIs(t, err, services.ErrNotFound)
 	assert.Nil(t, result)
@@ -58,7 +58,7 @@ func TestGetGeneralUserInfo_NoEntries(t *testing.T) {
 	email := testutil.UniqueEmail(t, "userinfo_noentries")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -83,7 +83,7 @@ func TestGetGeneralUserInfo_WithEntries(t *testing.T) {
 		NotesPerMinute:   2.0,
 	})
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -99,7 +99,7 @@ func TestGetGeneralUserInfo_DateFormat(t *testing.T) {
 	email := testutil.UniqueEmail(t, "userinfo_dateformat")
 	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -144,7 +144,7 @@ func TestGetGeneralUserInfo_MultipleEntries(t *testing.T) {
 		NotesPerMinute:   2.0,
 	})
 
-	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID)
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, userID, userID)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 
@@ -153,4 +153,91 @@ func TestGetGeneralUserInfo_MultipleEntries(t *testing.T) {
 
 	// Verify total duration: 00:05:00 + 00:10:00 + 00:15:00 = 00:30:00
 	assert.Equal(t, "00:30:00", result.TotalDuration)
+}
+
+// TestGetGeneralUserInfo_OwningTeacherAllowed verifies that a teacher who
+// owns a class the target student is enrolled in may read that student's
+// general info -- the #254 rule.
+func TestGetGeneralUserInfo_OwningTeacherAllowed(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "userinfo_owning_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "userinfo_owning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "User Info Owning Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	result, err := services.GetGeneralUserInfo(context.Background(), database.Queries, teacherID, studentID)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// CreateTestUserWithDefaults's fixed first name -- see testutil/db.go.
+	assert.Equal(t, "Test", result.FirstName)
+}
+
+// TestGetGeneralUserInfo_NonOwningTeacherForbidden verifies that being A
+// teacher is not enough -- a teacher who owns a class the target student is
+// NOT enrolled in is forbidden, same as any other non-self caller.
+func TestGetGeneralUserInfo_NonOwningTeacherForbidden(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	owningTeacherEmail := testutil.UniqueEmail(t, "userinfo_nonowning_owner")
+	owningTeacherID := testutil.CreateTestUserWithDefaults(t, owningTeacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "userinfo_nonowning_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, owningTeacherID, "User Info Non-Owning Target Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	otherTeacherEmail := testutil.UniqueEmail(t, "userinfo_nonowning_other")
+	otherTeacherID := testutil.CreateTestUserWithDefaults(t, otherTeacherEmail, "TEACHER")
+	createTestClass(t, otherTeacherID, "User Info Non-Owning Other's Own Class")
+
+	_, err := services.GetGeneralUserInfo(context.Background(), database.Queries, otherTeacherID, studentID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+}
+
+// TestGetGeneralUserInfo_ArchivedClassForbidden verifies that an archived
+// class stops granting the owning teacher access to its former students --
+// mirroring the teacher chart queries' archived_at exclusion.
+func TestGetGeneralUserInfo_ArchivedClassForbidden(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "userinfo_archived_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+
+	studentEmail := testutil.UniqueEmail(t, "userinfo_archived_student")
+	studentID := testutil.CreateTestUserWithDefaults(t, studentEmail, "STUDENT")
+
+	class := createTestClass(t, teacherID, "User Info Archived Class")
+	joinTestClass(t, studentID, class.JoinCode)
+
+	err := services.ArchiveClass(context.Background(), database.Queries, teacherID, class.ID)
+	require.NoError(t, err)
+
+	_, err = services.GetGeneralUserInfo(context.Background(), database.Queries, teacherID, studentID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
+}
+
+// TestGetGeneralUserInfo_NonexistentTarget_Forbidden verifies that a
+// teacher probing a user ID that does not exist gets the same 403 as
+// probing a real student they do not teach, not a 404. RequireUserStatsAccess
+// runs before the user lookup, and IsStudentOfTeacher finds no roster row
+// for a nonexistent student either way, so the caller can't use this
+// endpoint to tell "not mine" apart from "doesn't exist."
+func TestGetGeneralUserInfo_NonexistentTarget_Forbidden(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	teacherEmail := testutil.UniqueEmail(t, "userinfo_nonexistent_teacher")
+	teacherID := testutil.CreateTestUserWithDefaults(t, teacherEmail, "TEACHER")
+	createTestClass(t, teacherID, "User Info Nonexistent Target Class")
+
+	nonExistentUserID := 999999999
+
+	_, err := services.GetGeneralUserInfo(context.Background(), database.Queries, teacherID, nonExistentUserID)
+	assert.ErrorIs(t, err, services.ErrForbidden)
 }

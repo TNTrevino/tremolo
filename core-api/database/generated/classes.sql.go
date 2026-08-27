@@ -129,6 +129,35 @@ func (q *Queries) IsStudentInClass(ctx context.Context, arg IsStudentInClassPara
 	return exists, err
 }
 
+const isStudentOfTeacher = `-- name: IsStudentOfTeacher :one
+select exists (
+    select 1
+    from tremolo.class_students cs
+    join tremolo.classes c on c.id = cs.class_id
+    where c.teacher_id = $1
+      and cs.student_id = $2
+      and c.archived_at is null
+)
+`
+
+type IsStudentOfTeacherParams struct {
+	TeacherID int32 `json:"teacher_id"`
+	StudentID int32 `json:"student_id"`
+}
+
+// Does the caller own an ACTIVE class this student is enrolled in? This is
+// the teacher-visibility rule behind another user's stats. Archived classes
+// do not count: an archived class leaves the teacher's class list, so it
+// must not keep granting access to a former student's data. Same
+// class_students semi-join and same `archived_at is null` filter as the
+// teacher chart queries.
+func (q *Queries) IsStudentOfTeacher(ctx context.Context, arg IsStudentOfTeacherParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isStudentOfTeacher, arg.TeacherID, arg.StudentID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listClassRoster = `-- name: ListClassRoster :many
 select u.id,
        u.first_name,

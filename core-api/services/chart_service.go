@@ -23,15 +23,12 @@ const (
 // GetUserChartData fetches personal metrics for a specific user. The
 // controller has already authenticated the caller and parsed
 // requestedUserID/interval/days from the request; this still re-checks
-// that the caller may only see their own data (ErrForbidden) and that
+// access (RequireUserStatsAccess: self, or an owning teacher) and that
 // interval/days are valid (ErrValidation) so the rule holds for any
 // caller, not just the HTTP handler.
 func GetUserChartData(ctx context.Context, q generated.Querier, authenticatedUserID, requestedUserID int, interval string, days int) (dtos.MultiMetricChartData, error) {
-	if authenticatedUserID != requestedUserID {
-		logger.Info("User attempted to access another user's chart data",
-			"authenticated_user", authenticatedUserID,
-			"requested_user", requestedUserID)
-		return dtos.MultiMetricChartData{}, ErrForbidden
+	if err := RequireUserStatsAccess(ctx, q, authenticatedUserID, requestedUserID); err != nil {
+		return dtos.MultiMetricChartData{}, err
 	}
 
 	strategy, err := resolveIntervalStrategy(interval, days)

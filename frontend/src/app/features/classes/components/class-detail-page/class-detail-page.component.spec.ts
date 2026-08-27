@@ -127,6 +127,12 @@ describe("ClassDetailPageComponent", () => {
 		expect(el().textContent).toContain(
 			"Key Signature · 20 questions, 80% accuracy",
 		);
+
+		// The roster row's name links to that student's stats page.
+		const studentLink = [...el().querySelectorAll("a")].find((a) =>
+			a.textContent?.includes("Sam Student"),
+		);
+		expect(studentLink?.getAttribute("href")).toBe("/classes/1/students/42");
 	});
 
 	it("says 'student' singular for a roll of one", async () => {

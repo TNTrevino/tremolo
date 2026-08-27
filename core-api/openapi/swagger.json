@@ -714,7 +714,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID (must match the authenticated user)",
+                        "description": "User ID (self, or a student in a class you own)",
                         "name": "userId",
                         "in": "path",
                         "required": true
@@ -1832,7 +1832,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID (must match the authenticated user)",
+                        "description": "User ID (self, or a student in a class you own)",
                         "name": "userId",
                         "in": "path",
                         "required": true

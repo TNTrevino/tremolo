@@ -67,6 +67,38 @@ func requireClassOwner(ctx context.Context, q generated.Querier, userID, classID
 	return class, nil
 }
 
+// RequireUserStatsAccess decides whether callerID may read targetUserID's
+// stats. Self-access always; otherwise the caller must own an active class
+// the target is enrolled in. Owning a class already implies TEACHER/ADMIN
+// (CreateClass enforces the role), so there is no separate role round-trip.
+func RequireUserStatsAccess(ctx context.Context, q generated.Querier, callerID, targetUserID int) error {
+	if callerID == targetUserID {
+		return nil
+	}
+
+	isStudent, err := q.IsStudentOfTeacher(ctx, generated.IsStudentOfTeacherParams{
+		TeacherID: int32(callerID),
+		StudentID: int32(targetUserID),
+	})
+	if err != nil {
+		logger.Error("Failed to verify teacher-student access",
+			"error", err.Error(),
+			"caller_id", callerID,
+			"target_user_id", targetUserID)
+		return err
+	}
+	if !isStudent {
+		// Shared by both the chart and general-info callers, so this
+		// stays "stats", not "chart data" -- see GetUserChartData and
+		// GetGeneralUserInfo.
+		logger.Info("User attempted to access another user's stats",
+			"caller_id", callerID,
+			"target_user_id", targetUserID)
+		return ErrForbidden
+	}
+	return nil
+}
+
 // CreateClass creates a class owned by the authenticated teacher, with
 // a freshly generated join code (retrying on the rare collision).
 func CreateClass(ctx context.Context, q generated.Querier, teacherID int, req *dtos.CreateClassRequest) (*dtos.ClassResponse, error) {

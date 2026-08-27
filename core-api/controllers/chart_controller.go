@@ -73,12 +73,14 @@ func chartIntervalAndDays(w http.ResponseWriter, r *http.Request) (string, int, 
 
 // handleGetUserChartData fetches personal metrics for a specific user
 // Query params: interval (day/week/month/year), days (default 30)
-// Protected: Requires JWT authentication, users can only access their own data
+// Protected: Requires JWT authentication. A caller may read their own
+// data, or an enrolled student's data if the caller owns an active class
+// the student is in (see services.RequireUserStatsAccess).
 // @Summary  Get personal chart metrics
 // @Tags     charts
 // @Security BearerAuth
 // @Produce  json
-// @Param    userId path int true "User ID (must match the authenticated user)"
+// @Param    userId path int true "User ID (self, or a student in a class you own)"
 // @Param    interval query string false "day, week, month, or year"
 // @Param    days query int false "Lookback window in days (default 30)"
 // @Success  200 {object} dtos.MultiMetricChartData
@@ -99,12 +101,12 @@ func handleGetUserChartData(q database.Querier) http.HandlerFunc {
 			return
 		}
 
-		// Ownership is checked before the query params are parsed, so a caller
+		// Access is checked before the query params are parsed, so a caller
 		// probing someone else's chart URL gets the same 403 whatever they put
 		// in interval/days. services.GetUserChartData re-checks this; the guard
 		// here only fixes the order the two failures are reported in.
-		if authenticatedUserID != requestedUserID {
-			httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Access denied"})
+		if err := services.RequireUserStatsAccess(r.Context(), q, authenticatedUserID, requestedUserID); err != nil {
+			respondChartError(w, err, "Access denied", "Failed to verify access")
 			return
 		}
 

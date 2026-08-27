@@ -34,3 +34,15 @@ export function formatShortDate(dateStr: string | null | undefined): string {
 	if (Number.isNaN(date.getTime())) return dateStr;
 	return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
+
+/**
+ * "Time reading" is an estimate, not a measurement: the Go service stores no
+ * session duration, so React multiplied sessions by an assumed five minutes.
+ * Carried over so the number on the dashboard does not silently change.
+ */
+export function formatTimeReading(totalSessions: number): string {
+	const totalMinutes = totalSessions * 5;
+	const hours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}

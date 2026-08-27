@@ -8,6 +8,7 @@ import {
 	signal,
 } from "@angular/core";
 import { rxResource } from "@angular/core/rxjs-interop";
+import { RouterLink } from "@angular/router";
 import { NgIcon } from "@ng-icons/core";
 
 import { AppErrorComponent } from "../../../../core/components/app-error/app-error.component";
@@ -41,6 +42,7 @@ import { ClassesService } from "../../services/classes.service";
 		ButtonComponent,
 		ConfirmDialogComponent,
 		NgIcon,
+		RouterLink,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

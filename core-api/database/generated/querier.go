@@ -113,6 +113,13 @@ type Querier interface {
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
 	IsStudentInClass(ctx context.Context, arg IsStudentInClassParams) (bool, error)
+	// Does the caller own an ACTIVE class this student is enrolled in? This is
+	// the teacher-visibility rule behind another user's stats. Archived classes
+	// do not count: an archived class leaves the teacher's class list, so it
+	// must not keep granting access to a former student's data. Same
+	// class_students semi-join and same `archived_at is null` filter as the
+	// teacher chart queries.
+	IsStudentOfTeacher(ctx context.Context, arg IsStudentOfTeacherParams) (bool, error)
 	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
 	ListAssignmentsByClass(ctx context.Context, classID int32) ([]TremoloAssignment, error)
 	// Every assignment in the student's classes, with the student's own

@@ -5,12 +5,16 @@ import { guestGuard } from "./auth/services/security/guest.guard";
 import { teacherGuard } from "./auth/services/security/teacher.guard";
 
 /**
- * The 20 routes of frontend-react/src/App.tsx.
+ * The 21 routes of frontend-react/src/App.tsx, plus one with no React
+ * predecessor: `classes/:id/students/:studentId`, the teacher's read-only
+ * view of a student's stats.
  *
  * Guard assignments are one for one with the wrapper components they
  * replace: ProtectedRoute x5 -> `authGuard`, GuestRoute x2 -> `guestGuard`,
- * TeacherRoute x2 -> `teacherGuard`. Every other route is public, including
- * all five games -- they are playable signed out, and that is deliberate.
+ * TeacherRoute x2 -> `teacherGuard`. The student-stats route reuses
+ * `teacherGuard` too, with no React wrapper to port from, so 3 routes carry
+ * it in total. Every other route is public, including all five games --
+ * they are playable signed out, and that is deliberate.
  *
  * `loadComponent` everywhere is the port of React's `lazy()` imports.
  * `/classes/:id` and `/assignments/:id/play` bind `:id` to an `input()` on
@@ -201,6 +205,15 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import("./features/classes/components/class-detail-page/class-detail-page.component").then(
 				(m) => m.ClassDetailPageComponent,
+			),
+	},
+	{
+		path: "classes/:id/students/:studentId",
+		canActivate: [teacherGuard],
+		runGuardsAndResolvers: "always",
+		loadComponent: () =>
+			import("./features/classes/components/student-stats-page/student-stats-page.component").then(
+				(m) => m.StudentStatsPageComponent,
 			),
 	},
 ];
