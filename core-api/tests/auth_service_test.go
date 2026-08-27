@@ -252,7 +252,7 @@ func TestRegister_AllRoles(t *testing.T) {
 	t.Parallel()
 	testutil.SetupTestDB(t)
 
-	roles := []string{"STUDENT", "TEACHER", "PARENT"}
+	roles := []string{"STUDENT", "TEACHER"}
 
 	for _, role := range roles {
 		t.Run("Role_"+role, func(t *testing.T) {

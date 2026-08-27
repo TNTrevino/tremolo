@@ -106,13 +106,12 @@ describe("SignupPageComponent", () => {
 		]);
 	});
 
-	it("offers the three roles, defaulting to Student", () => {
+	it("offers Student and Teacher only, defaulting to Student", () => {
 		const role = control("role") as HTMLSelectElement;
 
 		expect([...role.options].map((option) => option.value)).toEqual([
 			"STUDENT",
 			"TEACHER",
-			"PARENT",
 		]);
 		expect(role.value).toBe("STUDENT");
 	});

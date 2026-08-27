@@ -70,11 +70,13 @@ type RegisterRequest struct {
 }
 
 // registerRoles are the roles a self-service signup may claim. ADMIN is
-// absent on purpose: an admin is created by another admin.
+// absent on purpose: an admin is created by another admin. PARENT stays a
+// valid DB role and an admin-creatable one, but has no nav and no routes
+// (navigation.component.ts returns an empty list for it), so self-service
+// signup no longer offers it (#251).
 var registerRoles = map[string]bool{
 	"STUDENT": true,
 	"TEACHER": true,
-	"PARENT":  true,
 }
 
 func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
@@ -107,7 +109,7 @@ func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
 	case req.Role == "":
 		problems["role"] = "Role is required"
 	case !registerRoles[req.Role]:
-		problems["role"] = "Role must be one of: STUDENT, TEACHER, PARENT"
+		problems["role"] = "Role must be one of: STUDENT, TEACHER"
 	}
 
 	return problems

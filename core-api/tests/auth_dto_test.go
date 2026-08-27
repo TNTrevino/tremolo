@@ -90,7 +90,8 @@ func TestRegisterRequestValid_RejectsBadFields(t *testing.T) {
 		"empty first":    {func(r *dtos.RegisterRequest) { r.FirstName = "" }, "first_name", "First name is required"},
 		"short last":     {func(r *dtos.RegisterRequest) { r.LastName = "D" }, "last_name", "Last name must be at least 2 characters"},
 		"empty role":     {func(r *dtos.RegisterRequest) { r.Role = "" }, "role", "Role is required"},
-		"unknown role":   {func(r *dtos.RegisterRequest) { r.Role = "ADMIN" }, "role", "Role must be one of: STUDENT, TEACHER, PARENT"},
+		"unknown role":   {func(r *dtos.RegisterRequest) { r.Role = "ADMIN" }, "role", "Role must be one of: STUDENT, TEACHER"},
+		"parent role":    {func(r *dtos.RegisterRequest) { r.Role = "PARENT" }, "role", "Role must be one of: STUDENT, TEACHER"},
 		"short password": {func(r *dtos.RegisterRequest) { r.Password = "Aa1!" }, "password", "Password must be at least 8 characters"},
 	}
 
