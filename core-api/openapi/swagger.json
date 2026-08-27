@@ -8,6 +8,111 @@
     },
     "basePath": "/",
     "paths": {
+        "/api/admin/teacher-invites": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List teacher invite codes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dtos.TeacherInviteResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Mint a teacher invite code",
+                "parameters": [
+                    {
+                        "description": "Invite code options",
+                        "name": "invite",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.CreateTeacherInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.TeacherInviteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/assignments": {
             "get": {
                 "security": [
@@ -2212,6 +2317,20 @@
                 }
             }
         },
+        "dtos.CreateTeacherInviteRequest": {
+            "type": "object",
+            "properties": {
+                "expires_in_days": {
+                    "type": "integer"
+                },
+                "max_uses": {
+                    "type": "integer"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
         "dtos.CreateUserRequest": {
             "type": "object",
             "properties": {
@@ -2640,6 +2759,10 @@
                 "first_name": {
                     "type": "string"
                 },
+                "invite_code": {
+                    "description": "InviteCode is required for, and only read by, a TEACHER signup:\nself-service cannot claim that role without one (#250). Whether the\ncode is real is a database question services.Register answers.",
+                    "type": "string"
+                },
                 "last_name": {
                     "type": "string"
                 },
@@ -2752,6 +2875,29 @@
                 },
                 "teacher_name": {
                     "type": "string"
+                }
+            }
+        },
+        "dtos.TeacherInviteResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "max_uses": {
+                    "type": "integer"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "use_count": {
+                    "type": "integer"
                 }
             }
         },

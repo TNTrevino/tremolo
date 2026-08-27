@@ -4,6 +4,7 @@ package dtos
 
 import (
 	"context"
+	"strings"
 
 	"sight-reading/validations"
 )
@@ -30,12 +31,21 @@ func (req LoginRequest) Valid(ctx context.Context) map[string]string {
 // addPasswordProblem applies the password rules Login and Register share.
 // Both routes must reject the same passwords, and the copy is the same
 // sentence on each, so the rule lives once.
+//
+// The upper bound is bcrypt's, not a policy choice: bcrypt.GenerateFromPassword
+// errors with ErrPasswordTooLong past 72 bytes (#269 review), and Go's len()
+// on a string already counts bytes, so no separate byte-counting helper is
+// needed. Applying it here caps Login's password too, not just Register's --
+// harmless, since Login only ever compares against an already-hashed
+// password, and consistent, since both routes share this one rule.
 func addPasswordProblem(problems map[string]string, password string) map[string]string {
 	switch {
 	case password == "":
 		problems["password"] = "Password is required"
 	case len(password) < 8:
 		problems["password"] = "Password must be at least 8 characters"
+	case len(password) > 72:
+		problems["password"] = "Password must be at most 72 characters"
 	case !validations.PasswordComplexity(password):
 		problems["password"] = "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
 	}
@@ -67,6 +77,10 @@ type RegisterRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Role      string `json:"role"`
+	// InviteCode is required for, and only read by, a TEACHER signup:
+	// self-service cannot claim that role without one (#250). Whether the
+	// code is real is a database question services.Register answers.
+	InviteCode string `json:"invite_code"`
 }
 
 // registerRoles are the roles a self-service signup may claim. ADMIN is
@@ -110,6 +124,14 @@ func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
 		problems["role"] = "Role is required"
 	case !registerRoles[req.Role]:
 		problems["role"] = "Role must be one of: STUDENT, TEACHER"
+	}
+
+	// The TEACHER role is the one a stranger must not be able to claim
+	// (#250): it grants classes, rosters and other people's scores. This
+	// only checks that something was typed -- services.Register asks the
+	// database whether the code is real, unexpired and unspent.
+	if req.Role == string(Teacher) && strings.TrimSpace(req.InviteCode) == "" {
+		problems["invite_code"] = "Invite code is required for teacher accounts"
 	}
 
 	return problems

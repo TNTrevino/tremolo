@@ -38,17 +38,34 @@ export const signupSchema = z
 		password: z
 			.string()
 			.min(8, "At least 8 characters")
+			// bcrypt's hard limit (#269 review): a password past this
+			// silently reaches bcrypt.GenerateFromPassword server-side and
+			// errors, so this is a courtesy that matches the Go DTO's own
+			// cap, not a new policy choice.
+			.max(72, "At most 72 characters")
 			.regex(/[A-Z]/, "Contains uppercase letter")
 			.regex(/[a-z]/, "Contains lowercase letter")
 			.regex(/\d/, "Contains number")
 			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
 		confirmPassword: z.string(),
 		role: z.enum(["STUDENT", "TEACHER"]),
+		inviteCode: z.string(),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords do not match",
 		path: ["confirmPassword"],
-	});
+	})
+	// The second cross-field rule: a teacher account needs an invite code
+	// (#250). It is a `.refine()` rather than a `.min(1)` on the field
+	// because the rule depends on `role` -- a student never sees the input,
+	// and an empty string must stay valid for them.
+	.refine(
+		(data) => data.role !== "TEACHER" || data.inviteCode.trim().length > 0,
+		{
+			message: "Invite code is required for teacher accounts",
+			path: ["inviteCode"],
+		},
+	);
 
 export const passwordChangeSchema = z
 	.object({

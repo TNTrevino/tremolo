@@ -109,6 +109,15 @@ definitions:
       name:
         type: string
     type: object
+  dtos.CreateTeacherInviteRequest:
+    properties:
+      expires_in_days:
+        type: integer
+      max_uses:
+        type: integer
+      note:
+        type: string
+    type: object
   dtos.CreateUserRequest:
     properties:
       email:
@@ -389,6 +398,12 @@ definitions:
         type: string
       first_name:
         type: string
+      invite_code:
+        description: |-
+          InviteCode is required for, and only read by, a TEACHER signup:
+          self-service cannot claim that role without one (#250). Whether the
+          code is real is a database question services.Register answers.
+        type: string
       last_name:
         type: string
       password:
@@ -466,6 +481,21 @@ definitions:
       teacher_name:
         type: string
     type: object
+  dtos.TeacherInviteResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      max_uses:
+        type: integer
+      note:
+        type: string
+      use_count:
+        type: integer
+    type: object
   dtos.User:
     properties:
       created_date:
@@ -515,6 +545,72 @@ info:
   title: Tremolo Core API
   version: "1.0"
 paths:
+  /api/admin/teacher-invites:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.TeacherInviteResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List teacher invite codes
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Invite code options
+        in: body
+        name: invite
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateTeacherInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.TeacherInviteResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mint a teacher invite code
+      tags:
+      - admin
   /api/assignments:
     get:
       produces:

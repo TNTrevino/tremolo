@@ -10,6 +10,26 @@ import { APIRequestContext, request } from "@playwright/test";
  */
 const MAIN_API = process.env["E2E_MAIN_API"] ?? "http://localhost:5001";
 
+/**
+ * A teacher signup must redeem an invite code (#250), and minting one
+ * needs an ADMIN token no self-service route grants. The suite therefore
+ * takes a code the operator seeded by hand -- see `e2e/README.md`.
+ */
+const TEACHER_INVITE_CODE = process.env["E2E_TEACHER_INVITE_CODE"] ?? "";
+
+/** The seeding instructions, shown whenever a teacher signup can't run. */
+function teacherInviteHelp(detail: string): Error {
+	return new Error(
+		`Seeding a TEACHER failed: ${detail}\n` +
+			"Set E2E_TEACHER_INVITE_CODE to a live teacher invite code. To mint " +
+			"one by hand against the database the service is using:\n\n" +
+			"  insert into tremolo.teacher_invite_codes (code, note, max_uses)\n" +
+			"  values ('E2ESEED1', 'playwright e2e suite', 100000);\n\n" +
+			"  export E2E_TEACHER_INVITE_CODE=E2ESEED1\n\n" +
+			"Codes are uppercase and drawn from A-Z minus I, L, O, plus 2-9.",
+	);
+}
+
 export interface SeededUser {
 	id: number;
 	email: string;
@@ -61,6 +81,10 @@ export async function createUser(
 	role: "STUDENT" | "TEACHER",
 	overrides: Partial<Pick<SeededUser, "firstName" | "lastName">> = {},
 ): Promise<SeededUser> {
+	if (role === "TEACHER" && !TEACHER_INVITE_CODE) {
+		throw teacherInviteHelp("E2E_TEACHER_INVITE_CODE is not set.");
+	}
+
 	const api = await ctx();
 	try {
 		const email = `${unique("e2e")}@tremolo.test`;
@@ -69,17 +93,29 @@ export async function createUser(
 			overrides.firstName ?? (role === "TEACHER" ? "Tina" : "Sam");
 		const lastName = overrides.lastName ?? unique("Case").replace(/-/g, "");
 
-		await json(
-			await api.post("/api/auth/register", {
-				data: {
-					email,
-					password,
-					first_name: firstName,
-					last_name: lastName,
-					role,
-				},
-			}),
-		);
+		try {
+			await json(
+				await api.post("/api/auth/register", {
+					data: {
+						email,
+						password,
+						first_name: firstName,
+						last_name: lastName,
+						role,
+						...(role === "TEACHER" ? { invite_code: TEACHER_INVITE_CODE } : {}),
+					},
+				}),
+			);
+		} catch (err) {
+			// A rejected teacher signup is almost always the code: spent,
+			// expired, or never seeded. Say so instead of surfacing a bare 400.
+			if (role === "TEACHER") {
+				throw teacherInviteHelp(
+					`${(err as Error).message} (code "${TEACHER_INVITE_CODE}")`,
+				);
+			}
+			throw err;
+		}
 
 		const session = await json(
 			await api.post("/api/auth/login", { data: { email, password } }),

@@ -260,12 +260,21 @@ func TestRegister_AllRoles(t *testing.T) {
 
 			email := testutil.UniqueEmail(t, "register_role_"+role)
 
+			// A TEACHER signup must redeem an invite code (#250); a
+			// student never sends one. See tests/teacher_invite_service_test.go
+			// for the gate itself.
+			inviteCode := ""
+			if role == "TEACHER" {
+				inviteCode = testutil.CreateTestTeacherInviteCode(t, testutil.CreateTestTeacherInviteCodeParams{})
+			}
+
 			result, err := services.Register(context.Background(), database.Queries, dtos.RegisterRequest{
-				Email:     email,
-				Password:  "TestPass123!",
-				FirstName: "Test",
-				LastName:  "User",
-				Role:      role,
+				Email:      email,
+				Password:   "TestPass123!",
+				FirstName:  "Test",
+				LastName:   "User",
+				Role:       role,
+				InviteCode: inviteCode,
 			})
 
 			require.NoError(t, err, "Response for role %s", role)

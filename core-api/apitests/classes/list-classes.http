@@ -15,7 +15,7 @@
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
-{ "email": "{{teacher1_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "One", "role": "TEACHER" }
+{ "email": "{{teacher1_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "One", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
 
 > {%
 	client.global.set("teacher1_login_email", response.body.user.email);
@@ -37,7 +37,7 @@ Content-Type: application/json
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
-{ "email": "{{teacher2_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Two", "role": "TEACHER" }
+{ "email": "{{teacher2_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Two", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
 
 > {%
 	client.global.set("teacher2_login_email", response.body.user.email);

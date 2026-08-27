@@ -182,6 +182,23 @@ describe("SignupPageComponent", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * bcrypt's hard limit (#269 review): a password this long previously
+	 * reached the Go service and errored out of bcrypt.GenerateFromPassword.
+	 * `signupSchema`'s `.max(72, ...)` catches it client-side first.
+	 */
+	it("rejects a password over bcrypt's 72-byte limit and sends no request", async () => {
+		const tooLong = "Aa1!" + "a".repeat(69); // 73 characters
+		await fillValid();
+		await type("password", tooLong);
+		await type("confirmPassword", tooLong);
+		await submit();
+
+		expect(el().textContent).toContain("At most 72 characters");
+		backend.expectNone(REGISTER_URL);
+		expect(navigate).not.toHaveBeenCalled();
+	});
+
 	it("shows every schema message on an empty submit and sends no request", async () => {
 		await submit();
 
@@ -240,5 +257,135 @@ describe("SignupPageComponent", () => {
 			"Email already registered",
 		);
 		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	// ---------- the teacher invite code (#250) ----------
+
+	/** Fills the form as a teacher, optionally typing a code. */
+	async function fillValidTeacher(inviteCode = ""): Promise<void> {
+		await fillValid();
+		await choose("role", "TEACHER");
+		if (inviteCode) await type("inviteCode", inviteCode);
+	}
+
+	/** The messages `app-form-field` is showing under its controls. */
+	function fieldMessages(): (string | undefined)[] {
+		return [...el().querySelectorAll("app-form-error p")].map((p) =>
+			p.textContent?.trim(),
+		);
+	}
+
+	/**
+	 * Runs a teacher signup with `inviteCode` and flushes the server's
+	 * standard "invalid, expired or spent" rejection for it.
+	 */
+	async function rejectInviteCode(inviteCode = "ZZZZZZZZ"): Promise<void> {
+		await fillValidTeacher(inviteCode);
+		await submit();
+
+		backend.expectOne(REGISTER_URL).flush(
+			{
+				error:
+					"That invite code is not valid, has expired, or has already been used.",
+				field: "invite_code",
+			},
+			{ status: 400, statusText: "" },
+		);
+		await fixture.whenStable();
+	}
+
+	it("hides the invite code field until Teacher is chosen", async () => {
+		expect(control("inviteCode")).toBeNull();
+		expect(el().textContent).not.toContain(
+			"Ask your Tremolo contact for a code.",
+		);
+
+		await choose("role", "TEACHER");
+
+		expect(control("inviteCode")).not.toBeNull();
+		expect(
+			el().querySelector('label[for="inviteCode"]')?.textContent?.trim(),
+		).toBe("Invite code");
+		expect(el().textContent).toContain("Ask your Tremolo contact for a code.");
+	});
+
+	it("requires an invite code for a teacher signup", async () => {
+		await fillValidTeacher();
+		await submit();
+
+		expect(el().textContent).toContain(
+			"Invite code is required for teacher accounts",
+		);
+		backend.expectNone(REGISTER_URL);
+		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	it("sends invite_code only for a teacher signup", async () => {
+		await fillValidTeacher("  abcd2345  ");
+		await submit();
+
+		const request = backend.expectOne(REGISTER_URL);
+		expect(request.request.body).toEqual({
+			email: "newton@tremolo.test",
+			password: "E2ePassw0rd!",
+			first_name: "Newton",
+			last_name: "Signup",
+			role: "TEACHER",
+			invite_code: "abcd2345",
+		});
+
+		request.flush({
+			message: "created",
+			user: {
+				id: 2,
+				email: "newton@tremolo.test",
+				first_name: "Newton",
+				last_name: "Signup",
+				role: "TEACHER",
+			},
+		});
+		await fixture.whenStable();
+	});
+
+	/**
+	 * The Go service marks this one rejection with `field: "invite_code"`
+	 * so it can land under the input the user has to retype, rather than in
+	 * the alert at the top of a form they would have to scroll back up to.
+	 */
+	it("puts a rejected invite code on the field, not the page alert", async () => {
+		await rejectInviteCode();
+
+		expect(fieldMessages()).toContain(
+			"That invite code is not valid, has expired, or has already been used.",
+		);
+		expect(el().querySelector('[role="alert"]')).toBeNull();
+		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	it("keeps a non-field register error in the page alert", async () => {
+		await fillValidTeacher("ABCD2345");
+		await submit();
+
+		backend
+			.expectOne(REGISTER_URL)
+			.flush(
+				{ error: "Email already exists" },
+				{ status: 400, statusText: "" },
+			);
+		await fixture.whenStable();
+
+		expect(el().querySelector('[role="alert"]')?.textContent?.trim()).toBe(
+			"Email already exists",
+		);
+		expect(fieldMessages()).not.toContain("Email already exists");
+	});
+
+	it("clears the invite code field when switching back to Student", async () => {
+		await rejectInviteCode();
+
+		await choose("role", "STUDENT");
+
+		expect(control("inviteCode")).toBeNull();
+		expect(el().textContent).not.toContain("That invite code is not valid");
 	});
 });

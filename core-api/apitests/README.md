@@ -7,7 +7,7 @@ More readable than a wall of `curl`, and every step asserts.
 ## Files
 
 One `.http` file per endpoint, kebab-case, grouped into a directory per
-URL path segment — 40 files for the 40 routes in
+URL path segment — 42 files for the 42 routes in
 `core-api/controllers/routes.go`. Directory walking is fully recursive
 (kulala picks up every `.http`/`.rest` file at any depth), and
 `http-client.env.json` resolution walks upward from each file's own
@@ -15,10 +15,11 @@ directory, so one env file at this root covers every nested group —
 there is no per-group `http-client.env.json`.
 
 - `http-client.env.json` — environments. `local` points `baseUrl` at
-  `http://localhost:5001` and holds the shared test `password`. The
-  camelCase spelling is not a style choice: kulala's OpenAPI explorer
-  looks up that exact name for the server URL, so every file uses it
-  rather than carrying a second copy under a snake_case name.
+  `http://localhost:5001` and holds the shared test `password` and
+  `teacherInviteCode`. The camelCase spelling is not a style choice:
+  kulala's OpenAPI explorer looks up that exact name for the server URL,
+  so every file uses it rather than carrying a second copy under a
+  snake_case name.
 - `spec.http` — opens `../openapi/swagger.json` in kulala's OpenAPI
   explorer. Not a test: it is a browsable route list for every endpoint
   below, handy when you're not sure which group a route landed in.
@@ -27,13 +28,16 @@ there is no per-group `http-client.env.json`.
   routes. `google-callback.http` and `google-link.http` make a real
   outbound call to Google's token endpoint with a garbage code to prove
   the 401 path — the suite's only external network dependency.
-- `admin/` — teacher/student listing and lookup, and admin-created
-  users. ADMIN-only, and there is no self-service way to become an
-  ADMIN, so every file here asserts only 401 (unauthenticated) and 403
-  (authenticated, wrong role). The 200 paths are covered by
-  `core-api/tests/admin_controller_test.go` and
-  `admin_service_test.go`, which seed an ADMIN row directly in the test
-  database.
+  `register.http` also covers the teacher invite-code gate (#250): a
+  teacher signup with no code, one with a code that does not exist, and a
+  student whose code is ignored rather than rejected.
+- `admin/` — teacher/student listing and lookup, admin-created users, and
+  minting/listing teacher invite codes. ADMIN-only, and there is no
+  self-service way to become an ADMIN, so every file here asserts only
+  401 (unauthenticated) and 403 (authenticated, wrong role). The 200
+  paths are covered by `core-api/tests/admin_controller_test.go`,
+  `admin_service_test.go` and `teacher_invite_controller_test.go`, which
+  seed an ADMIN row directly in the test database.
 - `charts/` — dashboard chart data, per-user and per-teacher-class.
 - `users/` — a user's own profile summary.
 - `note-game/` — the note game's score entries, recent-entry list,
@@ -62,6 +66,22 @@ on startup):
 ```bash
 cd core-api && go run main.go
 ```
+
+Seed the teacher invite code once per database. Since #250 a TEACHER
+signup must redeem one, and 15 of these files register a teacher to get a
+token; minting a code through `POST /api/admin/teacher-invites` needs an
+ADMIN token no self-service route grants, so it goes in by hand. The code
+must match `teacherInviteCode` in `http-client.env.json`, and `max_uses`
+is deliberately huge because every run registers fresh teachers:
+
+```sql
+insert into tremolo.teacher_invite_codes (code, note, max_uses)
+values ('KULATEST', 'kulala api-smoke suite', 100000)
+on conflict (code) do nothing;
+```
+
+CI does exactly this in the "Seed the teacher invite code" step of
+`.github/workflows/api-smoke.yml`, against its own throwaway Postgres.
 
 Then, from this directory (`core-api/apitests`):
 
@@ -119,4 +139,5 @@ it elsewhere by selecting a different env (e.g. `--env ci`).
   reference).
 
 The suite is self-contained: it creates its own users each run, so it
-needs only a running service and a reachable database.
+needs only a running service, a reachable database, and the one seeded
+teacher invite code above.

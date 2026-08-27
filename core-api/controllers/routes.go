@@ -18,6 +18,7 @@ func RegisterRoutes(mux *http.ServeMux, q database.Querier) {
 	RegisterHealthRoutes(mux)
 	RegisterAuthRoutes(mux, q)
 	RegisterAdminRoutes(mux, q)
+	RegisterTeacherInviteRoutes(mux, q)
 	RegisterChartRoutes(mux, q)
 	RegisterUserInfoRoutes(mux, q)
 	RegisterNoteGameRoutes(mux, q)

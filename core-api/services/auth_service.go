@@ -140,7 +140,16 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), nil
 }
 
-// Register creates a new email/password user (student/teacher/parent).
+// Register creates a new email/password user (student or teacher).
+//
+// A TEACHER signup additionally spends one use of an invite code (#250).
+// Where that happens is load-bearing: after the email-taken check, so a
+// teacher retrying a signup they already completed does not burn a second
+// use; and before CreateUser, so no TEACHER row can exist that was not
+// gated. Every failure after that redemption -- HashPassword or CreateUser
+// -- hands the use back (#269 review: HashPassword's branch used to be the
+// one exception, so an overlong password, which bcrypt rejects outright,
+// silently burned a single-use code with no account created).
 func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest) (*dtos.RegisterResponse, error) {
 	normalizedEmail := normalizeEmail(req.Email)
 	emailNullStr := sql.NullString{String: normalizedEmail, Valid: true}
@@ -156,15 +165,31 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 		return nil, ErrEmailTaken
 	}
 
-	passwordHash, err := HashPassword(req.Password)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
-	}
-
 	roleID, err := q.GetRoleIDByName(ctx, req.Role)
 	if err != nil {
 		logger.Error("Failed to resolve role", "error", err.Error(), "role", req.Role)
 		return nil, fmt.Errorf("%w: %w", ErrInvalidRole, err)
+	}
+
+	var inviteCodeID int32
+	if req.Role == string(dtos.Teacher) {
+		inviteCodeID, err = redeemTeacherInvite(ctx, q, req.InviteCode)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Hashed last, after every DB-verified precondition above has passed:
+	// bcrypt at BcryptCost is deliberately CPU-heavy, and an unknown,
+	// expired or spent invite code is the one of those checks a legitimate
+	// caller commonly trips -- no reason to pay bcrypt's cost first only
+	// to reject the request anyway.
+	passwordHash, err := HashPassword(req.Password)
+	if err != nil {
+		if inviteCodeID != 0 {
+			releaseTeacherInvite(ctx, q, inviteCodeID)
+		}
+		return nil, fmt.Errorf("%w: %w", ErrPasswordHashFailed, err)
 	}
 
 	createParams := generated.CreateUserParams{
@@ -179,6 +204,9 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 	createdUser, err := q.CreateUser(ctx, createParams)
 	if err != nil {
 		logger.Error("Failed to create user", "error", err.Error())
+		if inviteCodeID != 0 {
+			releaseTeacherInvite(ctx, q, inviteCodeID)
+		}
 		return nil, fmt.Errorf("%w: %w", ErrUserCreateFailed, err)
 	}
 

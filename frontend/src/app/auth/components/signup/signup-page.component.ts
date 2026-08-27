@@ -1,8 +1,10 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import {
 	ChangeDetectionStrategy,
 	Component,
 	computed,
 	inject,
+	linkedSignal,
 	signal,
 } from "@angular/core";
 import {
@@ -100,6 +102,21 @@ const STRENGTH_BY_MET_COUNT: readonly PasswordStrength[] = [
 ];
 
 /**
+ * Whether a failed registration was the invite code being rejected.
+ *
+ * The Go service marks that one case with `field: "invite_code"`
+ * (`respondRegisterError` in `core-api/controllers/auth_controller.go`).
+ * No other response in this API carries a `field` key, so the check lives
+ * here rather than in `shared/utils/error.utils.ts`.
+ */
+function isInviteCodeError(err: unknown): boolean {
+	return (
+		err instanceof HttpErrorResponse &&
+		(err.error as { field?: string } | null)?.field === "invite_code"
+	);
+}
+
+/**
  * Port of frontend-react/src/pages/SignupPage.tsx.
  *
  * The Signal Forms + zod wiring is the same four lines the login page uses
@@ -146,6 +163,7 @@ export class SignupPageComponent {
 		password: "",
 		confirmPassword: "",
 		role: "STUDENT",
+		inviteCode: "",
 	});
 
 	readonly signupForm = form(this.model, (path) => {
@@ -157,6 +175,22 @@ export class SignupPageComponent {
 	readonly showPassword = signal(false);
 	readonly showConfirmPassword = signal(false);
 	readonly passwordFocused = signal(false);
+
+	/** Only a teacher signup asks for an invite code (#250). */
+	readonly isTeacher = computed(() => this.model().role === "TEACHER");
+
+	/**
+	 * A rejected invite code, shown under the field rather than in the page
+	 * alert. `linkedSignal` on `role` so switching away from Teacher and
+	 * back cannot resurrect the message for a code that is no longer typed.
+	 */
+	readonly inviteCodeError = linkedSignal<
+		SignupFormData["role"],
+		string | null
+	>({
+		source: () => this.model().role,
+		computation: () => null,
+	});
 
 	protected readonly password = computed(() => this.model().password);
 
@@ -196,6 +230,7 @@ export class SignupPageComponent {
 
 		this.pending.set(true);
 		this.errorMessage.set(null);
+		this.inviteCodeError.set(null);
 
 		const data = this.model();
 		this.auth
@@ -205,6 +240,14 @@ export class SignupPageComponent {
 				first_name: data.firstName,
 				last_name: data.lastName,
 				role: data.role,
+				// Sent only by a teacher: a student never sees the field. The
+				// Go service itself gates on role, not on this key's presence
+				// -- InviteCode defaults to "" whether the key is sent or
+				// omitted -- but leaving it out keeps a student's payload free
+				// of a field they never filled in.
+				...(data.role === "TEACHER"
+					? { invite_code: data.inviteCode.trim() }
+					: {}),
 			})
 			.subscribe({
 				next: () => {
@@ -213,6 +256,10 @@ export class SignupPageComponent {
 				},
 				error: (err: unknown) => {
 					this.pending.set(false);
+					if (isInviteCodeError(err)) {
+						this.inviteCodeError.set(getErrorMessage(err));
+						return;
+					}
 					this.errorMessage.set(getErrorMessage(err));
 				},
 			});

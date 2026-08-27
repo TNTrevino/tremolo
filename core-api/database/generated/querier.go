@@ -29,6 +29,9 @@ type Querier interface {
 	CreateNoteGameEntryWithDate(ctx context.Context, arg CreateNoteGameEntryWithDateParams) (int32, error)
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
+	// Teacher invite codes. Redemption is deliberately a single conditional
+	// UPDATE rather than a select-then-update: see 00011_teacher_invite_codes.sql.
+	CreateTeacherInviteCode(ctx context.Context, arg CreateTeacherInviteCodeParams) (TremoloTeacherInviteCode, error)
 	CreateTeacherStudentAssociation(ctx context.Context, arg CreateTeacherStudentAssociationParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateUserWithPassword(ctx context.Context, arg CreateUserWithPasswordParams) (int32, error)
@@ -46,6 +49,7 @@ type Querier interface {
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
 	DeleteNoteGameSettings(ctx context.Context, userID int32) error
 	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
+	DeleteTeacherInviteCode(ctx context.Context, id int32) error
 	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
 	// relationship queries
 	DeleteTeacherStudentRelationship(ctx context.Context, arg DeleteTeacherStudentRelationshipParams) error
@@ -96,6 +100,7 @@ type Querier interface {
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
 	GetRecentEntriesByUserID(ctx context.Context, arg GetRecentEntriesByUserIDParams) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
+	GetTeacherInviteCodeByCode(ctx context.Context, code string) (TremoloTeacherInviteCode, error)
 	GetUserByEmail(ctx context.Context, email sql.NullString) (GetUserByEmailRow, error)
 	GetUserByEmailForOAuth(ctx context.Context, email sql.NullString) (GetUserByEmailForOAuthRow, error)
 	GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (GetUserByGoogleIDRow, error)
@@ -117,7 +122,10 @@ type Querier interface {
 	ListClassRoster(ctx context.Context, classID int32) ([]ListClassRosterRow, error)
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
+	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
+	RedeemTeacherInviteCode(ctx context.Context, code string) (int32, error)
+	ReleaseTeacherInviteCode(ctx context.Context, id int32) error
 	RemoveStudentFromClass(ctx context.Context, arg RemoveStudentFromClassParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
 	// Case-insensitive contains search on full name, excluding the current user
