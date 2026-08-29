@@ -54,9 +54,11 @@ let nextTooltipId = 0;
  * - **Persistent.** Nothing but Escape, blur, or the pointer leaving both
  *   the host and the bubble takes it away; it has no timeout of its own.
  *
- * Focus shows the bubble only when the host matches `:focus-visible`, so a
- * mouse click on the control does not leave a bubble stuck behind the
- * pointer. An empty or whitespace-only label leaves the directive inert.
+ * Focus shows the bubble only when the focus is `:focus-visible`, on the
+ * host or anywhere inside it (on a boxless kit host the focused element is
+ * the rendered child), so a mouse click on the control does not leave a
+ * bubble stuck behind the pointer. An empty or whitespace-only label
+ * leaves the directive inert.
  *
  * The listeners sit on the host, but the *anchor* -- what the bubble
  * measures against and what carries `aria-describedby` -- may be the host's
@@ -183,6 +185,14 @@ export class TooltipDirective implements OnDestroy {
 	}
 
 	/**
+	 * `:focus-visible` matches only the element that actually holds the
+	 * focus. On a `display: contents` kit host (`<app-button appTooltip>`)
+	 * that is the rendered child, never the host the listener sits on, so
+	 * the host check alone would miss every wrapped control. The
+	 * `querySelector` leg asks "is the visible focus anywhere inside" and
+	 * covers any nesting depth, which `resolveAnchor()`'s first-child rule
+	 * would not.
+	 *
 	 * A selector engine that does not know `:focus-visible` throws
 	 * `SyntaxError` rather than returning false, and that is a rendering
 	 * environment, not a user intent. A focus we cannot classify counts as a
@@ -191,7 +201,10 @@ export class TooltipDirective implements OnDestroy {
 	 */
 	private isFocusVisible(): boolean {
 		try {
-			return this.host.matches(":focus-visible");
+			return (
+				this.host.matches(":focus-visible") ||
+				this.host.querySelector(":focus-visible") !== null
+			);
 		} catch {
 			return true;
 		}

@@ -141,6 +141,20 @@ describe("TooltipDirective", () => {
 		expect(bubble()).toBeNull();
 	});
 
+	it("shows on keyboard focus inside a boxless host", async () => {
+		// The wrapped shape every `<app-button appTooltip>` renders: focus
+		// lands on the inner control, and `:focus-visible` matches only the
+		// element that holds the focus, never the listening host.
+		inner().focus();
+		await fixture.whenStable();
+		expect(bubble()).not.toBeNull();
+		expect(bubble()!.textContent).toBe("Play the exercise");
+
+		inner().blur();
+		await fixture.whenStable();
+		expect(bubble()).toBeNull();
+	});
+
 	it("dismisses on Escape without moving pointer or focus", async () => {
 		await hover();
 
