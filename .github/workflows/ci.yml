@@ -11,9 +11,12 @@ name: CI
 # each workflow's own paths: a service dropped from a filter silently
 # stops being checked on PRs. Only "gate" is required.
 
+# No base-branch filter: stacked PRs target their parent feature branch,
+# and the required "gate" check is evaluated per PR — a gate that can
+# never run would block every stack merge.
 on:
   pull_request:
-    branches: [main, prod]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
