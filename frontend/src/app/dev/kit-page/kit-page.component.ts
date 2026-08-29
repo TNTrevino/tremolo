@@ -35,6 +35,7 @@ import { InputDirective } from "../../shared/components/ui/input.directive";
 import { LabelDirective } from "../../shared/components/ui/label.directive";
 import { SelectComponent } from "../../shared/components/ui/select.component";
 import { SkeletonDirective } from "../../shared/components/ui/skeleton.directive";
+import { TooltipDirective } from "../../shared/components/ui/tooltip.directive";
 import {
 	signupSchema,
 	type SignupFormData,
@@ -99,6 +100,7 @@ const BROKEN_MUSIC_XML = `<?xml version="1.0" encoding="UTF-8"?>
 		SelectComponent,
 		SheetMusicComponent,
 		SkeletonDirective,
+		TooltipDirective,
 		SpinnerComponent,
 		...CARD_DIRECTIVES,
 		...DIALOG_DIRECTIVES,
