@@ -1,7 +1,6 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
-	computed,
 	inject,
 	input,
 	signal,
@@ -24,6 +23,7 @@ import {
 	type ResetPasswordFormData,
 } from "../../../shared/validators/auth.schemas";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { showHideLabel } from "../../../shared/utils/password-toggle.utils";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
 
@@ -76,13 +76,10 @@ export class ResetPasswordPageComponent {
 	readonly showPassword = signal(false);
 	readonly showConfirmPassword = signal(false);
 
-	readonly passwordToggleLabel = computed(() =>
-		this.showPassword() ? "Hide password" : "Show password",
-	);
-	readonly confirmPasswordToggleLabel = computed(() =>
-		this.showConfirmPassword()
-			? "Hide confirm password"
-			: "Show confirm password",
+	readonly passwordToggleLabel = showHideLabel(this.showPassword, "password");
+	readonly confirmPasswordToggleLabel = showHideLabel(
+		this.showConfirmPassword,
+		"confirm password",
 	);
 
 	togglePassword(): void {

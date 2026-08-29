@@ -27,6 +27,7 @@ import {
 	type SignupFormData,
 } from "../../../shared/validators/auth.schemas";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { showHideLabel } from "../../../shared/utils/password-toggle.utils";
 import type { PasswordRequirement } from "../../models/auth.models";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
@@ -212,13 +213,10 @@ export class SignupPageComponent {
 		computation: () => null,
 	});
 
-	readonly passwordToggleLabel = computed(() =>
-		this.showPassword() ? "Hide password" : "Show password",
-	);
-	readonly confirmPasswordToggleLabel = computed(() =>
-		this.showConfirmPassword()
-			? "Hide confirm password"
-			: "Show confirm password",
+	readonly passwordToggleLabel = showHideLabel(this.showPassword, "password");
+	readonly confirmPasswordToggleLabel = showHideLabel(
+		this.showConfirmPassword,
+		"confirm password",
 	);
 
 	protected readonly password = computed(() => this.model().password);

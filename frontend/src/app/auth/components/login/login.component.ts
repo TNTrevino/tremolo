@@ -1,7 +1,6 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
-	computed,
 	inject,
 	signal,
 } from "@angular/core";
@@ -23,6 +22,7 @@ import {
 	type LoginFormData,
 } from "../../../shared/validators/auth.schemas";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { showHideLabel } from "../../../shared/utils/password-toggle.utils";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
 import { GoogleSignInButtonComponent } from "../google-sign-in-button/google-sign-in-button.component";
@@ -80,9 +80,7 @@ export class LoginPageComponent {
 	readonly pending = signal(false);
 	readonly errorMessage = signal<string | null>(null);
 	readonly showPassword = signal(false);
-	readonly passwordToggleLabel = computed(() =>
-		this.showPassword() ? "Hide password" : "Show password",
-	);
+	readonly passwordToggleLabel = showHideLabel(this.showPassword, "password");
 
 	/**
 	 * The message signup or a failed Google callback left behind, read once
