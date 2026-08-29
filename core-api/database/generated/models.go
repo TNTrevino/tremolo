@@ -37,6 +37,26 @@ type TremoloClassStudent struct {
 	JoinedAt  time.Time `json:"joined_at"`
 }
 
+type TremoloEmailSendAttempt struct {
+	ID            int64          `json:"id"`
+	QueuedEmailID int64          `json:"queued_email_id"`
+	AttemptNumber int32          `json:"attempt_number"`
+	Succeeded     bool           `json:"succeeded"`
+	Error         sql.NullString `json:"error"`
+	AttemptedAt   time.Time      `json:"attempted_at"`
+}
+
+type TremoloEmailToken struct {
+	ID        int64        `json:"id"`
+	UserID    int32        `json:"user_id"`
+	Purpose   string       `json:"purpose"`
+	TokenHash string       `json:"token_hash"`
+	Email     string       `json:"email"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
 type TremoloFriend struct {
 	UserID      int32        `json:"user_id"`
 	FriendID    int32        `json:"friend_id"`
@@ -108,6 +128,35 @@ type TremoloParentChild struct {
 	ChildID  int32 `json:"child_id"`
 }
 
+type TremoloPasswordResetToken struct {
+	ID        int64        `json:"id"`
+	UserID    int32        `json:"user_id"`
+	TokenHash string       `json:"token_hash"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
+type TremoloQueuedEmail struct {
+	ID            int64          `json:"id"`
+	Recipient     string         `json:"recipient"`
+	RecipientName string         `json:"recipient_name"`
+	Subject       string         `json:"subject"`
+	Template      string         `json:"template"`
+	BodyHtml      string         `json:"body_html"`
+	BodyText      string         `json:"body_text"`
+	MessageID     string         `json:"message_id"`
+	Status        string         `json:"status"`
+	Attempts      int32          `json:"attempts"`
+	MaxAttempts   int32          `json:"max_attempts"`
+	NextAttemptAt sql.NullTime   `json:"next_attempt_at"`
+	ClaimedAt     sql.NullTime   `json:"claimed_at"`
+	SentAt        sql.NullTime   `json:"sent_at"`
+	LastError     sql.NullString `json:"last_error"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+}
+
 type TremoloRole struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
@@ -159,5 +208,6 @@ type TremoloUser struct {
 	Instrument          sql.NullString `json:"instrument"`
 	RoleID              int32          `json:"role_id"`
 	GoogleID            sql.NullString `json:"google_id"`
+	EmailVerifiedAt     sql.NullTime   `json:"email_verified_at"`
 	GradeLevel          sql.NullString `json:"grade_level"`
 }

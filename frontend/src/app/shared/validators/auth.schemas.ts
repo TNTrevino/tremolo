@@ -24,6 +24,37 @@ export const loginSchema = z.object({
 	password: z.string().min(1, "Password is required"),
 });
 
+/**
+ * The password-complexity rules shared by every schema below that
+ * collects a NEW password (signup, password change, reset) -- one copy of
+ * the five rules and their messages instead of three. The 72-character
+ * ceiling mirrors bcrypt's hard input limit (core-api hashes passwords
+ * with bcrypt in `HashPassword`): a password this schema accepted but
+ * bcrypt couldn't fully consume would be a schema quietly lying to the
+ * user about what actually distinguishes their password.
+ */
+export const passwordComplexity = z
+	.string()
+	.min(8, "At least 8 characters")
+	.max(72, "At most 72 characters")
+	.regex(/[A-Z]/, "Contains uppercase letter")
+	.regex(/[a-z]/, "Contains lowercase letter")
+	.regex(/\d/, "Contains number")
+	.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character");
+
+/**
+ * Every schema below that pairs a new password with a confirmation field
+ * uses this same "do they match" refine outcome -- same message, same
+ * error path in all three. Only the equality check itself stays inline
+ * per schema, since the field holding the new password is spelled
+ * differently on each one (`password` on signup/reset, `newPassword` on
+ * the account-page change-password form).
+ */
+const confirmPasswordRefineParams = {
+	message: "Passwords do not match",
+	path: ["confirmPassword"],
+};
+
 export const signupSchema = z
 	.object({
 		firstName: z
@@ -35,27 +66,16 @@ export const signupSchema = z
 			.min(2, "At least 2 characters")
 			.regex(/^[a-zA-Z]+$/, "Only letters"),
 		email: z.email("Invalid email format"),
-		password: z
-			.string()
-			.min(8, "At least 8 characters")
-			// bcrypt's hard limit (#269 review): a password past this
-			// silently reaches bcrypt.GenerateFromPassword server-side and
-			// errors, so this is a courtesy that matches the Go DTO's own
-			// cap, not a new policy choice.
-			.max(72, "At most 72 characters")
-			.regex(/[A-Z]/, "Contains uppercase letter")
-			.regex(/[a-z]/, "Contains lowercase letter")
-			.regex(/\d/, "Contains number")
-			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
+		password: passwordComplexity,
 		confirmPassword: z.string(),
 		role: z.enum(["STUDENT", "TEACHER"]),
 		inviteCode: z.string(),
 		gradeLevel: z.string(),
 	})
-	.refine((data) => data.password === data.confirmPassword, {
-		message: "Passwords do not match",
-		path: ["confirmPassword"],
-	})
+	.refine(
+		(data) => data.password === data.confirmPassword,
+		confirmPasswordRefineParams,
+	)
 	// The second cross-field rule: a teacher account needs an invite code
 	// (#250). It is a `.refine()` rather than a `.min(1)` on the field
 	// because the rule depends on `role` -- a student never sees the input,
@@ -79,25 +99,59 @@ export const signupSchema = z
 export const passwordChangeSchema = z
 	.object({
 		currentPassword: z.string().min(1, "Current password is required"),
-		newPassword: z
-			.string()
-			.min(8, "At least 8 characters")
-			.regex(/[A-Z]/, "Contains uppercase letter")
-			.regex(/[a-z]/, "Contains lowercase letter")
-			.regex(/\d/, "Contains number")
-			.regex(/[!@#$%^&*(),.?":{}|<>]/, "Contains special character"),
+		newPassword: passwordComplexity,
 		confirmPassword: z.string(),
 	})
-	.refine((data) => data.newPassword === data.confirmPassword, {
-		message: "Passwords do not match",
-		path: ["confirmPassword"],
-	});
+	.refine(
+		(data) => data.newPassword === data.confirmPassword,
+		confirmPasswordRefineParams,
+	);
 
 export const deleteAccountSchema = z.object({
 	emailConfirmation: z.string().min(1, "Email confirmation is required"),
+	// Not .min(1): a Google-only account has no password, and the server
+	// accepts an empty one for exactly that account (core-api's
+	// DeleteAccountRequest). The server is the gate on whether a password
+	// is actually required here, not this schema.
+	password: z.string(),
 });
+
+/**
+ * #249: request an email address change from the account page. Re-proves
+ * currentPassword the same way passwordChangeSchema does -- the Go
+ * service re-checks it server-side either way (this is a courtesy, not
+ * the gate, same as every schema here).
+ */
+export const emailChangeSchema = z.object({
+	currentPassword: z.string().min(1, "Current password is required"),
+	newEmail: z.email("Invalid email format"),
+});
+
+/** #248: request a password reset link. */
+export const forgotPasswordSchema = z.object({
+	email: z.email("Invalid email format"),
+});
+
+/**
+ * #248: choose a new password from an emailed reset link. Same password
+ * rules as `signupSchema`, shared via `passwordComplexity` -- the Go
+ * service enforces the same complexity on both routes via
+ * `addPasswordProblem`.
+ */
+export const resetPasswordSchema = z
+	.object({
+		password: passwordComplexity,
+		confirmPassword: z.string(),
+	})
+	.refine(
+		(data) => data.password === data.confirmPassword,
+		confirmPasswordRefineParams,
+	);
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignupFormData = z.infer<typeof signupSchema>;
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
 export type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>;
+export type EmailChangeFormData = z.infer<typeof emailChangeSchema>;
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

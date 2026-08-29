@@ -86,6 +86,11 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 		}
 		logger.Info("Auto-linked Google account to existing user", "email", normalizedEmail)
 
+		// Best effort: the auto-linked address was already verified by
+		// Google (claims.EmailVerified checked above), and sign-in must
+		// not fail on this bookkeeping.
+		markEmailVerifiedBestEffort(ctx, q, existingUser.ID, "google auto-link")
+
 		userResp := convertGetUserByEmailForOAuthRowToUserResponse(existingUser)
 		userResp.HasGoogle = true
 		return issueGoogleLoginResponse(userResp, true)
@@ -132,16 +137,13 @@ func GoogleCallback(ctx context.Context, q generated.Querier, verifier GoogleTok
 			"error", err.Error(), "user_id", newUser.ID)
 	}
 
+	// Best effort, same reasoning as the auto-link branch above: a brand
+	// new Google-authenticated account is verified by construction, and
+	// sign-in must not fail on this bookkeeping.
+	markEmailVerifiedBestEffort(ctx, q, newUser.ID, "new oauth user")
+
 	logger.Info("Created new OAuth user", "email", normalizedEmail, "user_id", newUser.ID)
-	userResp := dtos.UserResponse{
-		ID:        int(newUser.ID),
-		Email:     newUser.Email.String,
-		FirstName: newUser.FirstName,
-		LastName:  newUser.LastName,
-		Role:      "BASIC",
-		HasGoogle: true,
-	}
-	return issueGoogleLoginResponse(userResp, false)
+	return issueGoogleLoginResponse(convertCreateOAuthUserRowToUserResponse(newUser, "BASIC"), false)
 }
 
 // LinkGoogleAccount allows an authenticated user to link their Google
@@ -193,7 +195,26 @@ func LinkGoogleAccount(ctx context.Context, q generated.Querier, verifier Google
 		return fmt.Errorf("%w: %w", ErrGoogleLinkFailed, err)
 	}
 
+	// Best effort, same reasoning as GoogleCallback's auto-link branch:
+	// the email just matched claims.Email, which VerifyIDToken already
+	// required to be Google-verified, and linking must not fail on this
+	// bookkeeping.
+	markEmailVerifiedBestEffort(ctx, q, int32(userID), "explicit google link")
+
 	return nil
+}
+
+// markEmailVerifiedBestEffort sets email_verified_at for a
+// Google-authenticated user. Best effort, log-and-swallow: it is called
+// right after the caller's own write (auto-link, new-account creation, or
+// an explicit link) has already succeeded, and that success must not be
+// undone by a failure in this bookkeeping. MarkEmailVerified itself is
+// coalesce-guarded, so a redundant call is always a safe no-op -- situation
+// is just what the log line needs to tell the three call sites apart.
+func markEmailVerifiedBestEffort(ctx context.Context, q generated.Querier, userID int32, situation string) {
+	if err := q.MarkEmailVerified(ctx, userID); err != nil {
+		logger.Error("Failed to mark email verified", "error", err.Error(), "user_id", userID, "situation", situation)
+	}
 }
 
 // issueGoogleLoginResponse mints a fresh access/refresh token pair for a

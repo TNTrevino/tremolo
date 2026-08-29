@@ -4,6 +4,7 @@ import { RouterOutlet } from "@angular/router";
 import { AuthStore } from "./auth/services/auth.store";
 import { NavigationComponent } from "./core/components/navigation/navigation.component";
 import { ToastContainerComponent } from "./core/components/toast/toast-container.component";
+import { VerifyEmailBannerComponent } from "./core/components/verify-email-banner/verify-email-banner.component";
 import { ThemeStore } from "./core/services/theme.store";
 import { FriendsPanelComponent } from "./features/friends/components/friends-panel/friends-panel.component";
 
@@ -22,6 +23,7 @@ import { FriendsPanelComponent } from "./features/friends/components/friends-pan
 	imports: [
 		RouterOutlet,
 		NavigationComponent,
+		VerifyEmailBannerComponent,
 		ToastContainerComponent,
 		FriendsPanelComponent,
 	],

@@ -32,15 +32,28 @@ export function snapshots(url: string): {
 	};
 }
 
-/** Puts a signed-in user of the given role into the store. */
-export function signIn(store: AuthStore, role: UserRole): void {
+/**
+ * Puts a signed-in user of the given role into the store. `emailVerified`
+ * defaults to true -- #108's unverified-banner only appears for an
+ * explicit `false`, and most specs signing in through this fixture have
+ * no reason to care about verification state. `userId` defaults to 1 --
+ * the shared-device specs that need a SECOND, distinct signed-in identity
+ * (dismissal scoping, etc.) pass their own id explicitly.
+ */
+export function signIn(
+	store: AuthStore,
+	role: UserRole,
+	emailVerified = true,
+	userId = 1,
+): void {
 	store.setAuthFromLogin({
 		user: {
-			id: 1,
+			id: userId,
 			email: "user@tremolo.test",
 			first_name: "Test",
 			last_name: "User",
 			role,
+			email_verified: emailVerified,
 		},
 		access_token: "access-token",
 		refresh_token: "refresh-token",

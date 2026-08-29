@@ -5,13 +5,16 @@ import { map, type Observable, tap, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import type {
 	ApiUser,
+	ForgotPasswordRequest,
 	GoogleCallbackRequest,
 	LoginRequest,
 	LoginResponse,
+	MessageResponse,
 	RefreshTokenRequest,
 	RefreshTokenResponse,
 	RegisterRequest,
 	RegisterResponse,
+	ResetPasswordRequest,
 } from "../models/auth.models";
 import { AuthStore } from "./auth.store";
 import { TokenStorage } from "./token.storage";
@@ -92,6 +95,44 @@ export class AuthService {
 		return this.http.post<{ message: string }>(
 			`${this.base}/google/link`,
 			request,
+		);
+	}
+
+	/**
+	 * #248. No session side effects -- unlike `login`, there is no token
+	 * pair to store: the response is just the confirmation message, and it
+	 * is identical whether or not the address has an account.
+	 */
+	forgotPassword(body: ForgotPasswordRequest): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(
+			`${this.base}/forgot-password`,
+			body,
+		);
+	}
+
+	/** #248. Also no session side effects -- resetting a password does not sign the visitor in. */
+	resetPassword(body: ResetPasswordRequest): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(`${this.base}/reset-password`, body);
+	}
+
+	/**
+	 * #108. No session side effects, same as resetPassword -- confirming an
+	 * address does not sign the visitor in on its own.
+	 */
+	verifyEmail(token: string): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(`${this.base}/verify-email`, {
+			token,
+		});
+	}
+
+	/**
+	 * #108. No body: the bearer token (attached by authInterceptor) is what
+	 * identifies the account to mail.
+	 */
+	resendVerification(): Observable<MessageResponse> {
+		return this.http.post<MessageResponse>(
+			`${this.base}/resend-verification`,
+			{},
 		);
 	}
 

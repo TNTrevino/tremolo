@@ -1,0 +1,103 @@
+# The caller's full data export -- the account page's downloadable JSON
+# file. Self-only, same pattern as get-general-info.http and
+# charts/get-user-metrics.http. The teacher-of-an-enrolled-student 403 is
+# covered in core-api/tests/export_controller_test.go instead, since
+# proving it here would mean seeding a class and an enrollment just for
+# this one file to duplicate a check the Go suite already pins.
+#
+# Run:  kulala run --tests --env local users/export.http
+
+@student_email       = kula_export_student_{{$timestamp}}@qa.test
+@other_student_email = kula_export_other_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student whose own export is read and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### RegisterOtherStudent
+# RegisterOtherStudent registers a second student used to prove the
+# self-only access rule.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{other_student_email}}", "password": "{{password}}", "first_name": "Other", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("other_student_login_email", response.body.user.email);
+%}
+
+### LoginOtherStudent
+# LoginOtherStudent logs the other student in and stashes the access
+# token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{other_student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("other_student_token", response.body.access_token);
+%}
+
+### ExportUnauthenticated
+# ExportUnauthenticated sends no bearer token and expects 401.
+GET {{baseUrl}}/api/users/{{student_id}}/export
+
+> {%
+	client.test("an unauthenticated caller is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(response.body.error === "Unauthorized", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### ExportOtherUsersID
+# ExportOtherUsersID has the other student try to read the first
+# student's export and expects 403.
+GET {{baseUrl}}/api/users/{{student_id}}/export
+Authorization: Bearer {{other_student_token}}
+
+> {%
+	client.test("a caller cannot read another user's export", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Access denied", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### ExportSuccess
+# ExportSuccess has the student read their own export and expects 200
+# with a profile that matches them and a real array for score_entries.
+GET {{baseUrl}}/api/users/{{student_id}}/export
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a student reads their own export", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(
+			response.body.profile.id === client.global.get("student_id"),
+			"profile id matches the caller"
+		);
+		client.assert(Array.isArray(response.body.score_entries), "score_entries is an array");
+	});
+%}

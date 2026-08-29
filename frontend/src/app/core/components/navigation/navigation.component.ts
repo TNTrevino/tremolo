@@ -14,6 +14,7 @@ import { AuthService } from "../../../auth/services/auth.service";
 import { AuthStore } from "../../../auth/services/auth.store";
 import { FriendsUiStore } from "../../../features/friends/services/friends.store";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import { cn } from "../../../shared/utils/cn";
 import { ThemeStore } from "../../services/theme.store";
 
@@ -50,7 +51,7 @@ interface GameLink extends NavLink {
  */
 @Component({
 	selector: "app-navigation",
-	imports: [ButtonComponent, NgIcon, RouterLink],
+	imports: [ButtonComponent, NgIcon, RouterLink, TooltipDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: "./navigation.component.html",
 	host: { "(document:keydown)": "onDocumentKeydown($event)" },
@@ -142,6 +143,14 @@ export class NavigationComponent {
 		this.theme.theme() === "dark"
 			? "Switch to light theme"
 			: "Switch to dark theme",
+	);
+
+	protected readonly friendsToggleLabel = computed(() =>
+		this.friends.isPanelOpen() ? "Close friends" : "Open friends",
+	);
+
+	protected readonly mobileMenuLabel = computed(() =>
+		this.mobileMenuOpen() ? "Close menu" : "Open menu",
 	);
 
 	protected isActive(path: string): boolean {

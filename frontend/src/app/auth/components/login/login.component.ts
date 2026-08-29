@@ -16,11 +16,13 @@ import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import {
 	loginSchema,
 	type LoginFormData,
 } from "../../../shared/validators/auth.schemas";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { showHideLabel } from "../../../shared/utils/password-toggle.utils";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
 import { GoogleSignInButtonComponent } from "../google-sign-in-button/google-sign-in-button.component";
@@ -58,6 +60,7 @@ import { GoogleSignInButtonComponent } from "../google-sign-in-button/google-sig
 		GoogleSignInButtonComponent,
 		NgIcon,
 		RouterLink,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,6 +80,7 @@ export class LoginPageComponent {
 	readonly pending = signal(false);
 	readonly errorMessage = signal<string | null>(null);
 	readonly showPassword = signal(false);
+	readonly passwordToggleLabel = showHideLabel(this.showPassword, "password");
 
 	/**
 	 * The message signup or a failed Google callback left behind, read once

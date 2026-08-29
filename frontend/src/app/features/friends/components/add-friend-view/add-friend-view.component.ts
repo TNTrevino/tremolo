@@ -16,6 +16,7 @@ import { SpinnerComponent } from "../../../../core/components/spinner/spinner.co
 import { NotificationService } from "../../../../core/services/notification.service";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { InputDirective } from "../../../../shared/components/ui/input.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import type { Friend } from "../../models/friends.models";
 import { FriendsService } from "../../services/friends.service";
@@ -57,6 +58,7 @@ const DEBOUNCE_MS = 120;
 		InputDirective,
 		NgIcon,
 		SpinnerComponent,
+		TooltipDirective,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `
@@ -105,6 +107,13 @@ export class AddFriendViewComponent {
 
 	protected fullName(user: Friend): string {
 		return `${user.firstName} ${user.lastName}`;
+	}
+
+	/** Same words as the button's `ariaLabel`, for `appTooltip` to mirror. */
+	protected addButtonLabel(user: Friend): string {
+		return this.addedIds().has(user.id)
+			? this.fullName(user) + " added"
+			: "Add " + this.fullName(user);
 	}
 
 	protected onSearch(event: Event): void {

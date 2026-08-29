@@ -140,6 +140,14 @@ export const routes: Routes = [
 				(m) => m.SignupPageComponent,
 			),
 	},
+	{
+		path: "forgot-password",
+		canActivate: [guestGuard],
+		loadComponent: () =>
+			import("./auth/components/forgot-password/forgot-password-page.component").then(
+				(m) => m.ForgotPasswordPageComponent,
+			),
+	},
 
 	// --- Signed in (was ProtectedRoute) ----------------------------------
 	{
@@ -214,6 +222,31 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import("./features/classes/components/student-stats-page/student-stats-page.component").then(
 				(m) => m.StudentStatsPageComponent,
+			),
+	},
+
+	// --- Token-bearing links from email (deliberately unguarded) ---
+	// A link from an email must work even when a stale session is signed in
+	// on the device; guestGuard would bounce the visitor to /dashboard.
+	{
+		path: "reset-password",
+		loadComponent: () =>
+			import("./auth/components/reset-password/reset-password-page.component").then(
+				(m) => m.ResetPasswordPageComponent,
+			),
+	},
+	{
+		path: "verify-email",
+		loadComponent: () =>
+			import("./auth/components/verify-email/verify-email-page.component").then(
+				(m) => m.VerifyEmailPageComponent,
+			),
+	},
+	{
+		path: "confirm-email-change",
+		loadComponent: () =>
+			import("./auth/components/confirm-email-change/confirm-email-change-page.component").then(
+				(m) => m.ConfirmEmailChangePageComponent,
 			),
 	},
 ];

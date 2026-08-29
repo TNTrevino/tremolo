@@ -42,6 +42,46 @@
 		</div>
 	</section>
 
+	<!-- Tooltip -->
+	<section class="space-y-4">
+		<h2 class="font-display text-xl font-bold">Tooltip</h2>
+		<p class="max-w-2xl text-sm text-muted-foreground">
+			Ink on paper, per DESIGN.md rule 7. It shows on hover and on keyboard
+			focus, Escape dismisses it, and the pointer can travel onto the bubble.
+			The tooltip and the aria-label always say the same words.
+		</p>
+		<div class="flex flex-wrap items-center gap-3">
+			<app-button
+				size="icon"
+				variant="outline"
+				ariaLabel="Replay the exercise"
+				appTooltip="Replay the exercise"
+			>
+				<ng-icon name="lucideRotateCcw" aria-hidden="true" class="h-5 w-5" />
+			</app-button>
+			<app-button
+				size="icon"
+				variant="outline"
+				ariaLabel="Copy join code"
+				appTooltip="Copy join code"
+			>
+				<ng-icon name="lucideCopy" aria-hidden="true" class="h-5 w-5" />
+			</app-button>
+			<app-button
+				size="icon"
+				variant="outline"
+				ariaLabel="Show the key signature for every question in this set"
+				appTooltip="Show the key signature for every question in this set"
+			>
+				<ng-icon name="lucideKey" aria-hidden="true" class="h-5 w-5" />
+			</app-button>
+		</div>
+		<p class="max-w-2xl text-sm text-muted-foreground">
+			The third label is deliberately long: the bubble wraps at 16rem and never
+			widens the layout under it.
+		</p>
+	</section>
+
 	<!-- Card -->
 	<section class="space-y-4">
 		<h2 class="font-display text-xl font-bold">Card</h2>

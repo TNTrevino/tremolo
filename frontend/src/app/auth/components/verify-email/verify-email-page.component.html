@@ -1,0 +1,61 @@
+<section class="flex min-h-screen items-center justify-center px-4 py-12">
+	<div appCard className="w-full max-w-md shadow-lg">
+		<div appCardHeader className="space-y-1 text-center">
+			<div class="mb-4 flex justify-center">
+				<div class="rounded-lg bg-primary p-3">
+					<ng-icon
+						name="lucideMusic"
+						size="2rem"
+						aria-hidden="true"
+						class="text-primary-foreground"
+					/>
+				</div>
+			</div>
+			<h1 appCardTitle className="font-display text-3xl">Confirm your email</h1>
+		</div>
+
+		<div
+			appCardContent
+			className="flex flex-col items-center gap-4 text-center"
+		>
+			@if (status() === "pending") {
+				<app-spinner label="Verifying your email" />
+				<p class="text-muted-foreground">Verifying your email...</p>
+			} @else if (status() === "success") {
+				<p
+					role="status"
+					class="rounded-md border-2 border-primary bg-primary/10 p-3 text-sm font-medium text-primary"
+				>
+					{{ message() }}
+				</p>
+			} @else {
+				<p
+					role="alert"
+					class="rounded-md border-2 border-destructive bg-destructive/10 p-3 text-sm font-medium text-destructive"
+				>
+					{{ message() }}
+				</p>
+
+				@if (canResend()) {
+					<app-button
+						variant="outline"
+						[loading]="resending()"
+						(click)="resend()"
+					>
+						Resend verification email
+					</app-button>
+				}
+			}
+		</div>
+
+		@if (status() === "success") {
+			<div appCardFooter className="flex-col gap-4">
+				<a
+					[routerLink]="onwardUrl()"
+					class="w-full text-center font-medium text-primary underline-offset-4 hover:underline"
+					>Continue</a
+				>
+			</div>
+		}
+	</div>
+</section>

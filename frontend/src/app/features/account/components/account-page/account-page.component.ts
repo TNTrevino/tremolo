@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	inject,
 	signal,
 } from "@angular/core";
@@ -19,12 +20,18 @@ import { FormFieldComponent } from "../../../../shared/components/forms/form-fie
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
+import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import {
 	type DeleteAccountFormData,
 	deleteAccountSchema,
+	type EmailChangeFormData,
+	emailChangeSchema,
 	type PasswordChangeFormData,
 	passwordChangeSchema,
 } from "../../../../shared/validators/auth.schemas";
+import type { UserExport } from "../../models/export.models";
+import { AccountService } from "../../services/account.service";
 
 const BLANK_PASSWORD_FORM: PasswordChangeFormData = {
 	currentPassword: "",
@@ -32,21 +39,27 @@ const BLANK_PASSWORD_FORM: PasswordChangeFormData = {
 	confirmPassword: "",
 };
 
-const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
+const BLANK_EMAIL_FORM: EmailChangeFormData = {
+	currentPassword: "",
+	newEmail: "",
+};
+
+const BLANK_DELETE_FORM: DeleteAccountFormData = {
+	emailConfirmation: "",
+	password: "",
+};
 
 /**
  * Account settings. Port of frontend-react/src/pages/AccountPage.tsx.
  *
- * Five cards and a confirmation modal, of which **nothing talks to the
- * server**: React answered the password form, the data download and the
- * deletion with toasts, because the Go service registers no route for any
- * of them (`core-api/controllers/user_info_controller.go` mounts one
- * GET). That is ported as-is -- the strings below are the product's current
- * promises, not placeholders someone forgot. There is therefore **no
- * `rxResource` on this page**; see phase-3-subfeature-3-handoff.md.
+ * Five cards and a confirmation modal. Password and email changes (#249),
+ * the data export (#243), and now account deletion (#202) are all real:
+ * AccountService's PUT/POST/GET/DELETE calls, wired the same way every
+ * other mutation on this page-tier is (a one-shot `.subscribe()`, not
+ * `rxResource`).
  *
- * Two Signal Forms live here rather than one, exactly as React ran two
- * `useForm`s: the schemas are unrelated and the delete form has to reset
+ * Three Signal Forms live here, exactly as React ran three separate form
+ * hooks: the schemas are unrelated, and the delete form has to reset
  * independently when the modal is dismissed.
  */
 @Component({
@@ -57,6 +70,7 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
 		FormFieldComponent,
 		FormInputDirective,
 		NgIcon,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,21 +78,51 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = { emailConfirmation: "" };
 })
 export class AccountPageComponent {
 	private readonly auth = inject(AuthService);
+	private readonly account = inject(AccountService);
 	private readonly store = inject(AuthStore);
 	private readonly router = inject(Router);
 	private readonly notifications = inject(NotificationService);
 
 	readonly user = this.store.user;
 
-	/** Reveals all three password fields at once, as React's single flag did. */
+	/**
+	 * Reveals all three password-change fields at once, as React's single
+	 * flag did -- and, since #249, the email-change form's current-password
+	 * field too (see the template: it has no reveal button of its own, it
+	 * just reads this same signal).
+	 */
 	readonly showPasswords = signal(false);
 	readonly showDeleteModal = signal(false);
+
+	readonly passwordsToggleLabel = computed(() =>
+		this.showPasswords()
+			? "Hide all password fields"
+			: "Show all password fields",
+	);
+
+	readonly passwordPending = signal(false);
+	readonly emailPending = signal(false);
+	readonly exporting = signal(false);
+	readonly deleting = signal(false);
+	/** Set from a failed DeleteAccount call (e.g. an incorrect password)
+	 * and shown INLINE inside the still-open modal, unlike every other
+	 * form on this page -- there is no toast for this one failure path,
+	 * because the point is to let the visitor immediately retry in place,
+	 * not to have the reason scroll past in the notification queue. */
+	readonly deleteError = signal<string | null>(null);
 
 	private readonly passwordModel = signal<PasswordChangeFormData>({
 		...BLANK_PASSWORD_FORM,
 	});
 	readonly passwordForm = form(this.passwordModel, (path) => {
 		validateStandardSchema(path, passwordChangeSchema);
+	});
+
+	private readonly emailModel = signal<EmailChangeFormData>({
+		...BLANK_EMAIL_FORM,
+	});
+	readonly emailForm = form(this.emailModel, (path) => {
+		validateStandardSchema(path, emailChangeSchema);
 	});
 
 	private readonly deleteModel = signal<DeleteAccountFormData>({
@@ -98,16 +142,101 @@ export class AccountPageComponent {
 		this.passwordForm().markAsTouched();
 		if (this.passwordForm().invalid()) return;
 
-		this.notifications.showInfo("Password update functionality coming soon!");
-		// `reset(value)` clears touched/dirty *and* sets the model back, which
-		// is the pair React Hook Form's `reset()` did in one call.
-		this.passwordForm().reset({ ...BLANK_PASSWORD_FORM });
+		const userId = this.user()?.id;
+		if (userId === undefined || this.passwordPending()) return;
+
+		this.passwordPending.set(true);
+		this.account
+			.changePassword(userId, {
+				current_password: this.passwordModel().currentPassword,
+				new_password: this.passwordModel().newPassword,
+			})
+			.subscribe({
+				next: () => {
+					this.passwordPending.set(false);
+					this.notifications.showSuccess("Password updated.");
+					// `reset(value)` clears touched/dirty *and* sets the model
+					// back, the pair React Hook Form's `reset()` did in one call.
+					this.passwordForm().reset({ ...BLANK_PASSWORD_FORM });
+				},
+				error: (err: unknown) => {
+					this.passwordPending.set(false);
+					this.notifications.showError(getErrorMessage(err));
+					// Deliberately NOT reset: the most likely failure is a
+					// wrong current password, and the visitor must not have
+					// to retype every field to fix the one that was wrong.
+				},
+			});
 	}
 
-	downloadData(): void {
-		this.notifications.showInfo(
-			"Your data download will begin shortly. (Feature coming soon)",
-		);
+	submitEmailChange(event: Event): void {
+		event.preventDefault();
+
+		this.emailForm().markAsTouched();
+		if (this.emailForm().invalid()) return;
+
+		const userId = this.user()?.id;
+		if (userId === undefined || this.emailPending()) return;
+
+		this.emailPending.set(true);
+		this.account
+			.requestEmailChange(userId, {
+				current_password: this.emailModel().currentPassword,
+				new_email: this.emailModel().newEmail,
+			})
+			.subscribe({
+				next: (res) => {
+					this.emailPending.set(false);
+					this.notifications.showSuccess(res.message);
+					this.emailForm().reset({ ...BLANK_EMAIL_FORM });
+				},
+				error: (err: unknown) => {
+					this.emailPending.set(false);
+					this.notifications.showError(getErrorMessage(err));
+					// Same reasoning as the password form: a wrong current
+					// password is the likely failure, so the field is left
+					// as typed rather than forcing a full retry.
+				},
+			});
+	}
+
+	/** Downloads the caller's own data export (#243): fetch it, then hand
+	 * it to saveExport to turn into a file. */
+	exportData(): void {
+		const userId = this.user()?.id;
+		if (userId === undefined || this.exporting()) return;
+
+		this.exporting.set(true);
+		this.account.exportData(userId).subscribe({
+			next: (data) => {
+				this.exporting.set(false);
+				this.saveExport(data);
+				this.notifications.showSuccess("Your data has been downloaded.");
+			},
+			error: (err: unknown) => {
+				this.exporting.set(false);
+				this.notifications.showError(getErrorMessage(err));
+			},
+		});
+	}
+
+	/** Turns a fetched export into a downloaded file: an object URL wrapping
+	 * a JSON blob, clicked through a throwaway anchor and immediately
+	 * revoked. The date-stamped filename is entirely client-side -- the
+	 * response carries only the bytes. */
+	private saveExport(data: UserExport): void {
+		const blob = new Blob([JSON.stringify(data, null, 2)], {
+			type: "application/json",
+		});
+		const url = URL.createObjectURL(blob);
+		try {
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = `tremolo-data-${new Date().toISOString().slice(0, 10)}.json`;
+			anchor.click();
+		} finally {
+			URL.revokeObjectURL(url);
+		}
 	}
 
 	openDeleteModal(): void {
@@ -117,13 +246,23 @@ export class AccountPageComponent {
 	closeDeleteModal(): void {
 		this.showDeleteModal.set(false);
 		this.deleteForm().reset({ ...BLANK_DELETE_FORM });
+		this.deleteError.set(null);
 	}
 
+	/** Deletes the caller's own account for real (#202). Two checks happen
+	 * before any request goes out: the schema (both fields present in
+	 * shape) and this instant client-side email match, which saves a round
+	 * trip on an obvious typo -- the server re-checks the very same
+	 * comparison against the account's real address regardless, so a typo
+	 * that slips past this one is still caught, just a beat later. */
 	submitDelete(event: Event): void {
 		event.preventDefault();
 
 		this.deleteForm().markAsTouched();
 		if (this.deleteForm().invalid()) return;
+
+		const userId = this.user()?.id;
+		if (userId === undefined || this.deleting()) return;
 
 		const email = this.user()?.email;
 		if (this.deleteModel().emailConfirmation !== email) {
@@ -131,12 +270,36 @@ export class AccountPageComponent {
 			return;
 		}
 
-		this.notifications.showSuccess("Account deletion would occur here");
-		// React ran this through `useLogout().mutate(...)` for its `onSuccess`
-		// hook; `AuthService.logout()` is local-only and synchronous (the Go
-		// service has no logout endpoint), so the navigation follows it
-		// directly.
-		this.auth.logout();
-		void this.router.navigateByUrl("/");
+		this.deleting.set(true);
+		this.deleteError.set(null);
+		this.account
+			.deleteAccount(userId, {
+				password: this.deleteModel().password,
+				email_confirmation: this.deleteModel().emailConfirmation,
+			})
+			.subscribe({
+				next: () => {
+					this.deleting.set(false);
+					this.closeDeleteModal();
+					// React ran the equivalent through `useLogout().mutate(...)`
+					// for its `onSuccess` hook; `AuthService.logout()` is
+					// local-only and synchronous (the Go service has no logout
+					// endpoint) -- there is no server-side session left to end,
+					// only the client's own copy of it, since the account it
+					// belonged to is gone.
+					this.auth.logout();
+					this.notifications.showSuccess("Your account has been deleted.");
+					// "/" redirects into a game; "/home" is the marketing page --
+					// there is no account left to own a game session.
+					void this.router.navigateByUrl("/home");
+				},
+				error: (err: unknown) => {
+					this.deleting.set(false);
+					this.deleteError.set(getErrorMessage(err));
+					// Deliberately NOT closed, logged out, or navigated: an
+					// incorrect password is exactly the kind of mistake
+					// someone retries immediately in the same modal.
+				},
+			});
 	}
 }

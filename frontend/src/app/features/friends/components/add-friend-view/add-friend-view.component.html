@@ -5,6 +5,7 @@
 			size="icon"
 			className="rounded-full h-8 w-8"
 			ariaLabel="Back to friends"
+			appTooltip="Back to friends"
 			(click)="back.emit()"
 		>
 			<ng-icon size="1rem" name="lucideArrowLeft" aria-hidden="true" />
@@ -49,11 +50,8 @@
 						size="icon"
 						className="rounded-full h-8 w-8 shrink-0"
 						[disabled]="addedIds().has(user.id) || addingId() === user.id"
-						[ariaLabel]="
-							addedIds().has(user.id)
-								? fullName(user) + ' added'
-								: 'Add ' + fullName(user)
-						"
+						[ariaLabel]="addButtonLabel(user)"
+						[appTooltip]="addButtonLabel(user)"
 						(click)="add(user)"
 					>
 						@if (addingId() === user.id) {

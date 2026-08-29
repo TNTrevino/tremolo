@@ -88,7 +88,11 @@ import { GameMode, type GameStats } from "../../models/game-state.models";
 
 			<div class="flex flex-col justify-center gap-4 sm:flex-row">
 				<app-button size="lg" (click)="playAgain.emit()">
-					<ng-icon name="lucideRotateCcw" class="mr-2 h-5 w-5" />
+					<ng-icon
+						name="lucideRotateCcw"
+						class="mr-2 h-5 w-5"
+						aria-hidden="true"
+					/>
 					Play Again
 				</app-button>
 				<ng-content select="[gameOverActions]" />

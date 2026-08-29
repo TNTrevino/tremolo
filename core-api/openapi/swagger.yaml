@@ -66,6 +66,30 @@ definitions:
       student_id:
         type: integer
     type: object
+  dtos.ChangeEmailRequest:
+    properties:
+      current_password:
+        type: string
+      new_email:
+        type: string
+    type: object
+  dtos.ChangeEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    type: object
+  dtos.ChangePasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dtos.ChartDataPoint:
     properties:
       x:
@@ -85,6 +109,18 @@ definitions:
         type: string
       student_count:
         type: integer
+    type: object
+  dtos.ConfirmEmailChangeRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.ConfirmEmailChangeResponse:
+    properties:
+      email:
+        type: string
+      message:
+        type: string
     type: object
   dtos.CreateAssignmentRequest:
     properties:
@@ -140,6 +176,13 @@ definitions:
       game_count:
         type: integer
     type: object
+  dtos.DeleteAccountRequest:
+    properties:
+      email_confirmation:
+        type: string
+      password:
+        type: string
+    type: object
   dtos.Entry:
     properties:
       assignment_id:
@@ -167,6 +210,157 @@ definitions:
   dtos.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  dtos.ExportAttempt:
+    properties:
+      assignment_id:
+        type: integer
+      assignment_title:
+        type: string
+      class_name:
+        type: string
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      entry_id:
+        type: integer
+      game_type:
+        type: string
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportClasses:
+    properties:
+      joined:
+        items:
+          $ref: '#/definitions/dtos.ExportJoinedClass'
+        type: array
+      owned:
+        items:
+          $ref: '#/definitions/dtos.ExportOwnedClass'
+        type: array
+    type: object
+  dtos.ExportFriend:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportGameSettings:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      game_type:
+        type: string
+    type: object
+  dtos.ExportJoinedClass:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      teacher_name:
+        type: string
+    type: object
+  dtos.ExportOwnedClass:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      join_code:
+        type: string
+      name:
+        type: string
+      student_count:
+        type: integer
+    type: object
+  dtos.ExportProfile:
+    properties:
+      created_date:
+        type: string
+      created_time:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      has_google:
+        type: boolean
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportScoreEntry:
+    properties:
+      assignment_id:
+        description: Nil when the entry was not an attempt at a class assignment.
+        type: integer
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      game_type:
+        type: string
+      id:
+        type: integer
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportSettings:
+    properties:
+      games:
+        items:
+          $ref: '#/definitions/dtos.ExportGameSettings'
+        type: array
+      note_game:
+        allOf:
+        - $ref: '#/definitions/dtos.NoteGameSettingsResponse'
+        description: |-
+          The existing note-game settings response shape, reused as-is: nil
+          when the user never saved any (same absence rule as
+          KeyboardBindings above).
+    type: object
+  dtos.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  dtos.ForgotPasswordResponse:
+    properties:
+      message:
         type: string
     type: object
   dtos.FriendDTO:
@@ -426,6 +620,18 @@ definitions:
       user:
         $ref: '#/definitions/dtos.UserResponse'
     type: object
+  dtos.ResetPasswordRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  dtos.ResetPasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dtos.Role:
     enum:
     - ADMIN
@@ -523,10 +729,49 @@ definitions:
       school_id:
         type: integer
     type: object
+  dtos.UserExport:
+    properties:
+      assignment_attempts:
+        items:
+          $ref: '#/definitions/dtos.ExportAttempt'
+        type: array
+      classes:
+        $ref: '#/definitions/dtos.ExportClasses'
+      exported_at:
+        type: string
+      friends:
+        description: |-
+          Friend connections are not on the ticket's list of sections, but
+          they are included anyway: the privacy policy enumerates friend
+          connections as data this service holds about a user, and an export
+          that silently dropped a category the policy promises would make
+          the policy false.
+        items:
+          $ref: '#/definitions/dtos.ExportFriend'
+        type: array
+      keyboard_bindings:
+        allOf:
+        - $ref: '#/definitions/dtos.KeyboardBindingsResponse'
+        description: |-
+          The existing keyboard-bindings response shape, reused as-is: nil
+          (not an empty struct) when the user never saved bindings of their
+          own, the same "absence, not failure" rule GetKeyboardBindings
+          already applies everywhere else it's called.
+      profile:
+        $ref: '#/definitions/dtos.ExportProfile'
+      score_entries:
+        items:
+          $ref: '#/definitions/dtos.ExportScoreEntry'
+        type: array
+      settings:
+        $ref: '#/definitions/dtos.ExportSettings'
+    type: object
   dtos.UserResponse:
     properties:
       email:
         type: string
+      email_verified:
+        type: boolean
       first_name:
         type: string
       has_google:
@@ -536,6 +781,16 @@ definitions:
       last_name:
         type: string
       role:
+        type: string
+    type: object
+  dtos.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.VerifyEmailResponse:
+    properties:
+      message:
         type: string
     type: object
   sql.NullString:
@@ -749,6 +1004,68 @@ paths:
       summary: Get an assignment's results grid
       tags:
       - assignments
+  /api/auth/confirm-email-change:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Confirmation token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ConfirmEmailChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ConfirmEmailChangeResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Confirm an email address change
+      tags:
+      - account
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ForgotPasswordResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Request a password reset
+      tags:
+      - auth
   /api/auth/google/callback:
     post:
       consumes:
@@ -950,6 +1267,86 @@ paths:
           schema:
             $ref: '#/definitions/dtos.ErrorResponse'
       summary: Register a new account
+      tags:
+      - auth
+  /api/auth/resend-verification:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resend the email verification link
+      tags:
+      - auth
+  /api/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ResetPasswordResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Reset a password with a token
+      tags:
+      - auth
+  /api/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Verification token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Verify an email address
       tags:
       - auth
   /api/charts/teacher/class-metrics:
@@ -1693,6 +2090,150 @@ paths:
       summary: Update the note game settings
       tags:
       - note-game-settings
+  /api/users/{userId}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Email confirmation, and the current password if the account has
+          one
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body, mismatched email confirmation, or a missing
+            password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied, or an incorrect password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete the caller's own account
+      tags:
+      - account
+  /api/users/{userId}/email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current password and the new address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangeEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangeEmailResponse'
+        "400":
+          description: Invalid request body, wrong current password, no password set,
+            or a Google-managed address
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request an email address change
+      tags:
+      - account
+  /api/users/{userId}/export:
+    get:
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UserExport'
+        "400":
+          description: Invalid user ID parameter
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export the caller's own data
+      tags:
+      - account
   /api/users/{userId}/general-info:
     get:
       parameters:
@@ -1733,6 +2274,55 @@ paths:
       summary: Get general user info
       tags:
       - user-info
+  /api/users/{userId}/password:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangePasswordResponse'
+        "400":
+          description: Invalid request body, wrong current password, or no password
+            set
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change the caller's password
+      tags:
+      - account
   /health:
     get:
       produces:

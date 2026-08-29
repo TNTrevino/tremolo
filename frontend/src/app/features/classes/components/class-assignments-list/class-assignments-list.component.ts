@@ -15,6 +15,7 @@ import { ConfirmDialogComponent } from "../../../../core/components/confirm-dial
 import { NotificationService } from "../../../../core/services/notification.service";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { cn } from "../../../../shared/utils/cn";
 import { formatDate } from "../../../../shared/utils/date.utils";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
@@ -47,6 +48,7 @@ import { CreateAssignmentDialogComponent } from "../create-assignment-dialog/cre
 		ConfirmDialogComponent,
 		CreateAssignmentDialogComponent,
 		NgIcon,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

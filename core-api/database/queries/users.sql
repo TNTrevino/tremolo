@@ -1,11 +1,11 @@
 -- name: GetUserByEmail :one
-select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password
+select u.id, u.email, u.first_name, u.last_name, r.name as role, coalesce(u.password, '') as password, u.email_verified_at
 from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.email = $1;
 
 -- name: GetUserByID :one
-select u.id, u.email, u.first_name, u.last_name, r.name as role, u.school_id, u.created_date
+select u.id, u.email, u.first_name, u.last_name, r.name as role, u.school_id, u.created_date, u.email_verified_at
 from tremolo.users u
 inner join tremolo.roles r on u.role_id = r.id
 where u.id = $1;

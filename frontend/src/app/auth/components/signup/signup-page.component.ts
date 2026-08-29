@@ -21,11 +21,13 @@ import { FormFieldComponent } from "../../../shared/components/forms/form-field.
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
 import { FormSelectDirective } from "../../../shared/components/forms/form-select.directive";
 import { SelectComponent } from "../../../shared/components/ui/select.component";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import {
 	signupSchema,
 	type SignupFormData,
 } from "../../../shared/validators/auth.schemas";
 import { getErrorMessage } from "../../../shared/utils/error.utils";
+import { showHideLabel } from "../../../shared/utils/password-toggle.utils";
 import type { PasswordRequirement } from "../../models/auth.models";
 import { AuthService } from "../../services/auth.service";
 import { AuthStore } from "../../services/auth.store";
@@ -158,6 +160,7 @@ function isInviteCodeError(err: unknown): boolean {
 		NgIcon,
 		RouterLink,
 		SelectComponent,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -209,6 +212,12 @@ export class SignupPageComponent {
 		source: () => this.model().role,
 		computation: () => null,
 	});
+
+	readonly passwordToggleLabel = showHideLabel(this.showPassword, "password");
+	readonly confirmPasswordToggleLabel = showHideLabel(
+		this.showConfirmPassword,
+		"confirm password",
+	);
 
 	protected readonly password = computed(() => this.model().password);
 

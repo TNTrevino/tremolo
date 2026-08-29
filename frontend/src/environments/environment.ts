@@ -18,6 +18,12 @@ export const environment = {
 	/** Was VITE_APP_NAME. */
 	appName: "Tremolo",
 
-	/** Was VITE_GOOGLE_CLIENT_ID. */
-	googleClientId: "your-client-id.apps.googleusercontent.com",
+	/**
+	 * Was VITE_GOOGLE_CLIENT_ID. The Tremolo-OAuth-Test client, which
+	 * whitelists http://localhost:4200 -- a client id is public (the prod
+	 * bundle ships its own to every visitor); only the client secret is
+	 * secret, and that lives server-side in the Go service's env.
+	 */
+	googleClientId:
+		"965194502410-n4tl1vpvovqorak78bvr5lfjana842dm.apps.googleusercontent.com",
 };

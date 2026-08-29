@@ -13,6 +13,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { NgIcon } from "@ng-icons/core";
 import { timer } from "rxjs";
 
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import type { Toast } from "../../services/notification.service";
 
 /** Matches React's 300ms exit transition. */
@@ -48,7 +49,7 @@ const VARIANTS: Record<Toast["type"], string> = {
  */
 @Component({
 	selector: "app-toast-item",
-	imports: [NgIcon],
+	imports: [NgIcon, TooltipDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		<div [class]="classes()" role="alert">
@@ -68,7 +69,8 @@ const VARIANTS: Record<Toast["type"], string> = {
 			<button
 				type="button"
 				class="flex-shrink-0 rounded-md p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-				aria-label="Close notification"
+				aria-label="Dismiss notification"
+				appTooltip="Dismiss notification"
 				(click)="dismiss()"
 			>
 				<ng-icon name="lucideX" class="h-4 w-4" aria-hidden="true" />

@@ -16,14 +16,7 @@ type LoginRequest struct {
 }
 
 func (req LoginRequest) Valid(ctx context.Context) map[string]string {
-	problems := map[string]string{}
-
-	switch {
-	case req.Email == "":
-		problems["email"] = "Email is required"
-	case !validations.IsEmail(req.Email):
-		problems["email"] = "Email must be a valid email address"
-	}
+	problems := addEmailProblem(map[string]string{}, req.Email)
 
 	return addPasswordProblem(problems, req.Password)
 }
@@ -39,27 +32,66 @@ func (req LoginRequest) Valid(ctx context.Context) map[string]string {
 // harmless, since Login only ever compares against an already-hashed
 // password, and consistent, since both routes share this one rule.
 func addPasswordProblem(problems map[string]string, password string) map[string]string {
-	switch {
-	case password == "":
-		problems["password"] = "Password is required"
-	case len(password) < 8:
-		problems["password"] = "Password must be at least 8 characters"
-	case len(password) > 72:
-		problems["password"] = "Password must be at most 72 characters"
-	case !validations.PasswordComplexity(password):
-		problems["password"] = "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
+	if msg := passwordProblem(password); msg != "" {
+		problems["password"] = msg
 	}
 	return problems
 }
 
+// passwordProblem is the password rule itself, extracted out of
+// addPasswordProblem (#249) so a request whose password field is spelled
+// differently -- ChangePasswordRequest's "new_password" -- can apply the
+// exact same rule under its own JSON key instead of a second hand-copied
+// switch. Purely mechanical: addPasswordProblem's own behavior is
+// unchanged, same messages under the same "password" key.
+func passwordProblem(password string) string {
+	switch {
+	case password == "":
+		return "Password is required"
+	case len(password) < 8:
+		return "Password must be at least 8 characters"
+	case len(password) > 72:
+		return "Password must be at most 72 characters"
+	case !validations.PasswordComplexity(password):
+		return "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
+	}
+	return ""
+}
+
+// addEmailProblem applies the email-shape rule Login and Register share
+// under the "email" key -- the same addX/X split as
+// addPasswordProblem/passwordProblem, and for the same reason (#249): a
+// request whose email field is spelled differently -- ChangeEmailRequest's
+// "new_email" -- can apply emailProblem directly under its own JSON key
+// instead of a second hand-copied switch.
+func addEmailProblem(problems map[string]string, email string) map[string]string {
+	if msg := emailProblem(email); msg != "" {
+		problems["email"] = msg
+	}
+	return problems
+}
+
+// emailProblem is the email-shape rule itself: required, and must look
+// like an email address.
+func emailProblem(email string) string {
+	switch {
+	case email == "":
+		return "Email is required"
+	case !validations.IsEmail(email):
+		return "Email must be a valid email address"
+	}
+	return ""
+}
+
 // UserResponse represents the user data returned in API responses
 type UserResponse struct {
-	ID        int    `json:"id" db:"id"`
-	Email     string `json:"email" db:"email"`
-	FirstName string `json:"first_name" db:"first_name"`
-	LastName  string `json:"last_name" db:"last_name"`
-	Role      string `json:"role" db:"role"`
-	HasGoogle bool   `json:"has_google,omitempty"`
+	ID            int    `json:"id" db:"id"`
+	Email         string `json:"email" db:"email"`
+	FirstName     string `json:"first_name" db:"first_name"`
+	LastName      string `json:"last_name" db:"last_name"`
+	Role          string `json:"role" db:"role"`
+	HasGoogle     bool   `json:"has_google,omitempty"`
+	EmailVerified bool   `json:"email_verified"`
 }
 
 // LoginResponse represents the response body for successful login
@@ -116,13 +148,7 @@ var gradeLevels = map[string]bool{
 func (req RegisterRequest) Valid(ctx context.Context) map[string]string {
 	problems := map[string]string{}
 
-	switch {
-	case req.Email == "":
-		problems["email"] = "Email is required"
-	case !validations.IsEmail(req.Email):
-		problems["email"] = "Email must be a valid email address"
-	}
-
+	problems = addEmailProblem(problems, req.Email)
 	problems = addPasswordProblem(problems, req.Password)
 
 	switch {

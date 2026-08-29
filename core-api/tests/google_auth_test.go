@@ -513,3 +513,113 @@ func TestLinkGoogleAccountService_Success(t *testing.T) {
 	assert.True(t, oauthRow.GoogleID.Valid)
 	assert.Equal(t, sub, oauthRow.GoogleID.String)
 }
+
+// ---------- #108: Google addresses are verified by construction ----------
+
+// TestGoogleCallback_NewUser_IsVerified extends TestGoogleCallback_NewUser:
+// a brand new Google-registered account must come back with
+// email_verified true in the response, and the persisted row must agree
+// -- not just the echoed DTO.
+func TestGoogleCallback_NewUser_IsVerified(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "google_new_verified")
+	sub := fmt.Sprintf("google-sub-%s", email)
+
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           sub,
+		Email:         email,
+		EmailVerified: true,
+		GivenName:     "New",
+		FamilyName:    "Verified",
+	}))
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
+	require.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var resp dtos.LoginResponse
+	testutil.ParseJSONResponse(t, w, &resp)
+	t.Cleanup(func() { testutil.DeleteTestUser(t, resp.User.ID) })
+
+	assert.True(t, resp.User.EmailVerified, "a new Google user's response should report email_verified true")
+
+	stored := testutil.GetTestUserByEmail(t, email)
+	require.NotNil(t, stored)
+	assert.True(t, stored.EmailVerifiedAt.Valid, "email_verified_at should be set on the persisted row")
+}
+
+// TestGoogleCallback_AutoLink_MarksVerified extends
+// TestGoogleCallback_AccountLinking: auto-linking an existing
+// email/password account to Google must also mark that account's email
+// verified, since claims.EmailVerified was already required to be true.
+func TestGoogleCallback_AutoLink_MarksVerified(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "google_autolink_verified")
+	sub := fmt.Sprintf("google-sub-%s", email)
+
+	testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "Link",
+		LastName:  "Verified",
+		Role:      "STUDENT",
+	})
+
+	controllers.SetGoogleTokenVerifier(testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           sub,
+		Email:         email,
+		EmailVerified: true,
+		GivenName:     "Link",
+		FamilyName:    "Verified",
+	}))
+
+	router := authTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPost, "/api/auth/google/callback", "", googleReqBody()))
+	require.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var resp dtos.LoginResponse
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.True(t, resp.AccountLinked)
+	assert.True(t, resp.User.EmailVerified, "an auto-linked account's response should report email_verified true")
+
+	stored := testutil.GetTestUserByEmail(t, email)
+	require.NotNil(t, stored)
+	assert.True(t, stored.EmailVerifiedAt.Valid, "email_verified_at should be set on the persisted row after auto-link")
+}
+
+// TestLinkGoogleAccount_MarksVerified mirrors
+// TestLinkGoogleAccountService_Success and additionally checks that the
+// explicit link flow marks the account verified.
+func TestLinkGoogleAccount_MarksVerified(t *testing.T) {
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "link_verified")
+	sub := fmt.Sprintf("link-verified-sub-%s", email)
+
+	uid := testutil.CreateTestUser(t, testutil.CreateTestUserParams{
+		Email:     email,
+		Password:  "TestPass123!",
+		FirstName: "Explicit",
+		LastName:  "Link",
+		Role:      "STUDENT",
+	})
+
+	verifier := testutil.NewMockGoogleVerifier(&services.GoogleClaims{
+		Sub:           sub,
+		Email:         email,
+		EmailVerified: true,
+		GivenName:     "Explicit",
+		FamilyName:    "Link",
+	})
+
+	err := services.LinkGoogleAccount(context.Background(), database.Queries, verifier, uid, googleReqBody())
+	require.NoError(t, err)
+
+	stored := testutil.GetTestUserByEmail(t, email)
+	require.NotNil(t, stored)
+	assert.True(t, stored.EmailVerifiedAt.Valid, "email_verified_at should be set after an explicit Google link")
+}

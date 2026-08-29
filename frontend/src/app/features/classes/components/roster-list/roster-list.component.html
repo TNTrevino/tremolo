@@ -54,6 +54,7 @@
 						variant="ghost"
 						size="icon"
 						[ariaLabel]="'Remove ' + fullName(entry)"
+						[appTooltip]="'Remove ' + fullName(entry)"
 						className="text-muted-foreground hover:text-destructive"
 						(click)="confirming.set(entry)"
 					>

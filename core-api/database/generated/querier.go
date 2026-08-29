@@ -13,6 +13,48 @@ type Querier interface {
 	AddStudentToClass(ctx context.Context, arg AddStudentToClassParams) error
 	ArchiveClass(ctx context.Context, id int32) error
 	CheckAccountLocked(ctx context.Context, email sql.NullString) (sql.NullTime, error)
+	// ClaimQueuedEmails takes ownership of a batch in one statement: select
+	// and update together, so two watchers cannot hand the same message to
+	// two relays. FOR UPDATE SKIP LOCKED is what makes the second watcher
+	// move on to the next row instead of blocking on the first one's lock.
+	//
+	// The second arm of the WHERE re-claims a stale 'sending' row: a watcher
+	// that was killed mid-send leaves a row claimed forever otherwise, so a
+	// claim older than the lease is treated as abandoned.
+	//
+	// The parentheses in the WHERE clause are load-bearing. `A and B or C`
+	// parses as `(A and B) or C`, which is what we want here -- but only by
+	// accident of precedence, and the next person to add a condition would
+	// have no way to tell that was intended. They stay explicit.
+	//
+	ClaimQueuedEmails(ctx context.Context, arg ClaimQueuedEmailsParams) ([]TremoloQueuedEmail, error)
+	// ConsumeEmailToken is the same single-statement gate as
+	// ConsumePasswordResetToken: claimed and returned in one UPDATE, so two
+	// concurrent redemptions racing on the same token cannot both win.
+	// purpose is part of the WHERE, not just token_hash, because email_tokens
+	// is shared with the email-change flow (#249) -- a verify_email token must
+	// never be consumable as a change_email token, even though token_hash
+	// alone is already globally unique. Returns the full row (not just
+	// user_id) because the email-change flow needs .Email too.
+	//
+	ConsumeEmailToken(ctx context.Context, arg ConsumeEmailTokenParams) (TremoloEmailToken, error)
+	// ConsumePasswordResetToken is the single-use gate: claimed and returned in
+	// one UPDATE statement, so two concurrent resets racing on the same token
+	// cannot both win. sql.ErrNoRows means exactly "unknown, used, or expired"
+	// -- there is no way to tell which from this query, and that is
+	// deliberate (see services.ErrResetTokenInvalid). Only user_id comes back:
+	// it's the only column ResetPassword reads.
+	//
+	ConsumePasswordResetToken(ctx context.Context, tokenHash string) (int32, error)
+	// CountUsersByEmail backs RequestEmailChange's already-taken check. This
+	// is a genuine account-enumeration surface -- unlike Register's
+	// checkIfUserExists, whose caller has proven nothing yet -- but here the
+	// caller is already authenticated AND has just re-proved their current
+	// password, a different threat model where confirming another user's
+	// address collides on that call is an accepted cost (see
+	// services.RequestEmailChange).
+	//
+	CountUsersByEmail(ctx context.Context, email sql.NullString) (int32, error)
 	// Assignment queries. The results grid is derived from
 	// note_game_entries tagged with assignment_id -- there is no separate
 	// submissions table to keep in sync.
@@ -20,6 +62,7 @@ type Querier interface {
 	// Class + roster queries. Ownership checks (teacher_id = caller) happen
 	// in the service layer by comparing against the fetched row.
 	CreateClass(ctx context.Context, arg CreateClassParams) (TremoloClass, error)
+	CreateEmailToken(ctx context.Context, arg CreateEmailTokenParams) (TremoloEmailToken, error)
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) error
 	// Inserts both directions to create an instant mutual friendship.
 	// ON CONFLICT DO NOTHING makes this idempotent.
@@ -30,6 +73,7 @@ type Querier interface {
 	// CreateOAuthUser has no grade_level column: OAuth signup never asks, so the
 	// column just defaults NULL for these rows (#244).
 	CreateOAuthUser(ctx context.Context, arg CreateOAuthUserParams) (CreateOAuthUserRow, error)
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreateSchool(ctx context.Context, arg CreateSchoolParams) (int32, error)
 	// Teacher invite codes. Redemption is deliberately a single conditional
 	// UPDATE rather than a select-then-update: see 00011_teacher_invite_codes.sql.
@@ -51,11 +95,13 @@ type Querier interface {
 	DeleteNoteGameEntryByID(ctx context.Context, id int32) error
 	DeleteNoteGameSettings(ctx context.Context, userID int32) error
 	DeleteParentChildRelationship(ctx context.Context, arg DeleteParentChildRelationshipParams) error
+	DeleteQueuedEmailsByRecipient(ctx context.Context, recipient string) error
 	DeleteTeacherInviteCode(ctx context.Context, id int32) error
 	DeleteTeacherParentRelationship(ctx context.Context, arg DeleteTeacherParentRelationshipParams) error
 	// relationship queries
 	DeleteTeacherStudentRelationship(ctx context.Context, arg DeleteTeacherStudentRelationshipParams) error
 	DeleteUserByID(ctx context.Context, id int32) error
+	EnqueueEmail(ctx context.Context, arg EnqueueEmailParams) (TremoloQueuedEmail, error)
 	// Chart data queries for individual users
 	FetchChartDataAll(ctx context.Context, userID int32) ([]FetchChartDataAllRow, error)
 	FetchChartDataInRange(ctx context.Context, arg FetchChartDataInRangeParams) ([]FetchChartDataInRangeRow, error)
@@ -100,6 +146,7 @@ type Querier interface {
 	GetGameSettings(ctx context.Context, arg GetGameSettingsParams) (TremoloGameSetting, error)
 	GetKeyboardBindings(ctx context.Context, userID int32) (TremoloKeyboardBinding, error)
 	GetNoteGameSettings(ctx context.Context, userID int32) (TremoloNoteGameSetting, error)
+	GetQueuedEmailByID(ctx context.Context, id int64) (TremoloQueuedEmail, error)
 	GetRecentEntriesByUserID(ctx context.Context, arg GetRecentEntriesByUserIDParams) ([]GetRecentEntriesByUserIDRow, error)
 	GetRoleIDByName(ctx context.Context, name string) (int32, error)
 	GetTeacherInviteCodeByCode(ctx context.Context, code string) (TremoloTeacherInviteCode, error)
@@ -108,10 +155,23 @@ type Querier interface {
 	GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (GetUserByGoogleIDRow, error)
 	GetUserByID(ctx context.Context, id int32) (GetUserByIDRow, error)
 	GetUserByRoleAndID(ctx context.Context, arg GetUserByRoleAndIDParams) (GetUserByRoleAndIDRow, error)
+	// Queries for #249's change-password and change-email flows.
+	// GetUserByID does not select the password hash, and account changes need
+	// it. A dedicated query keeps users.sql untouched.
+	//
+	GetUserCredentials(ctx context.Context, id int32) (GetUserCredentialsRow, error)
+	// Read-only queries backing GET /api/users/{userId}/export (#243). Own file
+	// so parallel branches editing users.sql do not conflict with it.
+	// The whole profile, including columns GetUserByID leaves out. Not a
+	// widening of GetUserByID: that row shape feeds every /me response.
+	// grade_level joins this select when #244 merges.
+	GetUserForExport(ctx context.Context, id int32) (GetUserForExportRow, error)
 	GetUserGeneralInfo(ctx context.Context, id int32) (GetUserGeneralInfoRow, error)
 	GetUserRole(ctx context.Context, id int32) (string, error)
 	GetUsersByRole(ctx context.Context, name string) ([]GetUsersByRoleRow, error)
 	IncrementFailedAttempts(ctx context.Context, email sql.NullString) error
+	InvalidateEmailTokens(ctx context.Context, arg InvalidateEmailTokensParams) error
+	InvalidateUserPasswordResetTokens(ctx context.Context, userID int32) error
 	IsStudentInClass(ctx context.Context, arg IsStudentInClassParams) (bool, error)
 	// Does the caller own an ACTIVE class this student is enrolled in? This is
 	// the teacher-visibility rule behind another user's stats. Archived classes
@@ -121,6 +181,9 @@ type Querier interface {
 	// teacher chart queries.
 	IsStudentOfTeacher(ctx context.Context, arg IsStudentOfTeacherParams) (bool, error)
 	LinkGoogleAccount(ctx context.Context, arg LinkGoogleAccountParams) error
+	// Labelled per assignment/class so the export is readable by a human
+	// without joining anything.
+	ListAssignmentAttemptsByUser(ctx context.Context, userID int32) ([]ListAssignmentAttemptsByUserRow, error)
 	ListAssignmentsByClass(ctx context.Context, classID int32) ([]TremoloAssignment, error)
 	// Every assignment in the student's classes, with the student's own
 	// best attempt so the frontend can show progress. "Best" is one real
@@ -131,15 +194,44 @@ type Querier interface {
 	ListClassRoster(ctx context.Context, classID int32) ([]ListClassRosterRow, error)
 	ListClassesByStudent(ctx context.Context, studentID int32) ([]ListClassesByStudentRow, error)
 	ListClassesByTeacher(ctx context.Context, teacherID int32) ([]ListClassesByTeacherRow, error)
+	ListEmailSendAttempts(ctx context.Context, queuedEmailID int64) ([]TremoloEmailSendAttempt, error)
+	ListEmailTokensByUser(ctx context.Context, arg ListEmailTokensByUserParams) ([]TremoloEmailToken, error)
+	// Every per-game JSONB settings row the user has saved (key signature /
+	// scale / chord identification games -- the note game has its own typed
+	// table, covered separately by GetNoteGameSettings).
+	ListGameSettingsByUser(ctx context.Context, userID int32) ([]ListGameSettingsByUserRow, error)
+	ListPasswordResetTokensByUser(ctx context.Context, userID int32) ([]TremoloPasswordResetToken, error)
+	ListQueuedEmailsByRecipient(ctx context.Context, recipient string) ([]TremoloQueuedEmail, error)
 	ListTeacherInviteCodes(ctx context.Context) ([]TremoloTeacherInviteCode, error)
 	LockAccount(ctx context.Context, arg LockAccountParams) error
+	MarkEmailDead(ctx context.Context, arg MarkEmailDeadParams) error
+	MarkEmailSent(ctx context.Context, id int64) error
+	// MarkEmailVerified is coalesce-guarded so redeeming a second valid token
+	// (a stale second tab, a resend race) is idempotent: the timestamp is set
+	// once, on the first success, and never moves after that.
+	//
+	MarkEmailVerified(ctx context.Context, id int32) error
+	RecordEmailSendAttempt(ctx context.Context, arg RecordEmailSendAttemptParams) error
 	RedeemTeacherInviteCode(ctx context.Context, code string) (int32, error)
 	ReleaseTeacherInviteCode(ctx context.Context, id int32) error
 	RemoveStudentFromClass(ctx context.Context, arg RemoveStudentFromClassParams) error
+	RescheduleEmail(ctx context.Context, arg RescheduleEmailParams) error
 	ResetLockout(ctx context.Context, email sql.NullString) error
 	// Case-insensitive contains search on full name, excluding the current user
 	// and anyone they are already mutual friends with
 	SearchUsersByName(ctx context.Context, arg SearchUsersByNameParams) ([]SearchUsersByNameRow, error)
+	// UpdateUserEmail is the atomic swap: the address and its verified stamp
+	// move in one statement. email_verified_at is set here, not left to a
+	// later MarkEmailVerified call, because the confirmation link itself is
+	// what proved control of the new address -- the same proof a verify_email
+	// token gives, so the same trust follows it.
+	//
+	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
+	// UpdateUserPassword lives here, not users.sql, so this feature's
+	// migration and queries stay in their own file rather than touching one a
+	// parallel branch may also be editing.
+	//
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertGameSettings(ctx context.Context, arg UpsertGameSettingsParams) (TremoloGameSetting, error)
 	UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error)
 	UpsertNoteGameSettings(ctx context.Context, arg UpsertNoteGameSettingsParams) (TremoloNoteGameSetting, error)

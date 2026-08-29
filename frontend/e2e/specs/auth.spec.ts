@@ -29,7 +29,7 @@ test.describe("authentication", () => {
 	test("rejects a wrong password without navigating", async ({ page }) => {
 		await page.goto("/login");
 		await page.getByLabel("Email Address").fill(student.email);
-		await page.getByLabel("Password").fill("NotTheP4ssword!");
+		await page.getByLabel("Password", { exact: true }).fill("NotTheP4ssword!");
 		await page.getByRole("button", { name: "Sign In", exact: true }).click();
 
 		// Deliberately loose on the wording. Today the React 401 interceptor
@@ -73,7 +73,9 @@ test.describe("authentication", () => {
 		await page.getByLabel("Last Name").fill("Signup");
 		await page.getByLabel("Email Address").fill(email);
 		await page.getByLabel("Password", { exact: true }).fill("E2ePassw0rd!");
-		await page.getByLabel("Confirm Password").fill("E2ePassw0rd!");
+		await page
+			.getByLabel("Confirm Password", { exact: true })
+			.fill("E2ePassw0rd!");
 		await page.getByLabel("I am a...").selectOption("STUDENT");
 		await page.getByRole("button", { name: "Create Account" }).click();
 
@@ -84,7 +86,7 @@ test.describe("authentication", () => {
 
 		// The account is real: the credentials just created sign in.
 		await page.getByLabel("Email Address").fill(email);
-		await page.getByLabel("Password").fill("E2ePassw0rd!");
+		await page.getByLabel("Password", { exact: true }).fill("E2ePassw0rd!");
 		await page.getByRole("button", { name: "Sign In", exact: true }).click();
 		await expect(page).toHaveURL(/\/dashboard$/);
 	});

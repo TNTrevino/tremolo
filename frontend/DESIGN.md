@@ -122,6 +122,19 @@ figure/ground flip musictheory.net's keyboard uses.
    headlines.
 6. **Logo chip** is ink with the paper glyph (brass in dark mode is
    acceptable); purple does not survive anywhere.
+7. **Icons never speak for themselves.** Every icon-only control
+   carries an `aria-label` and the shared tooltip (`appTooltip`); the
+   label and the tooltip say the same words. An icon beside visible
+   text is decorative and carries `aria-hidden="true"`. A status icon
+   with no text (correct/incorrect, verified) carries sr-only text.
+   The tooltip bubble is ink on paper — `--primary` fill with
+   `--primary-foreground` text, never brass, no border — and it flips
+   to a light fill in dark mode like the selected chips. Tooltips show
+   on hover AND keyboard focus, dismiss on Escape, and never move the
+   layout. Labels are task verbs ("Copy join code"), not icon names
+   ("Clipboard"); one action keeps one label everywhere. The native
+   `title` attribute is banned — it is invisible to keyboards and
+   touch.
 
 ## Rollout
 

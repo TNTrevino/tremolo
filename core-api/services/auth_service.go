@@ -97,6 +97,16 @@ func Login(ctx context.Context, q generated.Querier, req dtos.LoginRequest) (*dt
 		logger.Error("Failed to reset lockout", "error", err.Error())
 	}
 
+	// Soft by default (#108): REQUIRE_EMAIL_VERIFICATION is off for the
+	// pilot, so an unverified account can still sign in and just sees the
+	// banner. Checked after the password/lockout gates, not before, so a
+	// wrong password on an unverified account still reports invalid
+	// credentials rather than leaking verification state to a caller who
+	// hasn't even proven they know the password.
+	if RequireEmailVerification() && !user.EmailVerifiedAt.Valid {
+		return nil, ErrEmailNotVerified
+	}
+
 	accessToken, err := middleware.GenerateAccessToken(int(user.ID))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrAccessTokenGeneration, err)
@@ -213,6 +223,14 @@ func Register(ctx context.Context, q generated.Querier, req dtos.RegisterRequest
 
 	if err := CreateDefaultKeyboardBindings(ctx, q, int(createdUser.ID)); err != nil {
 		logger.Error("Failed to seed default keyboard bindings for new user",
+			"error", err.Error(),
+			"user_id", createdUser.ID)
+	}
+
+	// Best effort: signup does not fail because mail could not be queued,
+	// and it never waits on SMTP -- the watcher owns delivery.
+	if err := SendVerificationEmail(ctx, q, int(createdUser.ID), normalizedEmail, createdUser.FirstName); err != nil {
+		logger.Error("Failed to enqueue verification email for new user",
 			"error", err.Error(),
 			"user_id", createdUser.ID)
 	}

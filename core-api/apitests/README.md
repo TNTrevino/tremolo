@@ -7,7 +7,7 @@ More readable than a wall of `curl`, and every step asserts.
 ## Files
 
 One `.http` file per endpoint, kebab-case, grouped into a directory per
-URL path segment — 42 files for the 42 routes in
+URL path segment — 49 files for the 49 routes in
 `core-api/controllers/routes.go`. Directory walking is fully recursive
 (kulala picks up every `.http`/`.rest` file at any depth), and
 `http-client.env.json` resolution walks upward from each file's own
@@ -24,13 +24,21 @@ there is no per-group `http-client.env.json`.
   explorer. Not a test: it is a browsable route list for every endpoint
   below, handy when you're not sure which group a route landed in.
 - `health/` — the service health check.
-- `auth/` — register, login, refresh, `/me`, and the two Google OAuth
-  routes. `google-callback.http` and `google-link.http` make a real
-  outbound call to Google's token endpoint with a garbage code to prove
-  the 401 path — the suite's only external network dependency.
-  `register.http` also covers the teacher invite-code gate (#250): a
-  teacher signup with no code, one with a code that does not exist, and a
-  student whose code is ignored rather than rejected.
+- `auth/` — register, login, refresh, `/me`, the two Google OAuth routes,
+  forgot/reset password, verify-email/resend-verification, and
+  confirm-email-change. `google-callback.http` and `google-link.http`
+  make a real outbound call to Google's token endpoint with a garbage
+  code to prove the 401 path — the suite's only external network
+  dependency. `register.http` also covers the teacher invite-code gate
+  (#250): a teacher signup with no code, one with a code that does not
+  exist, and a student whose code is ignored rather than rejected.
+  `reset-password.http`, `verify-email.http` and
+  `confirm-email-change.http` all cover only the invalid-token and
+  validation responses; the happy path in each case needs a token that
+  only ever exists in a queued mail's body, so those live in
+  `core-api/tests/password_reset_service_test.go`,
+  `core-api/tests/email_verification_service_test.go` and
+  `core-api/tests/account_service_test.go` respectively.
 - `admin/` — teacher/student listing and lookup, admin-created users, and
   minting/listing teacher invite codes. ADMIN-only, and there is no
   self-service way to become an ADMIN, so every file here asserts only
@@ -39,7 +47,22 @@ there is no per-group `http-client.env.json`.
   `admin_service_test.go` and `teacher_invite_controller_test.go`, which
   seed an ADMIN row directly in the test database.
 - `charts/` — dashboard chart data, per-user and per-teacher-class.
-- `users/` — a user's own profile summary.
+- `users/` — a user's own profile summary, changing the caller's own
+  password/email address, exporting the caller's own data, and deleting
+  the caller's own account. `change-email.http` covers only the request
+  side (wrong password, an already-taken address, success) for the same
+  reason `reset-password.http` stops at the token boundary — the
+  confirmation loop lives in `core-api/tests/account_service_test.go`.
+  `export.http` covers 401/403/200 only; the teacher-of-an-enrolled-
+  student 403 lives in `core-api/tests/export_controller_test.go`
+  instead, since proving it here would mean seeding a class and an
+  enrollment just to duplicate a check the Go suite already pins.
+  `delete-account.http` covers only 401/403/400 (unauthenticated, a
+  cross-account attempt, a mismatched email confirmation) — no
+  happy-path block, since a real delete would remove the one student
+  fixture every block in that file reuses; the full delete, cascades
+  included, lives in `core-api/tests/delete_account_service_test.go`
+  and `core-api/tests/delete_account_controller_test.go`.
 - `note-game/` — the note game's score entries, recent-entry list,
   activity heatmap, typed per-user settings, and keyboard bindings.
 - `game-settings/` — the generic JSONB settings blob shared by every

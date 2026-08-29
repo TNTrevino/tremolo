@@ -1,0 +1,112 @@
+# Requesting an email address change for the signed-in caller. The happy
+# path only covers the request, not the confirmation -- the confirm
+# token only ever exists in the body of a queued mail, and this suite has
+# no mailbox to read from. The confirmation loop (and the two-address
+# enqueue) is covered end to end by
+# core-api/tests/account_service_test.go
+# (TestConfirmEmailChange_EndToEnd_TheEmailedLinkWorks and
+# TestRequestEmailChange_EnqueuesToTheNewAddressAndAlertsTheOld).
+#
+# Run:  kulala run --tests --env local users/change-email.http
+
+@student_email = kula_change_email_student_{{$timestamp}}@qa.test
+@taken_email    = kula_change_email_taken_{{$timestamp}}@qa.test
+@new_email      = kula_change_email_new_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student whose own email is changed and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### RegisterTakenAddressHolder
+# RegisterTakenAddressHolder registers a second account already holding
+# the address the next request will try to claim.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{taken_email}}", "password": "{{password}}", "first_name": "Taken", "last_name": "Address", "role": "STUDENT" }
+
+> {%
+	client.global.set("taken_login_email", response.body.user.email);
+%}
+
+### ChangeEmailWrongPassword
+# ChangeEmailWrongPassword sends the wrong current password and expects
+# 400.
+POST {{baseUrl}}/api/users/{{student_id}}/email
+Content-Type: application/json
+Authorization: Bearer {{student_token}}
+
+{ "current_password": "definitely-wrong", "new_email": "{{new_email}}" }
+
+> {%
+	client.test("a wrong current password is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Current password is incorrect",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### ChangeEmailTakenAddress
+# ChangeEmailTakenAddress asks to move to an address another account
+# already holds and expects 409. This is a deliberate enumeration --
+# the caller is authenticated and just re-proved their password, a
+# different threat model than an anonymous signup form.
+POST {{baseUrl}}/api/users/{{student_id}}/email
+Content-Type: application/json
+Authorization: Bearer {{student_token}}
+
+{ "current_password": "{{password}}", "new_email": "{{taken_login_email}}" }
+
+> {%
+	client.test("an address already in use is rejected", function () {
+		client.assert(response.status === 409, "expected 409, got " + response.status);
+		client.assert(
+			response.body.error === "That email address is already in use.",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### ChangeEmailSuccess
+# ChangeEmailSuccess asks to move to a fresh, unclaimed address and
+# expects 200 with the exact confirmation-pending message.
+POST {{baseUrl}}/api/users/{{student_id}}/email
+Content-Type: application/json
+Authorization: Bearer {{student_token}}
+
+{ "current_password": "{{password}}", "new_email": "{{new_email}}" }
+
+> {%
+	client.test("the change is accepted and a confirmation is pending", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(
+			response.body.message === "Check your new address for a confirmation link.",
+			"unexpected message: " + response.body.message
+		);
+	});
+%}

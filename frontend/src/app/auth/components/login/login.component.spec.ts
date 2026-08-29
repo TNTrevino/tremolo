@@ -117,18 +117,25 @@ describe("LoginPageComponent", () => {
 	});
 
 	/**
-	 * Guards the E2E suite, not the user: `page.getByLabel("Password")` is a
-	 * substring match, so an `aria-label` like "Show password" on the reveal
-	 * toggle would match the field *and* the button and trip Playwright's
-	 * strict mode. React leaves that button unnamed for the same reason.
+	 * The reveal toggle carries an accessible name (DESIGN.md rule 7), and
+	 * `page.getByLabel("Password")` in the parity suite is now
+	 * `exact: true` (e2e/support/app.ts), so this button's name can safely
+	 * contain "password" without colliding with the field's own label. What
+	 * still must hold is that the button's name is never exactly "Password"
+	 * -- an exact match on that string must resolve to the field alone.
 	 */
-	it("gives no control other than the field a name containing 'password'", async () => {
+	it("labels the password toggle without colliding with the field's own exact-match name", async () => {
 		await render();
 
-		const named = [...el().querySelectorAll("[aria-label]")].map((node) =>
-			node.getAttribute("aria-label"),
-		);
-		expect(named.filter((name) => /password/i.test(name ?? ""))).toEqual([]);
+		const reveal = input("password").parentElement?.querySelector(
+			"button",
+		) as HTMLButtonElement;
+		expect(reveal.getAttribute("aria-label")).toBe("Show password");
+		expect(reveal.getAttribute("aria-label")).not.toBe("Password");
+
+		reveal.click();
+		await fixture.whenStable();
+		expect(reveal.getAttribute("aria-label")).toBe("Hide password");
 	});
 
 	it("offers a link to signup and a Google button", async () => {
@@ -138,6 +145,14 @@ describe("LoginPageComponent", () => {
 			[...el().querySelectorAll("a")].map((a) => a.textContent?.trim()),
 		).toContain("Sign up");
 		expect(el().textContent).toContain("Sign in with Google");
+	});
+
+	it("offers a forgot-password link", async () => {
+		await render();
+
+		expect(
+			[...el().querySelectorAll("a")].map((a) => a.textContent?.trim()),
+		).toContain("Forgot password?");
 	});
 
 	it("toggles the password field between hidden and visible", async () => {

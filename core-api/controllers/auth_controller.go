@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	dtos "sight-reading/DTOs"
 	"sight-reading/database"
@@ -19,6 +20,14 @@ func RegisterAuthRoutes(mux *http.ServeMux, q database.Querier) {
 	mux.HandleFunc("POST /api/auth/login", handleLogin(q))
 	mux.HandleFunc("POST /api/auth/register", handleRegister(q))
 	mux.HandleFunc("POST /api/auth/refresh", handleRefreshToken())
+	mux.HandleFunc("POST /api/auth/forgot-password", handleForgotPassword(q))
+	mux.HandleFunc("POST /api/auth/reset-password", handleResetPassword(q))
+	mux.HandleFunc("POST /api/auth/verify-email", handleVerifyEmail(q))
+	mux.Handle("POST /api/auth/resend-verification", middleware.RequireAuth(handleResendVerification(q)))
+	// handleConfirmEmailChange is defined in account_controller.go, next
+	// to the rest of #249's account flow -- see RegisterAccountRoutes's
+	// doc comment for why this one route is registered here instead.
+	mux.HandleFunc("POST /api/auth/confirm-email-change", handleConfirmEmailChange(q))
 
 	mux.Handle("GET /api/auth/me", middleware.RequireAuth(handleGetCurrentUser(q)))
 
@@ -200,6 +209,8 @@ func respondLoginError(w http.ResponseWriter, err error) {
 			"error":    "Internal server error",
 			"scenario": "AS.12",
 		})
+	case errors.Is(err, services.ErrEmailNotVerified):
+		httpx.JSON(w, http.StatusForbidden, httpx.M{"error": "Please verify your email address before signing in."})
 	case errors.Is(err, services.ErrInvalidCredentials):
 		httpx.JSON(w, http.StatusUnauthorized, httpx.M{"error": "Invalid credentials"})
 	case errors.Is(err, services.ErrAccessTokenGeneration):
@@ -363,6 +374,190 @@ func handleRefreshToken() http.HandlerFunc {
 
 		httpx.JSON(w, http.StatusOK, httpx.M{
 			"access_token": newAccessToken,
+		})
+	}
+}
+
+// forgotPasswordMinDuration is a floor under handleForgotPassword's
+// response time. RequestPasswordReset's two paths differ measurably: the
+// unknown-address path returns after one SELECT, while the known-address
+// path mints a token and does two INSERTs plus a template render. That is
+// a repeatable timing difference, and a repeatable timing difference is an
+// account-enumeration side channel -- the exact thing this endpoint's
+// identical response bodies already exist to prevent. Sleeping out to this
+// floor on every request, success or failure, swamps that difference so
+// response time no longer distinguishes known from unknown addresses:
+// 400ms sits far above the slow path's normal latency, yet is invisible
+// next to human-scale form submission.
+//
+// This narrows the channel; it does not perfectly close it. Under extreme
+// load the slow path's own work could exceed 400ms on its own, and at that
+// point the floor no longer hides it -- said honestly rather than claimed
+// away.
+const forgotPasswordMinDuration = 400 * time.Millisecond
+
+// handleForgotPassword handles POST /api/auth/forgot-password.
+// @Summary  Request a password reset
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.ForgotPasswordRequest true "Email address"
+// @Success  200 {object} dtos.ForgotPasswordResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/forgot-password [post]
+func handleForgotPassword(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.ForgotPasswordRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		// See forgotPasswordMinDuration: the floor applies identically to
+		// the success and error branches below, since the timing side
+		// channel it closes doesn't care which branch fired.
+		start := time.Now()
+		resetErr := services.RequestPasswordReset(r.Context(), q, reqBody)
+		if elapsed := time.Since(start); elapsed < forgotPasswordMinDuration {
+			time.Sleep(forgotPasswordMinDuration - elapsed)
+		}
+
+		if resetErr != nil {
+			// The failure branch answers the same account-independent way
+			// success does: an outage says nothing about whether the
+			// address has an account either.
+			logger.Error("unexpected forgot password error", "error", resetErr)
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.ForgotPasswordResponse{
+			Message: "If an account exists for that address, a password reset link is on its way.",
+		})
+	}
+}
+
+// handleResetPassword handles POST /api/auth/reset-password.
+// @Summary  Reset a password with a token
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.ResetPasswordRequest true "Token and new password"
+// @Success  200 {object} dtos.ResetPasswordResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/reset-password [post]
+func handleResetPassword(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.ResetPasswordRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.ResetPassword(r.Context(), q, reqBody); err != nil {
+			respondResetPasswordError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.ResetPasswordResponse{
+			Message: "Password updated. You can now sign in.",
+		})
+	}
+}
+
+// respondResetPasswordError maps ResetPassword's sentinel errors onto
+// their response bodies.
+func respondResetPasswordError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrResetTokenInvalid):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "This password reset link is invalid or has expired."})
+	default:
+		logger.Error("unexpected reset password error", "error", err)
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+	}
+}
+
+// handleVerifyEmail handles POST /api/auth/verify-email.
+//
+// This is a POST, not the GET a mailed link would normally carry: the
+// mailed link (services.verifyEmailURL) points at the FRONTEND page, and
+// that page is what POSTs the token here. A GET on this endpoint would be
+// consumed by a corporate mail scanner or link-preview bot before the
+// human ever clicks it, burning the single-use token before it reaches
+// the person it was mailed to.
+// @Summary  Verify an email address
+// @Tags     auth
+// @Accept   json
+// @Produce  json
+// @Param    body body dtos.VerifyEmailRequest true "Verification token"
+// @Success  200 {object} dtos.VerifyEmailResponse
+// @Failure  400 {object} dtos.ErrorResponse "Invalid request body or token"
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/verify-email [post]
+func handleVerifyEmail(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqBody, problems, err := httpx.DecodeValid[dtos.VerifyEmailRequest](r)
+		if err != nil {
+			httpx.DecodeError(w, problems)
+			return
+		}
+
+		if err := services.VerifyEmail(r.Context(), q, reqBody); err != nil {
+			respondVerifyEmailError(w, err)
+			return
+		}
+
+		httpx.JSON(w, http.StatusOK, dtos.VerifyEmailResponse{
+			Message: "Your email address is verified.",
+		})
+	}
+}
+
+// respondVerifyEmailError maps VerifyEmail's sentinel errors onto their
+// response bodies.
+func respondVerifyEmailError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrEmailTokenInvalid):
+		httpx.JSON(w, http.StatusBadRequest, httpx.M{"error": "This verification link is invalid or has expired."})
+	default:
+		logger.Error("unexpected verify email error", "error", err)
+		httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+	}
+}
+
+// handleResendVerification handles POST /api/auth/resend-verification.
+// Protected: requires JWT authentication. There is no request body -- the
+// JWT identifies which account to mail, the same way GET /api/auth/me
+// needs nothing but the token.
+// @Summary  Resend the email verification link
+// @Tags     auth
+// @Security BearerAuth
+// @Produce  json
+// @Success  200 {object} dtos.VerifyEmailResponse
+// @Failure  401 {object} dtos.ErrorResponse
+// @Failure  500 {object} dtos.ErrorResponse
+// @Router   /api/auth/resend-verification [post]
+func handleResendVerification(q database.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid, ok := authedUserID(w, r)
+		if !ok {
+			return
+		}
+
+		if err := services.ResendVerification(r.Context(), q, uid); err != nil {
+			logger.Error("unexpected resend verification error", "error", err.Error())
+			httpx.JSON(w, http.StatusInternalServerError, httpx.M{"error": "Internal server error"})
+			return
+		}
+
+		// Same body whether or not the account was already verified:
+		// ResendVerification's already-verified no-op must not read any
+		// differently than a real send, or the response itself would leak
+		// verification state to a caller who should just see "sent".
+		httpx.JSON(w, http.StatusOK, dtos.VerifyEmailResponse{
+			Message: "Verification email sent.",
 		})
 	}
 }

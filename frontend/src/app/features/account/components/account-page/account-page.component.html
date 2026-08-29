@@ -54,15 +54,17 @@
 									[formField]="passwordForm.currentPassword"
 								/>
 								<!--
-									Unnamed on purpose: `getByLabel("Password")` in the
-									parity suite is a substring match, so any accessible
-									name containing "password" would match this button as
-									well as the three fields. React leaves it unnamed for
-									the same reason.
+									The e2e locators are now exact-match, so this button's
+									accessible name no longer collides with
+									`getByLabel("Password")` (a substring match). It flips
+									all four password fields at once (since #249 -- see
+									emailCurrentPassword below), which the label says.
 								-->
 								<button
 									type="button"
 									class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+									[attr.aria-label]="passwordsToggleLabel()"
+									[appTooltip]="passwordsToggleLabel()"
 									(click)="togglePasswords()"
 								>
 									<ng-icon
@@ -113,7 +115,11 @@
 							above *should* stretch, so `items-start` on the form is
 							not the fix -- only the button opts out.
 						-->
-						<app-button type="submit" className="self-start">
+						<app-button
+							type="submit"
+							className="self-start"
+							[loading]="passwordPending()"
+						>
 							<ng-icon
 								name="lucideKey"
 								size="1rem"
@@ -147,13 +153,82 @@
 				<div appCardContent className="space-y-4">
 					<div class="space-y-2">
 						<p class="text-sm font-medium">Current Email</p>
-						<div class="text-lg font-medium">{{ currentUser.email }}</div>
+						<div class="flex items-center gap-2">
+							<span class="text-lg font-medium">{{ currentUser.email }}</span>
+							@if (currentUser.emailVerified) {
+								<span
+									class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+								>
+									<ng-icon
+										name="lucideCheckCircle2"
+										size="0.875rem"
+										aria-hidden="true"
+									/>
+									Verified
+								</span>
+							} @else {
+								<span
+									class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+								>
+									<ng-icon
+										name="lucideAlertTriangle"
+										size="0.875rem"
+										aria-hidden="true"
+									/>
+									Unverified
+								</span>
+							}
+						</div>
 					</div>
-					<p class="text-sm text-muted-foreground">
-						Email change functionality coming soon. You'll be able to update
-						your email address and verify the new address before the change
-						takes effect.
-					</p>
+
+					<form
+						class="flex flex-col gap-4"
+						(submit)="submitEmailChange($event)"
+					>
+						<app-form-field
+							label="Current Password"
+							htmlFor="emailCurrentPassword"
+							[field]="emailForm.currentPassword"
+						>
+							<input
+								appFormInput
+								id="emailCurrentPassword"
+								autocomplete="current-password"
+								placeholder="Enter current password"
+								[type]="showPasswords() ? 'text' : 'password'"
+								[formField]="emailForm.currentPassword"
+							/>
+						</app-form-field>
+
+						<app-form-field
+							label="New Email Address"
+							htmlFor="newEmail"
+							[field]="emailForm.newEmail"
+						>
+							<input
+								appFormInput
+								id="newEmail"
+								type="email"
+								autocomplete="email"
+								placeholder="Enter new email address"
+								[formField]="emailForm.newEmail"
+							/>
+						</app-form-field>
+
+						<app-button
+							type="submit"
+							className="self-start"
+							[loading]="emailPending()"
+						>
+							<ng-icon
+								name="lucideMail"
+								size="1rem"
+								aria-hidden="true"
+								class="mr-2 h-4 w-4"
+							/>
+							Send Confirmation Link
+						</app-button>
+					</form>
 				</div>
 			</div>
 
@@ -213,7 +288,11 @@
 							Get a copy of all your practice data, statistics, and account
 							information in JSON format.
 						</p>
-						<app-button variant="outline" (click)="downloadData()">
+						<app-button
+							variant="outline"
+							[loading]="exporting()"
+							(click)="exportData()"
+						>
 							<ng-icon
 								name="lucideDownload"
 								size="1rem"
@@ -297,6 +376,27 @@
 										[formField]="deleteForm.emailConfirmation"
 									/>
 								</app-form-field>
+								<app-form-field
+									label="Current Password"
+									htmlFor="deletePassword"
+									[field]="deleteForm.password"
+								>
+									<input
+										appFormInput
+										id="deletePassword"
+										type="password"
+										autocomplete="current-password"
+										[formField]="deleteForm.password"
+									/>
+									<p class="text-xs text-muted-foreground">
+										Leave blank if you only sign in with Google.
+									</p>
+								</app-form-field>
+								@if (deleteError()) {
+									<p role="alert" class="text-sm text-destructive">
+										{{ deleteError() }}
+									</p>
+								}
 								<div class="flex gap-2">
 									<app-button
 										type="button"
@@ -310,6 +410,7 @@
 										type="submit"
 										variant="destructive"
 										className="flex-1"
+										[loading]="deleting()"
 									>
 										Permanently Delete Account
 									</app-button>

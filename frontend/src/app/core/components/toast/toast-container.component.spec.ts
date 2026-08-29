@@ -80,7 +80,7 @@ describe("ToastContainerComponent", () => {
 		await settle();
 
 		const close = fixture.nativeElement.querySelector(
-			"button[aria-label='Close notification']",
+			"button[aria-label='Dismiss notification']",
 		) as HTMLButtonElement;
 		close.click();
 		await settle();

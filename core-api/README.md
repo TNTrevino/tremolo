@@ -49,6 +49,23 @@ Optional:
 | `LOG_SQL_TEXT` | `true` prints the whole statement under each query log line, with sqlc's `-- name:` header stripped because `name=` already carries it. Off by default for volume, not for secrecy |
 | `CLICOLOR_FORCE` | `1` keeps the colour when the output is piped. charm calls `colorprofile.Detect` once at startup and strips every escape when stdout is not a terminal, so `air` (and `\| tee`) produce plain text without this. `NO_COLOR` overrides it |
 | `TREMOLO_DATABASE_USER` / `_PW` / `TREMOLO_FIRST_NAME` / `_LAST_NAME` | Only for the fake-data generator (`go run main.go -fake-it`, see `generation/`) |
+| `PUBLIC_BASE_URL` | Origin every link in an outbound email is built on (default `http://localhost:4200`). Deliberately not derived from `ALLOWED_ORIGINS` — that list holds prod and QA together |
+| `EMAIL_SMTP_HOST` | SMTP relay hostname. **Unset means email is disabled**: the service still boots and mail still queues, the watcher just holds it |
+| `EMAIL_SMTP_PORT` | Relay port (default `587`; anything unparseable falls back to `587`) |
+| `EMAIL_SMTP_USER` / `EMAIL_SMTP_PASSWORD` | SMTP AUTH PLAIN credentials. STARTTLS is mandatory, so these never travel in the clear |
+| `EMAIL_FROM` | Sender address, and the domain the Message-ID is built from. **Unset means email is disabled**, same as a missing host |
+| `EMAIL_FROM_NAME` | Sender display name, also the app name in the templates (default `Tremolo`) |
+| `EMAIL_SEND_TIMEOUT_SECONDS` | Bound on one delivery attempt (default `20`) |
+| `EMAIL_WATCHER_INTERVAL_SECONDS` | Gap between queue drains (default `30`) |
+| `EMAIL_BATCH_SIZE` | Messages one drain claims (default `10`) |
+| `EMAIL_MAX_ATTEMPTS` | Tries before a message is marked dead (default `5`; retries back off from 60s, doubling, capped at 1h) |
+| `EMAIL_CLAIM_LEASE_SECONDS` | How long a claim survives before another watcher may take the row back (default `300`) |
+| `REQUIRE_EMAIL_VERIFICATION` | Gate `Login` on `users.email_verified_at` being set (default `false`/unset — soft for the pilot: signup still mails a verify link and an unverified user still sees a frontend banner, but sign-in is never blocked) |
+
+Email is off unless **both** `EMAIL_SMTP_HOST` and `EMAIL_FROM` are set.
+With either missing, startup logs one warning naming what is absent and the
+queue holds: rows are written as usual, and the watcher declines to claim
+them rather than burning attempts against a relay that is not there.
 
 ## Architecture: controller → service → repository
 
@@ -148,10 +165,10 @@ To add a column or a new query:
 5. Migrations apply automatically the next time the service (or a DB-backed
    test) starts.
 
-Existing query files: `users.sql`, `friends.sql`, `relationships.sql`,
-`note_game_entries.sql`, `note_game_settings.sql`, `game_settings.sql`,
-`keyboard_bindings.sql`, `classes.sql`, `assignments.sql`,
-`teacher_invites.sql`, `seeders.sql`.
+Existing query files: `users.sql`, `account.sql`, `friends.sql`,
+`relationships.sql`, `note_game_entries.sql`, `note_game_settings.sql`,
+`game_settings.sql`, `keyboard_bindings.sql`, `classes.sql`,
+`assignments.sql`, `teacher_invites.sql`, `seeders.sql`.
 
 ## The games domain
 
@@ -222,6 +239,10 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 |---|---|---|---|
 | GET | `/health` | — | `health_controller.go` (DB ping) |
 | POST | `/api/auth/login`, `/register`, `/refresh` | — | `auth_controller.go` |
+| POST | `/api/auth/forgot-password`, `/reset-password` | — | `auth_controller.go` |
+| POST | `/api/auth/verify-email` | — | `auth_controller.go` |
+| POST | `/api/auth/resend-verification` | JWT | `auth_controller.go` |
+| POST | `/api/auth/confirm-email-change` | — | `account_controller.go` (registered by `RegisterAuthRoutes`, alongside verify-email/reset-password -- see that route's doc comment) |
 | GET | `/api/auth/me` | JWT | `auth_controller.go` |
 | POST | `/api/auth/google/callback` | — | `auth_controller.go` |
 | POST | `/api/auth/google/link` | JWT | `auth_controller.go` |
@@ -230,6 +251,8 @@ and use `net/http`'s `{param}` syntax, e.g. `GET /teacher/{id}`.
 | GET | `/api/charts/user/{userId}/metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/charts/teacher/class-metrics?interval=&days=` | JWT | `chart_controller.go` |
 | GET | `/api/users/{userId}/general-info` | JWT (own data only) | `user_info_controller.go` |
+| PUT | `/api/users/{userId}/password` | JWT (own data only) | `account_controller.go` |
+| POST | `/api/users/{userId}/email` | JWT (own data only) | `account_controller.go` |
 | GET / POST | `/api/friends`, GET `/api/friends/search?q=` | JWT | `friends_controller.go` |
 | GET / POST | `/api/classes` (teacher's classes / create), POST `/api/classes/join`, GET `/api/classes/joined` | JWT | `class_controller.go` |
 | GET / DELETE | `/api/classes/{id}/roster`, DELETE `/api/classes/{id}` (archive), `/api/classes/{id}/students/{studentId}` | JWT (role/ownership in service) | `class_controller.go` |

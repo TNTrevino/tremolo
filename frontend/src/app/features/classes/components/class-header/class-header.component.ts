@@ -13,6 +13,7 @@ import { ConfirmDialogComponent } from "../../../../core/components/confirm-dial
 import { NotificationService } from "../../../../core/services/notification.service";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { ClipboardService } from "../../../../shared/services/clipboard.service";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import type { Class } from "../../models/classes.models";
@@ -34,6 +35,7 @@ import { ClassesService } from "../../services/classes.service";
 		ButtonComponent,
 		ConfirmDialogComponent,
 		NgIcon,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

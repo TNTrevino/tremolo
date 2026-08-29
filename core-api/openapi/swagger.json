@@ -319,6 +319,102 @@
                 }
             }
         },
+        "/api/auth/confirm-email-change": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Confirm an email address change",
+                "parameters": [
+                    {
+                        "description": "Confirmation token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ConfirmEmailChangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ConfirmEmailChangeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or token",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "That email address is already in use",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/forgot-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Request a password reset",
+                "parameters": [
+                    {
+                        "description": "Email address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ForgotPasswordResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/google/callback": {
             "post": {
                 "consumes": [
@@ -622,6 +718,132 @@
                     },
                     "400": {
                         "description": "Invalid request body or email already registered",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/resend-verification": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend the email verification link",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.VerifyEmailResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset a password with a token",
+                "parameters": [
+                    {
+                        "description": "Token and new password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ResetPasswordResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or token",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/verify-email": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify an email address",
+                "parameters": [
+                    {
+                        "description": "Verification token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.VerifyEmailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or token",
                         "schema": {
                             "$ref": "#/definitions/dtos.ErrorResponse"
                         }
@@ -1815,6 +2037,226 @@
                 }
             }
         },
+        "/api/users/{userId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Delete the caller's own account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (must match the authenticated user)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Email confirmation, and the current password if the account has one",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.DeleteAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body, mismatched email confirmation, or a missing password",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied, or an incorrect password",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{userId}/email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Request an email address change",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (must match the authenticated user)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Current password and the new address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ChangeEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ChangeEmailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body, wrong current password, no password set, or a Google-managed address",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "That email address is already in use",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{userId}/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Export the caller's own data",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (must match the authenticated user)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.UserExport"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID parameter",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/{userId}/general-info": {
             "get": {
                 "security": [
@@ -1865,6 +2307,81 @@
                     },
                     "404": {
                         "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{userId}/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Change the caller's password",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (must match the authenticated user)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Current and new password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ChangePasswordResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body, wrong current password, or no password set",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/dtos.ErrorResponse"
                         }
@@ -2251,6 +2768,44 @@
                 }
             }
         },
+        "dtos.ChangeEmailRequest": {
+            "type": "object",
+            "properties": {
+                "current_password": {
+                    "type": "string"
+                },
+                "new_email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ChangeEmailResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "current_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ChangePasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "dtos.ChartDataPoint": {
             "type": "object",
             "properties": {
@@ -2279,6 +2834,25 @@
                 },
                 "student_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "dtos.ConfirmEmailChangeRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ConfirmEmailChangeResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },
@@ -2365,6 +2939,17 @@
                 }
             }
         },
+        "dtos.DeleteAccountRequest": {
+            "type": "object",
+            "properties": {
+                "email_confirmation": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "dtos.Entry": {
             "type": "object",
             "properties": {
@@ -2405,6 +2990,235 @@
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportAttempt": {
+            "type": "object",
+            "properties": {
+                "assignment_id": {
+                    "type": "integer"
+                },
+                "assignment_title": {
+                    "type": "string"
+                },
+                "class_name": {
+                    "type": "string"
+                },
+                "correct_questions": {
+                    "type": "integer"
+                },
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "entry_id": {
+                    "type": "integer"
+                },
+                "game_type": {
+                    "type": "string"
+                },
+                "notes_per_minute": {
+                    "type": "integer"
+                },
+                "time_length": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportClasses": {
+            "type": "object",
+            "properties": {
+                "joined": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportJoinedClass"
+                    }
+                },
+                "owned": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportOwnedClass"
+                    }
+                }
+            }
+        },
+        "dtos.ExportFriend": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instrument": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "school": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportGameSettings": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "game_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportJoinedClass": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "teacher_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportOwnedClass": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "join_code": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "student_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportProfile": {
+            "type": "object",
+            "properties": {
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "has_google": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instrument": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "school": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ExportScoreEntry": {
+            "type": "object",
+            "properties": {
+                "assignment_id": {
+                    "description": "Nil when the entry was not an attempt at a class assignment.",
+                    "type": "integer"
+                },
+                "correct_questions": {
+                    "type": "integer"
+                },
+                "created_date": {
+                    "type": "string"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "game_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "notes_per_minute": {
+                    "type": "integer"
+                },
+                "time_length": {
+                    "type": "string"
+                },
+                "total_questions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.ExportSettings": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportGameSettings"
+                    }
+                },
+                "note_game": {
+                    "description": "The existing note-game settings response shape, reused as-is: nil\nwhen the user never saved any (same absence rule as\nKeyboardBindings above).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dtos.NoteGameSettingsResponse"
+                        }
+                    ]
+                }
+            }
+        },
+        "dtos.ForgotPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ForgotPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }
@@ -2789,6 +3603,25 @@
                 }
             }
         },
+        "dtos.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.ResetPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "dtos.Role": {
             "type": "string",
             "enum": [
@@ -2934,11 +3767,58 @@
                 }
             }
         },
+        "dtos.UserExport": {
+            "type": "object",
+            "properties": {
+                "assignment_attempts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportAttempt"
+                    }
+                },
+                "classes": {
+                    "$ref": "#/definitions/dtos.ExportClasses"
+                },
+                "exported_at": {
+                    "type": "string"
+                },
+                "friends": {
+                    "description": "Friend connections are not on the ticket's list of sections, but\nthey are included anyway: the privacy policy enumerates friend\nconnections as data this service holds about a user, and an export\nthat silently dropped a category the policy promises would make\nthe policy false.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportFriend"
+                    }
+                },
+                "keyboard_bindings": {
+                    "description": "The existing keyboard-bindings response shape, reused as-is: nil\n(not an empty struct) when the user never saved bindings of their\nown, the same \"absence, not failure\" rule GetKeyboardBindings\nalready applies everywhere else it's called.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dtos.KeyboardBindingsResponse"
+                        }
+                    ]
+                },
+                "profile": {
+                    "$ref": "#/definitions/dtos.ExportProfile"
+                },
+                "score_entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dtos.ExportScoreEntry"
+                    }
+                },
+                "settings": {
+                    "$ref": "#/definitions/dtos.ExportSettings"
+                }
+            }
+        },
         "dtos.UserResponse": {
             "type": "object",
             "properties": {
                 "email": {
                     "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
                 },
                 "first_name": {
                     "type": "string"
@@ -2953,6 +3833,22 @@
                     "type": "string"
                 },
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.VerifyEmailRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.VerifyEmailResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }

@@ -95,6 +95,47 @@ var (
 	// ErrGoogleIDConflict means the Google account being linked is already
 	// linked to a different user.
 	ErrGoogleIDConflict = errors.New("google account already linked to another user")
+
+	// ErrResetTokenInvalid means a password reset token was unknown,
+	// already used, or expired. The three cases are deliberately
+	// indistinguishable: ConsumePasswordResetToken's WHERE clause folds
+	// them into the same sql.ErrNoRows, and telling them apart in the
+	// response would hand an attacker information a generic 400 does not.
+	ErrResetTokenInvalid = errors.New("invalid or expired password reset token")
+
+	// ErrEmailTokenInvalid means an email_tokens row (verify_email or
+	// change_email) was unknown, already used, or expired.
+	// ConsumeEmailToken's WHERE clause folds all three into the same
+	// sql.ErrNoRows -- deliberately indistinguishable, same reasoning as
+	// ErrResetTokenInvalid.
+	ErrEmailTokenInvalid = errors.New("invalid or expired email token")
+	// ErrEmailNotVerified means REQUIRE_EMAIL_VERIFICATION is on and the
+	// account attempting to log in has not confirmed its email address.
+	ErrEmailNotVerified = errors.New("email address not verified")
+
+	// ErrIncorrectPassword means a re-authentication check INSIDE an
+	// already-authenticated session (ChangePassword, RequestEmailChange)
+	// failed: the caller's JWT is valid, but the current-password they
+	// supplied to authorize the change does not match. Deliberately
+	// distinct from ErrInvalidCredentials, which is a failed sign-in --
+	// the controller maps this one to 400, not 401 (see
+	// respondAccountError's doc comment for why 401 specifically is
+	// unsafe here).
+	ErrIncorrectPassword = errors.New("incorrect password")
+	// ErrNoPasswordSet means the account authenticates through Google and
+	// has no password to check against (ChangePassword, RequestEmailChange).
+	ErrNoPasswordSet = errors.New("account has no password set")
+	// ErrPasswordRequired means DeleteAccount found a password hash on the
+	// account but the request supplied an empty one. Deliberately distinct
+	// from ErrIncorrectPassword (a wrong, non-empty guess) so the two 400s
+	// stay distinguishable in tests and logs -- one means "you forgot to
+	// type it," the other means "that's not it."
+	ErrPasswordRequired = errors.New("password is required to delete this account")
+	// ErrEmailManagedByGoogle means the account's email address IS its
+	// Google identity, so RequestEmailChange has no address to move: the
+	// address the caller would be "changing" is the one Google
+	// authenticates them as.
+	ErrEmailManagedByGoogle = errors.New("email address is managed by google")
 )
 
 // LockoutTriggeredError is returned by Login when a failed attempt is

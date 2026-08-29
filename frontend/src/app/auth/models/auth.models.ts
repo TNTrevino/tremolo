@@ -15,6 +15,8 @@ export interface ApiUser {
 	last_name: string;
 	role: UserRole;
 	has_google?: boolean;
+	/** #108 */
+	email_verified?: boolean;
 }
 
 export interface User {
@@ -24,6 +26,8 @@ export interface User {
 	lastName: string;
 	role: UserRole;
 	hasGoogle?: boolean;
+	/** #108 */
+	emailVerified?: boolean;
 }
 
 export interface LoginRequest {
@@ -67,6 +71,22 @@ export interface RefreshTokenResponse {
 export interface GoogleCallbackRequest {
 	code: string;
 	redirect_uri: string;
+}
+
+/** #248 */
+export interface ForgotPasswordRequest {
+	email: string;
+}
+
+/** #248 */
+export interface ResetPasswordRequest {
+	token: string;
+	password: string;
+}
+
+/** The `{ message: string }` shape both password-reset endpoints answer. */
+export interface MessageResponse {
+	message: string;
 }
 
 /** One line of the signup page's password checklist. */

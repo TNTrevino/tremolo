@@ -11,4 +11,5 @@ export const mapApiUserToUser = (apiUser: ApiUser): User => ({
 	lastName: apiUser.last_name,
 	role: apiUser.role,
 	hasGoogle: apiUser.has_google ?? false,
+	emailVerified: apiUser.email_verified ?? false,
 });

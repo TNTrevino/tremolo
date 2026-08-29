@@ -117,6 +117,9 @@ func CreateTestUser(t *testing.T, params CreateTestUserParams) int {
 
 	// Register cleanup to delete the user after the test
 	t.Cleanup(func() {
+		// Queue rows key on the address string rather than a user id, so
+		// there is no foreign key and nothing cascades from the user.
+		DeleteQueuedEmails(t, params.Email)
 		DeleteTestUser(t, int(createdUser.ID))
 	})
 
@@ -340,4 +343,269 @@ func GetTestUserGradeLevel(t *testing.T, email string) sql.NullString {
 		t.Fatalf("Failed to read grade_level for %q: %v", email, err)
 	}
 	return gradeLevel
+}
+
+// ---------------------------------------------------------------------------
+// Email queue helpers
+// ---------------------------------------------------------------------------
+
+// QueuedEmailsFor returns every queued email for one recipient, newest
+// first.
+func QueuedEmailsFor(t *testing.T, recipient string) []generated.TremoloQueuedEmail {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListQueuedEmailsByRecipient(context.Background(), recipient)
+	if err != nil {
+		t.Fatalf("Failed to list queued emails for %s: %v", recipient, err)
+	}
+	return rows
+}
+
+// LatestQueuedEmail returns the most recently queued email for a
+// recipient, or nil when there is none.
+//
+// It picks the highest id rather than trusting the created_at ordering:
+// two rows inserted in the same instant would otherwise come back in an
+// unspecified order.
+func LatestQueuedEmail(t *testing.T, recipient string) *generated.TremoloQueuedEmail {
+	t.Helper()
+
+	rows := QueuedEmailsFor(t, recipient)
+	if len(rows) == 0 {
+		return nil
+	}
+
+	latest := rows[0]
+	for _, row := range rows[1:] {
+		if row.ID > latest.ID {
+			latest = row
+		}
+	}
+	return &latest
+}
+
+// EmailSendAttempts returns the attempt log for one queued email, oldest
+// first.
+func EmailSendAttempts(t *testing.T, queuedEmailID int64) []generated.TremoloEmailSendAttempt {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListEmailSendAttempts(context.Background(), queuedEmailID)
+	if err != nil {
+		t.Fatalf("Failed to list send attempts for queued email %d: %v", queuedEmailID, err)
+	}
+	return rows
+}
+
+// DeleteQueuedEmails removes every queued email for one recipient. The
+// attempt rows cascade.
+func DeleteQueuedEmails(t *testing.T, recipient string) {
+	t.Helper()
+	if database.Queries == nil || recipient == "" {
+		return
+	}
+
+	if err := database.Queries.DeleteQueuedEmailsByRecipient(context.Background(), recipient); err != nil {
+		t.Logf("Warning: Failed to delete queued emails for %s: %v", recipient, err)
+	}
+}
+
+// EnqueueTestEmail inserts one pending queue row for a recipient with the
+// production default of five attempts.
+func EnqueueTestEmail(t *testing.T, recipient string) generated.TremoloQueuedEmail {
+	t.Helper()
+	return EnqueueTestEmailWithMaxAttempts(t, recipient, 5)
+}
+
+// EnqueueTestEmailWithMaxAttempts inserts one pending queue row whose
+// retry budget the caller chooses, which is how a test reaches the dead
+// state without sending five times.
+func EnqueueTestEmailWithMaxAttempts(t *testing.T, recipient string, maxAttempts int32) generated.TremoloQueuedEmail {
+	t.Helper()
+	SetupTestDB(t)
+
+	row, err := database.Queries.EnqueueEmail(context.Background(), generated.EnqueueEmailParams{
+		Recipient:     recipient,
+		RecipientName: "Test Recipient",
+		Subject:       "Test message",
+		Template:      "password-reset",
+		BodyHtml:      "<html><body>test</body></html>",
+		BodyText:      "test",
+		// message_id is UNIQUE, so every row needs its own.
+		MessageID:   fmt.Sprintf("test-%d@test.com", time.Now().UnixNano()),
+		MaxAttempts: maxAttempts,
+	})
+	if err != nil {
+		t.Fatalf("Failed to enqueue test email for %s: %v", recipient, err)
+	}
+
+	t.Cleanup(func() {
+		DeleteQueuedEmails(t, recipient)
+	})
+
+	return row
+}
+
+// ClearQueuedEmails empties the whole queue.
+//
+// The watcher's claim query is global by design — it claims whatever is
+// claimable, which is the point — so a watcher test has to start from an
+// empty queue to be able to assert on counts. Every email test runs
+// without t.Parallel for the same reason.
+func ClearQueuedEmails(t *testing.T) {
+	t.Helper()
+	SetupTestDB(t)
+
+	if _, err := database.DBConn.ExecContext(context.Background(), "delete from tremolo.queued_emails"); err != nil {
+		t.Fatalf("Failed to clear the email queue: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Password reset helpers
+// ---------------------------------------------------------------------------
+
+// CreateTestOAuthUser creates a Google-linked user with no password set
+// (password NULL, google_id present) and returns the user ID. It mirrors
+// createOAuthTestUser in tests/google_auth_test.go; this copy lives in
+// testutil because password reset's Google-only-account tests are not the
+// only callers that need one.
+func CreateTestOAuthUser(t *testing.T, email string) int {
+	t.Helper()
+	SetupTestDB(t)
+
+	roleID, err := database.Queries.GetRoleIDByName(context.Background(), "BASIC")
+	if err != nil {
+		t.Fatalf("Failed to resolve BASIC role: %v", err)
+	}
+
+	row, err := database.Queries.CreateOAuthUser(context.Background(), generated.CreateOAuthUserParams{
+		FirstName: "Test",
+		LastName:  "OAuthUser",
+		Email:     sql.NullString{String: email, Valid: true},
+		GoogleID:  sql.NullString{String: "test-google-" + email, Valid: true},
+		RoleID:    roleID,
+		SchoolID:  sql.NullInt32{Valid: false},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test OAuth user: %v", err)
+	}
+
+	uid := int(row.ID)
+	t.Cleanup(func() {
+		DeleteQueuedEmails(t, email)
+		DeleteTestUser(t, uid)
+	})
+
+	if err := services.CreateDefaultKeyboardBindings(context.Background(), database.Queries, uid); err != nil {
+		t.Fatalf("failed to seed default keyboard bindings for test OAuth user %d: %v", uid, err)
+	}
+
+	return uid
+}
+
+// CreatePasswordResetToken inserts one password reset token row directly
+// (bypassing services.RequestPasswordReset) and returns the plaintext
+// token. This is the only way a test can mint an already-expired token, or
+// pin a token to a caller-chosen TTL -- a live request through the service
+// always uses services.PasswordResetTokenTTL and can't produce either.
+//
+// Token minting goes through services.NewResetToken, the same algorithm a
+// real request uses, rather than a second hand-rolled copy of it.
+func CreatePasswordResetToken(t *testing.T, userID int, ttl time.Duration) string {
+	t.Helper()
+	SetupTestDB(t)
+
+	token, hash, err := services.NewResetToken()
+	if err != nil {
+		t.Fatalf("Failed to generate a test reset token: %v", err)
+	}
+
+	if err := database.Queries.CreatePasswordResetToken(context.Background(), generated.CreatePasswordResetTokenParams{
+		UserID:    int32(userID),
+		TokenHash: hash,
+		ExpiresAt: time.Now().Add(ttl),
+	}); err != nil {
+		t.Fatalf("Failed to create test password reset token: %v", err)
+	}
+
+	return token
+}
+
+// PasswordResetTokensFor returns every password reset token row for one
+// user.
+func PasswordResetTokensFor(t *testing.T, userID int) []generated.TremoloPasswordResetToken {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListPasswordResetTokensByUser(context.Background(), int32(userID))
+	if err != nil {
+		t.Fatalf("Failed to list password reset tokens for user %d: %v", userID, err)
+	}
+	return rows
+}
+
+// ---------------------------------------------------------------------------
+// Email verification helpers (#108)
+// ---------------------------------------------------------------------------
+
+// CreateEmailToken inserts one email_tokens row directly (bypassing
+// services.SendVerificationEmail) and returns the plaintext token. This is
+// the only way a test can mint an already-expired token, or pin a token to
+// a caller-chosen TTL -- a live request through the service always uses
+// services.VerifyEmailTokenTTL and can't produce either.
+//
+// Token minting goes through services.NewResetToken, the same algorithm a
+// real request uses (Part B's helper, reused rather than duplicated), and
+// purpose is caller-supplied so this also seeds #249's change_email rows.
+func CreateEmailToken(t *testing.T, userID int, purpose, email string, ttl time.Duration) string {
+	t.Helper()
+	SetupTestDB(t)
+
+	token, hash, err := services.NewResetToken()
+	if err != nil {
+		t.Fatalf("Failed to generate a test email token: %v", err)
+	}
+
+	if _, err := database.Queries.CreateEmailToken(context.Background(), generated.CreateEmailTokenParams{
+		UserID:    int32(userID),
+		Purpose:   purpose,
+		TokenHash: hash,
+		Email:     email,
+		ExpiresAt: time.Now().Add(ttl),
+	}); err != nil {
+		t.Fatalf("Failed to create test email token: %v", err)
+	}
+
+	return token
+}
+
+// EmailTokensFor returns every email_tokens row for one user and purpose.
+// No separate cleanup is needed: the rows cascade when the test user is
+// deleted (same as password_reset_tokens).
+func EmailTokensFor(t *testing.T, userID int, purpose string) []generated.TremoloEmailToken {
+	t.Helper()
+	SetupTestDB(t)
+
+	rows, err := database.Queries.ListEmailTokensByUser(context.Background(), generated.ListEmailTokensByUserParams{
+		UserID:  int32(userID),
+		Purpose: purpose,
+	})
+	if err != nil {
+		t.Fatalf("Failed to list email tokens for user %d/%s: %v", userID, purpose, err)
+	}
+	return rows
+}
+
+// MarkTestUserVerified sets email_verified_at directly, bypassing the
+// verify-email flow entirely -- for tests that need an already-verified
+// account going in (e.g. ResendVerification's already-verified no-op).
+func MarkTestUserVerified(t *testing.T, userID int) {
+	t.Helper()
+	SetupTestDB(t)
+
+	if err := database.Queries.MarkEmailVerified(context.Background(), int32(userID)); err != nil {
+		t.Fatalf("Failed to mark test user %d verified: %v", userID, err)
+	}
 }

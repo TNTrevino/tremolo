@@ -14,6 +14,7 @@ import { SpinnerComponent } from "../../../../core/components/spinner/spinner.co
 import { NotificationService } from "../../../../core/services/notification.service";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { InputDirective } from "../../../../shared/components/ui/input.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import type { Friend } from "../../models/friends.models";
 import { FriendsService } from "../../services/friends.service";
@@ -47,6 +48,7 @@ import { FriendCardComponent } from "../friend-card/friend-card.component";
 		InputDirective,
 		NgIcon,
 		SpinnerComponent,
+		TooltipDirective,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `

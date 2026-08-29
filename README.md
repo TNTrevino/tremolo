@@ -70,6 +70,29 @@ TODO: automate this plz
   export ACCOUNT_LOCKOUT_DURATION_MINUTES=15 # duration to lock account after max failed attempts
 
   export ALLOWED_ORIGINS="http://localhost:4200,http://localhost:4300" # comma-separated list
+
+  export PUBLIC_BASE_URL="http://localhost:4200" # origin every emailed link is built on
+
+  # Email. Leave EMAIL_SMTP_HOST or EMAIL_FROM unset and email is simply off:
+  # the service boots, mail is still queued, and the watcher holds it until
+  # there is a relay to send it to.
+  export EMAIL_SMTP_HOST="smtp.example.com"       # unset = email disabled
+  export EMAIL_SMTP_PORT=587                      # default 587 (STARTTLS submission)
+  export EMAIL_SMTP_USER="your-smtp-username"
+  export EMAIL_SMTP_PASSWORD="your-smtp-password"
+  export EMAIL_FROM="no-reply@tremolonotes.com"   # unset = email disabled
+  export EMAIL_FROM_NAME="Tremolo"                # display name and app name in templates
+
+  export EMAIL_SEND_TIMEOUT_SECONDS=20     # bound on one delivery attempt
+  export EMAIL_WATCHER_INTERVAL_SECONDS=30 # gap between queue drains
+  export EMAIL_BATCH_SIZE=10               # messages one drain claims
+  export EMAIL_MAX_ATTEMPTS=5              # tries before a message is marked dead
+  export EMAIL_CLAIM_LEASE_SECONDS=300     # before another watcher may retake a claimed row
+
+  # Email verification is soft while unset/false: signup still mails a
+  # verify link and an unverified user still sees a banner, but login is
+  # never blocked. Keep this off for the pilot.
+  export REQUIRE_EMAIL_VERIFICATION=false
 ```
 
 The frontend needs **none** of these. It is an Angular app and reads its

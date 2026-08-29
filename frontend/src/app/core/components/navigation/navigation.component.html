@@ -15,7 +15,7 @@
 						class="h-6 w-6 text-primary-foreground"
 					/>
 				</div>
-				<span class="font-display text-xl font-bold hidden sm:inline-block">
+				<span class="font-display text-xl font-bold sr-only sm:not-sr-only">
 					Tremolo
 				</span>
 			</a>
@@ -118,6 +118,7 @@
 					size="icon"
 					className="rounded-full"
 					[ariaLabel]="themeLabel()"
+					[appTooltip]="themeLabel()"
 					(click)="theme.toggleTheme()"
 				>
 					<ng-icon
@@ -137,9 +138,8 @@
 								? 'rounded-full bg-accent text-accent-foreground'
 								: 'rounded-full'
 						"
-						[ariaLabel]="
-							friends.isPanelOpen() ? 'Close friends' : 'Open friends'
-						"
+						[ariaLabel]="friendsToggleLabel()"
+						[appTooltip]="friendsToggleLabel()"
 						[ariaExpanded]="friends.isPanelOpen()"
 						(click)="toggleFriends()"
 					>
@@ -261,7 +261,8 @@
 					variant="ghost"
 					size="icon"
 					className="md:hidden"
-					[ariaLabel]="mobileMenuOpen() ? 'Close menu' : 'Open menu'"
+					[ariaLabel]="mobileMenuLabel()"
+					[appTooltip]="mobileMenuLabel()"
 					[ariaExpanded]="mobileMenuOpen()"
 					(click)="toggleMobileMenu()"
 				>

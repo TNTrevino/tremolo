@@ -50,6 +50,7 @@
 						variant="ghost"
 						size="icon"
 						[ariaLabel]="'Delete ' + assignment.title"
+						[appTooltip]="'Delete ' + assignment.title"
 						[className]="deleteButtonClasses(assignment)"
 						(click)="$event.stopPropagation(); confirming.set(assignment)"
 					>
