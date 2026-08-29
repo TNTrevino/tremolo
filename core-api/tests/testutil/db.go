@@ -460,5 +460,4 @@ func ClearQueuedEmails(t *testing.T) {
 	if _, err := database.DBConn.ExecContext(context.Background(), "delete from tremolo.queued_emails"); err != nil {
 		t.Fatalf("Failed to clear the email queue: %v", err)
 	}
-
 }
