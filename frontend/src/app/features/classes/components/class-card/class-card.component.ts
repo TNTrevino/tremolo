@@ -9,6 +9,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { ClipboardService } from "../../../../shared/services/clipboard.service";
 import type { Class } from "../../models/classes.models";
 
@@ -27,7 +28,13 @@ import type { Class } from "../../models/classes.models";
  */
 @Component({
 	selector: "app-class-card",
-	imports: [ButtonComponent, NgIcon, RouterLink, ...CARD_DIRECTIVES],
+	imports: [
+		ButtonComponent,
+		NgIcon,
+		RouterLink,
+		TooltipDirective,
+		...CARD_DIRECTIVES,
+	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `
 		:host {

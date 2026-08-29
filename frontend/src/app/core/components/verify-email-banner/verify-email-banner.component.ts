@@ -11,6 +11,7 @@ import { NgIcon } from "@ng-icons/core";
 import { AuthService } from "../../../auth/services/auth.service";
 import { AuthStore } from "../../../auth/services/auth.store";
 import { resendVerification } from "../../../auth/utils/resend-verification.util";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import { NotificationService } from "../../services/notification.service";
 
 /**
@@ -68,7 +69,7 @@ function readDismissed(userId: number | undefined): boolean {
  */
 @Component({
 	selector: "app-verify-email-banner",
-	imports: [NgIcon],
+	imports: [NgIcon, TooltipDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		@if (visible()) {
@@ -93,7 +94,8 @@ function readDismissed(userId: number | undefined): boolean {
 				<button
 					type="button"
 					class="text-muted-foreground transition-colors hover:text-foreground"
-					aria-label="Dismiss"
+					aria-label="Dismiss banner"
+					appTooltip="Dismiss banner"
 					(click)="dismiss()"
 				>
 					<ng-icon name="lucideX" class="h-4 w-4" aria-hidden="true" />

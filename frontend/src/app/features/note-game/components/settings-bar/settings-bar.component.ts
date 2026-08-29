@@ -14,6 +14,7 @@ import { AuthStore } from "../../../../auth/services/auth.store";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { DIALOG_DIRECTIVES } from "../../../../shared/components/ui/dialog.component";
 import { SelectComponent } from "../../../../shared/components/ui/select.component";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { BreakpointService } from "../../../../shared/services/breakpoint.service";
 import {
 	GameMode,
@@ -52,6 +53,7 @@ import { NoteRangeSettingComponent } from "../note-range-setting/note-range-sett
 		NgIcon,
 		NoteRangeSettingComponent,
 		SelectComponent,
+		TooltipDirective,
 		...DIALOG_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -194,6 +196,7 @@ import { NoteRangeSettingComponent } from "../note-range-setting/note-range-sett
 			type="button"
 			class="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
 			aria-label="Configure keyboard bindings"
+			appTooltip="Configure keyboard bindings"
 			(click)="bindingsOpen.set(true)"
 		>
 			<ng-icon

@@ -127,7 +127,7 @@ describe("VerifyEmailBannerComponent", () => {
 		await fixture.whenStable();
 
 		const dismiss = el().querySelector(
-			'button[aria-label="Dismiss"]',
+			'button[aria-label="Dismiss banner"]',
 		) as HTMLButtonElement;
 		dismiss.click();
 		fixture.detectChanges();
@@ -159,7 +159,7 @@ describe("VerifyEmailBannerComponent", () => {
 		await fixture.whenStable();
 
 		const dismiss = el().querySelector(
-			'button[aria-label="Dismiss"]',
+			'button[aria-label="Dismiss banner"]',
 		) as HTMLButtonElement;
 		dismiss.click();
 		fixture.detectChanges();

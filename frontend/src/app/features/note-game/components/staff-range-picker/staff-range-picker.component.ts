@@ -10,6 +10,7 @@ import {
 import { NgIcon } from "@ng-icons/core";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import type { RangeClef } from "../../../../shared/models/music.models";
 import { CLEF_UNICODE } from "@features/identification-game/data";
 import {
@@ -73,7 +74,7 @@ interface WholeNoteGeometry {
 
 @Component({
 	selector: "app-staff-range-picker",
-	imports: [ButtonComponent, NgIcon],
+	imports: [ButtonComponent, NgIcon, TooltipDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `
 		:host {
@@ -88,6 +89,7 @@ interface WholeNoteGeometry {
 					variant="outline"
 					className="h-7 w-7 p-0"
 					ariaLabel="Lowest note up"
+					appTooltip="Lowest note up"
 					(click)="move('low', lowIndex() + 1)"
 				>
 					<ng-icon name="lucideChevronUp" size="1rem" aria-hidden="true" />
@@ -97,6 +99,7 @@ interface WholeNoteGeometry {
 					variant="outline"
 					className="h-7 w-7 p-0"
 					ariaLabel="Lowest note down"
+					appTooltip="Lowest note down"
 					(click)="move('low', lowIndex() - 1)"
 				>
 					<ng-icon name="lucideChevronDown" size="1rem" aria-hidden="true" />
@@ -183,6 +186,7 @@ interface WholeNoteGeometry {
 					variant="outline"
 					className="h-7 w-7 p-0"
 					ariaLabel="Highest note up"
+					appTooltip="Highest note up"
 					(click)="move('high', highIndex() + 1)"
 				>
 					<ng-icon name="lucideChevronUp" size="1rem" aria-hidden="true" />
@@ -192,6 +196,7 @@ interface WholeNoteGeometry {
 					variant="outline"
 					className="h-7 w-7 p-0"
 					ariaLabel="Highest note down"
+					appTooltip="Highest note down"
 					(click)="move('high', highIndex() - 1)"
 				>
 					<ng-icon name="lucideChevronDown" size="1rem" aria-hidden="true" />
