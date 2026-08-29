@@ -182,14 +182,24 @@ describe("AccountPageComponent", () => {
 		expect(el().textContent).toContain(EMAIL);
 	});
 
-	/** Same reason as the login page: `getByLabel("Password")` is a substring match. */
-	it("gives no control other than the fields a name containing 'password'", async () => {
+	/**
+	 * Same reason as the login page: `page.getByLabel("Password")` in the
+	 * parity suite is now `exact: true`, so this toggle's name can safely
+	 * mention "password" as long as it is never exactly "Password" -- that
+	 * exact string must still resolve to a field alone.
+	 */
+	it("labels the all-fields password toggle without colliding with a field's own exact-match name", async () => {
 		await render();
 
-		const named = [...el().querySelectorAll("[aria-label]")].map((node) =>
-			node.getAttribute("aria-label"),
-		);
-		expect(named.filter((name) => /password/i.test(name ?? ""))).toEqual([]);
+		const reveal = input("currentPassword").parentElement?.querySelector(
+			"button",
+		) as HTMLButtonElement;
+		expect(reveal.getAttribute("aria-label")).toBe("Show all password fields");
+		expect(reveal.getAttribute("aria-label")).not.toBe("Password");
+
+		reveal.click();
+		await fixture.whenStable();
+		expect(reveal.getAttribute("aria-label")).toBe("Hide all password fields");
 	});
 
 	it("reveals all three password fields from the one toggle", async () => {

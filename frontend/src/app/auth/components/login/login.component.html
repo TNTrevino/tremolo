@@ -72,15 +72,16 @@
 							[formField]="loginForm.password"
 						/>
 						<!--
-							No aria-label, deliberately. `getByLabel("Password")` in the
-							parity suite is a substring match, so any name containing
-							"password" would match this button as well as the field and
-							trip Playwright's strict mode. React leaves it unnamed for
-							the same reason -- see phase-3-subfeature-1-handoff.md.
+							The e2e locators are now exact-match, so this button's
+							accessible name no longer collides with
+							`getByLabel("Password")` (a substring match). See
+							e2e/support/app.ts and e2e/specs/auth.spec.ts.
 						-->
 						<button
 							type="button"
 							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+							[attr.aria-label]="passwordToggleLabel()"
+							[appTooltip]="passwordToggleLabel()"
 							(click)="togglePassword()"
 						>
 							<ng-icon

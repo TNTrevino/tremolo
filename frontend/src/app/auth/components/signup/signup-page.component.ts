@@ -21,6 +21,7 @@ import { FormFieldComponent } from "../../../shared/components/forms/form-field.
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
 import { FormSelectDirective } from "../../../shared/components/forms/form-select.directive";
 import { SelectComponent } from "../../../shared/components/ui/select.component";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import {
 	signupSchema,
 	type SignupFormData,
@@ -158,6 +159,7 @@ function isInviteCodeError(err: unknown): boolean {
 		NgIcon,
 		RouterLink,
 		SelectComponent,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -209,6 +211,15 @@ export class SignupPageComponent {
 		source: () => this.model().role,
 		computation: () => null,
 	});
+
+	readonly passwordToggleLabel = computed(() =>
+		this.showPassword() ? "Hide password" : "Show password",
+	);
+	readonly confirmPasswordToggleLabel = computed(() =>
+		this.showConfirmPassword()
+			? "Hide confirm password"
+			: "Show confirm password",
+	);
 
 	protected readonly password = computed(() => this.model().password);
 

@@ -54,16 +54,17 @@
 									[formField]="passwordForm.currentPassword"
 								/>
 								<!--
-									Unnamed on purpose: `getByLabel("Password")` in the
-									parity suite is a substring match, so any accessible
-									name containing "password" would match this button as
-									well as the fields it reveals (all four of them, since
-									#249 -- see emailCurrentPassword below). React leaves it
-									unnamed for the same reason.
+									The e2e locators are now exact-match, so this button's
+									accessible name no longer collides with
+									`getByLabel("Password")` (a substring match). It flips
+									all four password fields at once (since #249 -- see
+									emailCurrentPassword below), which the label says.
 								-->
 								<button
 									type="button"
 									class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+									[attr.aria-label]="passwordsToggleLabel()"
+									[appTooltip]="passwordsToggleLabel()"
 									(click)="togglePasswords()"
 								>
 									<ng-icon

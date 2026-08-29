@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	inject,
 	input,
 	signal,
@@ -17,6 +18,7 @@ import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import {
 	resetPasswordSchema,
 	type ResetPasswordFormData,
@@ -47,6 +49,7 @@ import { AuthStore } from "../../services/auth.store";
 		FormInputDirective,
 		NgIcon,
 		RouterLink,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +75,15 @@ export class ResetPasswordPageComponent {
 	readonly errorMessage = signal<string | null>(null);
 	readonly showPassword = signal(false);
 	readonly showConfirmPassword = signal(false);
+
+	readonly passwordToggleLabel = computed(() =>
+		this.showPassword() ? "Hide password" : "Show password",
+	);
+	readonly confirmPasswordToggleLabel = computed(() =>
+		this.showConfirmPassword()
+			? "Hide confirm password"
+			: "Show confirm password",
+	);
 
 	togglePassword(): void {
 		this.showPassword.update((shown) => !shown);

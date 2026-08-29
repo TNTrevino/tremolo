@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	inject,
 	signal,
 } from "@angular/core";
@@ -19,6 +20,7 @@ import { FormFieldComponent } from "../../../../shared/components/forms/form-fie
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CARD_DIRECTIVES } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { getErrorMessage } from "../../../../shared/utils/error.utils";
 import {
 	type DeleteAccountFormData,
@@ -68,6 +70,7 @@ const BLANK_DELETE_FORM: DeleteAccountFormData = {
 		FormFieldComponent,
 		FormInputDirective,
 		NgIcon,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -90,6 +93,12 @@ export class AccountPageComponent {
 	 */
 	readonly showPasswords = signal(false);
 	readonly showDeleteModal = signal(false);
+
+	readonly passwordsToggleLabel = computed(() =>
+		this.showPasswords()
+			? "Hide all password fields"
+			: "Show all password fields",
+	);
 
 	readonly passwordPending = signal(false);
 	readonly emailPending = signal(false);

@@ -136,11 +136,30 @@ describe("SignupPageComponent", () => {
 		expect(el().textContent).toContain("Sign up with Google");
 	});
 
-	it("names no control 'password' except the two fields' own labels", () => {
-		const named = [...el().querySelectorAll("[aria-label]")].map((node) =>
-			node.getAttribute("aria-label"),
+	/**
+	 * The two reveal toggles carry accessible names (DESIGN.md rule 7), and
+	 * `page.getByLabel("Password")` / `getByLabel("Confirm Password")` in the
+	 * parity suite are now `exact: true` (e2e/specs/auth.spec.ts), so these
+	 * names can safely mention "password" as long as neither is exactly
+	 * "Password" or "Confirm Password" -- those exact strings must still
+	 * resolve to the fields alone.
+	 */
+	it("labels both password toggles without colliding with a field's own exact-match name", () => {
+		const reveal = control("password").parentElement?.querySelector(
+			"button",
+		) as HTMLButtonElement;
+		const revealConfirm = control(
+			"confirmPassword",
+		).parentElement?.querySelector("button") as HTMLButtonElement;
+
+		expect(reveal.getAttribute("aria-label")).toBe("Show password");
+		expect(reveal.getAttribute("aria-label")).not.toBe("Password");
+		expect(revealConfirm.getAttribute("aria-label")).toBe(
+			"Show confirm password",
 		);
-		expect(named.filter((name) => /password/i.test(name ?? ""))).toEqual([]);
+		expect(revealConfirm.getAttribute("aria-label")).not.toBe(
+			"Confirm Password",
+		);
 	});
 
 	it("keeps the password checklist hidden until the field is used", async () => {

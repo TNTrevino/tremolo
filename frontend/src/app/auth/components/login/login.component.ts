@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	inject,
 	signal,
 } from "@angular/core";
@@ -16,6 +17,7 @@ import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
+import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
 import {
 	loginSchema,
 	type LoginFormData,
@@ -58,6 +60,7 @@ import { GoogleSignInButtonComponent } from "../google-sign-in-button/google-sig
 		GoogleSignInButtonComponent,
 		NgIcon,
 		RouterLink,
+		TooltipDirective,
 		...CARD_DIRECTIVES,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,6 +80,9 @@ export class LoginPageComponent {
 	readonly pending = signal(false);
 	readonly errorMessage = signal<string | null>(null);
 	readonly showPassword = signal(false);
+	readonly passwordToggleLabel = computed(() =>
+		this.showPassword() ? "Hide password" : "Show password",
+	);
 
 	/**
 	 * The message signup or a failed Google callback left behind, read once

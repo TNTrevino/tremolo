@@ -94,10 +94,12 @@
 							(focus)="passwordFocused.set(true)"
 							(blur)="passwordFocused.set(false)"
 						/>
-						<!-- Unnamed on purpose; see the note in login.component.html. -->
+						<!-- Exact-match e2e locators; see the note in login.component.html. -->
 						<button
 							type="button"
 							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+							[attr.aria-label]="passwordToggleLabel()"
+							[appTooltip]="passwordToggleLabel()"
 							(click)="togglePassword()"
 						>
 							<ng-icon
@@ -174,10 +176,12 @@
 							[type]="showConfirmPassword() ? 'text' : 'password'"
 							[formField]="signupForm.confirmPassword"
 						/>
-						<!-- Unnamed on purpose; see the note in login.component.html. -->
+						<!-- Exact-match e2e locators; see the note in login.component.html. -->
 						<button
 							type="button"
 							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+							[attr.aria-label]="confirmPasswordToggleLabel()"
+							[appTooltip]="confirmPasswordToggleLabel()"
 							(click)="toggleConfirmPassword()"
 						>
 							<ng-icon
