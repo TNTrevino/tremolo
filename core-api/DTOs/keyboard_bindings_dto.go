@@ -31,13 +31,15 @@ type KeyBindings struct {
 }
 
 type KeyboardBindingsRequest struct {
-	KeyBindings KeyBindings `json:"key_bindings"`
+	KeyBindings        KeyBindings `json:"key_bindings"`
+	OverlapAccidentals bool        `json:"overlap_accidentals"`
 }
 
 type KeyboardBindingsResponse struct {
-	ID          int         `json:"id"`
-	UserID      int         `json:"user_id"`
-	KeyBindings KeyBindings `json:"key_bindings"`
+	ID                 int         `json:"id"`
+	UserID             int         `json:"user_id"`
+	KeyBindings        KeyBindings `json:"key_bindings"`
+	OverlapAccidentals bool        `json:"overlap_accidentals"`
 }
 
 // bindingFields lists every note, its JSON field name, and its value.

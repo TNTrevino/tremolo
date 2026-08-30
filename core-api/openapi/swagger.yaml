@@ -480,6 +480,8 @@ definitions:
     properties:
       key_bindings:
         $ref: '#/definitions/dtos.KeyBindings'
+      overlap_accidentals:
+        type: boolean
     type: object
   dtos.KeyboardBindingsResponse:
     properties:
@@ -487,6 +489,8 @@ definitions:
         type: integer
       key_bindings:
         $ref: '#/definitions/dtos.KeyBindings'
+      overlap_accidentals:
+        type: boolean
       user_id:
         type: integer
     type: object

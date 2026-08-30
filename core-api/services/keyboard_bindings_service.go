@@ -44,28 +44,29 @@ func GetKeyboardBindings(ctx context.Context, q generated.Querier, userID int) (
 func UpsertKeyboardBindings(ctx context.Context, q generated.Querier, userID int, req *dtos.KeyboardBindingsRequest) (*dtos.KeyboardBindingsResponse, error) {
 	kb := req.KeyBindings
 	params := generated.UpsertKeyboardBindingsParams{
-		UserID:    int32(userID),
-		KeyC:      kb.KeyC,
-		KeyD:      kb.KeyD,
-		KeyE:      kb.KeyE,
-		KeyF:      kb.KeyF,
-		KeyG:      kb.KeyG,
-		KeyA:      kb.KeyA,
-		KeyB:      kb.KeyB,
-		KeyCSharp: kb.KeyCSharp,
-		KeyDSharp: kb.KeyDSharp,
-		KeyESharp: kb.KeyESharp,
-		KeyFSharp: kb.KeyFSharp,
-		KeyGSharp: kb.KeyGSharp,
-		KeyASharp: kb.KeyASharp,
-		KeyBSharp: kb.KeyBSharp,
-		KeyCFlat:  kb.KeyCFlat,
-		KeyDFlat:  kb.KeyDFlat,
-		KeyEFlat:  kb.KeyEFlat,
-		KeyFFlat:  kb.KeyFFlat,
-		KeyGFlat:  kb.KeyGFlat,
-		KeyAFlat:  kb.KeyAFlat,
-		KeyBFlat:  kb.KeyBFlat,
+		UserID:             int32(userID),
+		KeyC:               kb.KeyC,
+		KeyD:               kb.KeyD,
+		KeyE:               kb.KeyE,
+		KeyF:               kb.KeyF,
+		KeyG:               kb.KeyG,
+		KeyA:               kb.KeyA,
+		KeyB:               kb.KeyB,
+		KeyCSharp:          kb.KeyCSharp,
+		KeyDSharp:          kb.KeyDSharp,
+		KeyESharp:          kb.KeyESharp,
+		KeyFSharp:          kb.KeyFSharp,
+		KeyGSharp:          kb.KeyGSharp,
+		KeyASharp:          kb.KeyASharp,
+		KeyBSharp:          kb.KeyBSharp,
+		KeyCFlat:           kb.KeyCFlat,
+		KeyDFlat:           kb.KeyDFlat,
+		KeyEFlat:           kb.KeyEFlat,
+		KeyFFlat:           kb.KeyFFlat,
+		KeyGFlat:           kb.KeyGFlat,
+		KeyAFlat:           kb.KeyAFlat,
+		KeyBFlat:           kb.KeyBFlat,
+		OverlapAccidentals: req.OverlapAccidentals,
 	}
 
 	row, err := q.UpsertKeyboardBindings(ctx, params)
@@ -85,8 +86,9 @@ func UpsertKeyboardBindings(ctx context.Context, q generated.Querier, userID int
 
 func convertKeyboardBindingsRowToDTO(row generated.TremoloKeyboardBinding) dtos.KeyboardBindingsResponse {
 	return dtos.KeyboardBindingsResponse{
-		ID:     int(row.ID),
-		UserID: int(row.UserID),
+		ID:                 int(row.ID),
+		UserID:             int(row.UserID),
+		OverlapAccidentals: row.OverlapAccidentals,
 		KeyBindings: dtos.KeyBindings{
 			KeyC:      row.KeyC,
 			KeyD:      row.KeyD,

@@ -72,29 +72,30 @@ type TremoloGameSetting struct {
 }
 
 type TremoloKeyboardBinding struct {
-	ID        int32  `json:"id"`
-	UserID    int32  `json:"user_id"`
-	KeyC      string `json:"key_c"`
-	KeyD      string `json:"key_d"`
-	KeyE      string `json:"key_e"`
-	KeyF      string `json:"key_f"`
-	KeyG      string `json:"key_g"`
-	KeyA      string `json:"key_a"`
-	KeyB      string `json:"key_b"`
-	KeyCSharp string `json:"key_c_sharp"`
-	KeyDSharp string `json:"key_d_sharp"`
-	KeyESharp string `json:"key_e_sharp"`
-	KeyFSharp string `json:"key_f_sharp"`
-	KeyGSharp string `json:"key_g_sharp"`
-	KeyASharp string `json:"key_a_sharp"`
-	KeyBSharp string `json:"key_b_sharp"`
-	KeyCFlat  string `json:"key_c_flat"`
-	KeyDFlat  string `json:"key_d_flat"`
-	KeyEFlat  string `json:"key_e_flat"`
-	KeyFFlat  string `json:"key_f_flat"`
-	KeyGFlat  string `json:"key_g_flat"`
-	KeyAFlat  string `json:"key_a_flat"`
-	KeyBFlat  string `json:"key_b_flat"`
+	ID                 int32  `json:"id"`
+	UserID             int32  `json:"user_id"`
+	KeyC               string `json:"key_c"`
+	KeyD               string `json:"key_d"`
+	KeyE               string `json:"key_e"`
+	KeyF               string `json:"key_f"`
+	KeyG               string `json:"key_g"`
+	KeyA               string `json:"key_a"`
+	KeyB               string `json:"key_b"`
+	KeyCSharp          string `json:"key_c_sharp"`
+	KeyDSharp          string `json:"key_d_sharp"`
+	KeyESharp          string `json:"key_e_sharp"`
+	KeyFSharp          string `json:"key_f_sharp"`
+	KeyGSharp          string `json:"key_g_sharp"`
+	KeyASharp          string `json:"key_a_sharp"`
+	KeyBSharp          string `json:"key_b_sharp"`
+	KeyCFlat           string `json:"key_c_flat"`
+	KeyDFlat           string `json:"key_d_flat"`
+	KeyEFlat           string `json:"key_e_flat"`
+	KeyFFlat           string `json:"key_f_flat"`
+	KeyGFlat           string `json:"key_g_flat"`
+	KeyAFlat           string `json:"key_a_flat"`
+	KeyBFlat           string `json:"key_b_flat"`
+	OverlapAccidentals bool   `json:"overlap_accidentals"`
 }
 
 type TremoloNoteGameEntry struct {

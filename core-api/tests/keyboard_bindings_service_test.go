@@ -62,6 +62,22 @@ func TestKeyboardBindings_CreateDefault_SeedsAllKeys(t *testing.T) {
 	assert.Equal(t, expected.KeyBFlat, kb.KeyBFlat)
 }
 
+// TestKeyboardBindings_CreateDefault_OverlapAccidentalsFalse verifies that a
+// freshly seeded row defaults overlap_accidentals to false.
+func TestKeyboardBindings_CreateDefault_OverlapAccidentalsFalse(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	email := testutil.UniqueEmail(t, "kb_overlap_default")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+	resp, err := services.GetKeyboardBindings(context.Background(), database.Queries, userID)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	assert.False(t, resp.OverlapAccidentals)
+}
+
 // TestKeyboardBindings_CreateDefault_Idempotent verifies that calling
 // CreateDefaultKeyboardBindings twice on the same user does not error and
 // leaves the bindings unchanged.
@@ -209,4 +225,30 @@ func TestKeyboardBindings_Upsert_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, fetched)
 	assert.Equal(t, updated.KeyBindings, fetched.KeyBindings)
+}
+
+// TestKeyboardBindings_Upsert_OverlapAccidentalsRoundTrip verifies that
+// setting overlap_accidentals to true on upsert persists and is returned by
+// a subsequent read.
+func TestKeyboardBindings_Upsert_OverlapAccidentalsRoundTrip(t *testing.T) {
+	testutil.SetupTestDB(t)
+	t.Parallel()
+
+	email := testutil.UniqueEmail(t, "kb_overlap_roundtrip")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+
+	req := &dtos.KeyboardBindingsRequest{
+		KeyBindings:        services.DefaultKeyboardBindings,
+		OverlapAccidentals: true,
+	}
+
+	resp, err := services.UpsertKeyboardBindings(context.Background(), database.Queries, userID, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.True(t, resp.OverlapAccidentals)
+
+	fetched, err := services.GetKeyboardBindings(context.Background(), database.Queries, userID)
+	require.NoError(t, err)
+	require.NotNil(t, fetched)
+	assert.True(t, fetched.OverlapAccidentals)
 }
