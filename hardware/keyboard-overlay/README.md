@@ -34,9 +34,14 @@ Values marked `VERIFY` in the script are guesses until you replace them:
 | -------------------- | ---------------------------------------------------------------------------------- | --------- |
 | `key_pitch`          | Center of `a` to center of `j`, divided by 6 (spanning averages out the error)      | 19.05 mm  |
 | `keycap_above_deck`  | Lay a straightedge on the deck across the keyboard; measure down to a keycap top    | 1.0 mm    |
-| `rail_to_home_row`   | Front edge of where the rail will sit on the palm rest, to the center of `g`        | 58 mm     |
-| `row_pitch`          | Center of `g` to center of `t`, front-to-back component only                        | 19.05 mm  |
-| `top_row_stagger`    | How far `t` sits left of `g`, side-to-side component only                           | 4.76 mm   |
+| `rail_to_top_row`    | Front edge of where the rail sits on the deck strip near the screen, to the center of `t` | 38 mm |
+| `row_pitch`          | Center of `t` to center of `g`, front-to-back component only                        | 19.05 mm  |
+| `top_row_stagger`    | How far `g` sits right of `t`, side-to-side component only                          | 4.76 mm   |
+
+The overlay sits like a piano: the rail rests on the deck strip between
+the keyboard and the screen (above the Fn row), and the keys reach
+toward you. Check that the strip is deep enough for the rail and slim
+`rail_depth` if it is not.
 
 The coupon prints C, D and the C# black key, so a misjudged stagger
 shows up on the first small print, not the full one.
@@ -81,11 +86,16 @@ rail without covering the touchpad.
 
 ## Design notes
 
-- The rail sits on the palm rest and the levers reach away from the
-  player, clearing the flats row and the spacebar row by
-  `clearance_above_keys`. The pivot is a printed flexure, not a hinge.
-- Engraved note letters sit on the key tops. They are stored mirrored in
-  the model because the print flip un-mirrors them.
+- The rail sits near the screen like a piano's key bed, and the levers
+  reach toward the player. The white keys narrow at the back where the
+  black keys live, the plan of real piano keys. Everything hovers
+  `clearance_above_keys` over the rows it passes. The pivot is a
+  printed flexure, not a hinge.
+- The model is authored rotated 180° from the player's view, because
+  the face-down print flip must stay a pure rotation. A mirrored export
+  prints a reversed part that no flip can fix. The note order, the
+  black-key lean, and the labels are all authored pre-rotated; the
+  `orient="use"` render shows the part exactly as the player sees it.
 - Sharps and flats are deliberately out of v1. The game's default
   settings use naturals only; the design record for the game is
   `docs/superpowers/specs/2026-08-30-note-stream-game-design.md`.
