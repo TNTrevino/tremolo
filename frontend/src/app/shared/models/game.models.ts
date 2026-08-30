@@ -257,12 +257,34 @@ export interface KeyboardBindingsDto {
 	id: number;
 	user_id: number;
 	key_bindings: KeyBindings;
+	/**
+	 * Optional here and required on the domain side: a row the Go service
+	 * wrote before the column existed omits it, and `mapKeyboardBindings` is
+	 * where a missing flag becomes a real `false`.
+	 *
+	 * It sits **beside** `key_bindings` rather than inside it, on both the
+	 * wire and the row -- `dtos.KeyboardBindingsResponse` in the Go service.
+	 * The 21 note fields are a dictionary the service validates as a set (no
+	 * two notes may share a key); a layout switch is not one of them.
+	 */
+	overlap_accidentals?: boolean;
 }
 
 export interface KeyboardBindings {
 	id: number;
 	userId: number;
 	keyBindings: KeyBindings;
+	/**
+	 * Piano-shaped input: the naturals keep their bindings, the five sharps
+	 * move to fixed black-key slots (`w e t y u`), and the other nine notes
+	 * lose their key and are played enharmonically instead. Off by default,
+	 * and off changes nothing anywhere.
+	 *
+	 * camelCase, unlike the keys of `keyBindings`: the exception in the file
+	 * header covers a dictionary keyed by note name, and this is an ordinary
+	 * property, so the usual "snake_case stops at the mapper" rule applies.
+	 */
+	overlapAccidentals: boolean;
 }
 
 export const mapKeyboardBindings = (
@@ -271,4 +293,8 @@ export const mapKeyboardBindings = (
 	id: dto.id,
 	userId: dto.user_id,
 	keyBindings: dto.key_bindings,
+	// The one field the mapper decides rather than copies: a missing flag is
+	// the standard layout, not an undefined one, so nothing above this line
+	// reads anything but a plain boolean.
+	overlapAccidentals: dto.overlap_accidentals ?? false,
 });

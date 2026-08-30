@@ -182,11 +182,15 @@ export class NoteGamePageComponent {
 			const saved = this.savedBindings.error()
 				? null
 				: this.savedBindings.value();
-			untracked(() =>
+			untracked(() => {
 				this.game.keyBindings.set(
 					saved ? keyBindingsToNoteMap(saved.keyBindings) : undefined,
-				),
-			);
+				);
+				// The layout half of the same row. A failed fetch falls back
+				// to the standard layout for the same reason it falls back to
+				// the default bindings.
+				this.game.overlapAccidentals.set(saved?.overlapAccidentals ?? false);
+			});
 		});
 
 		// Hydrate from the assignment's frozen config, or the player's saved
@@ -238,9 +242,17 @@ export class NoteGamePageComponent {
 		this.game.inputDisabled.set(open);
 	}
 
+	/**
+	 * The dialog edits the 21 bindings and knows nothing about the layout
+	 * flag, so the flag is carried through from the loaded row -- saving keys
+	 * must not turn the overlap layout off underneath the player.
+	 */
 	protected onSaveBindings(noteToKey: Record<string, string>): void {
 		this.users
-			.saveKeyboardBindings(noteMapToKeyBindings(noteToKey))
+			.saveKeyboardBindings(
+				noteMapToKeyBindings(noteToKey),
+				this.game.overlapAccidentals(),
+			)
 			.subscribe(() => this.savedBindings.reload());
 	}
 

@@ -10,7 +10,8 @@ import { Subject } from "rxjs";
 import type { GameStats } from "@features/identification-game/data";
 import { GameStateService } from "@features/identification-game";
 
-import { buildKeyToNoteMap } from "../models/keymap";
+import { notesEquivalent } from "../../../shared/utils/pitch";
+import { buildKeyToNoteMap, buildOverlapKeyToNoteMap } from "../models/keymap";
 import {
 	NOTE_GAME_DEFAULTS,
 	type GameSettings,
@@ -58,6 +59,14 @@ export class NoteGameService {
 	readonly keyBindings = signal<Record<string, string> | undefined>(undefined);
 
 	/**
+	 * The player's `overlap_accidentals` flag, set by the page from the same
+	 * resource as `keyBindings`. On, the keyboard becomes piano-shaped and a
+	 * guess is judged by pitch instead of by spelling -- the two halves of
+	 * one setting, so they live next to each other.
+	 */
+	readonly overlapAccidentals = signal(false);
+
+	/**
 	 * Suppresses keyboard input without ending the game -- set while the
 	 * bindings dialog is capturing keys, so rebinding "C" does not also
 	 * answer "C".
@@ -85,8 +94,15 @@ export class NoteGameService {
 	 */
 	readonly gameStats: Signal<NoteGameStats | null> = this.engine.stats;
 
-	/** Key -> note, from the saved bindings or the default 21-note table. */
-	readonly keyToNoteMap = computed(() => buildKeyToNoteMap(this.keyBindings()));
+	/**
+	 * Key -> note: the default 21-note table, the player's own bindings, or
+	 * -- under `overlap_accidentals` -- the twelve piano-shaped keys.
+	 */
+	readonly keyToNoteMap = computed(() =>
+		this.overlapAccidentals()
+			? buildOverlapKeyToNoteMap(this.keyBindings())
+			: buildKeyToNoteMap(this.keyBindings()),
+	);
 
 	constructor() {
 		this.engine.configure({
@@ -94,6 +110,14 @@ export class NoteGameService {
 			onGameStart: () => this._started.next(),
 			onGameEnd: (stats) => this._ended.next(stats),
 			onCorrectAnswer: (note) => this.audio.playNoteSound(note),
+			// The engine's one game-specific comparison, and the only caller
+			// of the hook. With the flag off this is exactly the strict
+			// equality the engine defaults to, which is why the four
+			// identification games are untouched by the overlap layout.
+			isCorrect: (guess, answer) =>
+				this.overlapAccidentals()
+					? notesEquivalent(guess, answer)
+					: guess === answer,
 			// `octave` is legacy persistence-only and the range is what the
 			// game actually uses, so the summary reports the scale alone.
 			statsExtras: () => ({ scale: this._settings().scale }),

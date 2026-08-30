@@ -172,11 +172,20 @@ export class UserService {
 		).pipe(map((dto) => (dto ? mapKeyboardBindings(dto) : null)));
 	}
 
-	saveKeyboardBindings(bindings: KeyBindings): Observable<KeyboardBindings> {
+	/**
+	 * `overlapAccidentals` is a second argument, not a 22nd binding: the Go
+	 * service takes it beside `key_bindings`, and the dialog that edits the
+	 * 21 keys knows nothing about it. The caller carries it through from the
+	 * row it loaded, so saving keys never clears the layout.
+	 */
+	saveKeyboardBindings(
+		bindings: KeyBindings,
+		overlapAccidentals = false,
+	): Observable<KeyboardBindings> {
 		return this.http
 			.put<KeyboardBindingsDto>(
 				`${this.base}/api/note-game/keyboard-bindings`,
-				{ key_bindings: bindings },
+				{ key_bindings: bindings, overlap_accidentals: overlapAccidentals },
 			)
 			.pipe(map(mapKeyboardBindings));
 	}
