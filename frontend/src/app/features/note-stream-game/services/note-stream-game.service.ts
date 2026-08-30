@@ -2,7 +2,10 @@ import { computed, inject, Injectable, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { GameTimerService } from "@features/identification-game";
-import { buildKeyToNoteMap } from "@features/note-game/models/keymap";
+import {
+	buildKeyToNoteMap,
+	buildOverlapKeyToNoteMap,
+} from "@features/note-game/models/keymap";
 import { noteKeyboardInput } from "@features/note-game/services/keyboard-input";
 import { NoteAudioService } from "@features/note-game/services/note-audio.service";
 
@@ -63,6 +66,9 @@ export class NoteStreamGameService {
 	 */
 	readonly keyBindings = signal<Record<string, string> | undefined>(undefined);
 
+	/** The bindings' overlap flag, forwarded to the score service. */
+	readonly overlapAccidentals = this.score.overlapAccidentals;
+
 	private readonly _settings = signal<NoteStreamSettings>(
 		DEFAULT_NOTE_STREAM_SETTINGS,
 	);
@@ -71,8 +77,16 @@ export class NoteStreamGameService {
 	private readonly _phase = signal<StreamPhase>("ready");
 	readonly phase = this._phase.asReadonly();
 
-	/** Key -> note, from the saved bindings or the default 21-note table. */
-	readonly keyToNoteMap = computed(() => buildKeyToNoteMap(this.keyBindings()));
+	/**
+	 * Key -> note, from the saved bindings or the default 21-note table.
+	 * In overlap mode the sharps sit fixed on w e t y u and the flats
+	 * have no key -- the score service accepts them enharmonically.
+	 */
+	readonly keyToNoteMap = computed(() =>
+		this.overlapAccidentals()
+			? buildOverlapKeyToNoteMap(this.keyBindings())
+			: buildKeyToNoteMap(this.keyBindings()),
+	);
 
 	/** What the staff draws. */
 	readonly notes = this.spawner.notes;

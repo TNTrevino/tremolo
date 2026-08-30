@@ -357,6 +357,37 @@ describe("StreamScoreService", () => {
 		expect(score.lastJudged()?.judgment).toBe("miss");
 	});
 
+	describe("overlap accidentals", () => {
+		it("accepts an enharmonic press when the flag is on", () => {
+			score.overlapAccidentals.set(true);
+			notes.set([note(0, "Db"), note(1, "E#")]);
+
+			// The overlap layout has no Db key; the press arrives as C#.
+			press("C#", 0, 0);
+			expect(score.lastJudged()?.judgment).toBe("perfect");
+
+			// E# has no key either; F is the same pitch.
+			press("F", 1, 30);
+			expect(score.lastJudged()?.judgment).toBe("perfect");
+			expect(score.streak()).toBe(2);
+		});
+
+		it("still kills a non-equivalent press instantly", () => {
+			score.overlapAccidentals.set(true);
+			notes.set([note(0, "Db")]);
+
+			press("D", 0, 0); // D is a different pitch from Db
+			expect(score.lastJudged()?.judgment).toBe("miss");
+		});
+
+		it("requires the exact spelling when the flag is off", () => {
+			notes.set([note(0, "Db")]);
+
+			press("C#", 0, 0);
+			expect(score.lastJudged()?.judgment).toBe("miss");
+		});
+	});
+
 	it("bumps judgedVersion on every judgment, so the staff repaints", () => {
 		notes.set([note(0, "C"), note(1, "D"), note(2, "E")]);
 		expect(score.judgedVersion()).toBe(0);
