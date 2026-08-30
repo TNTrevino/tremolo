@@ -113,10 +113,13 @@ black_clear_end = black_length + 2;
 /** Note index (C=0 … B=6) of the authored column i, counted west to east. */
 function note_at(i) = key_count - 1 - i;
 
-// Absolute x center of the black key between notes n and n+1, centered
-// on its target letter key. In use it sits right of the white boundary,
-// like a real piano's off-center black keys; authored, that is west.
-function black_center_for_note(n) =
+// The black key BODY is centered on the boundary between its two white
+// keys — the visual the player expects. The NUB is not: it must land on
+// the target letter key (w e t y u), which the row stagger puts right
+// of that boundary in use (west, authored). So the ball rides offset
+// inside the body.
+function black_body_x(n) = (key_count - 1 - n) * key_pitch;
+function black_nub_x(n) =
 	(key_count - 1 - n) * key_pitch + key_pitch / 2
 		- (key_pitch - top_row_stagger);
 
@@ -186,7 +189,7 @@ module neck(x0, w) {
  * lives — the narrow-tail plan of a real piano white key. The flexure
  * attaches to the narrowed tail, so it is placed on the tail's center.
  */
-module white_lever(label, cut_left, cut_right) {
+module white_lever(label, cut_left, cut_right, nub_notch) {
 	difference() {
 		cube([key_width, lever_length, key_thickness]);
 		if (emboss_labels)
@@ -200,6 +203,11 @@ module white_lever(label, cut_left, cut_right) {
 			translate([key_width - cut_right, -0.1, -0.1])
 				cube([cut_right + 0.1, black_clear_end + 0.1,
 					key_thickness + 0.2]);
+		if (nub_notch > 0)
+			translate([key_width - nub_notch,
+					rail_to_top_row - nub_notch_half, -0.1])
+				cube([nub_notch + 0.1, 2 * nub_notch_half,
+					key_thickness + 0.2]);
 	}
 	// The nub hangs under the lever, centered over the home-row key —
 	// inside the full-width front section.
@@ -209,22 +217,24 @@ module white_lever(label, cut_left, cut_right) {
 }
 
 /*
- * One black key, in ABSOLUTE x (it straddles a white boundary). Short
- * and close to the base, like the real thing; its nub lands on the
- * top-row key.
+ * One black key, in ABSOLUTE x. The body straddles its white boundary
+ * dead center; the nub hangs offset inside it so the ball still lands
+ * on the top-row key. The nub's first printed layer overhangs the body
+ * edge by ~2.8 mm on one side — a small crescent that PETG bridges
+ * fine, and it faces the keyboard in use.
  */
-module black_lever(label, center_x) {
-	translate([center_x - black_width / 2, 0, 0]) {
+module black_lever(label, body_x, nub_x) {
+	translate([body_x - black_width / 2, 0, 0]) {
 		difference() {
 			cube([black_width, black_length, key_thickness]);
 			if (emboss_labels)
 				translate([black_width / 2, 0, 0])
 					key_label(label, black_length - 8, black_label_size);
 		}
-		translate([black_width / 2, rail_to_top_row, 0])
-			mirror([0, 0, 1]) nub();
 		neck(0, black_width);
 	}
+	translate([nub_x, rail_to_top_row, 0])
+		mirror([0, 0, 1]) nub();
 }
 
 module rail() {
@@ -244,26 +254,38 @@ function white_x0(i) = i * key_pitch + (key_pitch - key_width) / 2;
 // the note one column east (note_at(i) - 1).
 function cut_left_for(i) = has_black_for_note(note_at(i))
 	? max(0, min(key_width,
-		(black_center_for_note(note_at(i)) + black_width / 2 + black_side_gap)
+		(black_body_x(note_at(i)) + black_width / 2 + black_side_gap)
 			- white_x0(i)))
 	: 0;
 function cut_right_for(i) = has_black_for_note(note_at(i) - 1)
 	? max(0, min(key_width,
 		white_x0(i) + key_width
-			- (black_center_for_note(note_at(i) - 1)
+			- (black_body_x(note_at(i) - 1)
 				- black_width / 2 - black_side_gap)))
 	: 0;
+// The east neighbor's offset nub reaches past its own body, under this
+// column's tail. A pressed white dips about 1 mm at the nub's y, so the
+// tail gets a LOCAL notch there instead of a full-length cut that would
+// gut the beam.
+function nub_notch_for(i) = has_black_for_note(note_at(i) - 1)
+	? max(cut_right_for(i), min(key_width,
+		white_x0(i) + key_width
+			- (black_nub_x(note_at(i) - 1)
+				- nub_diameter / 2 - black_side_gap)))
+	: 0;
+nub_notch_half = nub_diameter / 2 + 3;
 
 module overlay() {
 	rail();
 	for (i = [0 : key_count - 1])
 		translate([white_x0(i), 0, 0])
-			white_lever(labels[note_at(i)], cut_left_for(i), cut_right_for(i));
+			white_lever(labels[note_at(i)], cut_left_for(i), cut_right_for(i),
+				nub_notch_for(i));
 	if (accidentals)
 		for (b = [0 : len(black_after) - 1])
 			if (has_black_for_note(black_after[b]))
-				black_lever(black_labels[b],
-					black_center_for_note(black_after[b]));
+				black_lever(black_labels[b], black_body_x(black_after[b]),
+					black_nub_x(black_after[b]));
 }
 
 // Final transforms — both PURE ROTATIONS of the authoring frame, never
