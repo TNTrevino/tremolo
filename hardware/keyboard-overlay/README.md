@@ -1,10 +1,19 @@
-# Tremolo keyboard overlay — naturals-only prototype
+# Tremolo keyboard overlay — piano prototype
 
 A 3D-printed piano-key overlay for the note stream game. Seven white-key
 levers rest over the home row (`a s d f g h j` = C D E F G A B, the
-Tremolo default keymap). A rounded nub under each lever presses the
-letter key; the laptop key's own spring returns it. One print, no
-assembly, no electronics.
+Tremolo default keymap). With `accidentals = true` (the default), five
+black keys sit in the real piano slots — after C, D, F, G and A — and
+press the top-row keys `w e t y u` (C# D# F# G# A#) through the QWERTY
+row stagger. E#, B# and the flats have no lever on purpose: the app's
+`overlap_accidentals` mode judges enharmonic spellings as the same
+answer, so one black key is one pitch. A rounded nub under each lever
+presses the letter key; the laptop key's own spring returns it. One
+print, no assembly, no electronics.
+
+The black keys are flush with the whites, not raised: the part prints
+top-face-down and a raised black top cannot lie on the bed. Position,
+narrower bodies and engraved labels carry the piano look.
 
 `overlay.scad` is the source of truth. It is fully parametric — every
 laptop measurement is a variable at the top of the file. The prototype
@@ -26,6 +35,27 @@ Values marked `VERIFY` in the script are guesses until you replace them:
 | `key_pitch`          | Center of `a` to center of `j`, divided by 6 (spanning averages out the error)      | 19.05 mm  |
 | `keycap_above_deck`  | Lay a straightedge on the deck across the keyboard; measure down to a keycap top    | 1.0 mm    |
 | `rail_to_home_row`   | Front edge of where the rail will sit on the palm rest, to the center of `g`        | 58 mm     |
+| `row_pitch`          | Center of `g` to center of `t`, front-to-back component only                        | 19.05 mm  |
+| `top_row_stagger`    | How far `t` sits left of `g`, side-to-side component only                           | 4.76 mm   |
+
+The coupon prints C, D and the C# black key, so a misjudged stagger
+shows up on the first small print, not the full one.
+
+## Sliced output
+
+`coupon-p1s.3mf` (when present) is the coupon pre-sliced for a Bambu
+Lab P1S, 0.4 nozzle, PETG Translucent, textured PEI plate:
+
+```bash
+bambu-studio \
+  --load-settings "<machine>.json;<process-with-bed-override>.json" \
+  --load-filaments "<filament>.json" \
+  --arrange 1 --slice 0 --export-3mf coupon-p1s.3mf coupon.stl
+```
+
+The stock `0.20mm Standard @BBL X1C` process is the P1S-compatible one;
+a tiny user preset inheriting it sets `curr_bed_type` and
+`compatible_printers`, because the CLI validates both.
 
 `key_travel` is 1.5 mm per Framework's published spec — no need to
 measure. Also confirm the palm rest has ≥ 14 mm of flat depth for the

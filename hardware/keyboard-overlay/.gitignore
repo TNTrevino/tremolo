@@ -1,3 +1,4 @@
 # Build artifacts — regenerate from overlay.scad
 *.stl
 *.png
+*.3mf
