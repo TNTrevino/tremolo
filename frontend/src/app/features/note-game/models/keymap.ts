@@ -183,6 +183,73 @@ export function buildOverlapKeyToNoteMap(
 }
 
 /**
+ * The nine notes `overlap_accidentals` leaves with no key of their own,
+ * mapped to the note whose key they borrow: E# and B# to their natural,
+ * and every flat to the sharp a semitone below it.
+ *
+ * `notesEquivalent` (`shared/utils/pitch.ts`) is what actually scores a
+ * press of that borrowed key as correct for the note on the left. This
+ * table only names the borrowing, so `buildOverlapNoteToKeyMap` can resolve
+ * a key and the bindings editor can print "same key as F"-style hints from
+ * the same source instead of a second copy of the pairing.
+ */
+export const OVERLAP_ENHARMONIC_EQUIVALENT: Record<string, string> = {
+	"E#": "F",
+	"B#": "C",
+	Cb: "B",
+	Fb: "E",
+	Db: "C#",
+	Eb: "D#",
+	Gb: "F#",
+	Ab: "G#",
+	Bb: "A#",
+};
+
+/**
+ * The inverse of `buildOverlapKeyToNoteMap`: note name to key, for the hint
+ * printed under each answer button under `overlap_accidentals`.
+ *
+ * **This is a display map, not a binding table.** Twelve of the 21 notes
+ * have a real key behind the one shown here -- the seven naturals (the
+ * player's own bindings, via `naturalNoteToKey`) and the five sharps (the
+ * fixed `w e t y u` slots). The other nine have **no binding of their own**:
+ * the key shown for them is the enharmonic key that scores for them
+ * (`OVERLAP_ENHARMONIC_EQUIVALENT` plus `notesEquivalent`), not something a
+ * player can rebind. Pass the result to `<app-note-button-grid>`'s `keyMap`
+ * for the in-game hints; never hand it to the bindings editor, which edits
+ * real bindings.
+ *
+ * All 21 notes are present in the result -- a note whose natural or sharp
+ * has no key of its own (an empty binding, or a custom map that omitted it)
+ * is simply absent, same as `bindings()[note] ?? "---"` treats a missing
+ * entry elsewhere.
+ */
+export function buildOverlapNoteToKeyMap(
+	naturalNoteToKey?: Record<string, string>,
+): Record<string, string> {
+	const bound = naturalNoteToKey ?? DEFAULT_NOTE_TO_KEY_MAP;
+	const map: Record<string, string> = {};
+
+	for (const note of NATURAL_NOTES) {
+		const key = bound[note];
+		if (key) map[note] = key;
+	}
+
+	for (const [note, key] of Object.entries(OVERLAP_SHARP_TO_KEY_MAP)) {
+		map[note] = key;
+	}
+
+	for (const [note, equivalent] of Object.entries(
+		OVERLAP_ENHARMONIC_EQUIVALENT,
+	)) {
+		const key = map[equivalent];
+		if (key) map[note] = key;
+	}
+
+	return map;
+}
+
+/**
  * The persisted 21-field `key_bindings` row, as a note-to-key map.
  *
  * Port of `keyBindingsToNoteMap` in the React feature's `utils.ts`. The DTO
@@ -251,4 +318,18 @@ export function noteMapToKeyBindings(
 		key_b_sharp: at("B#"),
 		key_b_flat: at("Bb"),
 	};
+}
+
+/**
+ * What the bindings dialog emits on Save.
+ *
+ * The 21-note map and the `overlap_accidentals` flag travel together here
+ * because `UserService.saveKeyboardBindings` takes them as one call -- the
+ * dialog now owns both as a draft (Cancel discards either edit, Save emits
+ * both), where before it knew only the bindings and the page supplied the
+ * flag from the live game state.
+ */
+export interface KeyboardBindingsDraft {
+	bindings: Record<string, string>;
+	overlapAccidentals: boolean;
 }

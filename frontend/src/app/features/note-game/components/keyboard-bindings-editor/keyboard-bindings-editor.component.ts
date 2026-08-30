@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	computed,
 	model,
 	output,
 	signal,
@@ -10,9 +11,14 @@ import { filter, fromEvent } from "rxjs";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { CardDirective } from "../../../../shared/components/ui/card.directive";
+import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import { cn } from "../../../../shared/utils/cn";
 import { NATURAL_NOTES } from "@features/identification-game/data";
-import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
+import {
+	DEFAULT_NOTE_TO_KEY_MAP,
+	OVERLAP_ENHARMONIC_EQUIVALENT,
+	OVERLAP_SHARP_TO_KEY_MAP,
+} from "../../models/keymap";
 
 /**
  * Rebinds the 21 note keys. Port of
@@ -40,6 +46,15 @@ import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
  * and this is one of the four constants `frontend/CLAUDE.md` says to import
  * rather than redeclare. React had its own copy; that is the one thing here
  * that is not a verbatim port.
+ *
+ * **The piano layout toggle (`overlap_accidentals`) locks two-thirds of the
+ * board rather than hiding it.** Under the toggle, the five sharps in
+ * `OVERLAP_SHARP_TO_KEY_MAP` stop being editable and print the fixed key
+ * they are pinned to instead; the other nine notes (E#, B#, Cb, Fb and every
+ * flat) have no key of their own at all and print which note's key answers
+ * for them, from `OVERLAP_ENHARMONIC_EQUIVALENT`. Naturals are unaffected.
+ * `arm()` refuses to listen for a locked note, so a stray click cannot start
+ * a rebind the keydown stream would then have nowhere useful to send.
  */
 
 const SHARP_NOTES = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"] as const;
@@ -47,7 +62,7 @@ const FLAT_NOTES = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"] as const;
 
 @Component({
 	selector: "app-keyboard-bindings-editor",
-	imports: [ButtonComponent, CardDirective],
+	imports: [ButtonComponent, CardDirective, TooltipDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	styles: `
 		:host {
@@ -56,21 +71,55 @@ const FLAT_NOTES = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"] as const;
 	`,
 	template: `
 		<div appCard className="space-y-4 p-4">
+			<div
+				class="flex items-center justify-between gap-3 rounded-md border-2 border-border px-3 py-2"
+			>
+				<div class="space-y-0.5">
+					<span class="text-xs font-medium text-muted-foreground"
+						>Piano layout</span
+					>
+					<p class="text-xs text-muted-foreground/70">
+						Sharps sit fixed between the naturals, like the black keys on a
+						piano. Flats share a key with the sharp next to them.
+					</p>
+				</div>
+				<app-button
+					[variant]="overlapAccidentals() ? 'default' : 'outline'"
+					size="sm"
+					className="flex-shrink-0"
+					(click)="toggleOverlap()"
+				>
+					{{ overlapAccidentals() ? "On" : "Off" }}
+				</app-button>
+			</div>
 			@for (row of rows; track row.label) {
 				<div class="space-y-1">
-					<span class="text-xs font-medium text-muted-foreground">{{
-						row.label
-					}}</span>
+					<span class="text-xs font-medium text-muted-foreground">
+						{{ row.label }}
+						@if (rowCaption(row.label); as caption) {
+							<span class="font-normal text-muted-foreground/60"
+								>({{ caption }})</span
+							>
+						}
+					</span>
 					<div class="grid grid-cols-7 gap-2">
 						@for (note of row.notes; track note) {
 							<app-button
 								variant="outline"
 								[className]="buttonClasses(note)"
+								[disabled]="isLocked(note)"
+								[appTooltip]="lockReason(note)"
 								(click)="arm(note)"
 							>
 								<span class="text-sm font-bold">{{ note }}</span>
 								@if (listening() === note) {
 									<span class="text-xs text-primary/60">...</span>
+								} @else if (fixedKey(note); as fixed) {
+									<span class="text-xs text-muted-foreground">{{ fixed }}</span>
+								} @else if (enharmonicOf(note); as equivalent) {
+									<span class="text-[10px] leading-tight text-muted-foreground"
+										>= {{ equivalent }}</span
+									>
 								} @else {
 									<span class="text-xs text-muted-foreground">{{
 										bindings()[note] ?? "---"
@@ -92,6 +141,13 @@ const FLAT_NOTES = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"] as const;
 export class KeyboardBindingsEditorComponent {
 	readonly bindings = model.required<Record<string, string>>();
 
+	/**
+	 * The piano-layout flag. A second draft field, not a 22nd binding --
+	 * same two-way `model()` shape as `bindings`, so Cancel discards a
+	 * toggle flip exactly as it discards a rebind.
+	 */
+	readonly overlapAccidentals = model(false);
+
 	/** The note awaiting a key, or null. The dialog title reads it. */
 	readonly listeningChange = output<string | null>();
 
@@ -102,6 +158,16 @@ export class KeyboardBindingsEditorComponent {
 		{ label: "Naturals", notes: NATURAL_NOTES },
 		{ label: "Flats", notes: FLAT_NOTES },
 	] as const;
+
+	/** Every locked note in the current layout -- both kinds. */
+	private readonly lockedNotes = computed(() =>
+		this.overlapAccidentals()
+			? new Set([
+					...Object.keys(OVERLAP_SHARP_TO_KEY_MAP),
+					...Object.keys(OVERLAP_ENHARMONIC_EQUIVALENT),
+				])
+			: new Set<string>(),
+	);
 
 	constructor() {
 		fromEvent<KeyboardEvent>(document, "keydown", { capture: true })
@@ -120,8 +186,49 @@ export class KeyboardBindingsEditorComponent {
 		);
 	}
 
+	protected isLocked(note: string): boolean {
+		return this.lockedNotes().has(note);
+	}
+
+	/** The row-header caption explaining why its notes are locked, if any. */
+	protected rowCaption(
+		label: (typeof this.rows)[number]["label"],
+	): string | null {
+		if (!this.overlapAccidentals()) return null;
+		if (label === "Sharps") return "five fixed, two borrowed";
+		if (label === "Flats") return "no key of their own";
+		return null;
+	}
+
+	/** The fixed key a locked sharp is pinned to, e.g. `"w"` for C#. */
+	protected fixedKey(note: string): string | null {
+		if (!this.overlapAccidentals()) return null;
+		return OVERLAP_SHARP_TO_KEY_MAP[note] ?? null;
+	}
+
+	/** The note whose key answers for a locked, keyless note. */
+	protected enharmonicOf(note: string): string | null {
+		if (!this.overlapAccidentals()) return null;
+		return OVERLAP_ENHARMONIC_EQUIVALENT[note] ?? null;
+	}
+
+	protected lockReason(note: string): string {
+		const fixed = this.fixedKey(note);
+		if (fixed) return `Fixed on "${fixed}" by the piano layout.`;
+		const equivalent = this.enharmonicOf(note);
+		if (equivalent) {
+			return `No key of its own under the piano layout -- press ${equivalent} instead.`;
+		}
+		return "";
+	}
+
 	protected arm(note: string): void {
+		if (this.isLocked(note)) return;
 		this.setListening(note);
+	}
+
+	protected toggleOverlap(): void {
+		this.overlapAccidentals.set(!this.overlapAccidentals());
 	}
 
 	protected resetToDefaults(): void {

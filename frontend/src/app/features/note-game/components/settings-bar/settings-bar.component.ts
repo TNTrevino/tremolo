@@ -21,6 +21,7 @@ import {
 	NOTE_LIMITS,
 	TIME_LIMITS,
 } from "@features/identification-game/data";
+import type { KeyboardBindingsDraft } from "../../models/keymap";
 import { type GameSettings, SCALES } from "../../models/note-game.models";
 import { KeyboardBindingsDialogComponent } from "../keyboard-bindings-dialog/keyboard-bindings-dialog.component";
 import { MobileSettingsDrawerComponent } from "../mobile-settings-drawer/mobile-settings-drawer.component";
@@ -211,6 +212,7 @@ import { NoteRangeSettingComponent } from "../note-range-setting/note-range-sett
 			[(open)]="bindingsOpen"
 			[canEdit]="isAuthenticated()"
 			[bindings]="bindings()"
+			[overlapAccidentals]="overlapAccidentals()"
 			(saveBindings)="saveBindings.emit($event)"
 		/>
 	`,
@@ -222,9 +224,11 @@ export class SettingsBarComponent {
 	readonly settings = input.required<GameSettings>();
 	/** The player's current note-to-key map, for the bindings dialog. */
 	readonly bindings = input.required<Record<string, string>>();
+	/** The player's current piano-layout flag, for the bindings dialog. */
+	readonly overlapAccidentals = input(false);
 
 	readonly settingsChange = output<Partial<GameSettings>>();
-	readonly saveBindings = output<Record<string, string>>();
+	readonly saveBindings = output<KeyboardBindingsDraft>();
 	/**
 	 * True while the bindings dialog is open. The page uses it to mute the
 	 * game's keyboard stream so rebinding a key does not also answer with it.

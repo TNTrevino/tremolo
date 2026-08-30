@@ -12,6 +12,10 @@ import { environment } from "../../../../../environments/environment";
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { TREMOLO_ICONS } from "../../../../core/icons";
 import {
+	DEFAULT_NOTE_TO_KEY_MAP,
+	noteMapToKeyBindings,
+} from "../../models/keymap";
+import {
 	mapSavedNoteGameSettings,
 	NoteGamePageComponent,
 } from "./note-game-page.component";
@@ -303,5 +307,70 @@ describe("NoteGamePageComponent", () => {
 		noteRequests().forEach((r) =>
 			r.flush({}, { status: 500, statusText: "x" }),
 		);
+	});
+
+	describe("overlap_accidentals", () => {
+		/** A saved row's `key_bindings`, as the wire shape expects it. */
+		const DEFAULT_KEY_BINDINGS = noteMapToKeyBindings(DEFAULT_NOTE_TO_KEY_MAP);
+
+		function padButton(label: string): Element | undefined {
+			return [...el().querySelectorAll("app-button")].find(
+				(b) => b.querySelector("span")?.textContent?.trim() === label,
+			);
+		}
+
+		async function hydrateOverlap(): Promise<void> {
+			backend
+				.expectOne(SETTINGS_URL)
+				.flush(null, { status: 404, statusText: "Not Found" });
+			backend.expectOne(BINDINGS_URL).flush(
+				{
+					id: 8,
+					user_id: 7,
+					key_bindings: DEFAULT_KEY_BINDINGS,
+					overlap_accidentals: true,
+				},
+				{ status: 200, statusText: "OK" },
+			);
+			await fixture.whenStable();
+			fixture.detectChanges();
+			await fixture.whenStable();
+		}
+
+		it("switches the answer-pad hints to the piano layout", async () => {
+			await render();
+			await hydrateOverlap();
+
+			// Db has no key of its own under the layout -- it borrows C#'s
+			// fixed "w", not the bottom-row key it is still bound to.
+			expect(padButton("Db")?.textContent?.replace(/\s+/g, "")).toBe("Dbw");
+			// The natural C is unaffected: it keeps its real key.
+			expect(padButton("C")?.textContent?.replace(/\s+/g, "")).toBe("Ca");
+
+			noteRequests().forEach((r) =>
+				r.flush({}, { status: 500, statusText: "x" }),
+			);
+		});
+
+		it("round-trips the saved flag into the bindings dialog's toggle", async () => {
+			await render();
+			await hydrateOverlap();
+
+			const openBindings = [...el().querySelectorAll("button")].find(
+				(b) => b.getAttribute("aria-label") === "Configure keyboard bindings",
+			);
+			openBindings?.click();
+			fixture.detectChanges();
+			await fixture.whenStable();
+
+			const toggle = [...el().querySelectorAll("button")].find((b) =>
+				["On", "Off"].includes(b.textContent?.trim() ?? ""),
+			);
+			expect(toggle?.textContent?.trim()).toBe("On");
+
+			noteRequests().forEach((r) =>
+				r.flush({}, { status: 500, statusText: "x" }),
+			);
+		});
 	});
 });

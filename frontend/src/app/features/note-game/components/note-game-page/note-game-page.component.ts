@@ -23,9 +23,11 @@ import { BreakpointService } from "../../../../shared/services/breakpoint.servic
 import type { NoteGameSettings } from "../../../../shared/models/game.models";
 import { UserService } from "../../../../shared/services/user.service";
 import {
+	buildOverlapNoteToKeyMap,
 	keyBindingsToNoteMap,
 	noteMapToKeyBindings,
 	DEFAULT_NOTE_TO_KEY_MAP,
+	type KeyboardBindingsDraft,
 } from "../../models/keymap";
 import {
 	mapNoteAssignmentConfig,
@@ -128,7 +130,9 @@ export class NoteGamePageComponent {
 	});
 
 	/**
-	 * Note -> key, for the answer-pad hints and the bindings dialog.
+	 * Note -> key, the player's real (editable) bindings. Feeds the bindings
+	 * dialog, which edits actual bindings and must never see the piano
+	 * layout's borrowed keys.
 	 *
 	 * `value()` **rethrows** on a failed resource, and this computed is read
 	 * during template evaluation, so an unguarded read turns a bindings-fetch
@@ -143,6 +147,22 @@ export class NoteGamePageComponent {
 			? keyBindingsToNoteMap(saved.keyBindings)
 			: DEFAULT_NOTE_TO_KEY_MAP;
 	});
+
+	/**
+	 * Note -> key, for the in-game answer-pad hints only.
+	 *
+	 * Under `overlap_accidentals` this is **not** `noteToKeyMap()`: the
+	 * naturals keep their real keys, but a flat or E#/B# must show the
+	 * enharmonic key that actually scores for it
+	 * (`NoteGameService.isCorrect` via `notesEquivalent`), not the stale
+	 * binding it has no key for any more. `buildOverlapNoteToKeyMap` is the
+	 * one place that translation lives.
+	 */
+	protected readonly hintKeyMap = computed(() =>
+		this.game.overlapAccidentals()
+			? buildOverlapNoteToKeyMap(this.noteToKeyMap())
+			: this.noteToKeyMap(),
+	);
 
 	protected readonly range = computed(() => {
 		const settings = this.game.settings();
@@ -243,15 +263,17 @@ export class NoteGamePageComponent {
 	}
 
 	/**
-	 * The dialog edits the 21 bindings and knows nothing about the layout
-	 * flag, so the flag is carried through from the loaded row -- saving keys
-	 * must not turn the overlap layout off underneath the player.
+	 * The dialog now edits both halves of the row -- the 21 bindings and the
+	 * `overlap_accidentals` toggle -- as one draft, so both save together.
+	 * `savedBindings.reload()` is what carries the new flag back into
+	 * `game.overlapAccidentals` (see the effect below): this handler does not
+	 * set it directly.
 	 */
-	protected onSaveBindings(noteToKey: Record<string, string>): void {
+	protected onSaveBindings(draft: KeyboardBindingsDraft): void {
 		this.users
 			.saveKeyboardBindings(
-				noteMapToKeyBindings(noteToKey),
-				this.game.overlapAccidentals(),
+				noteMapToKeyBindings(draft.bindings),
+				draft.overlapAccidentals,
 			)
 			.subscribe(() => this.savedBindings.reload());
 	}
