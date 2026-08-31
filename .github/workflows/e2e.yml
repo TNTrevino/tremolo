@@ -1,0 +1,196 @@
+name: E2E (Playwright parity suite)
+
+# DRAFT (issue #209). `workflow_dispatch` ONLY -- this intentionally has no
+# `push` or `pull_request` trigger yet. Flip it on for real (per-PR vs.
+# nightly is still an open decision -- see the comment on #209) only after:
+#   - the 12 known-stale screenshot baselines are re-captured post sign-off
+#     (frontend/e2e/README.md: `npm run e2e:baselines -- --update-snapshots`),
+#     since a stale baseline is a footgun for whoever turns screenshot
+#     comparison on in CI later, even though this workflow itself skips it
+#     (see the SPECS-ONLY note below); and
+#   - a decision on whether screenshot comparison ever runs in CI at all, or
+#     stays a local/dev-machine-only gate (font rendering differs across
+#     runners, so a screenshot job here would need a container image pinned
+#     to whatever environment captured the baselines -- a bigger, separate
+#     decision from standing up this workflow).
+#
+# This file is syntactically valid YAML but has not been run -- there is no
+# way to execute a GitHub Actions workflow from this environment. Review it
+# like a diff, not like a green check mark, before relying on it.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: playwright-golden
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tremolo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Reused verbatim from core-api.yml/api-smoke.yml, plus the two E2E_*
+    # vars frontend/e2e/README.md documents (both already match the ports
+    # this job uses below, but set explicitly rather than relying on the
+    # suite's defaults).
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tremolo?sslmode=disable
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      ACCESS_TOKEN_EXPIRY_MINUTES: "15"
+      REFRESH_TOKEN_EXPIRY_HOURS: "168"
+      MAX_LOGIN_ATTEMPTS: "5"
+      ACCOUNT_LOCKOUT_DURATION_MINUTES: "15"
+      GOOGLE_CLIENT_ID: ci-test-client-id
+      GOOGLE_CLIENT_SECRET: ci-test-client-secret
+      USER_SERVICE_PORT: "5001"
+      ALLOWED_ORIGINS: "http://localhost:4200"
+      E2E_BASE_URL: "http://localhost:4200"
+      E2E_MAIN_API: "http://localhost:5001"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # ---- Go service (core-api) ----
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.0"
+          cache: true
+          cache-dependency-path: core-api/go.sum
+
+      - name: Build core-api
+        working-directory: core-api
+        run: go build -o /tmp/tremolo-main .
+
+      - name: Start core-api (migrations run on startup)
+        working-directory: core-api
+        run: |
+          /tmp/tremolo-main > /tmp/tremolo-main.log 2>&1 &
+          echo "started core-api"
+
+      - name: Wait for core-api /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5001/health >/dev/null 2>&1; then
+              echo "core-api is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "core-api did not become healthy in time; last logs:" >&2
+          cat /tmp/tremolo-main.log >&2 || true
+          exit 1
+
+      # ---- Python service (music-api) ----
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: music-api/requirements.txt
+
+      - name: Install music-api dependencies
+        working-directory: music-api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start music-api
+        working-directory: music-api
+        run: |
+          fastapi dev main.py --port 8000 > /tmp/tremolo-music.log 2>&1 &
+          echo "started music-api"
+
+      - name: Wait for music-api /music/health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/music/health >/dev/null 2>&1; then
+              echo "music-api is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "music-api did not become healthy in time; last logs:" >&2
+          cat /tmp/tremolo-music.log >&2 || true
+          exit 1
+
+      # ---- Frontend ----
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # ng serve, matching frontend/e2e/README.md's own documented local
+      # flow (`npm run dev &` then the suite) rather than a preview build,
+      # so this workflow exercises the same thing a developer runs by hand.
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          npm run dev -- --port 4200 > /tmp/tremolo-frontend.log 2>&1 &
+          echo "started frontend"
+
+      - name: Wait for frontend
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:4200 >/dev/null 2>&1; then
+              echo "frontend is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "frontend did not come up in time; last logs:" >&2
+          cat /tmp/tremolo-frontend.log >&2 || true
+          exit 1
+
+      # SPECS-ONLY: --project=golden runs e2e/specs/*.spec.ts and
+      # deliberately excludes the "baselines" project (playwright.config.ts),
+      # which screenshot-diffs against e2e/.migration/baselines/. Plain
+      # `npm run e2e` (bare `playwright test`) would run BOTH projects, so
+      # this passes the flag explicitly rather than relying on that script.
+      # Font rendering differs across runners/OSes, so a screenshot diff
+      # here would be noise, not signal -- see the header comment above for
+      # the container-pinning alternative the issue floats instead.
+      - name: Run Playwright golden suite (specs only, no screenshots)
+        working-directory: frontend
+        run: npx playwright test --project=golden
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Service logs on failure
+        if: failure()
+        run: |
+          echo "--- core-api ---"; cat /tmp/tremolo-main.log || true
+          echo "--- music-api ---"; cat /tmp/tremolo-music.log || true
+          echo "--- frontend ---"; cat /tmp/tremolo-frontend.log || true

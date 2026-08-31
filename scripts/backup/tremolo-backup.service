@@ -1,0 +1,19 @@
+[Unit]
+Description=Tremolo nightly Postgres backup
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=noetrevino
+# Reads PGURL/DATABASE_URL from here itself (see tremolo-backup.sh) --
+# EnvironmentFile is not needed in addition, but the script also accepts
+# TREMOLO_BACKUP_DIR / TREMOLO_BACKUP_RETENTION_DAYS / TREMOLO_BACKUP_ENV_FILE
+# overrides via Environment= lines here if this host's defaults don't fit:
+# Environment=TREMOLO_BACKUP_DIR=/var/backups/tremolo
+# Environment=TREMOLO_BACKUP_RETENTION_DAYS=14
+ExecStart=/opt/tremolo/scripts/backup/tremolo-backup.sh
+
+# No [Install] section on purpose: this unit is triggered by
+# tremolo-backup.timer, not by a boot target. Enable the timer
+# (`systemctl enable --now tremolo-backup.timer`), not this service --
+# enabling this directly would also run a backup at every boot.
