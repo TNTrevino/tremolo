@@ -11,9 +11,10 @@ answer, so one black key is one pitch. A rounded nub under each lever
 presses the letter key; the laptop key's own spring returns it. One
 print, no assembly, no electronics.
 
-The black keys are flush with the whites, not raised: the part prints
-top-face-down and a raised black top cannot lie on the bed. Position,
-narrower bodies and engraved labels carry the piano look.
+The black keys stand 5 mm above the whites, like a real piano. The part
+still prints top-face-down: the rail top shares a plane with the black
+tops, so the print rests on both while the white faces sit on supports.
+A PLA-S support interface keeps the white faces clean.
 
 `overlay.scad` is the source of truth. It is fully parametric — every
 laptop measurement is a variable at the top of the file. The prototype
@@ -69,8 +70,10 @@ rail without covering the touchpad.
 ## Print
 
 - PETG. PLA flexures fatigue and snap.
-- 0.2 mm layers, 3 perimeters, no supports. The part prints top-face-down
-  as exported; flip it over for use.
+- 0.2 mm layers, 3 perimeters. Enable supports, build plate only, and
+  set the PLA-S spool as the support interface filament. The supports
+  fill the 5 mm under the white faces; the interface peels off clean.
+- The part prints top-face-down as exported; flip it over for use.
 - Print `coupon.stl` first. It answers the three questions that matter:
   does the nub land on the key center, does a press register without
   touching neighbors, and does the flexure force feel right.
@@ -96,8 +99,9 @@ rail without covering the touchpad.
   prints a reversed part that no flip can fix. The note order, the
   black-key lean, and the labels are all authored pre-rotated; the
   `orient="use"` render shows the part exactly as the player sees it.
-- Sharps and flats are deliberately out of v1. The game's default
-  settings use naturals only; the design record for the game is
+- The white keys end 10 mm past the nub, the v1 length. The long
+  press zone of v3 added reach but no leverage, so it went away.
+- The design record for the game is
   `docs/superpowers/specs/2026-08-30-note-stream-game-design.md`.
 - Framework publishes chassis CAD at
   https://github.com/FrameworkComputer/Framework-Laptop-13 — useful for a
