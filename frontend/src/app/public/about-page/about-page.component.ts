@@ -60,7 +60,7 @@ export class AboutPageComponent {
 			iconClass: "text-brass",
 			title: "UIL-Focused Practice",
 			description:
-				"Tremolo targets specific rhythms and patterns that frequently appear in UIL sight reading competitions. Students can practice the exact skills they'll need to succeed in competitive settings.",
+				"Sight reading is the part of UIL that cannot be rehearsed away, and it is exactly what Tremolo drills: unfamiliar notation, every time, in the clefs and keys your students actually get handed.",
 		},
 		{
 			icon: "lucideBrain",
@@ -68,7 +68,7 @@ export class AboutPageComponent {
 			iconClass: "text-primary",
 			title: "Customizable Learning Paths",
 			description:
-				"Every student learns differently. Create tailored exercises that target specific weaknesses, reinforce strengths, and adapt to individual learning speeds and styles.",
+				"Every game has its own settings — clefs, keys, scale types, question mode, time or question limits. Assign a class one configuration and a struggling student another; the assignment freezes whatever you chose.",
 		},
 	];
 

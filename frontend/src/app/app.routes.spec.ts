@@ -19,6 +19,7 @@ import { teacherGuard } from "./auth/services/security/teacher.guard";
 import { AuthStore } from "./auth/services/auth.store";
 import { NavigationComponent } from "./core/components/navigation/navigation.component";
 import { TREMOLO_ICONS } from "./core/icons";
+import { DEV_MODE, devOnlyGuard } from "./dev/dev-only.guard";
 
 /**
  * The logout bounce, end to end through the real route table.
@@ -169,5 +170,86 @@ describe("legal pages", () => {
 			expect(route).toBeDefined();
 			expect(route?.canActivate).toBeUndefined();
 		}
+	});
+});
+
+/**
+ * #263: the `**` wildcard and the /dev/kit gate that falls through to it.
+ *
+ * The first two checks are pure route-table inspection, same style as
+ * "legal pages" above. The last three drive the real `Router` -- through
+ * `withStubbedPages`, which spreads each route (`{ ...route, component:
+ * BlankPageComponent }`) rather than rebuilding it, so `canMatch` (and
+ * every other route flag) survives the stub. That is what makes it
+ * possible to tell a matched `dev/kit` apart from a matched `**` even
+ * though both render the same blank stub: read `routeConfig?.path` off
+ * the router's snapshot instead of the rendered content.
+ */
+describe("not found and the dev/kit gate", () => {
+	function routerFor(devMode: boolean): Router {
+		TestBed.configureTestingModule({
+			providers: [
+				provideRouter(
+					withStubbedPages(routes),
+					withRouterConfig(ROUTER_CONFIG),
+				),
+				provideHttpClient(),
+				provideIcons(TREMOLO_ICONS),
+				{ provide: DEV_MODE, useValue: devMode },
+			],
+		});
+		return TestBed.inject(Router);
+	}
+
+	/** The route config actually matched for the router's current URL. */
+	function matchedPath(router: Router): string | undefined {
+		return router.routerState.snapshot.root.firstChild?.routeConfig?.path;
+	}
+
+	it("keeps the ** wildcard as the only one, and last", () => {
+		const wildcards = routes.filter((route) => route.path === "**");
+
+		expect(wildcards).toHaveLength(1);
+		expect(routes.at(-1)?.path).toBe("**");
+	});
+
+	it("gates dev/kit behind devOnlyGuard's canMatch", () => {
+		const devKit = routes.find((route) => route.path === "dev/kit");
+
+		expect(devKit?.canMatch).toContain(devOnlyGuard);
+	});
+
+	it("navigates an unknown URL without error", async () => {
+		const router = routerFor(true);
+		const fixture = TestBed.createComponent(TestShellComponent);
+		await fixture.whenStable();
+
+		const succeeded = await router.navigateByUrl("/definitely-not-a-route");
+		await fixture.whenStable();
+
+		expect(succeeded).toBe(true);
+		expect(router.url).toBe("/definitely-not-a-route");
+	});
+
+	it("keeps /dev/kit reachable outside production", async () => {
+		const router = routerFor(true);
+		const fixture = TestBed.createComponent(TestShellComponent);
+		await fixture.whenStable();
+
+		await router.navigateByUrl("/dev/kit");
+		await fixture.whenStable();
+
+		expect(matchedPath(router)).toBe("dev/kit");
+	});
+
+	it("sends a production build past /dev/kit to the wildcard route", async () => {
+		const router = routerFor(false);
+		const fixture = TestBed.createComponent(TestShellComponent);
+		await fixture.whenStable();
+
+		await router.navigateByUrl("/dev/kit");
+		await fixture.whenStable();
+
+		expect(matchedPath(router)).toBe("**");
 	});
 });
