@@ -161,3 +161,13 @@ describe("logout and the route table", () => {
 		}
 	});
 });
+
+describe("legal pages", () => {
+	it("leaves the legal pages unguarded", () => {
+		for (const path of ["privacy", "terms"]) {
+			const route = routes.find((r) => r.path === path);
+			expect(route).toBeDefined();
+			expect(route?.canActivate).toBeUndefined();
+		}
+	});
+});

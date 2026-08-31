@@ -162,6 +162,27 @@ describe("SignupPageComponent", () => {
 		);
 	});
 
+	/**
+	 * #242: the agreement line sits under the submit button, above the "Or
+	 * continue with" divider. Both anchors reuse the page's existing Login
+	 * link classes -- `.toContain` above means this cannot regress that link.
+	 */
+	it("shows the terms and privacy agreement line, linked to both pages", () => {
+		const anchors = [...el().querySelectorAll("a")];
+		const terms = anchors.find(
+			(a) => a.textContent?.trim() === "Terms of Service",
+		);
+		const privacy = anchors.find(
+			(a) => a.textContent?.trim() === "Privacy Policy",
+		);
+
+		expect(terms?.getAttribute("href")).toBe("/terms");
+		expect(privacy?.getAttribute("href")).toBe("/privacy");
+		expect(el().textContent).toContain(
+			"By creating an account you agree to our",
+		);
+	});
+
 	it("keeps the password checklist hidden until the field is used", async () => {
 		expect(el().textContent).not.toContain("Password Requirements:");
 

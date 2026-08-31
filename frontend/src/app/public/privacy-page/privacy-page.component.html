@@ -1,0 +1,302 @@
+<!--
+	PRIVACY POLICY — DRAFT. For review by counsel before any district
+	signature. Written against the code as of 2026-08-25.
+-->
+<div class="min-h-screen py-12 px-4">
+	<div class="container mx-auto max-w-3xl space-y-8">
+		<header class="space-y-2">
+			<h1 class="text-4xl font-bold">Privacy Policy</h1>
+			<p class="text-sm text-muted-foreground">
+				Last updated: {{ lastUpdated }}
+			</p>
+		</header>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Who we are</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					Tremolo is a music-practice website at tremolonotes.com for students
+					in about 6th through 12th grade. This policy explains in plain
+					language what the site stores, why, who can see it, and how to remove
+					it. If a sentence here does not match what the software does, the
+					sentence is wrong and we will fix it.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">What we collect</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<ul class="list-disc space-y-2 pl-6">
+					<li>
+						Account — your first and last name, email address, whether you're a
+						student or a teacher, and a password stored only as a one-way bcrypt
+						hash (or, for Google sign-in, a Google identifier and no password at
+						all).
+					</li>
+					<li>
+						Grade level, optionally — 6th through 12th grade, or "other." That's
+						a grade, not a birthday: the least specific age information useful
+						to us.
+					</li>
+					<li>
+						Practice records for every finished game — which game, how many
+						questions were asked and answered correctly, notes-per-minute, how
+						long the session took, the date and time, and the assignment it was
+						linked to, if any.
+					</li>
+					<li>Settings — your per-game configuration and keyboard bindings.</li>
+					<li>
+						Classes — for a student, which classes you've joined; for a teacher,
+						the classes, rosters, and assignments you created.
+					</li>
+					<li>Friends — the connections you add.</li>
+					<li>
+						Security housekeeping — a count of recent failed sign-in attempts
+						and whether the account is temporarily locked.
+					</li>
+					<li>
+						Email we send you — the message itself, the address it went to, and
+						its delivery status, so we can tell you what happened if it never
+						arrives.
+					</li>
+					<li>
+						Server logs — request logs kept on our own machine. Some sign-in log
+						lines contain the email address used.
+					</li>
+				</ul>
+				<p>
+					Two database columns, "instrument" and "school", exist from an earlier
+					design. No screen fills them in today, and we do not ask for either.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">What we do not collect</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<ul class="list-disc space-y-2 pl-6">
+					<li>No advertising identifiers.</li>
+					<li>No third-party analytics or tracking scripts.</li>
+					<li>No advertising cookies.</li>
+					<li>No payment information.</li>
+					<li>No photos, microphone, or camera access.</li>
+					<li>No precise location.</li>
+					<li>No student ID numbers or Social Security numbers.</li>
+					<li>No disciplinary records, health records, or school grades.</li>
+					<li>No free-form profile text.</li>
+				</ul>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Why we collect it</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<ul class="list-disc space-y-2 pl-6">
+					<li>Signing you in, and keeping you signed in.</li>
+					<li>Showing you your own progress.</li>
+					<li>Letting a teacher whose class you joined see that class.</li>
+					<li>Sending account email, such as a password reset.</li>
+					<li>Keeping accounts from being broken into.</li>
+				</ul>
+				<p>That is the whole list.</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">
+					We do not sell your information, and we do not advertise
+				</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					We do not sell, rent, or trade student information. We do not show
+					ads. We do not build advertising profiles. We do not use student
+					information to train advertising or recommendation systems.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Who can see what</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<ul class="list-disc space-y-2 pl-6">
+					<li>You — everything on your own account.</li>
+					<li>
+						A teacher — for a student who joined that teacher's active class:
+						the student's name, practice statistics, and attempts at that
+						teacher's assignments. Not the student's email, settings, keyboard
+						bindings, friends, or other teachers' classes. Access ends when the
+						class is archived or the student leaves it.
+					</li>
+					<li>Other students — only what a friend connection shows.</li>
+					<li>
+						We — the person who runs Tremolo can reach the database to fix and
+						back up the service, and looks at individual accounts only to fix a
+						problem or answer a request.
+					</li>
+				</ul>
+				<p>
+					Nobody else sees your information — except that outbound email is
+					handed to Google's Gmail servers for delivery, the way any email has
+					to be handed to a mail provider.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Where your information lives</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					On computers we own and operate ourselves. The database is PostgreSQL
+					and is not reachable from the internet. Traffic is encrypted with
+					HTTPS. Signed-in browsers hold a sign-in token in local storage;
+					signing out removes it.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Email</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					Account purposes only: password resets, address verification, account
+					notices. No newsletters, no marketing, nothing to unsubscribe from.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">How long we keep it</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					Account and practice history stay until the account is deleted.
+					Account deletion is being added to the Account page now; until it
+					ships, email us and we delete everything on request. Deletion removes
+					the account, practice history, settings, bindings, class memberships,
+					friend connections, and pending email to the address, permanently.
+				</p>
+				<p>
+					If a teacher deletes their account, their classes and assignments go
+					with it; students keep their own practice history. Server logs rotate
+					on the machine.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Students under 13 (COPPA)</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					Some users are under 13. COPPA requires verifiable parental consent,
+					and the FTC recognizes that a school may consent on a parent's behalf
+					when a service is educational-use-only and collects no more than the
+					purpose needs. That is Tremolo's posture: a student under 13 should
+					reach Tremolo through a teacher, with a class join code, under the
+					school's authorization. We collect only what a practice tool needs,
+					use it only for practice, show it only to the student and their own
+					teacher, sell nothing, and show no ads. We do not knowingly collect
+					information from a child under 13 outside a school arrangement.
+				</p>
+				<p>Parents: email us and we delete the account and everything in it.</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Schools and FERPA</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					School use makes practice records part of the student's education
+					records. We act as a "school official" with a "legitimate educational
+					interest" under FERPA (34 CFR § 99.31(a)(1)): the school stays in
+					control, we use data only to provide the service, and we re-disclose
+					nothing. Schools can direct hand-over or deletion at any time.
+				</p>
+				<p>
+					A district that needs a signed data-processing agreement should ask —
+					we have a template ready.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Your choices</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<ul class="list-disc space-y-2 pl-6">
+					<li>
+						See your data — a data-export button is being added to the Account
+						page. Until it ships, email us and we send your complete records.
+					</li>
+					<li>
+						Delete your data — same story: the Account page is gaining this too,
+						and until it does, email us.
+					</li>
+					<li>Correct your data — email us.</li>
+					<li>
+						Parents and schools may make any of these requests on a student's
+						behalf.
+					</li>
+				</ul>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Changes to this policy</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					We change this page and the date; significant changes also go to
+					account holders by email. This policy should be read together with our
+					<a
+						routerLink="/terms"
+						class="font-medium text-primary underline-offset-4 hover:underline"
+						>Terms of Service</a
+					>.
+				</p>
+			</div>
+		</div>
+
+		<div appCard>
+			<div appCardHeader>
+				<h2 appCardTitle className="text-2xl">Contact</h2>
+			</div>
+			<div appCardContent className="space-y-4 text-muted-foreground">
+				<p>
+					Questions about this policy, or a request about your data? Email us.
+				</p>
+				<!-- docs/legal/dpa.md arrives with PR #274; until that merges this path is forward-looking. -->
+				<p>
+					<a
+						href="mailto:{{ contactEmail }}"
+						class="font-medium text-primary underline-offset-4 hover:underline"
+						>{{ contactEmail }}</a
+					>
+				</p>
+			</div>
+		</div>
+	</div>
+</div>

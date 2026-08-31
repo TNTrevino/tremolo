@@ -5,9 +5,10 @@ import { guestGuard } from "./auth/services/security/guest.guard";
 import { teacherGuard } from "./auth/services/security/teacher.guard";
 
 /**
- * The 21 routes of frontend-react/src/App.tsx, plus one with no React
- * predecessor: `classes/:id/students/:studentId`, the teacher's read-only
- * view of a student's stats.
+ * The routes ported from frontend-react/src/App.tsx, plus additions with
+ * no React predecessor: `classes/:id/students/:studentId` (the teacher's
+ * read-only view of a student's stats), the token-bearing email link
+ * routes, and /privacy and /terms.
  *
  * Guard assignments are one for one with the wrapper components they
  * replace: ProtectedRoute x5 -> `authGuard`, GuestRoute x2 -> `guestGuard`,
@@ -53,6 +54,20 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import("./public/about-page/about-page.component").then(
 				(m) => m.AboutPageComponent,
+			),
+	},
+	{
+		path: "privacy",
+		loadComponent: () =>
+			import("./public/privacy-page/privacy-page.component").then(
+				(m) => m.PrivacyPageComponent,
+			),
+	},
+	{
+		path: "terms",
+		loadComponent: () =>
+			import("./public/terms-page/terms-page.component").then(
+				(m) => m.TermsPageComponent,
 			),
 	},
 	{
