@@ -6,9 +6,14 @@ import {
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideIcons } from "@ng-icons/core";
 
+import { TIME_LIMITS } from "@features/identification-game/data";
+
 import { environment } from "../../../../../environments/environment";
 import { TREMOLO_ICONS } from "../../../../core/icons";
-import { defaultAssignmentConfig } from "../../models/game-definitions";
+import {
+	defaultAssignmentConfig,
+	GAME_TYPE_LABELS,
+} from "../../models/game-definitions";
 import { CreateAssignmentDialogComponent } from "./create-assignment-dialog.component";
 
 const CREATE_URL = `${environment.coreApi}/api/classes/7/assignments`;
@@ -18,11 +23,15 @@ const CREATE_URL = `${environment.coreApi}/api/classes/7/assignments`;
  * frontend-react/src/features/classes/components/CreateAssignmentDialog.test.tsx.
  *
  * The React test's real assertion is the shape of the request: top-level
- * fields snake_case, the `config` blob the chosen game's defaults
- * **verbatim** (camelCase for the identification games). That is exactly
- * what the Go service stores and what the game later reads back, so it is
- * the contract worth pinning even while the settings controls themselves
- * are still Phase 5/6 work.
+ * fields snake_case, the `config` blob the chosen game's settings **verbatim**
+ * (camelCase for the identification games) -- tuned or, if a teacher touched
+ * nothing, the game's defaults. That is exactly what the Go service stores
+ * and what the game later reads back, so it is the contract worth pinning.
+ *
+ * Issue #261 embedded each game's own settings controls (deep-imported --
+ * see the component header), so this file also pins that a teacher can tune
+ * them before creating the assignment, that switching games discards any
+ * tuning, and that "Reset to defaults" does exactly that.
  */
 describe("CreateAssignmentDialogComponent", () => {
 	let fixture: ComponentFixture<CreateAssignmentDialogComponent>;
@@ -65,6 +74,42 @@ describe("CreateAssignmentDialogComponent", () => {
 		) as HTMLSelectElement;
 		select.value = value;
 		select.dispatchEvent(new Event("change"));
+		await fixture.whenStable();
+	}
+
+	/** Any other `<select id="...">` in the dialog -- the scale field, the limit. */
+	async function choose(id: string, value: string): Promise<void> {
+		const select = el().querySelector(`#${id}`) as HTMLSelectElement;
+		select.value = value;
+		select.dispatchEvent(new Event("change"));
+		await fixture.whenStable();
+	}
+
+	/**
+	 * The schema-driven controls have no `id` -- `<app-settings-controls>`
+	 * renders one row per descriptor -- so a `choice` row's `<select>` is
+	 * found the way `<app-select [ariaLabel]="row.label">` labels it.
+	 */
+	async function chooseByLabel(label: string, value: string): Promise<void> {
+		const select = [...el().querySelectorAll("select")].find(
+			(s) => s.getAttribute("aria-label") === label,
+		);
+		if (!select) throw new Error(`No <select aria-label="${label}"> found`);
+		select.value = value;
+		select.dispatchEvent(new Event("change"));
+		await fixture.whenStable();
+	}
+
+	/** By visible text (buttons) or `aria-label` (chips, whose content is a glyph). */
+	function button(name: string): HTMLButtonElement | undefined {
+		return [...el().querySelectorAll("button")].find(
+			(b) =>
+				b.textContent?.trim() === name || b.getAttribute("aria-label") === name,
+		);
+	}
+
+	async function press(name: string): Promise<void> {
+		button(name)?.click();
 		await fixture.whenStable();
 	}
 
@@ -180,5 +225,194 @@ describe("CreateAssignmentDialogComponent", () => {
 		expect(el().textContent).toContain(
 			"Target accuracy must be between 1 and 100",
 		);
+	});
+
+	it("tuning a schema setting changes the submitted config", async () => {
+		await type("assignment-title", "Scale drills");
+		await chooseGame("scale");
+		await chooseByLabel("Question Mode", "key_signature");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+		const config = (post.request.body as { config: Record<string, unknown> })
+			.config;
+
+		expect(config).toEqual({
+			...defaultAssignmentConfig("scale"),
+			questionMode: "key_signature",
+		});
+
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Scale drills",
+			game_type: "scale",
+			config,
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it("tuning a multi-select chip patches the config in schema order", async () => {
+		await type("assignment-title", "Scale drills");
+		await chooseGame("scale");
+		await press("Bass Clef");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+		const config = (post.request.body as { config: Record<string, unknown> })
+			.config;
+
+		expect(config["clefs"]).toEqual(["treble", "bass"]);
+
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Scale drills",
+			game_type: "scale",
+			config,
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it("discards any tuning when the game changes", async () => {
+		await type("assignment-title", "Chords");
+		await chooseGame("scale");
+		await chooseByLabel("Question Mode", "key_signature");
+		await chooseGame("chord");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+
+		expect(post.request.body).toMatchObject({
+			game_type: "chord",
+			config: defaultAssignmentConfig("chord"),
+		});
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Chords",
+			game_type: "chord",
+			config: {},
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it('"Reset to defaults" discards any tuning for the current game', async () => {
+		await type("assignment-title", "Scale drills");
+		await chooseGame("scale");
+		await chooseByLabel("Question Mode", "key_signature");
+		await press("Reset to defaults");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+
+		expect(post.request.body).toMatchObject({
+			game_type: "scale",
+			config: defaultAssignmentConfig("scale"),
+		});
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Scale drills",
+			game_type: "scale",
+			config: {},
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it("reaches the config through the mode/limit controls, from the exported limits table", async () => {
+		await type("assignment-title", "Chords");
+		await chooseGame("chord");
+		await choose("limit-selector", "120");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+		const config = (post.request.body as { config: Record<string, unknown> })
+			.config;
+
+		expect(TIME_LIMITS as readonly number[]).toContain(config["timeLimit"]);
+		expect(config).toMatchObject({ timeLimit: 120 });
+
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Chords",
+			game_type: "chord",
+			config,
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it("submits the note game's tuned config snake_case", async () => {
+		await type("assignment-title", "Week 1");
+		await choose("assignment-scale", "G Major");
+
+		await submit();
+		const post = backend.expectOne(CREATE_URL);
+		const config = (post.request.body as { config: Record<string, unknown> })
+			.config;
+
+		expect(config).toMatchObject({
+			scale: "G Major",
+			game_mode: "time",
+			time_limit: 30,
+		});
+		expect(config["low_note"]).toBeDefined();
+		expect(Object.keys(config)).not.toContain("gameMode");
+		expect(Object.keys(config)).not.toContain("timeLimit");
+		expect(Object.keys(config)).not.toContain("lowNote");
+
+		post.flush({
+			id: 9,
+			class_id: 7,
+			title: "Week 1",
+			game_type: "note",
+			config,
+			due_at: null,
+			target_questions: null,
+			target_accuracy: null,
+			created_at: "2026-07-12T04:10:00Z",
+		});
+		await fixture.whenStable();
+	});
+
+	it("renders a settings section for every game, note range or schema controls", async () => {
+		const gameTypes = ["note", "key_signature", "scale", "chord", "interval"];
+
+		for (const gameType of gameTypes) {
+			await chooseGame(gameType);
+
+			expect(el().querySelector("h3")?.textContent?.trim()).toBe(
+				`${GAME_TYPE_LABELS[gameType as keyof typeof GAME_TYPE_LABELS]} settings`,
+			);
+
+			if (gameType === "note") {
+				expect(el().querySelector("app-note-range-setting")).toBeTruthy();
+				expect(el().querySelector("app-settings-controls")).toBeFalsy();
+			} else {
+				expect(el().querySelector("app-settings-controls")).toBeTruthy();
+				expect(el().querySelector("app-note-range-setting")).toBeFalsy();
+			}
+		}
 	});
 });

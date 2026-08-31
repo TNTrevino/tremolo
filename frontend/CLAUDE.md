@@ -84,7 +84,8 @@ deviations, parity report — is in `.migration/`, and the Playwright suite in
   engraver. **Take data from `/data`; take components and services from the
   barrel.** Importing `TIME_LIMITS` from the barrel works — it re-exports
   everything — but it drags OSMD into the bundle chunk, and into jsdom when
-  the importer has a spec.
+  the importer has a spec. The settings controls are deep-imported by the
+  assignment dialog for the same reason.
 
 - **Shared constants live once**: `TIME_LIMITS`/`NOTE_LIMITS`,
   `NATURAL_NOTES`, `CLEF_UNICODE`/`CLEF_LABELS`. They are declared under
