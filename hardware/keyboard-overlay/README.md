@@ -27,6 +27,11 @@ openscad -o coupon.stl  -D 'mode="coupon"' overlay.scad   # 2-key test print
 openscad -o overlay.stl -D 'mode="full"'   overlay.scad   # all 7 keys
 ```
 
+`make build-hardware` at the repo root renders both STLs plus the two
+preview PNGs in one go. The Hardware CI workflow runs the same target on
+every change under `hardware/` and uploads the results as workflow
+artifacts, so a printable STL is always one download away.
+
 ## Measure before printing (calipers)
 
 Values marked `VERIFY` in the script are guesses until you replace them:

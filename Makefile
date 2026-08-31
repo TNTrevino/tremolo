@@ -4,7 +4,7 @@
 	format format-frontend format-music format-go \
 	format-check format-check-frontend format-check-music format-check-go \
 	check check-frontend check-music check-go \
-	build-frontend build-music build-go openapi-go
+	build-frontend build-music build-go build-hardware openapi-go
 
 # ---- pretty output ----
 # $(call banner,MESSAGE) prints "[ STEP ] MESSAGE". STEP is passed down by the
@@ -40,6 +40,8 @@ help:
 	@echo "  check-go               format-check + vet + golangci-lint + build + test"
 	@echo ""
 	@echo "  openapi-go             regenerate core-api/openapi/swagger.{json,yaml}"
+	@echo ""
+	@echo "  build-hardware         render the keyboard-overlay STLs + previews (openscad)"
 
 # ---- frontend (Angular -- frontend/) ----
 # The app. It was migrated from React in 2026; frontend/.migration/ holds the
@@ -155,6 +157,22 @@ check-go: format-check-go lint-go build-go test-go
 openapi-go:
 	@$(call banner,Generating core API OpenAPI spec...)
 	cd core-api && go tool swag init -g main.go --output openapi --outputTypes json,yaml --parseDependency
+
+# ---- hardware (OpenSCAD -- hardware/keyboard-overlay/) ----
+# Renders the printable STLs and the preview images from overlay.scad.
+# The STL exports are pure geometry; the PNG previews need a GL context,
+# so the hardware workflow wraps this target in xvfb-run on the headless
+# runner. Locally, plain `make build-hardware` works.
+OPENSCAD ?= openscad
+HW_DIR = hardware/keyboard-overlay
+HW_IMG = --imgsize=1400,900 --autocenter --viewall
+
+build-hardware:
+	@$(call banner,Rendering keyboard overlay (openscad)...)
+	cd $(HW_DIR) && $(OPENSCAD) -o coupon.stl  -D 'mode="coupon"' overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o overlay.stl -D 'mode="full"'   overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o preview-use.png   $(HW_IMG) -D 'mode="full"' -D 'orient="use"' overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o preview-print.png $(HW_IMG) -D 'mode="full"' overlay.scad
 
 # ---- API smoke tests (kulala) ----
 # End-to-end HTTP tests against a RUNNING service (default :5001). Unlike
