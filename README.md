@@ -1,10 +1,16 @@
 # Tremolo
 
+Tremolo is a sight-reading and music-theory practice platform for school music
+programs. A teacher makes a class, students join it with a code, and the
+students drill note reading, key signatures, intervals, chords and scales in
+the browser. Both sides can see how the practice is going.
+
+Live at [tremolonotes.com](https://tremolonotes.com).
+
 <!--toc:start-->
 
 - [Tremolo](#tremolo)
-  - [Goal](#goal)
-  - [Current Progress (DEPLOYMENT IS BEHIND):](#current-progress-deployment-is-behind)
+  - [What it is](#what-it-is)
   - [Run the Project Locally](#run-the-project-locally)
     - [Database](#database)
     - [Environment Setup](#environment-setup)
@@ -19,17 +25,40 @@
 
 <!--toc:end-->
 
-## Goal
+## What it is
 
-I want to make a one stop shop where educators can send students to practice their specific music, sight reading, and much more.
+I taught public school music for four years before I moved into software.
+Sight reading is the skill students most need to practice on their own, and
+it is the hardest one for a teacher to assign, collect and track across a
+whole ensemble. Tremolo is my attempt at that problem. It targets grades 6
+through 12.
 
-This project is deigned for music students 6th through 12th in public school.
+A teacher creates a class and shares a join code. Students join, and the
+teacher posts assignments to the class. Students work through drills, their
+attempts are recorded, and the teacher can open a class at any point to see
+who has practiced and where the class is struggling. Students can also just
+practice on their own.
 
-This also be a technical exercise for myself as I will be learning a huge amount of things on the way.
+Five kinds of drills/games are implemented right now, each generated fresh
+rather than pulled from a fixed question bank:
 
-## Current Progress (DEPLOYMENT IS BEHIND):
+- Note reading on the staff. A student sets the clef, the scale, the octave,
+  the low and high note, and a time or note limit per round
+- Key signatures
+- Intervals
+- Chords
+- Scales
 
-[deployment](https://tremolonotes.com/)
+Exercises are generated server-side with music21, handed to the browser as
+MusicXML, and rendered as real notation with OpenSheetMusicDisplay. Students
+can rebind the keyboard so answering is quick.
+
+Services:
+
+- ./music-api/ generated the musicxml
+- ./core-api/ stores user data
+- ./frontend/ is the frontend and renders the music xml
+- ./hardware/ contains 3D models for (piano) keyboards to attach to (laptop) keyboards
 
 ## Run the Project Locally
 
@@ -39,6 +68,8 @@ service — Prettier / Black / goimports+gofumpt):
 ```bash
 make hooks
 ```
+
+If you run tmux, check out the `./tremolo-mux.sh` script. Starts everything for you.
 
 ### Database
 
