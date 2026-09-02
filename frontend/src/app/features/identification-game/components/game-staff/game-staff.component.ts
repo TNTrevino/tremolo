@@ -166,14 +166,19 @@ export class GameStaffComponent {
 	 * React's `centerContent`: read the SVG's own bounding box after a
 	 * frame, then use it as the viewBox so the music is centred and scaled
 	 * rather than pinned to the top-left of a container OSMD sized for a
-	 * page. jsdom implements neither `getBBox` nor a layout, so this is a
-	 * no-op under test -- which is why nothing asserts on it there.
+	 * page.
+	 *
+	 * The box the SVG is sized to is the sheet's *container*, the element
+	 * `containerClass` makes `w-full h-full`. It is not `svg.parentElement`:
+	 * OSMD puts a wrapper div of its own between the two, and that wrapper is
+	 * only as tall as the drawing. Measuring it sized the SVG to its own
+	 * thumbnail height, which is the tiny-staff bug the spec pins.
 	 */
 	private centre(): Promise<void> {
 		return new Promise((resolve) => {
 			requestAnimationFrame(() => {
 				const svg = this.host.nativeElement.querySelector("svg");
-				const container = svg?.parentElement;
+				const container = this.sheet()?.container;
 				if (!svg || !container || typeof svg.getBBox !== "function") {
 					resolve();
 					return;
