@@ -40,8 +40,9 @@ service's default `ALLOWED_ORIGINS`, so either works for signed-in flows.
 There is **no `.env`** here. Config is a source file:
 `src/environments/environment.ts` for dev, swapped for `environment.prod.ts`
 on a production build by `angular.json`'s `fileReplacements`. Change the API
-URLs there. On a deployed machine the workflow generates `environment.prod.ts`
-from `/etc/tremolo/.env`, which is why the `VITE_*` names still exist there.
+URLs there. `environment.prod.ts` is committed with `%VITE_…%` placeholders;
+on a deployed machine `scripts/envsub.sh` fills them in from `/etc/tremolo/.env`
+before the build, which is why the `VITE_*` names still exist there.
 
 Activate the repo's pre-commit hook once per clone, from the repo root:
 

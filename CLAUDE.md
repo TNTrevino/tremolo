@@ -42,7 +42,7 @@ Go service (`cd core-api`):
 - `go tool gofumpt -w .`, `go vet ./...`, golangci-lint — CI enforces all three. gofumpt (a superset of `gofmt -s`), goimports and swag are `tool` directives in `go.mod`, so `go tool <name>` needs no install
 - After editing `database/queries/*.sql`: run `sqlc generate` (config `sqlc.yaml`)
 
-Required env vars for local dev are listed in the root `README.md` (DATABASE_URL, JWT_SECRET ≥32 chars, etc.). The frontend is the exception: it reads no env vars locally — its config is `frontend/src/environments/environment.ts`. The `VITE_*` names survive in `/etc/tremolo/.env` on deployed machines only, where `deploy.yml` uses them to generate `environment.prod.ts`. Migrations run automatically on Go service startup.
+Required env vars for local dev are listed in the root `README.md` (DATABASE_URL, JWT_SECRET ≥32 chars, etc.). The frontend is the exception: it reads no env vars locally — its config is `frontend/src/environments/environment.ts`. The `VITE_*` names survive in `/etc/tremolo/.env` on deployed machines only, where `deploy.yml` sources that file and runs `scripts/envsub.sh` to fill the `%VITE_…%` placeholders in `environment.prod.ts`. Migrations run automatically on Go service startup.
 
 A pre-commit hook auto-formats staged files (Prettier / Black+flake8 / goimports+gofumpt) per service. Activate it once per clone with `make hooks`.
 
