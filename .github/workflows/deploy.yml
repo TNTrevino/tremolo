@@ -23,6 +23,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Fail before doing any work if the machine's env file is incomplete.
+      #
+      # Only variables whose absence is SILENT belong here. JWT_SECRET,
+      # GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are already covered: the
+      # service panics on each at startup, so the Health Check step below
+      # catches them. These three fail quietly instead.
+      #
+      #   EMAIL_SMTP_HOST / EMAIL_FROM -- email.Config.Enabled() needs both.
+      #     Without one the service boots, queues mail, and the watcher holds
+      #     it forever. /health stays 200 and nobody gets a verification
+      #     link. With REQUIRE_EMAIL_VERIFICATION=true that also means nobody
+      #     can finish a signup.
+      #   PUBLIC_BASE_URL -- services.PublicBaseURL() falls back to
+      #     http://localhost:4200 with no warning, so every emailed verify
+      #     and reset link points at the reader's own machine.
+      - name: Check /etc/tremolo/.env
+        run: |
+          set -a && source /etc/tremolo/.env && set +a
+          : "${EMAIL_SMTP_HOST:?not set in /etc/tremolo/.env}"
+          : "${EMAIL_FROM:?not set in /etc/tremolo/.env}"
+          : "${PUBLIC_BASE_URL:?not set in /etc/tremolo/.env}"
+          echo "email from=${EMAIL_FROM} via ${EMAIL_SMTP_HOST}, links on ${PUBLIC_BASE_URL}"
+
       # Pin the interpreter so prod matches what music CI validates against
       # (music-api.yml also uses 3.14). Without this, the venv is
       # built against whatever python3 happens to be on the runner.
