@@ -80,6 +80,11 @@ export class NavigationComponent {
 			description: "Name notes on the staff",
 		},
 		{
+			to: "/note-stream-game",
+			label: "Note Stream",
+			description: "Play the notes in time",
+		},
+		{
 			to: "/key-signature-game",
 			label: "Key Signatures",
 			description: "Name the key from its signature",

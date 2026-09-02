@@ -23,6 +23,14 @@ import { EMPTY, filter, fromEvent, map, switchMap } from "rxjs";
  * identity would not re-create the listener; a plain closure over signals
  * has one identity for the life of the component.
  *
+ * **`onNote` also receives the event's `timeStamp`.** The note game ignores
+ * it -- an answer is right or wrong, never early or late -- but the note
+ * stream game judges a press against a beat, and the only honest press time
+ * is the one the browser stamped on the event, not the one a callback reads
+ * off the clock after rAF and change detection have had their turn. It is a
+ * `DOMHighResTimeStamp` on the same origin as `performance.now()`, which is
+ * the timeline `StreamTransportService` judges on.
+ *
  * Call it from an injection context (a component or service constructor).
  */
 export function noteKeyboardInput(options: {
@@ -30,8 +38,11 @@ export function noteKeyboardInput(options: {
 	enabled: Signal<boolean>;
 	/** Key -> note name. Built by `buildKeyToNoteMap`. */
 	keyMap: Signal<Record<string, string>>;
-	/** Called with the note name for a bound key. */
-	onNote: (note: string) => void;
+	/**
+	 * Called with the note name for a bound key, and the keydown event's
+	 * `timeStamp` (ms on the `performance.now()` timeline).
+	 */
+	onNote: (note: string, timeStampMs: number) => void;
 }): void {
 	toObservable(options.enabled)
 		.pipe(
@@ -49,6 +60,6 @@ export function noteKeyboardInput(options: {
 			// Stops the browser doing its own thing with the key -- scrolling
 			// on space, submitting a form, quick-find on "/".
 			event.preventDefault();
-			options.onNote(note);
+			options.onNote(note, event.timeStamp);
 		});
 }

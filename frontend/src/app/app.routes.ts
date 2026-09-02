@@ -86,6 +86,13 @@ export const routes: Routes = [
 			),
 	},
 	{
+		path: "note-stream-game",
+		loadComponent: () =>
+			import("./features/note-stream-game/components/note-stream-game-page/note-stream-game-page.component").then(
+				(m) => m.NoteStreamGamePageComponent,
+			),
+	},
+	{
 		path: "key-signature-game",
 		loadComponent: () =>
 			import("./features/identification-game/components/key-signature-game-page/key-signature-game-page.component").then(
