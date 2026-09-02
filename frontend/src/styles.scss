@@ -122,7 +122,20 @@
 	}
 }
 
-/* Custom scrollbar */
+/*
+ * Custom scrollbar.
+ *
+ * `scrollbar-width` is the standard property and wins over the
+ * `::-webkit-scrollbar*` pseudo-elements wherever both are supported
+ * (Chromium 121+, Firefox), so the theme colours are stated twice: once in
+ * `scrollbar-color` for those browsers and once in the pseudo-elements for
+ * Safari and older Chromium, which have no `scrollbar-width`.
+ */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
 ::-webkit-scrollbar {
 	width: 10px;
 }

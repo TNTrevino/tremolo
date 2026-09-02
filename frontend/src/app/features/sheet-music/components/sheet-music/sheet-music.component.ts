@@ -201,6 +201,18 @@ export class SheetMusicComponent implements OnDestroy {
 		return this.osmd;
 	}
 
+	/**
+	 * The element OSMD draws into -- the one `containerClass` sizes.
+	 *
+	 * OSMD does not put its `<svg>` directly in here; it inserts a wrapper
+	 * `<div>` of its own first, and that wrapper is only as tall as the
+	 * drawing. Anything that wants to fit the drawing to the box the caller
+	 * styled must measure *this* element, not the SVG's parent.
+	 */
+	get container(): HTMLDivElement {
+		return this.containerRef().nativeElement;
+	}
+
 	ngOnDestroy(): void {
 		this.stopWatchingVisibility();
 		if (!this.osmd) return;

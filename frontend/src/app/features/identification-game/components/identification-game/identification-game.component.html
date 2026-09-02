@@ -1,4 +1,4 @@
-<div class="flex h-[calc(100vh-4rem)] flex-col px-2 py-2 sm:px-4 sm:py-4">
+<div class="flex h-[calc(100vh-4rem-2px)] flex-col px-2 py-2 sm:px-4 sm:py-4">
 	<div class="container mx-auto flex min-h-0 max-w-6xl flex-1 flex-col">
 		@if (game.isGameOver() && game.stats(); as stats) {
 			<app-game-over-card [gameStats]="stats" (playAgain)="playAgain()" />
