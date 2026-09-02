@@ -150,6 +150,7 @@ import { NoteRangeSettingComponent } from "../note-range-setting/note-range-sett
 				<div class="flex items-center gap-2 [&>app-select]:w-auto">
 					<app-select
 						ariaLabel="Scale"
+						appTooltip="Change scale"
 						className="w-28 h-9"
 						[value]="settings().scale"
 						(valueChange)="settingsChange.emit({ scale: $event })"
@@ -163,6 +164,7 @@ import { NoteRangeSettingComponent } from "../note-range-setting/note-range-sett
 						size="sm"
 						variant="outline"
 						className="h-9"
+						appTooltip="Change note range"
 						(click)="rangeDialogOpen.set(true)"
 					>
 						{{ settings().lowNote }}–{{ settings().highNote }}
