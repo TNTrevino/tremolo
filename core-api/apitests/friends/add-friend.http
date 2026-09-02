@@ -1,0 +1,139 @@
+# Adding a friend by user id. Friendship is mutual and created in one
+# call. Real failures (self-add, unknown id) collapse to the same
+# generic 400 -- the controller logs the real cause but never
+# distinguishes it in the response body. Adding an already-added friend
+# again is NOT one of those failures: the insert is ON CONFLICT DO
+# NOTHING, so it is a no-op, not an error.
+#
+# Run:  kulala run --tests --env local friends/add-friend.http
+
+@student1_email = kula_add_friend_student1_{{$timestamp}}@qa.test
+@student2_email = kula_add_friend_student2_{{$timestamp}}@qa.test
+
+### RegisterStudent1
+# RegisterStudent1 registers the caller adding a friend and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_id", response.body.user.id);
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers the user student1 will add as a friend.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_id", response.body.user.id);
+%}
+
+### AddFriendMissingId
+# AddFriendMissingId omits friend_id. A zero friend_id is treated as
+# missing, not as a real user id of 0 -- same message a malformed body
+# would produce.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("a missing friend_id is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid request body",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### AddSelfAsFriend
+# AddSelfAsFriend has student1 try to add themself. The body passes DTO
+# validation (a real, nonzero id), so this fails at the service layer --
+# same generic 400 as every other semantic failure on this route.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "friend_id": {{student1_id}} }
+
+> {%
+	client.test("a user cannot add themself as a friend", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Failed to add friend",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### AddFriendUnknownId
+# AddFriendUnknownId targets a user id nothing was ever created with.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "friend_id": 999999999 }
+
+> {%
+	client.test("an unknown friend id is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Failed to add friend",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### AddFriend
+# AddFriend has student1 add student2 as a friend and expects 201.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "friend_id": {{student2_id}} }
+
+> {%
+	client.test("student1 adds student2 as a friend", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Friend added successfully", "unexpected message: " + response.body.message);
+	});
+%}
+
+### AddFriendAgain
+# AddFriendAgain repeats the exact same request. CreateMutualFriendship
+# is ON CONFLICT DO NOTHING (same pattern as classes/join-class.http's
+# repeat join), so re-adding an existing friend is a no-op, not an
+# error -- still 201, not the 400 every other semantic failure produces.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "friend_id": {{student2_id}} }
+
+> {%
+	client.test("adding an already-added friend again is idempotent, not an error", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+		client.assert(response.body.message === "Friend added successfully", "unexpected message: " + response.body.message);
+	});
+%}

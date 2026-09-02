@@ -1,0 +1,371 @@
+<nav
+	class="sticky top-0 z-50 w-full border-b-2 border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+>
+	<div class="container mx-auto px-4">
+		<div class="flex h-16 items-center justify-between">
+			<!-- Logo -->
+			<a routerLink="/home" class="flex items-center space-x-2 group">
+				<div
+					class="rounded-lg bg-primary p-2 group-hover:scale-110 transition-transform"
+				>
+					<ng-icon
+						size="1.5rem"
+						name="lucideMusic"
+						aria-hidden="true"
+						class="h-6 w-6 text-primary-foreground"
+					/>
+				</div>
+				<span class="font-display text-xl font-bold sr-only sm:not-sr-only">
+					Tremolo
+				</span>
+			</a>
+
+			<!-- Desktop navigation -->
+			<div class="hidden md:flex items-center space-x-1">
+				@for (link of primaryLinks; track link.to) {
+					<a [routerLink]="link.to" [class]="navLinkClass(isActive(link.to))">{{
+						link.label
+					}}</a>
+				}
+
+				<!-- Games menu -->
+				<div class="relative">
+					<button
+						type="button"
+						aria-haspopup="menu"
+						[attr.aria-expanded]="gamesMenuOpen()"
+						[class]="navLinkClass(isGameActive(), 'flex items-center gap-1')"
+						(click)="toggleGamesMenu()"
+					>
+						Games
+						<ng-icon
+							size="1rem"
+							name="lucideChevronDown"
+							aria-hidden="true"
+							class="h-4 w-4 transition-transform"
+							[class.rotate-180]="gamesMenuOpen()"
+						/>
+					</button>
+
+					@if (gamesMenuOpen()) {
+						<div
+							class="fixed inset-0 z-40"
+							role="button"
+							tabindex="0"
+							aria-label="Close games menu"
+							(click)="gamesMenuOpen.set(false)"
+							(keydown.enter)="gamesMenuOpen.set(false)"
+							(keydown.space)="gamesMenuOpen.set(false)"
+						></div>
+						<div
+							class="absolute left-0 mt-2 w-72 z-50 rounded-lg border-2 border-border bg-popover p-2 shadow-lg animate-fade-in"
+						>
+							@for (link of gameLinks; track link.to) {
+								<a
+									[routerLink]="link.to"
+									[class]="
+										isActive(link.to)
+											? 'block px-3 py-2 rounded-md transition-colors bg-primary text-primary-foreground'
+											: 'block px-3 py-2 rounded-md transition-colors hover:bg-accent'
+									"
+									(click)="gamesMenuOpen.set(false)"
+								>
+									<span class="block text-sm font-medium">{{
+										link.label
+									}}</span>
+									<span
+										[class]="
+											isActive(link.to)
+												? 'block text-xs text-primary-foreground/80'
+												: 'block text-xs text-muted-foreground'
+										"
+										>{{ link.description }}</span
+									>
+								</a>
+							}
+						</div>
+					}
+				</div>
+
+				@for (link of roleLinks(); track link.to) {
+					<a [routerLink]="link.to" [class]="navLinkClass(isActive(link.to))">{{
+						link.label
+					}}</a>
+				}
+
+				@for (link of secondaryLinks; track link.to) {
+					<a [routerLink]="link.to" [class]="navLinkClass(isActive(link.to))">{{
+						link.label
+					}}</a>
+				}
+			</div>
+
+			<!--
+				Right section: theme toggle, friends, account.
+
+				`gap-2`, not React's `space-x-2`: every control in this cluster
+				is an `<app-button>`, whose host is `display: contents`, and
+				`space-x-*` works by setting `margin-left` on `> * + *` -- which
+				is that host element, and margins on a `display: contents` box
+				are ignored (sub-feature 1's handoff 7.3). The friends toggle
+				and the mobile-menu button each lost their 8px. Flex `gap`
+				works because the contents host's own child is what becomes the
+				flex item.
+			-->
+			<div class="flex items-center gap-2">
+				<app-button
+					variant="ghost"
+					size="icon"
+					className="rounded-full"
+					[ariaLabel]="themeLabel()"
+					[appTooltip]="themeLabel()"
+					(click)="theme.toggleTheme()"
+				>
+					<ng-icon
+						size="1.25rem"
+						[name]="theme.theme() === 'dark' ? 'lucideSun' : 'lucideMoon'"
+						aria-hidden="true"
+						class="h-5 w-5"
+					/>
+				</app-button>
+
+				@if (store.isAuthenticated()) {
+					<app-button
+						variant="ghost"
+						size="icon"
+						[className]="
+							friends.isPanelOpen()
+								? 'rounded-full bg-accent text-accent-foreground'
+								: 'rounded-full'
+						"
+						[ariaLabel]="friendsToggleLabel()"
+						[appTooltip]="friendsToggleLabel()"
+						[ariaExpanded]="friends.isPanelOpen()"
+						(click)="toggleFriends()"
+					>
+						<ng-icon
+							size="1.25rem"
+							name="lucideUsers"
+							aria-hidden="true"
+							class="h-5 w-5"
+						/>
+					</app-button>
+				}
+
+				@if (store.isAuthenticated()) {
+					<div class="relative hidden md:block">
+						<button
+							type="button"
+							class="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-primary-foreground font-bold hover:scale-110 transition-transform"
+							aria-label="Account menu"
+							aria-haspopup="menu"
+							[attr.aria-expanded]="userMenuOpen()"
+							(click)="toggleUserMenu()"
+						>
+							{{ initials() }}
+						</button>
+
+						@if (userMenuOpen()) {
+							<div
+								class="fixed inset-0 z-40"
+								role="button"
+								tabindex="0"
+								aria-label="Close user menu"
+								(click)="userMenuOpen.set(false)"
+								(keydown.enter)="userMenuOpen.set(false)"
+								(keydown.space)="userMenuOpen.set(false)"
+							></div>
+							<div
+								class="absolute right-0 mt-2 w-56 z-50 rounded-lg border-2 border-border bg-popover p-2 shadow-lg animate-fade-in"
+							>
+								<div class="px-3 py-2 border-b-2 border-border mb-2">
+									<p class="text-sm font-bold">
+										{{ store.user()?.firstName }} {{ store.user()?.lastName }}
+									</p>
+									<p class="text-xs text-muted-foreground">
+										{{ store.user()?.email }}
+									</p>
+								</div>
+								<a
+									routerLink="/dashboard"
+									class="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent text-sm transition-colors"
+									(click)="userMenuOpen.set(false)"
+								>
+									<ng-icon
+										size="1rem"
+										name="lucideLayoutDashboard"
+										aria-hidden="true"
+										class="h-4 w-4"
+									/>
+									<span>Dashboard</span>
+								</a>
+								<a
+									routerLink="/profile"
+									class="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent text-sm transition-colors"
+									(click)="userMenuOpen.set(false)"
+								>
+									<ng-icon
+										size="1rem"
+										name="lucideUserCircle"
+										aria-hidden="true"
+										class="h-4 w-4"
+									/>
+									<span>Profile</span>
+								</a>
+								<a
+									routerLink="/account"
+									class="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent text-sm transition-colors"
+									(click)="userMenuOpen.set(false)"
+								>
+									<ng-icon
+										size="1rem"
+										name="lucideSettings"
+										aria-hidden="true"
+										class="h-4 w-4"
+									/>
+									<span>Account</span>
+								</a>
+								<div class="border-t-2 border-border my-2"></div>
+								<button
+									type="button"
+									class="w-full flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-destructive hover:text-destructive-foreground text-sm transition-colors"
+									(click)="logout()"
+								>
+									<ng-icon
+										size="1rem"
+										name="lucideLogOut"
+										aria-hidden="true"
+										class="h-4 w-4"
+									/>
+									<span>Log Out</span>
+								</button>
+							</div>
+						}
+					</div>
+				} @else {
+					<a routerLink="/login" class="hidden md:block">
+						<app-button variant="default" size="sm">
+							<ng-icon
+								size="1rem"
+								name="lucideUser"
+								aria-hidden="true"
+								class="mr-2 h-4 w-4"
+							/>
+							Login
+						</app-button>
+					</a>
+				}
+
+				<!-- Mobile menu button -->
+				<app-button
+					variant="ghost"
+					size="icon"
+					className="md:hidden"
+					[ariaLabel]="mobileMenuLabel()"
+					[appTooltip]="mobileMenuLabel()"
+					[ariaExpanded]="mobileMenuOpen()"
+					(click)="toggleMobileMenu()"
+				>
+					<ng-icon
+						size="1.5rem"
+						[name]="mobileMenuOpen() ? 'lucideX' : 'lucideMenu'"
+						aria-hidden="true"
+						class="h-6 w-6"
+					/>
+				</app-button>
+			</div>
+		</div>
+
+		<!-- Mobile menu -->
+		@if (mobileMenuOpen()) {
+			<div
+				class="md:hidden py-4 space-y-2 border-t-2 border-border animate-slide-in"
+			>
+				@for (link of primaryLinks; track link.to) {
+					<a
+						[routerLink]="link.to"
+						[class]="navLinkClass(isActive(link.to), 'block')"
+						(click)="mobileMenuOpen.set(false)"
+						>{{ link.label }}</a
+					>
+				}
+
+				<p
+					class="px-4 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+				>
+					Games
+				</p>
+				@for (link of gameLinks; track link.to) {
+					<a
+						[routerLink]="link.to"
+						[class]="navLinkClass(isActive(link.to), 'block')"
+						(click)="mobileMenuOpen.set(false)"
+						>{{ link.label }}</a
+					>
+				}
+
+				<div class="border-t-2 border-border my-2"></div>
+				@for (link of secondaryLinks; track link.to) {
+					<a
+						[routerLink]="link.to"
+						[class]="navLinkClass(isActive(link.to), 'block')"
+						(click)="mobileMenuOpen.set(false)"
+						>{{ link.label }}</a
+					>
+				}
+
+				@for (link of roleLinks(); track link.to) {
+					<a
+						[routerLink]="link.to"
+						[class]="navLinkClass(isActive(link.to), 'block')"
+						(click)="mobileMenuOpen.set(false)"
+						>{{ link.label }}</a
+					>
+				}
+
+				@if (store.isAuthenticated()) {
+					<div class="border-t-2 border-border my-2"></div>
+					<button
+						type="button"
+						class="w-full text-left px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+						(click)="toggleFriends(); mobileMenuOpen.set(false)"
+					>
+						Friends
+					</button>
+					<a
+						routerLink="/dashboard"
+						class="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+						(click)="mobileMenuOpen.set(false)"
+						>Dashboard</a
+					>
+					<a
+						routerLink="/profile"
+						class="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+						(click)="mobileMenuOpen.set(false)"
+						>Profile</a
+					>
+					<a
+						routerLink="/account"
+						class="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+						(click)="mobileMenuOpen.set(false)"
+						>Account</a
+					>
+					<button
+						type="button"
+						class="w-full text-left px-4 py-2 rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground"
+						(click)="logout()"
+					>
+						Log Out
+					</button>
+				} @else {
+					<a
+						routerLink="/login"
+						class="block px-4 py-2 rounded-md text-sm font-medium hover:bg-accent"
+						(click)="mobileMenuOpen.set(false)"
+						>Login</a
+					>
+				}
+			</div>
+		}
+	</div>
+</nav>

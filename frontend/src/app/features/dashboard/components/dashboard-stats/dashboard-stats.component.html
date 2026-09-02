@@ -1,0 +1,81 @@
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+	<!-- Average NPM -->
+	<div appCard className="hover:shadow-lg transition-shadow">
+		<div appCardContent className="p-6">
+			<div class="flex items-start justify-between">
+				<div class="space-y-2">
+					<p class="text-sm text-muted-foreground">Average NPM</p>
+					<p class="text-3xl font-bold text-primary">{{ avgNPM() }}</p>
+				</div>
+				<div class="rounded-lg bg-primary/10 p-2">
+					<ng-icon
+						name="lucideTrendingUp"
+						size="1.5rem"
+						aria-hidden="true"
+						class="h-6 w-6 text-primary"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Average accuracy -->
+	<div appCard className="hover:shadow-lg transition-shadow">
+		<div appCardContent className="p-6">
+			<div class="flex items-start justify-between">
+				<div class="space-y-2">
+					<p class="text-sm text-muted-foreground">Avg Accuracy</p>
+					<p class="text-3xl font-bold text-brass">{{ avgAccuracy() }}%</p>
+				</div>
+				<div class="rounded-lg bg-brass/10 p-2">
+					<ng-icon
+						name="lucideTarget"
+						size="1.5rem"
+						aria-hidden="true"
+						class="h-6 w-6 text-brass"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Total time -->
+	<div appCard className="hover:shadow-lg transition-shadow">
+		<div appCardContent className="p-6">
+			<div class="flex items-start justify-between">
+				<div class="space-y-2">
+					<p class="text-sm text-muted-foreground">Total Time</p>
+					<p class="text-3xl font-bold">{{ timeReading() }}</p>
+				</div>
+				<div class="rounded-lg bg-primary/10 p-2">
+					<ng-icon
+						name="lucideClock"
+						size="1.5rem"
+						aria-hidden="true"
+						class="h-6 w-6 text-primary"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Total sessions -->
+	<div appCard className="hover:shadow-lg transition-shadow">
+		<div appCardContent className="p-6">
+			<div class="flex items-start justify-between">
+				<div class="space-y-2">
+					<p class="text-sm text-muted-foreground">Total Sessions</p>
+					<p class="text-3xl font-bold">{{ totalSessions() }}</p>
+				</div>
+				<div class="rounded-lg bg-brass/10 p-2">
+					<ng-icon
+						name="lucideCalendar"
+						size="1.5rem"
+						aria-hidden="true"
+						class="h-6 w-6 text-brass"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

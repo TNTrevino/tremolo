@@ -1,0 +1,69 @@
+# A random interval above a natural root, for the interval-
+# identification game. Unlike the other games' enum fields, `intervals`
+# is a plain List[str] (no Literal) -- an unsupported interval name
+# passes schema validation and only fails once music21 tries to parse
+# it, which is why that case is a 400 here instead of a 422.
+#
+# Run:  kulala run --tests --env local music/interval-game.http
+
+### IntervalGame
+# IntervalGame forces a single interval/clef and expects 200 with that
+# exact choice echoed back as the answer.
+POST {{baseUrl}}/music/interval-game
+Content-Type: application/json
+
+{
+	"clefs": ["treble"],
+	"displayMode": "harmonic",
+	"intervals": ["M3"]
+}
+
+> {%
+	client.test("interval game returns the forced interval", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.interval === "M3", "interval echoes the forced value");
+		client.assert(response.body.number === 3, "generic number matches a third");
+		client.assert(response.body.quality === "M", "quality is the letter prefix of the interval name");
+		client.assert(response.body.clef === "treble", "clef echoes the forced value");
+	});
+%}
+
+### IntervalGameEmptyIntervals
+# IntervalGameEmptyIntervals sends an empty intervals list, violating
+# the field's min_length=1, and expects 422.
+POST {{baseUrl}}/music/interval-game
+Content-Type: application/json
+
+{
+	"intervals": []
+}
+
+> {%
+	client.test("an empty intervals list fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(response.body.detail[0].loc.indexOf("intervals") !== -1, "the intervals field is named in the error");
+		client.assert(response.body.detail[0].type === "too_short", "the rule that failed is the min-length check");
+	});
+%}
+
+### IntervalGameUnsupportedInterval
+# IntervalGameUnsupportedInterval sends a string that isn't a real
+# interval name. Since `intervals` is List[str], this passes schema
+# validation and fails only when music21's Interval() parser rejects it
+# -- a 400, not a 422.
+POST {{baseUrl}}/music/interval-game
+Content-Type: application/json
+
+{
+	"intervals": ["Q99"]
+}
+
+> {%
+	client.test("an unsupported interval name is rejected by the handler, not the schema", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!unsupported interval: Q99",
+			"unexpected error body: " + response.body
+		);
+	});
+%}

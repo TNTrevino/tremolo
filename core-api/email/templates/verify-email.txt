@@ -1,0 +1,20 @@
+Welcome to {{.AppName}}
+
+Hi {{.FirstName}},
+
+Your {{.AppName}} account is ready. Confirm this email address and you can
+start practising — note reading, key signatures, intervals, scales and
+chords, as much as you like.
+
+Open this address to confirm:
+
+{{.VerifyURL}}
+
+This link works for {{.ExpiresIn}}.
+
+If you did not sign up for {{.AppName}}, you can ignore this message and
+nothing else will happen.
+
+--
+This message was sent by {{.AppName}}. Please do not reply to it.
+{{.AppURL}}

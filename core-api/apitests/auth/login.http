@@ -1,0 +1,116 @@
+# Logging in with email/password. LoginRequest shares its password
+# rules with RegisterRequest through addPasswordProblem, so the
+# validation copy is identical on both routes.
+#
+# Run:  kulala run --tests --env local auth/login.http
+
+@email = kula_login_{{$randomInt}}@qa.test
+
+### Register
+# Register creates the account Login will authenticate against and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("register creates the user", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+	client.global.set("login_email", response.body.user.email);
+%}
+
+### Login
+# Login authenticates with the stored credentials and expects 200 with
+# an access/refresh token pair.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{login_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.test("login returns a token pair", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(!!response.body.access_token, "login returns an access token");
+		client.assert(!!response.body.refresh_token, "login returns a refresh token");
+		client.assert(response.body.user.role === "STUDENT", "login echoes the role");
+	});
+%}
+
+### LoginBadPassword
+# LoginBadPassword uses the right email with a wrong-but-complex-enough
+# password and expects 401 -- it must still pass LoginRequest.Valid's
+# complexity rules (shared with RegisterRequest), or it never reaches
+# the credential check and the response would be a 400 instead.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{login_email}}",
+	"password": "WrongPass123!"
+}
+
+> {%
+	client.test("wrong password is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid credentials",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### LoginUnknownUser
+# LoginUnknownUser uses an email that was never registered. A body that
+# passes validation reaches the service, and the 401 is the contrast:
+# validation problems are 400s, and this never leaks whether the
+# account exists.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "kula_nobody_{{$timestamp}}@qa.test",
+	"password": "{{password}}"
+}
+
+> {%
+	client.test("an unknown email gets the same generic 401 as a wrong password", function () {
+		client.assert(response.status !== 400, "a well-formed body is not a 400");
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid credentials",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### LoginEmptyBody
+# LoginEmptyBody sends {} and expects both missing fields reported,
+# sorted by JSON key.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("login reports both missing fields", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Email is required, Password is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

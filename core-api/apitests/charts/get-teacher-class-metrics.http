@@ -1,0 +1,122 @@
+# A teacher's aggregated chart data across every student in every class
+# they own (notes per minute, accuracy, session count, total questions),
+# bucketed by an interval. Teacher-role only.
+#
+# Run:  kulala run --tests --env local charts/get-teacher-class-metrics.http
+
+@teacher_email = kula_class_metrics_teacher_{{$timestamp}}@qa.test
+@student_email = kula_class_metrics_student_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher whose class metrics are read and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers a student used to prove the teacher-only
+# rule.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetTeacherClassMetrics
+# GetTeacherClassMetrics has the teacher read their aggregated class
+# metrics with defaults and expects 200 with the four chart series.
+GET {{baseUrl}}/api/charts/teacher/class-metrics
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("a teacher reads their aggregated class metrics", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(Array.isArray(response.body.npm), "npm is an array");
+		client.assert(Array.isArray(response.body.accuracy), "accuracy is an array");
+		client.assert(Array.isArray(response.body.sessionCount), "sessionCount is an array");
+		client.assert(Array.isArray(response.body.totalQuestions), "totalQuestions is an array");
+	});
+%}
+
+### GetTeacherClassMetricsNotTeacher
+# GetTeacherClassMetricsNotTeacher has a student attempt the route and
+# expects 403 with a message distinct from the personal-metrics route's
+# "Access denied".
+GET {{baseUrl}}/api/charts/teacher/class-metrics
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a student cannot read teacher class metrics", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(
+			response.body.error === "Only teachers can access class metrics",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GetTeacherClassMetricsInvalidInterval
+# GetTeacherClassMetricsInvalidInterval sends an interval outside the
+# allowed set and expects 400 with the validator's own message.
+GET {{baseUrl}}/api/charts/teacher/class-metrics?interval=fortnight
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("an unsupported interval is rejected with the allowed set named", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "invalid interval 'fortnight': must be one of: day, week, month, year, all",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GetTeacherClassMetricsInvalidDays
+# GetTeacherClassMetricsInvalidDays sends a non-numeric days value and
+# expects 400 with the controller's fixed message.
+GET {{baseUrl}}/api/charts/teacher/class-metrics?days=lots
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("a non-numeric days value is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid days parameter",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

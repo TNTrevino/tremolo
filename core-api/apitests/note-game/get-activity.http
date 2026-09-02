@@ -1,0 +1,96 @@
+# Per-day game counts for the caller's activity heatmap, covering the
+# trailing year.
+#
+# Run:  kulala run --tests --env local note-game/get-activity.http
+
+@student_email = kula_activity_student_{{$timestamp}}@qa.test
+
+### GetActivityNoToken
+# GetActivityNoToken sends no Authorization header and expects 401.
+< {%
+	client.global.clear();
+%}
+GET {{baseUrl}}/api/note-game/activity
+
+> {%
+	client.test("no token is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### RegisterStudent
+# RegisterStudent registers a fresh student and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetActivityBeforePlaying
+# GetActivityBeforePlaying reads a brand new account's activity heatmap
+# and expects 200 with an empty array -- no games played yet.
+GET {{baseUrl}}/api/note-game/activity
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a fresh account has no activity yet", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(Array.isArray(response.body), "response is an array");
+		client.assert(response.body.length === 0, "no activity for a brand new account, got " + response.body.length);
+	});
+%}
+
+### SubmitEntry
+# SubmitEntry gives the student one entry today, so today's count is
+# nonzero.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 12,
+	"game_type": "note"
+}
+
+> {%
+	client.test("entry saved", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### GetActivityAfterPlaying
+# GetActivityAfterPlaying reads the heatmap again and expects today's
+# count to reflect the entry just submitted.
+GET {{baseUrl}}/api/note-game/activity
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("activity reflects the entry just submitted", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var total = response.body.reduce(function (sum, d) { return sum + d.game_count; }, 0);
+		client.assert(total >= 1, "at least one game counted, got " + total);
+	});
+%}

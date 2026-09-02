@@ -1,0 +1,46 @@
+# "Mary Had a Little Lamb", transposed to a tonic/octave. Returns raw
+# MusicXML (not JSON) on success; errors are a plain-text body, not
+# `{"error": ...}` -- there is no request-validation layer in front of
+# this endpoint beyond Pydantic's own type checks, so a bad tonic
+# reaches music21 directly and its exception text is echoed back.
+#
+# Run:  kulala run --tests --env local music/mary.http
+
+### Mary
+# Mary generates MusicXML for the tune transposed to C4 and expects 200.
+POST {{baseUrl}}/music/mary
+Content-Type: application/json
+
+{
+	"tonic": "C",
+	"octave": 4
+}
+
+> {%
+	client.test("mary generates musicxml for a valid tonic", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.indexOf("<score-partwise") !== -1, "response is MusicXML");
+	});
+%}
+
+### MaryUnsupportedTonic
+# MaryUnsupportedTonic sends a tonic music21 cannot parse as a pitch step
+# and expects 400 with the /mary-specific message, echoing music21's own
+# exception text verbatim.
+POST {{baseUrl}}/music/mary
+Content-Type: application/json
+
+{
+	"tonic": "H",
+	"octave": 4
+}
+
+> {%
+	client.test("mary rejects an unparseable tonic with its specific message", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "The note Cannot make a step out of 'H' is not currently supported, reconsider you root note",
+			"unexpected error body: " + response.body
+		);
+	});
+%}

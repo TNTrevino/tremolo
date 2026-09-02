@@ -1,12 +1,42 @@
 /** @type {import('tailwindcss').Config} */
 export default {
 	darkMode: ["class"],
-	content: [
-		"./pages/**/*.{ts,tsx}",
-		"./components/**/*.{ts,tsx}",
-		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
-	],
+	// Angular templates are .html (and inline `template:` strings in .ts),
+	// where the React app's were .tsx. Otherwise unchanged from
+	// frontend-react/tailwind.config.js -- the design tokens below are the
+	// contract the screenshot baselines are diffed against.
+	content: ["./src/**/*.{ts,html}"],
+	/**
+	 * Utilities are emitted as `html .h-6 { ... }` rather than `.h-6 { ... }`.
+	 *
+	 * The React app had no component styles, so a utility class was the only
+	 * thing setting a property and it always won. Angular injects each
+	 * component's styles into `<head>` **after** `styles.scss`, as
+	 * `[_nghost-…] { ... }` -- the same specificity as a class -- so a
+	 * library component that sizes its own host beats the utility written on
+	 * it. `@ng-icons` does exactly that
+	 * (`:host { width: var(--ng-icon__size, 1em) }`), which made every one of
+	 * the 47 `<ng-icon class="h-N w-N">` call sites render at 1em: the nav
+	 * bar's icons measured 14-16px against React's 16-24px.
+	 *
+	 * The selector strategy costs one element of specificity (0,1,1) and
+	 * nothing else -- no `!important` anywhere, so inline styles and real
+	 * `!important` rules still win, exactly as in React. `html` is chosen
+	 * because every utility must keep applying.
+	 *
+	 * Phase 3.1 fixed the same defect for the nav by writing `<ng-icon
+	 * size="1.25rem">` alongside the `h-N w-N` class. Both mechanisms are
+	 * live and both are load-bearing: this one is the only thing sizing the
+	 * call sites that carry a class and no `size=`, and `size=` is the only
+	 * thing sizing the two auth-page logos, which carry `size="2rem"` and no
+	 * class. Where a call site has both, they agree exactly -- `size=` sets
+	 * nothing but `--ng-icon__size`, which `@ng-icons` reads only for the
+	 * host's `width`/`height`, and the inner `svg` is `width: inherit`. So
+	 * either may size an icon; write one of them, and if you write both,
+	 * keep them in step (`h-3`/0.75rem, `h-4`/1rem, `h-5`/1.25rem,
+	 * `h-6`/1.5rem, `h-8`/2rem).
+	 */
+	important: "html",
 	theme: {
 		container: {
 			center: true,

@@ -1,0 +1,49 @@
+# A random key signature on an empty measure, for the key-signature
+# identification game. `keySignatures` is a plain List[int] with a
+# custom field_validator (not a Literal), so an out-of-range value is
+# still a Pydantic schema failure -- 422 -- but the message comes from
+# the validator's own ValueError text, not a generic "not one of" list.
+#
+# Run:  kulala run --tests --env local music/key-signature-game.http
+
+### KeySignatureGame
+# KeySignatureGame asks for a plain C major/no-sharps signature and
+# expects 200 with the tonic/minorTonic/sharps answer fields.
+POST {{baseUrl}}/music/key-signature-game
+Content-Type: application/json
+
+{
+	"clefs": ["treble"],
+	"keySignatures": [0]
+}
+
+> {%
+	client.test("key signature game returns the forced signature's answer", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.tonic === "C", "major tonic for 0 sharps is C");
+		client.assert(response.body.minorTonic === "A", "relative minor tonic for 0 sharps is A");
+		client.assert(response.body.sharps === 0, "sharps echoes the forced value");
+		client.assert(response.body.clef === "treble", "clef echoes the forced value");
+	});
+%}
+
+### KeySignatureGameOutOfRange
+# KeySignatureGameOutOfRange asks for 9 sharps, outside the field
+# validator's [-7, 7] range, and expects 422 with the validator's own
+# message.
+POST {{baseUrl}}/music/key-signature-game
+Content-Type: application/json
+
+{
+	"keySignatures": [9]
+}
+
+> {%
+	client.test("an out-of-range key signature fails schema validation", function () {
+		client.assert(response.status === 422, "expected 422, got " + response.status);
+		client.assert(
+			response.body.detail[0].msg === "Value error, key signature 9 out of range [-7, 7]",
+			"unexpected validator message: " + response.body.detail[0].msg
+		);
+	});
+%}

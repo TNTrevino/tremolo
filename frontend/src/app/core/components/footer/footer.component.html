@@ -1,0 +1,40 @@
+<!--
+	border-t-2 mirrors the nav bar's own border-b-2 (navigation.component.html)
+	-- the shell reads as one framed page, top and bottom, rather than the
+	footer floating loose beneath it.
+-->
+<footer class="border-t-2 border-border bg-background">
+	<div class="container mx-auto px-4 py-6">
+		<div
+			class="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row"
+		>
+			<p>© {{ year }} Tremolo</p>
+
+			<!--
+				A plain div, not <nav>: e2e/specs/navigation.spec.ts asserts
+				page.getByRole("navigation") is visible on every public route, and
+				a second nav landmark here would make that locator match two
+				elements and fail with a strictness violation.
+			-->
+			<div class="flex items-center gap-4">
+				@for (link of links; track link.to) {
+					<a
+						[routerLink]="link.to"
+						class="transition-colors hover:text-foreground"
+						>{{ link.label }}</a
+					>
+				}
+				<!--
+					mailto, not routerLink="/contact": no /contact route exists, and
+					a link to a page that isn't there is the same mistake as the
+					fake buttons this epic (#242) removes.
+				-->
+				<a
+					href="mailto:{{ contactEmail }}"
+					class="transition-colors hover:text-foreground"
+					>Contact</a
+				>
+			</div>
+		</div>
+	</div>
+</footer>

@@ -1,0 +1,103 @@
+# Linking a Google account to the caller's existing password account.
+# GoogleLinkBadCode makes a REAL outbound call to Google's token
+# endpoint to exchange the (garbage) code -- along with
+# auth/google-callback.http, it is the only other request in this suite
+# with an external network dependency. If it fails with a timeout
+# instead of the expected 401, check network access before assuming the
+# handler is broken.
+#
+# Run:  kulala run --tests --env local auth/google-link.http
+
+@email = kula_google_link_{{$randomInt}}@qa.test
+
+### Register
+# Register creates the account this file links against and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.global.set("link_login_email", response.body.user.email);
+%}
+
+### Login
+# Login stashes the access token GoogleLinkBadCode will present.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{link_login_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.global.set("link_token", response.body.access_token);
+%}
+
+### GoogleLinkNoToken
+# GoogleLinkNoToken sends no Authorization header and expects 401 before
+# the body is even read.
+POST {{baseUrl}}/api/auth/google/link
+Content-Type: application/json
+
+{ "code": "some-code", "redirect_uri": "https://tremolonotes.com/auth/callback" }
+
+> {%
+	client.test("linking without auth is unauthorized", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GoogleLinkEmptyBody
+# GoogleLinkEmptyBody authenticates but omits both fields and expects
+# 400 with both problems, sorted by JSON key.
+POST {{baseUrl}}/api/auth/google/link
+Authorization: Bearer {{link_token}}
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("both missing fields are reported", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Authorization code is required, Redirect URI is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GoogleLinkBadCode
+# GoogleLinkBadCode sends a well-formed body with a code Google has
+# never issued. The body passes DTO validation, so the handler makes a
+# real call to Google's token endpoint, which rejects the code and
+# expects 401.
+POST {{baseUrl}}/api/auth/google/link
+Authorization: Bearer {{link_token}}
+Content-Type: application/json
+
+{ "code": "not-a-real-google-code", "redirect_uri": "https://tremolonotes.com/auth/callback" }
+
+> {%
+	client.test("a code Google never issued is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid authorization code",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

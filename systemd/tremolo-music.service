@@ -5,9 +5,9 @@ After=network.target
 [Service]
 Type=simple
 User=noetrevino
-WorkingDirectory=/opt/tremolo/backend/music
+WorkingDirectory=/opt/tremolo/music-api
 EnvironmentFile=/etc/tremolo/.env
-ExecStart=/opt/tremolo/backend/music/env/bin/gunicorn -c gunicorn_config.py
+ExecStart=/opt/tremolo/music-api/env/bin/gunicorn -c gunicorn_config.py
 Restart=always
 RestartSec=5
 

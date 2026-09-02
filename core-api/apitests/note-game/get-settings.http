@@ -1,0 +1,86 @@
+# Reading the caller's saved note-game settings. Unlike keyboard
+# bindings (see note-game/get-keyboard-bindings.http), a caller with no
+# saved settings gets 200 with a null payload, not a 404.
+#
+# Run:  kulala run --tests --env local note-game/get-settings.http
+
+@student_email = kula_get_note_settings_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetSettingsBeforeSaving
+# GetSettingsBeforeSaving has a fresh account with nothing saved yet
+# read their settings and expects 200 with a null payload, not a 404.
+GET {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("no saved settings is a null payload, not an error", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.settings === null, "settings is null before the first save");
+	});
+%}
+
+### SaveSettings
+# SaveSettings puts a well-formed settings payload in place for the
+# next block to read back.
+PUT {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_mode": "time",
+	"time_limit": 60,
+	"note_limit": 25,
+	"scale": "C",
+	"octave": 4,
+	"low_note": "C4",
+	"high_note": "C5",
+	"clef": "treble"
+}
+
+> {%
+	client.test("settings saved", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### GetSettingsAfterSaving
+# GetSettingsAfterSaving reads the settings back and expects the exact
+# values just saved. Once settings exist, the response is the settings
+# object itself -- not wrapped under a "settings" key like the
+# null-payload case above.
+GET {{baseUrl}}/api/note-game/settings
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("saved settings are read back unchanged", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.game_mode === "time", "game_mode round-trips");
+		client.assert(response.body.time_limit === 60, "time_limit round-trips");
+		client.assert(response.body.clef === "treble", "clef round-trips");
+	});
+%}

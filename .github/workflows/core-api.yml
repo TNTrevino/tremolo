@@ -1,0 +1,105 @@
+name: Core API CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "core-api/**"
+      - ".github/workflows/core-api.yml"
+      - "Makefile"
+  # Reusable, and the only path this runs on a PR: the CI gate calls it
+  # for the services a PR touches, and the deploy workflows call it as a
+  # gate before deploying.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Prefix + github.workflow keeps each entry point in its own lane. Under
+  # workflow_call github.workflow is the CALLER's name, so the prefix stops
+  # the workflows a caller invokes together from sharing a group, and
+  # github.workflow stops different callers (CI gate, deploy) from sharing
+  # one. Same group + cancel-in-progress means they cancel each other.
+  group: go-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-checks:
+    name: lint-and-test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tremolo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tremolo?sslmode=disable
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      ACCESS_TOKEN_EXPIRY_MINUTES: "15"
+      REFRESH_TOKEN_EXPIRY_HOURS: "168"
+      MAX_LOGIN_ATTEMPTS: "5"
+      ACCOUNT_LOCKOUT_DURATION_MINUTES: "15"
+      GOOGLE_CLIENT_ID: ci-test-client-id
+      GOOGLE_CLIENT_SECRET: ci-test-client-secret
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.0"
+          cache: true
+          cache-dependency-path: core-api/go.sum
+
+      # gofumpt/vet/tests live in the Makefile so CI and local dev can't
+      # drift; golangci-lint stays an action because it installs and
+      # caches its own binary.
+      - name: Check formatting
+        run: make format-check-go
+
+      - name: Run go vet
+        run: make vet-go
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.13
+          working-directory: core-api
+
+      # `go build .` compiles the whole package, the same way deploy.yml's
+      # build step does -- the direct, obvious analog to the deploy build,
+      # so a broken package build fails the PR instead of only failing at
+      # deploy. Runs before the test suite: a build failure is cheaper to
+      # hit than -race + Postgres + coverage, so fail fast on that first.
+      - name: Build
+        run: make build-go
+
+      - name: Run tests
+        run: make test-go
+
+      # The OpenAPI spec is generated from swag annotations on the
+      # controllers plus the general API info in main.go, not hand-written.
+      # The pre-commit hook regenerates it locally, but this is the
+      # backstop for a bypassed hook or a stale checked-in spec. `go tool
+      # swag` builds the version core-api/go.mod pins, so a new swag
+      # release can't change the generated formatting and fail this diff
+      # check on an otherwise-unrelated PR -- and CI and the hook run the
+      # same binary by construction, with no install step to keep in sync.
+      - name: Check OpenAPI spec is up to date
+        run: |
+          make openapi-go
+          git diff --exit-code -- core-api/openapi/

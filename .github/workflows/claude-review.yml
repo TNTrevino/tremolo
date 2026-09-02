@@ -5,7 +5,8 @@ on:
     types: [opened]
     paths:
       - "frontend/**"
-      - "backend/**"
+      - "core-api/**"
+      - "music-api/**"
 
 jobs:
   claude-review:

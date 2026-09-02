@@ -1,0 +1,218 @@
+<div
+	#plotContainer
+	class="relative w-full"
+	[style.height.px]="height()"
+	(mousemove)="onPointerMove($event)"
+	(mouseleave)="onPointerLeave()"
+>
+	<svg
+		[attr.width]="width()"
+		[attr.height]="svgHeight()"
+		[attr.viewBox]="'0 0 ' + width() + ' ' + svgHeight()"
+		[attr.aria-label]="ariaLabel()"
+		class="block"
+		role="img"
+	>
+		<!-- Soft horizontal-only grid (recharts: vertical={false}). -->
+		@for (line of gridLines(); track line.key) {
+			<line
+				[attr.x1]="plotLeft()"
+				[attr.x2]="plotRight()"
+				[attr.y1]="line.y"
+				[attr.y2]="line.y"
+				stroke="hsl(var(--border))"
+				stroke-opacity="0.4"
+			/>
+		}
+
+		<!-- Y axis: no axis line, no tick line, just the numbers. -->
+		@for (label of yLabels(); track label.key) {
+			<text
+				[attr.x]="label.x"
+				[attr.y]="label.y"
+				fill="hsl(var(--muted-foreground))"
+				font-size="12"
+				text-anchor="end"
+				dominant-baseline="middle"
+			>
+				{{ label.text }}
+			</text>
+		}
+
+		<!-- X axis -->
+		@for (label of xLabels(); track label.key) {
+			<text
+				[attr.x]="label.x"
+				[attr.y]="label.y"
+				fill="hsl(var(--muted-foreground))"
+				font-size="12"
+				text-anchor="middle"
+			>
+				{{ label.text }}
+			</text>
+		}
+
+		<!-- Reference lines (the dashboard's average) -->
+		@for (ref of refLines(); track ref.key) {
+			<line
+				[attr.x1]="plotLeft()"
+				[attr.x2]="plotRight()"
+				[attr.y1]="ref.y"
+				[attr.y2]="ref.y"
+				[attr.stroke]="ref.color"
+				stroke-dasharray="4 4"
+				stroke-opacity="0.5"
+			/>
+			<!--
+				recharts' `position: "right"` put this label outside the line's
+				right end, where only 24px of margin was waiting for it; here it
+				sits just inside the plot, above the line, so it is legible at
+				every width instead of clipped at narrow ones.
+			-->
+			@if (ref.label) {
+				<text
+					[attr.x]="plotRight()"
+					[attr.y]="ref.y"
+					fill="hsl(var(--muted-foreground))"
+					font-size="10"
+					text-anchor="end"
+					dominant-baseline="text-after-edge"
+				>
+					{{ ref.label }}
+				</text>
+			}
+		}
+
+		<!-- Crosshair (recharts' Tooltip cursor) -->
+		@if (cursor(); as c) {
+			<line
+				[attr.x1]="c.x"
+				[attr.x2]="c.x"
+				[attr.y1]="0"
+				[attr.y2]="svgHeight()"
+				stroke="hsl(var(--muted-foreground))"
+				stroke-width="1"
+				stroke-dasharray="3 3"
+				stroke-opacity="0.5"
+			/>
+		}
+
+		@for (s of rendered(); track s.key) {
+			<path
+				class="tremolo-line"
+				[attr.d]="s.path"
+				[attr.stroke]="s.color"
+				[attr.stroke-width]="s.strokeWidth"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				fill="none"
+				pathLength="1"
+			/>
+
+			<!-- Small resting dots -->
+			@for (dot of s.dots; track dot.key) {
+				<circle
+					[attr.cx]="dot.cx"
+					[attr.cy]="dot.cy"
+					r="3"
+					[attr.fill]="s.color"
+				/>
+			}
+
+			<!-- Personal best: a card-filled ring with a solid centre -->
+			@if (s.pb; as pb) {
+				<circle
+					[attr.cx]="pb.cx"
+					[attr.cy]="pb.cy"
+					r="6"
+					fill="hsl(var(--card))"
+					[attr.stroke]="s.color"
+					stroke-width="2.5"
+				/>
+				<circle
+					[attr.cx]="pb.cx"
+					[attr.cy]="pb.cy"
+					r="2.5"
+					[attr.fill]="s.color"
+				/>
+			}
+
+			@if (s.active; as active) {
+				<circle
+					[attr.cx]="active.cx"
+					[attr.cy]="active.cy"
+					r="5"
+					[attr.fill]="s.color"
+					stroke="hsl(var(--card))"
+					stroke-width="2"
+				/>
+			}
+		}
+	</svg>
+
+	@if (activeIndex() !== null && tooltipRows().length > 0) {
+		@if (tooltipPosition(); as at) {
+			<div
+				class="pointer-events-none absolute z-10 rounded-lg border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm"
+				[style.left.px]="at.left"
+				[style.top.px]="at.top"
+			>
+				<div class="mb-1 text-xs font-semibold text-foreground">
+					{{ tooltipHeader() }}
+				</div>
+				@for (row of tooltipRows(); track row.key) {
+					<div class="flex items-center gap-2 text-xs">
+						<span
+							class="inline-block h-2 w-2 rounded-full"
+							[style.background-color]="row.color"
+						></span>
+						<span class="text-muted-foreground">{{ row.name }}</span>
+						<span class="ml-auto font-mono font-semibold text-foreground">{{
+							row.value
+						}}</span>
+					</div>
+				}
+			</div>
+		}
+	}
+
+	@if (showLegend()) {
+		<ul class="flex flex-wrap items-center justify-center gap-4 pt-3">
+			@for (item of legend(); track item.key) {
+				<li>
+					<button
+						type="button"
+						class="flex cursor-pointer items-center gap-1"
+						[attr.aria-pressed]="!item.hidden"
+						(click)="toggle(item.key)"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 32 32"
+							aria-hidden="true"
+							class="inline-block align-middle"
+						>
+							<line
+								x1="0"
+								y1="16"
+								x2="32"
+								y2="16"
+								[attr.stroke]="item.color"
+								stroke-width="4"
+							/>
+						</svg>
+						<span
+							[class]="
+								item.hidden
+									? 'select-none text-xs text-muted-foreground/40'
+									: 'select-none text-xs text-muted-foreground'
+							"
+							>{{ item.name }}</span
+						>
+					</button>
+				</li>
+			}
+		</ul>
+	}
+</div>
