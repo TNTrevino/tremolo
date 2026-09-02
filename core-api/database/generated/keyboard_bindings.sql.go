@@ -20,7 +20,7 @@ func (q *Queries) DeleteKeyboardBindings(ctx context.Context, userID int32) erro
 }
 
 const getKeyboardBindings = `-- name: GetKeyboardBindings :one
-select id, user_id, key_c, key_d, key_e, key_f, key_g, key_a, key_b, key_c_sharp, key_d_sharp, key_e_sharp, key_f_sharp, key_g_sharp, key_a_sharp, key_b_sharp, key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat
+select id, user_id, key_c, key_d, key_e, key_f, key_g, key_a, key_b, key_c_sharp, key_d_sharp, key_e_sharp, key_f_sharp, key_g_sharp, key_a_sharp, key_b_sharp, key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat, overlap_accidentals
 from tremolo.keyboard_bindings
 where user_id = $1
 `
@@ -52,6 +52,7 @@ func (q *Queries) GetKeyboardBindings(ctx context.Context, userID int32) (Tremol
 		&i.KeyGFlat,
 		&i.KeyAFlat,
 		&i.KeyBFlat,
+		&i.OverlapAccidentals,
 	)
 	return i, err
 }
@@ -61,13 +62,15 @@ insert into tremolo.keyboard_bindings (
     user_id,
     key_c, key_d, key_e, key_f, key_g, key_a, key_b,
     key_c_sharp, key_d_sharp, key_e_sharp, key_f_sharp, key_g_sharp, key_a_sharp, key_b_sharp,
-    key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat
+    key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat,
+    overlap_accidentals
 )
 values (
     $1,
     $2, $3, $4, $5, $6, $7, $8,
     $9, $10, $11, $12, $13, $14, $15,
-    $16, $17, $18, $19, $20, $21, $22
+    $16, $17, $18, $19, $20, $21, $22,
+    $23
 )
 on conflict (user_id) do update set
     key_c = EXCLUDED.key_c,
@@ -90,33 +93,35 @@ on conflict (user_id) do update set
     key_f_flat = EXCLUDED.key_f_flat,
     key_g_flat = EXCLUDED.key_g_flat,
     key_a_flat = EXCLUDED.key_a_flat,
-    key_b_flat = EXCLUDED.key_b_flat
-returning id, user_id, key_c, key_d, key_e, key_f, key_g, key_a, key_b, key_c_sharp, key_d_sharp, key_e_sharp, key_f_sharp, key_g_sharp, key_a_sharp, key_b_sharp, key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat
+    key_b_flat = EXCLUDED.key_b_flat,
+    overlap_accidentals = EXCLUDED.overlap_accidentals
+returning id, user_id, key_c, key_d, key_e, key_f, key_g, key_a, key_b, key_c_sharp, key_d_sharp, key_e_sharp, key_f_sharp, key_g_sharp, key_a_sharp, key_b_sharp, key_c_flat, key_d_flat, key_e_flat, key_f_flat, key_g_flat, key_a_flat, key_b_flat, overlap_accidentals
 `
 
 type UpsertKeyboardBindingsParams struct {
-	UserID    int32  `json:"user_id"`
-	KeyC      string `json:"key_c"`
-	KeyD      string `json:"key_d"`
-	KeyE      string `json:"key_e"`
-	KeyF      string `json:"key_f"`
-	KeyG      string `json:"key_g"`
-	KeyA      string `json:"key_a"`
-	KeyB      string `json:"key_b"`
-	KeyCSharp string `json:"key_c_sharp"`
-	KeyDSharp string `json:"key_d_sharp"`
-	KeyESharp string `json:"key_e_sharp"`
-	KeyFSharp string `json:"key_f_sharp"`
-	KeyGSharp string `json:"key_g_sharp"`
-	KeyASharp string `json:"key_a_sharp"`
-	KeyBSharp string `json:"key_b_sharp"`
-	KeyCFlat  string `json:"key_c_flat"`
-	KeyDFlat  string `json:"key_d_flat"`
-	KeyEFlat  string `json:"key_e_flat"`
-	KeyFFlat  string `json:"key_f_flat"`
-	KeyGFlat  string `json:"key_g_flat"`
-	KeyAFlat  string `json:"key_a_flat"`
-	KeyBFlat  string `json:"key_b_flat"`
+	UserID             int32  `json:"user_id"`
+	KeyC               string `json:"key_c"`
+	KeyD               string `json:"key_d"`
+	KeyE               string `json:"key_e"`
+	KeyF               string `json:"key_f"`
+	KeyG               string `json:"key_g"`
+	KeyA               string `json:"key_a"`
+	KeyB               string `json:"key_b"`
+	KeyCSharp          string `json:"key_c_sharp"`
+	KeyDSharp          string `json:"key_d_sharp"`
+	KeyESharp          string `json:"key_e_sharp"`
+	KeyFSharp          string `json:"key_f_sharp"`
+	KeyGSharp          string `json:"key_g_sharp"`
+	KeyASharp          string `json:"key_a_sharp"`
+	KeyBSharp          string `json:"key_b_sharp"`
+	KeyCFlat           string `json:"key_c_flat"`
+	KeyDFlat           string `json:"key_d_flat"`
+	KeyEFlat           string `json:"key_e_flat"`
+	KeyFFlat           string `json:"key_f_flat"`
+	KeyGFlat           string `json:"key_g_flat"`
+	KeyAFlat           string `json:"key_a_flat"`
+	KeyBFlat           string `json:"key_b_flat"`
+	OverlapAccidentals bool   `json:"overlap_accidentals"`
 }
 
 func (q *Queries) UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboardBindingsParams) (TremoloKeyboardBinding, error) {
@@ -143,6 +148,7 @@ func (q *Queries) UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboard
 		arg.KeyGFlat,
 		arg.KeyAFlat,
 		arg.KeyBFlat,
+		arg.OverlapAccidentals,
 	)
 	var i TremoloKeyboardBinding
 	err := row.Scan(
@@ -169,6 +175,7 @@ func (q *Queries) UpsertKeyboardBindings(ctx context.Context, arg UpsertKeyboard
 		&i.KeyGFlat,
 		&i.KeyAFlat,
 		&i.KeyBFlat,
+		&i.OverlapAccidentals,
 	)
 	return i, err
 }

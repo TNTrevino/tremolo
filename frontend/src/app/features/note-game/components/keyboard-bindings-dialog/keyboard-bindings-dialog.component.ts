@@ -12,6 +12,7 @@ import { RouterLink } from "@angular/router";
 
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { DIALOG_DIRECTIVES } from "../../../../shared/components/ui/dialog.component";
+import type { KeyboardBindingsDraft } from "../../models/keymap";
 import { KeyboardBindingsEditorComponent } from "../keyboard-bindings-editor/keyboard-bindings-editor.component";
 
 /**
@@ -26,6 +27,13 @@ import { KeyboardBindingsEditorComponent } from "../keyboard-bindings-editor/key
  * The editor works on a **draft**: Cancel discards it, Save emits it. React
  * held the draft in `useState` seeded from the prop; here an `effect` reseeds
  * it whenever the dialog opens, so re-opening never shows a stale edit.
+ *
+ * The draft now has two parts -- the 21-note map and the `overlap_accidentals`
+ * toggle -- both reseeded together and both discarded together, since the
+ * editor's own `overlapAccidentals` is a `model()` exactly like `bindings`.
+ * `saveBindings` carries both out in one `KeyboardBindingsDraft`, because
+ * `UserService.saveKeyboardBindings` saves them in one call and a player who
+ * flips the toggle then hits Cancel must lose that flip too.
  */
 @Component({
 	selector: "app-keyboard-bindings-dialog",
@@ -58,6 +66,7 @@ import { KeyboardBindingsEditorComponent } from "../keyboard-bindings-editor/key
 					<div class="p-6">
 						<app-keyboard-bindings-editor
 							[(bindings)]="draft"
+							[(overlapAccidentals)]="draftOverlapAccidentals"
 							(listeningChange)="listening.set($event)"
 						/>
 					</div>
@@ -101,21 +110,32 @@ export class KeyboardBindingsDialogComponent {
 	/** The saved (or default) note-to-key map the draft starts from. */
 	readonly bindings = input.required<Record<string, string>>();
 
-	readonly saveBindings = output<Record<string, string>>();
+	/** The saved (or default) piano-layout flag the draft starts from. */
+	readonly overlapAccidentals = input(false);
+
+	readonly saveBindings = output<KeyboardBindingsDraft>();
 
 	protected readonly draft = signal<Record<string, string>>({});
+	protected readonly draftOverlapAccidentals = signal(false);
 	protected readonly listening = signal<string | null>(null);
 
 	constructor() {
 		effect(() => {
 			const bindings = this.bindings();
+			const overlapAccidentals = this.overlapAccidentals();
 			if (!this.open()) return;
-			untracked(() => this.draft.set({ ...bindings }));
+			untracked(() => {
+				this.draft.set({ ...bindings });
+				this.draftOverlapAccidentals.set(overlapAccidentals);
+			});
 		});
 	}
 
 	protected save(): void {
-		this.saveBindings.emit(this.draft());
+		this.saveBindings.emit({
+			bindings: this.draft(),
+			overlapAccidentals: this.draftOverlapAccidentals(),
+		});
 		this.open.set(false);
 	}
 }

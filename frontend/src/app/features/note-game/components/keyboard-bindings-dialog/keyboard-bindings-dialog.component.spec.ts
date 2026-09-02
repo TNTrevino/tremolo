@@ -2,7 +2,10 @@ import { Component, signal } from "@angular/core";
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 
-import { DEFAULT_NOTE_TO_KEY_MAP } from "../../models/keymap";
+import {
+	DEFAULT_NOTE_TO_KEY_MAP,
+	type KeyboardBindingsDraft,
+} from "../../models/keymap";
 import { KeyboardBindingsDialogComponent } from "./keyboard-bindings-dialog.component";
 
 /**
@@ -26,6 +29,7 @@ import { KeyboardBindingsDialogComponent } from "./keyboard-bindings-dialog.comp
 			[(open)]="open"
 			[canEdit]="canEdit()"
 			[bindings]="bindings()"
+			[overlapAccidentals]="overlapAccidentals()"
 			(saveBindings)="saved.push($event)"
 		/>
 	`,
@@ -36,7 +40,8 @@ class HostComponent {
 	readonly bindings = signal<Record<string, string>>({
 		...DEFAULT_NOTE_TO_KEY_MAP,
 	});
-	readonly saved: Record<string, string>[] = [];
+	readonly overlapAccidentals = signal(false);
+	readonly saved: KeyboardBindingsDraft[] = [];
 }
 
 describe("KeyboardBindingsDialogComponent", () => {
@@ -86,6 +91,15 @@ describe("KeyboardBindingsDialogComponent", () => {
 	function keyLabel(note: string): string {
 		const spans = noteButton(note).querySelectorAll("span");
 		return spans[1]?.textContent?.trim() ?? "";
+	}
+
+	/** The piano-layout toggle inside the editor: labelled "On" or "Off". */
+	function toggleButton(): HTMLButtonElement {
+		const found = buttons().find((candidate) =>
+			["On", "Off"].includes(candidate.textContent?.trim() ?? ""),
+		);
+		if (!found) throw new Error("no piano-layout toggle button");
+		return found;
 	}
 
 	async function open(): Promise<void> {
@@ -155,7 +169,9 @@ describe("KeyboardBindingsDialogComponent", () => {
 
 		await click(button("Save"));
 
-		expect(host.saved).toEqual([DEFAULT_NOTE_TO_KEY_MAP]);
+		expect(host.saved).toEqual([
+			{ bindings: DEFAULT_NOTE_TO_KEY_MAP, overlapAccidentals: false },
+		]);
 		expect(host.open()).toBe(false);
 	});
 
@@ -168,10 +184,44 @@ describe("KeyboardBindingsDialogComponent", () => {
 		await click(button("Save"));
 
 		expect(host.saved).toHaveLength(1);
-		expect(host.saved[0]).toEqual({ ...DEFAULT_NOTE_TO_KEY_MAP, C: "p" });
+		expect(host.saved[0]).toEqual({
+			bindings: { ...DEFAULT_NOTE_TO_KEY_MAP, C: "p" },
+			overlapAccidentals: false,
+		});
 		// The dialog owns a draft; the map the parent passed in is untouched
 		// until it chooses to act on `saveBindings`.
 		expect(host.bindings()).toEqual(DEFAULT_NOTE_TO_KEY_MAP);
+	});
+
+	it("saves the toggled overlap flag alongside the bindings", async () => {
+		await open();
+		await click(toggleButton());
+		expect(toggleButton().textContent?.trim()).toBe("On");
+
+		await click(button("Save"));
+
+		expect(host.saved).toEqual([
+			{ bindings: DEFAULT_NOTE_TO_KEY_MAP, overlapAccidentals: true },
+		]);
+	});
+
+	it("discards a toggle flip on Cancel, so re-opening starts from the saved flag", async () => {
+		await open();
+		await click(toggleButton());
+		expect(toggleButton().textContent?.trim()).toBe("On");
+
+		await click(button("Cancel"));
+		await open();
+
+		expect(toggleButton().textContent?.trim()).toBe("Off");
+		expect(host.saved).toEqual([]);
+	});
+
+	it("seeds the draft from the loaded overlapAccidentals flag", async () => {
+		host.overlapAccidentals.set(true);
+		await open();
+
+		expect(toggleButton().textContent?.trim()).toBe("On");
 	});
 
 	it("discards the draft on Cancel, so re-opening starts from the saved map", async () => {

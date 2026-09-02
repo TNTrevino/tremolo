@@ -21,6 +21,19 @@ export interface GameStateConfig {
 	/** Called with the correct answer when the player gets one right. */
 	onCorrectAnswer?: (answer: string) => void;
 	/**
+	 * How a guess is judged. Omitted -- which is what all four identification
+	 * games do -- it is exact string equality, the comparison this engine has
+	 * always made.
+	 *
+	 * The note game supplies one for `overlap_accidentals`, where the
+	 * piano-shaped keyboard has no key for "Db" and a player answers it by
+	 * pressing C#. Only the *verdict* is delegated: an accepted guess is
+	 * recorded, sounded and scored through the same lines below as a spelled
+	 * match, against `currentAnswer` rather than against what was pressed, so
+	 * the answer log and the final stats cannot tell the two apart.
+	 */
+	isCorrect?: (guess: string, correctAnswer: string) => boolean;
+	/**
 	 * Game-specific fields merged into `GameStats` (the note game's scale,
 	 * for instance). The shared `GameStats` stays game-agnostic.
 	 */
@@ -110,7 +123,9 @@ export class GameStateService {
 			this.questionStartTime === 0 ? Date.now() : this.questionStartTime;
 		const timeToAnswer = Date.now() - effectiveQuestionStart;
 		const correctAnswer = this._currentAnswer();
-		const correct = guess === correctAnswer;
+		const correct = config.isCorrect
+			? config.isCorrect(guess, correctAnswer)
+			: guess === correctAnswer;
 
 		const answers = [
 			...this._answers(),

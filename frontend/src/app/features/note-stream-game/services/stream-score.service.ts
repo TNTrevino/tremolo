@@ -11,6 +11,7 @@ import {
 	type StreamJudgment,
 	type StreamNote,
 } from "../models/note-stream.models";
+import { notesEquivalent } from "../../../shared/utils/pitch";
 import { NoteSpawnerService } from "./note-spawner.service";
 import { StreamTransportService } from "./stream-transport.service";
 
@@ -85,6 +86,15 @@ export class StreamScoreService {
 	 */
 	readonly judgedVersion = this._judgedVersion.asReadonly();
 
+	/**
+	 * The bindings' overlap_accidentals flag. In the overlap layout a
+	 * pressed name only has to be the same PITCH as the target -- a C#
+	 * press clears a Db note -- because the nine enharmonic-only
+	 * spellings have no key of their own there. Lives here rather than
+	 * on the game service because the game service injects this one.
+	 */
+	readonly overlapAccidentals = signal(false);
+
 	readonly multiplier = computed(() =>
 		Math.min(
 			MAX_MULTIPLIER,
@@ -108,7 +118,10 @@ export class StreamScoreService {
 			return null;
 		}
 
-		if (target.note.name !== name) {
+		const matches = this.overlapAccidentals()
+			? notesEquivalent(target.note.name, name)
+			: target.note.name === name;
+		if (!matches) {
 			return this.record(target.note, "miss", null);
 		}
 

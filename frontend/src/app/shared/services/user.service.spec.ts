@@ -327,11 +327,66 @@ describe("UserService", () => {
 			service.saveKeyboardBindings(BINDINGS).subscribe();
 
 			const req = backend.expectOne(`${API}/api/note-game/keyboard-bindings`);
-			expect(req.request.body).toEqual({ key_bindings: BINDINGS });
+			expect(req.request.body).toEqual({
+				key_bindings: BINDINGS,
+				overlap_accidentals: false,
+			});
 			req.flush({ id: 8, user_id: 42, key_bindings: BINDINGS });
 		});
 
 		it("unwraps it on the way back", () => {
+			let bindings: unknown;
+			service.getKeyboardBindings().subscribe((b) => (bindings = b));
+
+			backend.expectOne(`${API}/api/note-game/keyboard-bindings`).flush({
+				id: 8,
+				user_id: 42,
+				key_bindings: BINDINGS,
+				overlap_accidentals: false,
+			});
+
+			expect(bindings).toEqual({
+				id: 8,
+				userId: 42,
+				keyBindings: BINDINGS,
+				overlapAccidentals: false,
+			});
+		});
+
+		it("sends overlap_accidentals beside the row, not inside it", () => {
+			service.saveKeyboardBindings(BINDINGS, true).subscribe();
+
+			const req = backend.expectOne(`${API}/api/note-game/keyboard-bindings`);
+			expect(req.request.body).toEqual({
+				key_bindings: BINDINGS,
+				overlap_accidentals: true,
+			});
+			req.flush({
+				id: 8,
+				user_id: 42,
+				key_bindings: BINDINGS,
+				overlap_accidentals: true,
+			});
+		});
+
+		it("reads the flag back as camelCase", () => {
+			let bindings: unknown;
+			service.getKeyboardBindings().subscribe((b) => (bindings = b));
+
+			backend.expectOne(`${API}/api/note-game/keyboard-bindings`).flush({
+				id: 8,
+				user_id: 42,
+				key_bindings: BINDINGS,
+				overlap_accidentals: true,
+			});
+
+			expect(bindings).toMatchObject({ overlapAccidentals: true });
+		});
+
+		it("reads a row written before the column as the standard layout", () => {
+			// A row the Go service wrote before the column existed omits the
+			// field; the mapper is where "missing" becomes a real `false`, so
+			// nothing above it ever branches on undefined.
 			let bindings: unknown;
 			service.getKeyboardBindings().subscribe((b) => (bindings = b));
 
@@ -343,6 +398,7 @@ describe("UserService", () => {
 				id: 8,
 				userId: 42,
 				keyBindings: BINDINGS,
+				overlapAccidentals: false,
 			});
 		});
 	});

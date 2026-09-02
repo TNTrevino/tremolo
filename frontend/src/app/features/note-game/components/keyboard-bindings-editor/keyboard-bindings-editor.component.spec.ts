@@ -25,6 +25,7 @@ import { KeyboardBindingsEditorComponent } from "./keyboard-bindings-editor.comp
 	template: `
 		<app-keyboard-bindings-editor
 			[(bindings)]="bindings"
+			[(overlapAccidentals)]="overlapAccidentals"
 			(listeningChange)="onListeningChange($event)"
 		/>
 	`,
@@ -33,6 +34,7 @@ class HostComponent {
 	readonly bindings = signal<Record<string, string>>({
 		...DEFAULT_NOTE_TO_KEY_MAP,
 	});
+	readonly overlapAccidentals = signal(false);
 
 	/** Every `listeningChange` in order -- React asserted on the last one. */
 	readonly listeningCalls: (string | null)[] = [];
@@ -74,8 +76,22 @@ describe("KeyboardBindingsEditorComponent", () => {
 		return spans[1]?.textContent?.trim() ?? "";
 	}
 
+	/** The piano-layout toggle: the only button labelled exactly "On"/"Off". */
+	function toggleButton(): HTMLButtonElement {
+		const found = buttons().find((candidate) =>
+			["On", "Off"].includes(candidate.textContent?.trim() ?? ""),
+		);
+		if (!found) throw new Error("no piano-layout toggle button");
+		return found;
+	}
+
 	async function arm(note: string): Promise<void> {
 		noteButton(note).click();
+		await fixture.whenStable();
+	}
+
+	async function toggleOverlap(): Promise<void> {
+		toggleButton().click();
 		await fixture.whenStable();
 	}
 
@@ -97,11 +113,30 @@ describe("KeyboardBindingsEditorComponent", () => {
 		expect(text).toContain("Sharps");
 		expect(text).toContain("Naturals");
 		expect(text).toContain("Flats");
-		// 21 notes plus Reset to Defaults, exactly as React counted them.
-		expect(buttons()).toHaveLength(22);
+		// 21 notes, Reset to Defaults, and the piano-layout toggle.
+		expect(buttons()).toHaveLength(23);
 		expect(keyLabel("C")).toBe("a");
 		expect(keyLabel("C#")).toBe("q");
 		expect(keyLabel("Cb")).toBe("z");
+	});
+
+	it("shows the piano-layout toggle off by default, and every note editable", () => {
+		expect(host.overlapAccidentals()).toBe(false);
+		expect(toggleButton().textContent?.trim()).toBe("Off");
+		for (const note of [
+			"C#",
+			"D#",
+			"F#",
+			"G#",
+			"A#",
+			"E#",
+			"B#",
+			"Cb",
+			"Fb",
+			"Db",
+		]) {
+			expect(noteButton(note).disabled).toBe(false);
+		}
 	});
 
 	it("arms a note when it is clicked, and says which", async () => {
@@ -218,5 +253,74 @@ describe("KeyboardBindingsEditorComponent", () => {
 		// A copy, not the shared table -- the next edit must not mutate it.
 		expect(host.bindings()).not.toBe(DEFAULT_NOTE_TO_KEY_MAP);
 		expect(keyLabel("C")).toBe("a");
+	});
+
+	it("flips the toggle model on click", async () => {
+		await toggleOverlap();
+
+		expect(host.overlapAccidentals()).toBe(true);
+		expect(toggleButton().textContent?.trim()).toBe("On");
+	});
+
+	describe("with the piano layout on", () => {
+		beforeEach(async () => {
+			await toggleOverlap();
+		});
+
+		it("locks the five fixed sharps and shows the key they are pinned to", () => {
+			for (const [note, key] of [
+				["C#", "w"],
+				["D#", "e"],
+				["F#", "t"],
+				["G#", "y"],
+				["A#", "u"],
+			] as const) {
+				expect(noteButton(note).disabled).toBe(true);
+				expect(keyLabel(note)).toBe(key);
+			}
+		});
+
+		it("locks E#, B#, Cb, Fb and every flat, with an enharmonic hint", () => {
+			for (const [note, equivalent] of [
+				["E#", "F"],
+				["B#", "C"],
+				["Cb", "B"],
+				["Fb", "E"],
+				["Db", "C#"],
+				["Eb", "D#"],
+				["Gb", "F#"],
+				["Ab", "G#"],
+				["Bb", "A#"],
+			] as const) {
+				expect(noteButton(note).disabled).toBe(true);
+				expect(keyLabel(note)).toBe(`= ${equivalent}`);
+			}
+		});
+
+		it("leaves the naturals editable", async () => {
+			expect(noteButton("C").disabled).toBe(false);
+
+			await arm("C");
+			expect(keyLabel("C")).toBe("...");
+			await press("p");
+
+			expect(host.bindings()["C"]).toBe("p");
+		});
+
+		it("refuses to arm a locked note", async () => {
+			await arm("C#");
+
+			expect(host.listeningCalls).toEqual([]);
+			expect(keyLabel("C#")).toBe("w");
+		});
+
+		it("goes back to fully editable when switched off", async () => {
+			await toggleOverlap();
+
+			expect(host.overlapAccidentals()).toBe(false);
+			expect(noteButton("C#").disabled).toBe(false);
+			expect(keyLabel("C#")).toBe("q");
+			expect(keyLabel("Db")).toBe("x");
+		});
 	});
 });

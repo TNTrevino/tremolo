@@ -50,6 +50,7 @@ func TestGetKeyboardBindings_Authenticated_WithBindings(t *testing.T) {
 	assert.Equal(t, "s", resp.KeyBindings.KeyD)
 	assert.Equal(t, "q", resp.KeyBindings.KeyCSharp)
 	assert.Equal(t, "z", resp.KeyBindings.KeyCFlat)
+	assert.False(t, resp.OverlapAccidentals, "overlap_accidentals should default to false")
 }
 
 func TestGetKeyboardBindings_Authenticated_WithoutBindings(t *testing.T) {
@@ -126,6 +127,37 @@ func TestUpdateKeyboardBindings_ValidRequest(t *testing.T) {
 	assert.Equal(t, "2", resp.KeyBindings.KeyD)
 	assert.Equal(t, "q", resp.KeyBindings.KeyCSharp)
 	assert.Equal(t, "z", resp.KeyBindings.KeyCFlat)
+}
+
+func TestUpdateKeyboardBindings_OverlapAccidentalsRoundTrip(t *testing.T) {
+	t.Parallel()
+	testutil.SetupTestDB(t)
+
+	email := testutil.UniqueEmail(t, "put_kb_overlap")
+	userID := testutil.CreateTestUserWithDefaults(t, email, "STUDENT")
+	token := testAccessToken(t, userID)
+
+	body := validCustomBindings()
+	body.OverlapAccidentals = true
+
+	router := keyboardBindingsTestRouter()
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, bearerRequest(t, http.MethodPut, "/api/note-game/keyboard-bindings", token, body))
+
+	assert.Equal(t, http.StatusOK, w.Code, "Response body: %s", w.Body.String())
+
+	var resp dtos.KeyboardBindingsResponse
+	testutil.ParseJSONResponse(t, w, &resp)
+	assert.True(t, resp.OverlapAccidentals)
+
+	// Verify via a fresh GET.
+	getW := httptest.NewRecorder()
+	router.ServeHTTP(getW, bearerRequest(t, http.MethodGet, "/api/note-game/keyboard-bindings", token, nil))
+	assert.Equal(t, http.StatusOK, getW.Code, "Response body: %s", getW.Body.String())
+
+	var getResp dtos.KeyboardBindingsResponse
+	testutil.ParseJSONResponse(t, getW, &getResp)
+	assert.True(t, getResp.OverlapAccidentals)
 }
 
 func TestUpdateKeyboardBindings_DuplicateKeys(t *testing.T) {

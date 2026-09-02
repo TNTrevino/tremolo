@@ -141,11 +141,12 @@ export class NoteStreamGamePageComponent {
 			const saved = this.savedBindings.error()
 				? null
 				: this.savedBindings.value();
-			untracked(() =>
+			untracked(() => {
 				this.game.keyBindings.set(
 					saved ? keyBindingsToNoteMap(saved.keyBindings) : undefined,
-				),
-			);
+				);
+				this.game.overlapAccidentals.set(saved?.overlapAccidentals ?? false);
+			});
 		});
 	}
 

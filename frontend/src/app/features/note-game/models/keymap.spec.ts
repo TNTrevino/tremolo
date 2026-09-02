@@ -3,10 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { KeyBindings } from "../../../shared/models/game.models";
 import {
 	buildKeyToNoteMap,
+	buildOverlapKeyToNoteMap,
+	buildOverlapNoteToKeyMap,
 	DEFAULT_KEY_TO_NOTE_MAP,
 	DEFAULT_NOTE_TO_KEY_MAP,
 	keyBindingsToNoteMap,
 	noteMapToKeyBindings,
+	OVERLAP_ENHARMONIC_EQUIVALENT,
+	OVERLAP_SHARP_TO_KEY_MAP,
 } from "./keymap";
 
 /**
@@ -148,9 +152,207 @@ describe("keyBindingsToNoteMap", () => {
 		expect(noteMapToKeyBindings({ C: "a" }).key_d).toBe("");
 	});
 
+	it("stays a 21-field row: the layout flag is not one of them", () => {
+		// `overlap_accidentals` rides beside `key_bindings` on the wire, so it
+		// must not leak into the row this builds.
+		expect(Object.keys(noteMapToKeyBindings({ C: "a" }))).toHaveLength(21);
+	});
+
 	it("feeds buildKeyToNoteMap so saved bindings drive real input", () => {
 		const map = buildKeyToNoteMap(keyBindingsToNoteMap(SAVED));
 		expect(map["1"]).toBe("C");
 		expect(map["'"]).toBe("Bb");
+	});
+});
+
+/** The five black-key slots, as `OVERLAP_SHARP_TO_KEY_MAP` fixes them. */
+const OVERLAP_SHARPS: readonly (readonly [string, string])[] = [
+	["C#", "w"],
+	["D#", "e"],
+	["F#", "t"],
+	["G#", "y"],
+	["A#", "u"],
+];
+
+/** The nine notes the piano-shaped layout deliberately leaves unplayable. */
+const UNPLAYABLE_IN_OVERLAP = [
+	"E#",
+	"B#",
+	"Cb",
+	"Db",
+	"Eb",
+	"Fb",
+	"Gb",
+	"Ab",
+	"Bb",
+];
+
+describe("buildOverlapKeyToNoteMap", () => {
+	it("keeps the default naturals when there are no custom bindings", () => {
+		const map = buildOverlapKeyToNoteMap(undefined);
+
+		for (const [note, key] of NATURALS) {
+			expect(map[key]).toBe(note);
+			expect(map[key.toUpperCase()]).toBe(note);
+		}
+	});
+
+	it.each(OVERLAP_SHARPS)("puts %s on the fixed key %s", (note, key) => {
+		const map = buildOverlapKeyToNoteMap(undefined);
+		expect(map[key]).toBe(note);
+		expect(map[key.toUpperCase()]).toBe(note);
+	});
+
+	it("covers twelve notes in 24 entries and nothing else", () => {
+		const map = buildOverlapKeyToNoteMap(undefined);
+		expect(Object.keys(map)).toHaveLength(24);
+		expect(new Set(Object.values(map)).size).toBe(12);
+	});
+
+	it("gives no key to E#, B#, Cb, Fb or any flat", () => {
+		// They are reachable, but only through the natural or sharp they
+		// sound like -- `notesEquivalent` does that, not this table.
+		const map = buildOverlapKeyToNoteMap(undefined);
+		const played = new Set(Object.values(map));
+
+		for (const note of UNPLAYABLE_IN_OVERLAP) {
+			expect(played.has(note)).toBe(false);
+		}
+	});
+
+	it("takes the naturals from the player's own bindings", () => {
+		const map = buildOverlapKeyToNoteMap({
+			...DEFAULT_NOTE_TO_KEY_MAP,
+			C: "1",
+		});
+
+		expect(map["1"]).toBe("C");
+		expect(map["a"]).toBeUndefined();
+		// The flats row the player still has bound is ignored wholesale.
+		expect(map["z"]).toBeUndefined();
+		expect(map["m"]).toBeUndefined();
+	});
+
+	it("ignores the sharps the player bound, fixed slots win", () => {
+		// A saved "C# on q" is dead under this layout, and a natural parked
+		// on a black-key slot loses that slot rather than costing C#.
+		const map = buildOverlapKeyToNoteMap({
+			...DEFAULT_NOTE_TO_KEY_MAP,
+			G: "w",
+		});
+
+		expect(map["q"]).toBeUndefined();
+		expect(map["w"]).toBe("C#");
+		expect(map["W"]).toBe("C#");
+	});
+
+	it("does not bind a natural the editor left empty", () => {
+		const map = buildOverlapKeyToNoteMap({ C: "a", D: "" });
+
+		expect(map["a"]).toBe("C");
+		expect(map[""]).toBeUndefined();
+		// Only C plus the five fixed sharps.
+		expect(new Set(Object.values(map)).size).toBe(6);
+	});
+
+	it("reads a saved row through keyBindingsToNoteMap", () => {
+		const map = buildOverlapKeyToNoteMap(keyBindingsToNoteMap(SAVED));
+
+		expect(map["1"]).toBe("C");
+		expect(map["k"]).toBe("G");
+		// SAVED binds Bb to "'"; the overlap layout drops it.
+		expect(map["'"]).toBeUndefined();
+	});
+});
+
+describe("OVERLAP_SHARP_TO_KEY_MAP", () => {
+	it("is the five black keys and no others", () => {
+		expect(OVERLAP_SHARP_TO_KEY_MAP).toEqual(
+			Object.fromEntries(OVERLAP_SHARPS),
+		);
+	});
+
+	it("does not collide with the default naturals row", () => {
+		const naturalKeys = new Set(NATURALS.map(([, key]) => key));
+		for (const key of Object.values(OVERLAP_SHARP_TO_KEY_MAP)) {
+			expect(naturalKeys.has(key)).toBe(false);
+		}
+	});
+});
+
+describe("buildOverlapNoteToKeyMap", () => {
+	it.each(NATURALS)("gives %s the player's own key, %s", (note, key) => {
+		const map = buildOverlapNoteToKeyMap(undefined);
+		expect(map[note]).toBe(key);
+	});
+
+	it.each(OVERLAP_SHARPS)("puts %s on the fixed key %s", (note, key) => {
+		const map = buildOverlapNoteToKeyMap(undefined);
+		expect(map[note]).toBe(key);
+	});
+
+	it.each(Object.entries(OVERLAP_ENHARMONIC_EQUIVALENT))(
+		"gives %s the key of its enharmonic equivalent, %s",
+		(note, equivalent) => {
+			const map = buildOverlapNoteToKeyMap(undefined);
+			expect(map[note]).toBe(map[equivalent]);
+			expect(map[note]).toBeDefined();
+		},
+	);
+
+	it("covers all 21 notes", () => {
+		const map = buildOverlapNoteToKeyMap(undefined);
+		expect(Object.keys(map)).toHaveLength(21);
+	});
+
+	it("takes the naturals from the player's own bindings", () => {
+		const map = buildOverlapNoteToKeyMap({
+			...DEFAULT_NOTE_TO_KEY_MAP,
+			C: "1",
+		});
+
+		expect(map["C"]).toBe("1");
+	});
+
+	it("gives E#, B#, Cb and Fb the key of their rebound natural", () => {
+		const map = buildOverlapNoteToKeyMap({
+			...DEFAULT_NOTE_TO_KEY_MAP,
+			F: "1",
+		});
+
+		// Fb borrows E; E# borrows F -- only the latter moved.
+		expect(map["E#"]).toBe("1");
+		expect(map["Fb"]).toBe(DEFAULT_NOTE_TO_KEY_MAP["E"]);
+	});
+
+	it("leaves a note unbound when its equivalent has no key either", () => {
+		const map = buildOverlapNoteToKeyMap({ C: "a", F: "" });
+
+		// F has no key, so E# -- which borrows F's -- has none either.
+		expect(map["F"]).toBeUndefined();
+		expect(map["E#"]).toBeUndefined();
+	});
+
+	it("keeps the fixed sharps, and the flats that borrow them, unaffected by custom naturals", () => {
+		// G's custom "w" binding is a natural rebind and has no bearing here:
+		// C# is a fixed slot from OVERLAP_SHARP_TO_KEY_MAP, and Db borrows
+		// C#'s key, not any natural's.
+		const map = buildOverlapNoteToKeyMap({
+			...DEFAULT_NOTE_TO_KEY_MAP,
+			G: "w",
+		});
+
+		expect(map["C#"]).toBe("w");
+		expect(map["Db"]).toBe("w");
+	});
+
+	it("matches buildOverlapKeyToNoteMap's twelve real bindings, inverted", () => {
+		const noteToKey = buildOverlapNoteToKeyMap(undefined);
+		const keyToNote = buildOverlapKeyToNoteMap(undefined);
+
+		for (const [note, key] of [...NATURALS, ...OVERLAP_SHARPS]) {
+			expect(noteToKey[note]).toBe(key);
+			expect(keyToNote[key]).toBe(note);
+		}
 	});
 });

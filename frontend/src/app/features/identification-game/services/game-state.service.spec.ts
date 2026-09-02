@@ -138,6 +138,64 @@ describe("GameStateService", () => {
 		});
 	});
 
+	describe("the isCorrect hook", () => {
+		/** As `configure`, plus a comparator. */
+		function configureWith(
+			isCorrect: (guess: string, correctAnswer: string) => boolean,
+		): void {
+			game.configure({
+				settings: settingsOf(),
+				onGameStart,
+				onGameEnd,
+				onCorrectAnswer,
+				isCorrect,
+			});
+		}
+
+		it("is exact equality when no comparator is given", () => {
+			// The four identification games never pass one, so this is the
+			// comparison they keep getting.
+			configure();
+			game.syncCurrentAnswer("Db");
+
+			game.answer("C#");
+			expect(game.answers()[0]).toMatchObject({ correct: false });
+		});
+
+		it("lets the caller decide the verdict", () => {
+			configureWith((guess, answer) => guess.at(0) === answer.at(0));
+			game.syncCurrentAnswer("Db");
+
+			game.answer("D#");
+			expect(game.answers()[0]).toMatchObject({ correct: true });
+		});
+
+		it("records a hook-accepted guess exactly as a spelled match", () => {
+			// The nuance the note game depends on: an accepted guess is
+			// logged, sounded and scored against `currentAnswer`, so nothing
+			// downstream can tell it apart from an exact match.
+			configureWith(() => true);
+			game.syncCurrentAnswer("Db");
+			vi.advanceTimersByTime(900);
+
+			game.answer("C#");
+
+			expect(game.answers()).toEqual([
+				{ note: "Db", correct: true, timeToAnswer: 900 },
+			]);
+			expect(onCorrectAnswer).toHaveBeenCalledWith("Db");
+		});
+
+		it("still refuses a guess the comparator rejects", () => {
+			configureWith(() => false);
+			game.syncCurrentAnswer("Db");
+
+			game.answer("Db");
+			expect(game.answers()[0]).toMatchObject({ correct: false });
+			expect(onCorrectAnswer).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("scoring", () => {
 		/** Plays `total` questions, `correct` of them right, over `ms`. */
 		function play(total: number, correct: number, ms: number): GameStats {
