@@ -124,6 +124,12 @@ TODO: automate this plz
   # verify link and an unverified user still sees a banner, but login is
   # never blocked. Keep this off for the pilot.
   export REQUIRE_EMAIL_VERIFICATION=false
+
+  # Grants the first admin. Register the account through the app, set this
+  # to its email, restart core-api. Idempotent, so it is safe to leave set:
+  # an unregistered email warns and continues, and an existing ADMIN is a
+  # no-op. See core-api/README.md's "First admin".
+  # export ADMIN_BOOTSTRAP_EMAIL="you@example.com"
 ```
 
 The frontend needs **none** of these. It is an Angular app and reads its

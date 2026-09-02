@@ -32,14 +32,21 @@ what exists, then a minimal, mostly-free setup to close the gap.
   (`journalctl -u tremolo-api -f` already works, per
   `docs/self-hosting.md`'s troubleshooting section) -- but nothing pages
   anyone, and nothing aggregates it.
-- **The reverse-proxy layer matters for how real this signal is.**
-  `docs/self-hosting.md`'s example Caddyfile answers `/health` with a
-  hardcoded `respond "OK" 200` instead of forwarding to the Go service's
-  real, DB-aware check -- an uptime monitor pointed at that would only ever
-  prove Caddy itself is up. `deploy/Caddyfile.example` (this same PR, #260)
-  proxies `/health` through to `localhost:5001` instead; if the host you're
-  monitoring is still running the older stub, fix that first or the
-  monitoring below is watching the wrong thing.
+- **The reverse-proxy layer matters for how real this signal is, and today
+  it defeats it.** The live Caddyfile answers `/health` with a hardcoded
+  `respond "OK" 200` on all four service hosts, instead of forwarding to the
+  Go service's real, DB-aware check. This is measured, not assumed: `curl
+  https://api.tremolonotes.com/health` returns the plain string `OK`, while
+  `core-api/controllers/health_controller.go` returns
+  `{"status":"healthy","checks":{"database":"connected"}}`. Caddy sorts
+  `handle` ahead of a bare `reverse_proxy`, so the stub wins and the proxy
+  never sees the request. **An uptime monitor pointed at `/health` today
+  only proves Caddy is up.** If Postgres dies it still answers 200 and
+  nothing pages anyone. Fix it by deleting the `handle /health` block from
+  each service block in `/etc/caddy/Caddyfile`; the bare `reverse_proxy`
+  then carries `/health` through, the way it already carries
+  `/music/health`. Deploys are unaffected either way -- `deploy.yml` curls
+  each service directly on the app machine and never crosses the proxy.
 
 ## Recommended minimal setup
 
@@ -50,9 +57,12 @@ Monitor three URLs, each on its own check (so an alert names which one is
 down):
 
 - `https://tremolonotes.com` -- the frontend (Caddy serving static files).
-- `https://api.tremolonotes.com/health` -- core-api, **through the proxy
-  fix above** so this actually reflects the database, not just Caddy.
-- `https://api.tremolonotes.com/music/health` -- music-api.
+- `https://api.tremolonotes.com/health` -- core-api, **only after the proxy
+  fix above**. Until then this reflects Caddy alone, not the database.
+- `https://music-api.tremolonotes.com/music/health` -- music-api. Note the
+  host: `api.tremolonotes.com/music/health` returns 404, because
+  `api.tremolonotes.com` proxies to core-api only. The two services are on
+  separate hosts, matching `VITE_BACKEND_MAIN` and `VITE_BACKEND_MUSIC`.
 
 5-minute intervals are plenty for a two-person-team, self-hosted app; both
 services' free tiers support that. Alert to email at minimum.
