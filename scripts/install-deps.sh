@@ -120,17 +120,17 @@ setup_frontend() {
   cd "$FRONTEND_DIR"
 }
 
-# Setup backend/music (Python/FastAPI)
-setup_backend_music() {
-  BACKEND_MUSIC_DIR="$ROOT_DIR/backend/music"
-  print_header "Setting up Backend Music Service (FastAPI)"
+# Setup music-api (Python/FastAPI)
+setup_music_api() {
+  MUSIC_API_DIR="$ROOT_DIR/music-api"
+  print_header "Setting up Music API (FastAPI)"
 
-  if [ ! -d "$BACKEND_MUSIC_DIR" ]; then
-    print_error "backend/music directory not found"
+  if [ ! -d "$MUSIC_API_DIR" ]; then
+    print_error "music-api directory not found"
     exit 1
   fi
 
-  cd "$BACKEND_MUSIC_DIR"
+  cd "$MUSIC_API_DIR"
 
   # Check if venv already exists
   if [ -d "env" ]; then
@@ -162,15 +162,14 @@ setup_backend_music() {
   cd "$SCRIPT_DIR"
 }
 
-# Setup Husky hooks
-setup_husky() {
-  print_header "Setting up Git Hooks (Husky)"
+# Setup git hooks (core.hooksPath -> .githooks)
+setup_hooks() {
+  print_header "Setting up Git Hooks"
 
-  print_info "Installing precommit hooks..."
+  print_info "Pointing git at .githooks/ via make hooks..."
 
   cd "$ROOT_DIR"
-  print_info "Running npm i in root directory..."
-  npm i
+  make hooks
 
   print_success "Git hooks configured"
 }
@@ -188,8 +187,8 @@ main() {
 
   # Setup services
   setup_frontend
-  setup_backend_music
-  setup_husky
+  setup_music_api
+  setup_hooks
 
   # Summary
   echo -e "\n${BLUE}╔════════════════════════════════════════════╗${NC}"
@@ -204,11 +203,11 @@ main() {
   echo -e "   cd frontend && npm run dev"
   echo ""
   echo -e "3. Start music service:"
-  echo -e "   cd backend/music && source env/bin/activate && fastapi dev main.py "
+  echo -e "   cd music-api && source env/bin/activate && fastapi dev main.py "
 
   echo ""
   echo -e "4. Start user tracking service:"
-  echo -e "   cd backend/main && go run main.go"
+  echo -e "   cd core-api && go run main.go"
   echo ""
 }
 

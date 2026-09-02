@@ -38,7 +38,7 @@ Ground the palette in the subject's own material. Engraved notation is
 
 ## Tokens
 
-Semantic tokens live in `src/index.css` as shadcn-style HSL variables.
+Semantic tokens live in `src/styles.scss` as shadcn-style HSL variables.
 Two token changes beyond re-valuing:
 
 1. `--accent` returns to its shadcn meaning: a **quiet hover/selected
@@ -95,8 +95,9 @@ figure/ground flip musictheory.net's keyboard uses.
   game titles, hero, big stats. Characterful without being a toy.
 - **Body** (`font-sans`): **Inter** — everything else. Inter is fine as
   a body face once the display face carries the personality.
-- Both are self-hosted via `@fontsource-variable/*` packages imported
-  in `main.tsx` — never a Google Fonts `<link>` (no third-party request,
+- Both are self-hosted via `@fontsource-variable/*` packages, loaded via
+  `@use` at the top of `src/styles.scss` — never a Google Fonts `<link>` (no
+  third-party request,
   versioned with the app). The old config _named_ fonts it never
   loaded; if a face isn't imported, don't list it.
 - Timer, score, and NPM figures use `tabular-nums` so they don't jitter
@@ -121,12 +122,33 @@ figure/ground flip musictheory.net's keyboard uses.
    headlines.
 6. **Logo chip** is ink with the paper glyph (brass in dark mode is
    acceptable); purple does not survive anywhere.
+7. **Icons never speak for themselves.** Every icon-only control
+   carries an `aria-label` and the shared tooltip (`appTooltip`); the
+   label and the tooltip say the same words. An icon beside visible
+   text is decorative and carries `aria-hidden="true"`. A status icon
+   with no text (correct/incorrect, verified) carries sr-only text.
+   The tooltip bubble is ink on paper — `--primary` fill with
+   `--primary-foreground` text, never brass, no border — and it flips
+   to a light fill in dark mode like the selected chips. Tooltips show
+   on hover AND keyboard focus, dismiss on Escape, and never move the
+   layout. Labels are task verbs ("Copy join code"), not icon names
+   ("Clipboard"); one action keeps one label everywhere. The native
+   `title` attribute is banned — it is invisible to keyboards and
+   touch.
 
 ## Rollout
 
+**Status: shipped.** All three steps are in the Angular app. Step 3 is the
+one partial: `font-display` is on the HomePage hero and the auth card
+titles, but not on every heading — the screenshot baselines were captured
+from React before the restyle, and extending it costs a page its diff
+threshold. That is a recorded, human-reviewed residual, not an oversight;
+see `.migration/parity-report/`. The plan is kept below as the record of
+what was decided and why.
+
 Phased so each commit is visually reviewable:
 
-1. **Tokens + fonts + quiet answers** — re-value `index.css`, add
+1. **Tokens + fonts + quiet answers** — re-value `styles.scss`, add
    `--brass`/`--correct` + Tailwind mappings, load fonts, strip button
    shadows, convert AnswerPad/NoteButtonGrid to the quiet style,
    repoint chart/stat `accent` usages at `brass`.

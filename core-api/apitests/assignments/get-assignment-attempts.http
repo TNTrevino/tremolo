@@ -1,0 +1,199 @@
+# One student's own attempts on one assignment. Readable by the owning
+# teacher, by the student themself, but not by any other student.
+#
+# Run:  kulala run --tests --env local assignments/get-assignment-attempts.http
+
+@teacher_email  = kula_attempts_teacher_{{$timestamp}}@qa.test
+@student1_email = kula_attempts_student1_{{$timestamp}}@qa.test
+@student2_email = kula_attempts_student2_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent1
+# RegisterStudent1 registers the target student, whose attempts are
+# being read.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_id", response.body.user.id);
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers a bystander student -- neither the owning
+# teacher nor the target student.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_login_email", response.body.user.email);
+%}
+
+### LoginStudent2
+# LoginStudent2 logs student2 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student2_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student2_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for student1 to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinStudent1
+# JoinStudent1 enrolls the target student.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student1 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### CreateAssignment
+# CreateAssignment gives the class an assignment for student1 to
+# attempt.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" }
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### SubmitAttempt
+# SubmitAttempt has student1 submit one tagged attempt.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student1_id}},
+	"time_length": "00:01:00",
+	"total_questions": 10,
+	"correct_questions": 8,
+	"notes_per_minute": 10,
+	"game_type": "note",
+	"assignment_id": {{assignment_id}}
+}
+
+> {%
+	client.test("student1 submits a tagged attempt", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### TeacherSeesAttempts
+# TeacherSeesAttempts has the owning teacher read student1's attempts
+# and expects the one submitted entry.
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/attempts/{{student1_id}}
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("the owning teacher reads a student's attempts", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 1, "one attempt, got " + response.body.length);
+	});
+%}
+
+### StudentSeesOwnAttempts
+# StudentSeesOwnAttempts has student1 read their own attempts and
+# expects the same result -- self-access does not need class ownership.
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/attempts/{{student1_id}}
+Authorization: Bearer {{student1_token}}
+
+> {%
+	client.test("a student reads their own attempts", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 1, "one attempt, got " + response.body.length);
+	});
+%}
+
+### OtherStudentCannotSeeAttempts
+# OtherStudentCannotSeeAttempts has student2 -- neither the owning
+# teacher nor the target student -- try to read student1's attempts and
+# expects 403.
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/attempts/{{student1_id}}
+Authorization: Bearer {{student2_token}}
+
+> {%
+	client.test("a bystander student cannot read another student's attempts", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### AttemptsUnknownAssignment
+# AttemptsUnknownAssignment targets an assignment id that was never
+# created and expects 404.
+GET {{baseUrl}}/api/assignments/999999999/attempts/{{student1_id}}
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("an unknown assignment is a 404", function () {
+		client.assert(response.status === 404, "expected 404, got " + response.status);
+		client.assert(response.body.error === "Not found", "unexpected error string: " + response.body.error);
+	});
+%}

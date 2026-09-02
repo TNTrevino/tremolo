@@ -1,0 +1,85 @@
+# Resending the email-verification link. Register already queues the
+# first verification mail on its own (auth_service.go's best-effort
+# SendVerificationEmail call); this file exercises the explicit resend
+# endpoint on top of that, plus its JWT auth requirement.
+#
+# Run:  kulala run --tests --env local auth/resend-verification.http
+
+@email = kula_resend_{{$randomInt}}@qa.test
+
+### Register
+# Register creates the account this file authenticates as.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}",
+	"first_name": "Kula",
+	"last_name": "Tester",
+	"role": "STUDENT"
+}
+
+> {%
+	client.test("register creates the user", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+	client.global.set("resend_login_email", response.body.user.email);
+%}
+
+### Login
+# Login captures the access token ResendAuthenticated will present.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+	"email": "{{resend_login_email}}",
+	"password": "{{password}}"
+}
+
+> {%
+	client.test("login returns a token pair", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(!!response.body.access_token, "login returns an access token");
+	});
+	client.global.set("resend_token", response.body.access_token);
+%}
+
+### ResendUnauthenticated
+# ResendUnauthenticated sends no bearer token and expects the same 401
+# every other JWT-protected route in this suite answers with.
+POST {{baseUrl}}/api/auth/resend-verification
+Content-Type: application/json
+
+> {%
+	client.test("an unauthenticated resend is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Unauthorized",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### ResendAuthenticated
+# ResendAuthenticated presents the captured token and expects 200 with the
+# exact confirmation message. It reads the same whether or not the
+# account was already verified -- see services.ResendVerification's doc
+# comment -- so this one request covers both the "sent" and the "no-op"
+# wording, since they are the same string.
+POST {{baseUrl}}/api/auth/resend-verification
+Content-Type: application/json
+Authorization: Bearer {{resend_token}}
+
+> {%
+	client.test("an authenticated resend sends the mail", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(
+			response.body.message === "Verification email sent.",
+			"unexpected message: " + response.body.message
+		);
+	});
+%}

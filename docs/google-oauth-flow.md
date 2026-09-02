@@ -29,7 +29,7 @@ The `code` is a short-lived one-time claim ticket (~60 seconds). It cannot be us
 
 ## Step 4 — Backend exchanges code for identity
 
-- `GoogleCallback` (`backend/main/services/google_auth_service.go`) — receives the code and makes a server-to-server POST to Google's token endpoint, sending the code along with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Google returns an **ID token** (a signed JWT containing the user's email, name, and Google subject ID). The backend verifies the token's signature, then either creates a new user or looks up the existing one, and issues Tremolo's own JWT access + refresh tokens.
+- `GoogleCallback` (`core-api/services/google_auth_service.go`) — receives the code and makes a server-to-server POST to Google's token endpoint, sending the code along with `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Google returns an **ID token** (a signed JWT containing the user's email, name, and Google subject ID). The backend verifies the token's signature, then either creates a new user or looks up the existing one, and issues Tremolo's own JWT access + refresh tokens.
 
 ## Step 5 — Frontend stores tokens and navigates
 

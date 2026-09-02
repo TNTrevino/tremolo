@@ -1,0 +1,42 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{{.AppName}}</title>
+	</head>
+	<body
+		style="margin: 0; padding: 24px 12px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #18181b;"
+	>
+		<table
+			role="presentation"
+			cellpadding="0"
+			cellspacing="0"
+			border="0"
+			width="100%"
+			style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px;"
+		>
+			<tr>
+				<td style="padding: 24px 32px; border-bottom: 1px solid #e4e4e7;">
+					<span style="font-size: 20px; font-weight: 700; letter-spacing: -0.01em;">{{.AppName}}</span>
+				</td>
+			</tr>
+			<tr>
+				<td style="padding: 32px; font-size: 16px; line-height: 1.6;">
+					{{template "content" .}}
+				</td>
+			</tr>
+			<tr>
+				<td style="padding: 20px 32px; border-top: 1px solid #e4e4e7; font-size: 13px; line-height: 1.5; color: #71717a;">
+					<p style="margin: 0 0 6px;">
+						This message was sent by {{.AppName}}. Please do not reply to it.
+					</p>
+					<p style="margin: 0;">
+						<a href="{{.AppURL}}" style="color: #71717a;">{{.AppURL}}</a>
+					</p>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
+{{end}}

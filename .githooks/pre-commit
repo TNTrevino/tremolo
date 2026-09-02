@@ -1,0 +1,110 @@
+#!/bin/sh
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+staged_files_matching() {
+  git diff --cached --name-only --diff-filter=ACM | grep "$1" || true
+}
+
+has_staged_files_in() {
+  git diff --cached --name-only | grep -q "$1"
+}
+
+# Frontend Precommit
+if has_staged_files_in "^frontend/"; then
+  echo "Running Prettier on frontend files..."
+  (cd "$REPO_ROOT/frontend" && npx lint-staged)
+fi
+
+# Music Service Precommit
+if has_staged_files_in "^music-api/"; then
+  echo "Checking Python code formatting..."
+
+  STAGED_PY_FILES=$(staged_files_matching "^music-api/.*\.py$")
+
+  if [ -n "$STAGED_PY_FILES" ]; then
+    if [ -f "$REPO_ROOT/music-api/env/bin/activate" ]; then
+      . "$REPO_ROOT/music-api/env/bin/activate"
+
+      RELATIVE_PY_FILES=$(echo "$STAGED_PY_FILES" | sed 's|^music-api/||')
+
+      echo "Running Black on staged Python files..."
+      echo "$RELATIVE_PY_FILES" | xargs black --quiet --check 2>/dev/null || {
+        echo "Formatting with Black..."
+        echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/music-api" && xargs black)
+        if [ $? -ne 0 ]; then
+          echo "Black formatting failed."
+          exit 1
+        fi
+      }
+
+      echo "Running flake8 on staged Python files..."
+      echo "$RELATIVE_PY_FILES" | (cd "$REPO_ROOT/music-api" && xargs flake8 --select=E9,F63,F7,F82)
+      if [ $? -ne 0 ]; then
+        echo "Flake8 found critical errors."
+        exit 1
+      fi
+
+      for file in $STAGED_PY_FILES; do
+        git add "$REPO_ROOT/$file"
+      done
+
+      echo "Python code checks passed."
+    else
+      echo "Warning: Virtual environment not found at music-api/env. Skipping Python checks."
+      echo "  Run: cd music-api && python3 -m venv env && source env/bin/activate && pip install -r requirements.txt"
+    fi
+  fi
+fi
+
+# User Service Precommit
+if has_staged_files_in "^core-api/"; then
+  STAGED_GO_FILES=$(staged_files_matching "^core-api/.*\.go$")
+
+  if [ -n "$STAGED_GO_FILES" ]; then
+    # goimports, gofumpt and swag are `tool` directives in core-api/go.mod, so
+    # `go tool <name>` builds each one at the version the module pins. No PATH
+    # lookup and no `go install` step, which is why none of the three needs a
+    # `command -v` guard: the old guards silently skipped the whole step on any
+    # machine that had not installed the binary by hand.
+    #
+    # Two consequences for the invocation. `go tool` needs the module, so it
+    # runs from core-api. And the staged names are relative to the repo root,
+    # so they are rewritten to absolute paths first.
+    ABS_GO_FILES=$(echo "$STAGED_GO_FILES" | sed "s|^|$REPO_ROOT/|")
+
+    echo "Running goimports on staged Go files..."
+    echo "$ABS_GO_FILES" | (cd "$REPO_ROOT/core-api" && xargs go tool goimports -w) || {
+      echo "goimports formatting failed."
+      exit 1
+    }
+
+    # gofumpt is a strict superset of `gofmt -s`, so it replaces the plain
+    # gofmt pass that used to run here. It has to come AFTER goimports:
+    # goimports decides WHICH imports exist, gofumpt then splits them into a
+    # stdlib group and the rest. Running it first would leave a new import in
+    # the wrong group.
+    echo "Running gofumpt on staged Go files..."
+    echo "$ABS_GO_FILES" | (cd "$REPO_ROOT/core-api" && xargs go tool gofumpt -w) || {
+      echo "gofumpt formatting failed."
+      exit 1
+    }
+
+    for file in $STAGED_GO_FILES; do
+      git add "$REPO_ROOT/$file"
+    done
+
+    echo "Go code formatting applied."
+
+    # Core OpenAPI Precommit
+    # Any staged .go file can affect the generated spec -- a handler's
+    # swag comment, a DTO's fields, or main.go's general API info -- so
+    # this runs whenever Go files are staged, not just controllers/.
+    echo "Regenerating core-api OpenAPI spec..."
+    (cd "$REPO_ROOT" && make openapi-go) || {
+      echo "OpenAPI generation failed."
+      exit 1
+    }
+    git add "$REPO_ROOT/core-api/openapi/"
+  fi
+fi

@@ -1,0 +1,200 @@
+<div
+	class="h-[calc(100vh-4rem-2px)] flex flex-col overflow-y-auto py-2 px-2 sm:py-4 sm:px-4"
+>
+	<div class="container mx-auto max-w-4xl flex flex-col flex-1 min-h-0">
+		@if (game.phase() === "ready") {
+			<div class="flex flex-1 items-center justify-center">
+				<div
+					appCard
+					className="w-full max-w-xl space-y-6 p-6 sm:p-8"
+					role="group"
+					aria-label="Note Stream settings"
+				>
+					<div class="space-y-1 text-center">
+						<h1 class="font-display text-3xl font-bold">Note Stream</h1>
+						<p class="text-muted-foreground">
+							Play the notes in time as they scroll across the staff.
+						</p>
+					</div>
+
+					<div class="space-y-4">
+						<div role="group" aria-label="Clef">
+							<span
+								class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+							>
+								Clef
+							</span>
+							<div class="flex flex-wrap gap-2">
+								<app-button
+									size="sm"
+									[variant]="
+										settings().clef === 'treble' ? 'default' : 'outline'
+									"
+									(click)="onSettingsChange({ clef: 'treble' })"
+								>
+									Treble
+								</app-button>
+								<app-button
+									size="sm"
+									[variant]="settings().clef === 'bass' ? 'default' : 'outline'"
+									(click)="onSettingsChange({ clef: 'bass' })"
+								>
+									Bass
+								</app-button>
+							</div>
+						</div>
+
+						<div role="group" aria-label="Tempo">
+							<span
+								class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+							>
+								Tempo
+							</span>
+							<div class="flex flex-wrap gap-2">
+								@for (bpm of tempoChoices; track bpm) {
+									<app-button
+										size="sm"
+										[variant]="
+											settings().tempoBpm === bpm ? 'default' : 'outline'
+										"
+										(click)="onSettingsChange({ tempoBpm: bpm })"
+									>
+										{{ bpm }} BPM
+									</app-button>
+								}
+							</div>
+						</div>
+
+						<div role="group" aria-label="Accidentals">
+							<span
+								class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+							>
+								Accidentals
+							</span>
+							<div class="flex flex-wrap gap-2">
+								<app-button
+									size="sm"
+									[variant]="!settings().accidentals ? 'default' : 'outline'"
+									(click)="onSettingsChange({ accidentals: false })"
+								>
+									Off
+								</app-button>
+								<app-button
+									size="sm"
+									[variant]="settings().accidentals ? 'default' : 'outline'"
+									(click)="onSettingsChange({ accidentals: true })"
+								>
+									On
+								</app-button>
+							</div>
+						</div>
+
+						<div role="group" aria-label="Session length">
+							<span
+								class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+							>
+								Session length
+							</span>
+							<div class="flex flex-wrap gap-2">
+								@for (seconds of sessionLengths; track seconds) {
+									<app-button
+										size="sm"
+										[variant]="
+											settings().sessionSeconds === seconds
+												? 'default'
+												: 'outline'
+										"
+										(click)="onSettingsChange({ sessionSeconds: seconds })"
+									>
+										{{ seconds }}s
+									</app-button>
+								}
+							</div>
+						</div>
+					</div>
+
+					<div class="flex justify-center pt-2">
+						<app-button size="xl" variant="brass" (click)="game.startGame()">
+							Start
+						</app-button>
+					</div>
+				</div>
+			</div>
+		} @else if (game.phase() === "finished") {
+			<div class="flex flex-1 items-center justify-center">
+				<div class="w-full max-w-xl">
+					<app-stream-results
+						[stats]="game.stats()"
+						(playAgain)="onPlayAgain()"
+						(changeSettings)="onChangeSettings()"
+					/>
+				</div>
+			</div>
+		} @else {
+			<div class="relative flex flex-1 flex-col gap-3 sm:gap-4">
+				<div class="flex items-stretch gap-3 sm:gap-4">
+					<app-stream-hud
+						class="flex-1"
+						[score]="game.score.score()"
+						[streak]="game.score.streak()"
+						[multiplier]="game.score.multiplier()"
+						[lastJudged]="game.score.lastJudged()"
+					/>
+					<div
+						appCard
+						className="flex flex-shrink-0 items-center justify-center px-4"
+					>
+						<p
+							class="font-display text-2xl font-bold tabular-nums sm:text-3xl"
+							[attr.aria-label]="
+								'Time remaining ' + formatTime(secondsRemaining())
+							"
+						>
+							{{ formatTime(secondsRemaining()) }}
+						</p>
+					</div>
+				</div>
+
+				@if (game.phase() === "countIn") {
+					<p
+						class="text-center text-sm font-medium text-muted-foreground"
+						aria-live="polite"
+					>
+						Get ready…
+					</p>
+				}
+
+				<app-stream-staff
+					[clef]="settings().clef"
+					[notes]="game.notes()"
+					[judgmentFor]="judgmentFor"
+					[getCurrentBeat]="getCurrentBeat"
+					[running]="isRunning()"
+				/>
+
+				@if (game.phase() === "paused") {
+					<div
+						class="absolute inset-0 flex items-center justify-center bg-background/80"
+					>
+						<div
+							appCard
+							className="w-full max-w-xs space-y-4 p-6 text-center"
+							role="alertdialog"
+							aria-label="Paused"
+						>
+							<h2 class="font-display text-2xl font-bold">Paused</h2>
+							<div class="flex flex-col gap-2">
+								<app-button variant="default" (click)="game.resume()">
+									Resume
+								</app-button>
+								<app-button variant="outline" (click)="game.endGame()">
+									End run
+								</app-button>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		}
+	</div>
+</div>

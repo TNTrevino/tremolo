@@ -1,0 +1,92 @@
+# Reading the caller's saved settings for one identification game
+# (key_signature / scale / chord / interval -- "note" uses its own
+# typed endpoints under note-game/, not this one). Same null-payload
+# pattern as note-game/get-settings.http when nothing is saved yet.
+#
+# Run:  kulala run --tests --env local game-settings/get-game-settings.http
+
+@student_email = kula_get_game_settings_student_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### GetSettingsBeforeSaving
+# GetSettingsBeforeSaving has a fresh account read the "scale" game's
+# settings before ever saving any and expects 200 with a null payload.
+GET {{baseUrl}}/api/game-settings?game_type=scale
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("no saved settings for this game type is a null payload", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.settings === null, "settings is null before the first save");
+	});
+%}
+
+### SaveSettings
+# SaveSettings puts a well-formed "scale" settings blob in place for the
+# next block to read back.
+PUT {{baseUrl}}/api/game-settings
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"game_type": "scale",
+	"config": { "tonicPool": ["C", "G"], "scaleTypes": ["major"] }
+}
+
+> {%
+	client.test("settings saved", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### GetSettingsAfterSaving
+# GetSettingsAfterSaving reads the settings back and expects the exact
+# config blob just saved, unwrapped (not under a "settings" key, same
+# as note-game/get-settings.http once a row exists).
+GET {{baseUrl}}/api/game-settings?game_type=scale
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("saved settings are read back unchanged", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.game_type === "scale", "game_type round-trips");
+		client.assert(response.body.config.scaleTypes[0] === "major", "config blob round-trips");
+	});
+%}
+
+### GetSettingsInvalidGameType
+# GetSettingsInvalidGameType asks for a game_type outside
+# ValidSettingsGameTypes and expects 400.
+GET {{baseUrl}}/api/game-settings?game_type=banjo
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an unknown game_type is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(response.body.error === "Invalid game_type", "unexpected error string: " + response.body.error);
+	});
+%}

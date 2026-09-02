@@ -1,0 +1,112 @@
+import type {
+	KeyboardBindingsDto,
+	NoteGameSettingsDto,
+} from "@shared/models/game.models";
+
+/**
+ * GET /api/users/{userId}/export response tree (#243) -- the data export
+ * the account page downloads as a file.
+ *
+ * Wire-shaped (snake_case) on purpose, with NO camelCase mapper: this
+ * object is never read field-by-field or rendered, it goes straight
+ * into `JSON.stringify` and out to the browser as a download (see
+ * account-page.component.ts's `saveExport`). Round-tripping it through a
+ * mapper would be work that immediately gets undone.
+ *
+ * `settings.note_game` and `keyboard_bindings` reuse the shared
+ * `NoteGameSettingsDto`/`KeyboardBindingsDto` wire shapes from
+ * `@shared/models/game.models` rather than redeclaring them: the Go side
+ * reuses its own existing response DTOs for these two sections, so the
+ * frontend types should match instead of drifting out of sync with them.
+ */
+export interface UserExport {
+	exported_at: string;
+	profile: ExportProfile;
+	settings: ExportSettings;
+	keyboard_bindings: KeyboardBindingsDto | null;
+	score_entries: ExportScoreEntry[];
+	classes: ExportClasses;
+	assignment_attempts: ExportAttempt[];
+	friends: ExportFriend[];
+}
+
+export interface ExportProfile {
+	id: number;
+	first_name: string;
+	last_name: string;
+	email: string;
+	role: string;
+	instrument: string;
+	school: string;
+	has_google: boolean;
+	created_date: string;
+	created_time: string;
+}
+
+export interface ExportSettings {
+	note_game: NoteGameSettingsDto | null;
+	games: ExportGameSettings[];
+}
+
+/** One saved game's JSONB config -- passed straight through, never read. */
+export interface ExportGameSettings {
+	game_type: string;
+	config: unknown;
+}
+
+export interface ExportScoreEntry {
+	id: number;
+	game_type: string;
+	total_questions: number;
+	correct_questions: number;
+	notes_per_minute: number;
+	time_length: string;
+	assignment_id: number | null;
+	created_date: string;
+	created_time: string;
+}
+
+export interface ExportClasses {
+	joined: ExportJoinedClass[];
+	owned: ExportOwnedClass[];
+}
+
+/** A class joined as a student. No join code -- a student shouldn't redistribute their teacher's. */
+export interface ExportJoinedClass {
+	id: number;
+	name: string;
+	teacher_name: string;
+}
+
+/** A class owned as a teacher. */
+export interface ExportOwnedClass {
+	id: number;
+	name: string;
+	join_code: string;
+	student_count: number;
+	created_at: string;
+}
+
+/** One score entry tagged with a class assignment. */
+export interface ExportAttempt {
+	entry_id: number;
+	assignment_id: number;
+	assignment_title: string;
+	game_type: string;
+	class_name: string;
+	correct_questions: number;
+	total_questions: number;
+	notes_per_minute: number;
+	time_length: string;
+	created_date: string;
+	created_time: string;
+}
+
+export interface ExportFriend {
+	id: number;
+	first_name: string;
+	last_name: string;
+	role: string;
+	instrument: string;
+	school: string;
+}

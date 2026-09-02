@@ -1,0 +1,50 @@
+name: Hardware CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "hardware/**"
+      - ".github/workflows/hardware.yml"
+      - "Makefile"
+  pull_request:
+    paths:
+      - "hardware/**"
+      - ".github/workflows/hardware.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hardware-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenSCAD
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openscad xvfb
+
+      # The render commands live in the Makefile so CI and local dev
+      # can't drift. The PNG previews need a GL context, which xvfb
+      # provides on the headless runner; the STL exports do not care.
+      - name: Render STLs and previews
+        run: xvfb-run -a make build-hardware
+
+      # STLs and previews are gitignored build artifacts; this is where
+      # they get published. Grab them from the run's Artifacts box.
+      - name: Upload the overlay artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyboard-overlay
+          path: |
+            hardware/keyboard-overlay/*.stl
+            hardware/keyboard-overlay/*.png
+          if-no-files-found: error

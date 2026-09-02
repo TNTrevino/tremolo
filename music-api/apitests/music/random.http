@@ -1,0 +1,91 @@
+# A measure of randomly-selected notes from a tonic/rhythm pattern.
+# Returns raw MusicXML on success; errors share the generic
+# "something is not right!<detail>" body used by every game endpoint
+# (run_game_endpoint's error mapping), as a plain-text body.
+#
+# Run:  kulala run --tests --env local music/random.http
+
+### Random
+# Random generates a measure of sixteenth-note rhythm and expects 200.
+POST {{baseUrl}}/music/random
+Content-Type: application/json
+
+{
+	"rhythm": "1111",
+	"rhythmType": 16,
+	"tonic": "C"
+}
+
+> {%
+	client.test("random generates musicxml for a valid pattern", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.indexOf("<score-partwise") !== -1, "response is MusicXML");
+	});
+%}
+
+### RandomUnsupportedTonic
+# RandomUnsupportedTonic sends a tonic music21 cannot parse and expects
+# 400 with the generic game-endpoint error prefix.
+POST {{baseUrl}}/music/random
+Content-Type: application/json
+
+{
+	"rhythm": "1111",
+	"rhythmType": 16,
+	"tonic": "H"
+}
+
+> {%
+	client.test("random rejects an unparseable tonic", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!Cannot make a step out of 'H'",
+			"unexpected error body: " + response.body
+		);
+	});
+%}
+
+### RandomMalformedRhythmDigit
+# RandomMalformedRhythmDigit uses a digit outside the sixteenth-note
+# alphabet ("0", "1", "2") -- the lookup raises a KeyError, whose str()
+# repr wraps the offending digit in quotes.
+POST {{baseUrl}}/music/random
+Content-Type: application/json
+
+{
+	"rhythm": "1113",
+	"rhythmType": 16,
+	"tonic": "C"
+}
+
+> {%
+	client.test("random rejects a rhythm digit outside the duration alphabet", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!'3'",
+			"unexpected error body: " + response.body
+		);
+	});
+%}
+
+### RandomUnsupportedRhythmType
+# RandomUnsupportedRhythmType sends a rhythmType outside {8, 16}, which
+# is rejected before the digit string is ever parsed.
+POST {{baseUrl}}/music/random
+Content-Type: application/json
+
+{
+	"rhythm": "1111",
+	"rhythmType": 32,
+	"tonic": "C"
+}
+
+> {%
+	client.test("random rejects an unsupported rhythm type", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body === "something is not right!this rhythm is not supported",
+			"unexpected error body: " + response.body
+		);
+	});
+%}

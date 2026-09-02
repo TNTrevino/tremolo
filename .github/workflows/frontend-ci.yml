@@ -25,6 +25,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The frontend: the Angular app in frontend/. Node comes from
+  # frontend/.nvmrc -- Angular 22 supports ^22.22.3 || ^24.15.0 || >=26.0.0
+  # and nothing else, and the system Node on the dev machine satisfies none
+  # of them, so the pin is load-bearing rather than decorative.
+  #
+  # There was a second job here, react-checks, for the outgoing React app.
+  # Phase 7 of the migration deleted frontend-react/ and this job is the
+  # whole frontend gate now. See frontend/.migration/.
   frontend-checks:
     runs-on: ubuntu-latest
 
@@ -35,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: frontend/.nvmrc
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -46,9 +54,12 @@ jobs:
           npm ci
 
       # The checks themselves live in the Makefile so CI and local dev
-      # can't drift: format-check + lint + test + build.
-      - name: Check (format + lint + test + build)
+      # can't drift: format-check + lint + build + test, in that order --
+      # build runs before the test suite so a broken build fails fast.
+      #
+      # The E2E suite (frontend/e2e/) is deliberately NOT here: it needs
+      # both backends and a seeded database, and the repo has no such job.
+      # It is the migration's regression suite and is run by hand against a
+      # local server -- see frontend/e2e/README.md.
+      - name: Check (format + lint + build + test)
         run: make check-frontend
-        env:
-          VITE_BACKEND_MAIN: ${{ secrets.VITE_BACKEND_MAIN }}
-          VITE_BACKEND_MUSIC: ${{ secrets.VITE_BACKEND_MUSIC }}

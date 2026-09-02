@@ -1,0 +1,123 @@
+# Deleting the caller's own account. The happy path is NOT covered here.
+# Unlike every other endpoint in this suite, a successful call here is
+# irreversible, and every block below shares ONE registered student
+# (the id/email-mismatch checks both need a REAL, still-existing account
+# to authenticate as, or to compare the confirmation email against) --
+# so an accidental happy-path invocation wouldn't just fail one
+# assertion, it would delete the fixture every later block in this file
+# depends on. reset-password.http stops short of its own happy path for
+# a different reason (the token only ever exists in a queued mail's
+# body this suite can't read), but the same principle holds here too:
+# don't spend the one fixture this file needs to stay intact. The real,
+# end-to-end delete -- password checked, email confirmed, the account
+# actually gone, every foreign key cascaded -- is covered by
+# core-api/tests/delete_account_service_test.go and
+# core-api/tests/delete_account_controller_test.go instead.
+#
+# Run:  kulala run --tests --env local users/delete-account.http
+
+@student_email       = kula_delete_account_student_{{$timestamp}}@qa.test
+@other_student_email = kula_delete_account_other_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the student every block below targets, and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### RegisterOtherStudent
+# RegisterOtherStudent registers a second student used to prove the
+# self-only access rule.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{other_student_email}}", "password": "{{password}}", "first_name": "Other", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("other_student_login_email", response.body.user.email);
+%}
+
+### LoginOtherStudent
+# LoginOtherStudent logs the other student in and stashes the access
+# token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{other_student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("other_student_token", response.body.access_token);
+%}
+
+### DeleteAccountUnauthenticated
+# DeleteAccountUnauthenticated sends no bearer token and expects 401.
+DELETE {{baseUrl}}/api/users/{{student_id}}
+Content-Type: application/json
+
+{ "password": "{{password}}", "email_confirmation": "{{student_login_email}}" }
+
+> {%
+	client.test("an unauthenticated caller is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(response.body.error === "Unauthorized", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### DeleteAccountOtherUsersID
+# DeleteAccountOtherUsersID has the other student try to delete the
+# first student's account and expects 403 -- and, since this must never
+# succeed, the first student is still there for the next block.
+DELETE {{baseUrl}}/api/users/{{student_id}}
+Content-Type: application/json
+Authorization: Bearer {{other_student_token}}
+
+{ "password": "{{password}}", "email_confirmation": "{{student_login_email}}" }
+
+> {%
+	client.test("a caller cannot delete another user's account", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Access denied", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### DeleteAccountMismatchedEmailConfirmation
+# DeleteAccountMismatchedEmailConfirmation sends the right password but
+# the wrong email confirmation and expects 400 -- and, again, must not
+# actually delete anything, since the id-check block above already
+# reused this same student once.
+DELETE {{baseUrl}}/api/users/{{student_id}}
+Content-Type: application/json
+Authorization: Bearer {{student_token}}
+
+{ "password": "{{password}}", "email_confirmation": "not-{{student_login_email}}" }
+
+> {%
+	client.test("a mismatched email confirmation is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Email confirmation does not match this account",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

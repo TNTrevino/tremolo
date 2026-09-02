@@ -228,6 +228,6 @@ yarn.lock
 frontend/src/Secret.tsx
 staticfiles/
 
-backend/main/tmp/
+core-api/tmp/
 tremolo.sh
 /.claude/worktrees

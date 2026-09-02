@@ -1,0 +1,67 @@
+# Completing Google OAuth sign-in. The validation blocks below never
+# leave this machine, but GoogleCallbackBadCode makes a REAL outbound
+# call to Google's token endpoint to exchange the (garbage) code -- it
+# is the only request in this suite with an external network dependency.
+# If it fails with a timeout instead of the expected 401, check network
+# access before assuming the handler is broken.
+#
+# Run:  kulala run --tests --env local auth/google-callback.http
+
+### GoogleCallbackEmptyBody
+# GoogleCallbackEmptyBody omits both fields and expects 400 with both
+# problems, sorted by JSON key (code before redirect_uri).
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/google/callback
+Content-Type: application/json
+
+{}
+
+> {%
+	client.test("both missing fields are reported", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Authorization code is required, Redirect URI is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GoogleCallbackInvalidRedirectUri
+# GoogleCallbackInvalidRedirectUri sends a redirect_uri that isn't an
+# absolute URL and expects 400.
+POST {{baseUrl}}/api/auth/google/callback
+Content-Type: application/json
+
+{ "code": "some-code", "redirect_uri": "not-a-url" }
+
+> {%
+	client.test("a non-absolute redirect_uri is rejected", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "Redirect URI must be a valid URL",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### GoogleCallbackBadCode
+# GoogleCallbackBadCode sends a well-formed body with a code Google has
+# never issued. The body passes DTO validation, so the handler makes a
+# real call to Google's token endpoint, which rejects the code and
+# expects 401.
+POST {{baseUrl}}/api/auth/google/callback
+Content-Type: application/json
+
+{ "code": "not-a-real-google-code", "redirect_uri": "https://tremolonotes.com/auth/callback" }
+
+> {%
+	client.test("a code Google never issued is rejected", function () {
+		client.assert(response.status === 401, "expected 401, got " + response.status);
+		client.assert(
+			response.body.error === "Invalid authorization code",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

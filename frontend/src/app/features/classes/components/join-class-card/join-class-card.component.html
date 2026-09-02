@@ -1,0 +1,82 @@
+<div appCard>
+	<div appCardHeader>
+		<h3 appCardTitle className="font-display text-2xl">Join a class</h3>
+	</div>
+	<div appCardContent className="space-y-4">
+		<form (submit)="submit($event)" class="flex items-start gap-2">
+			<app-form-field
+				label="Class code"
+				htmlFor="join-code"
+				className="flex-1 space-y-1.5"
+				[error]="serverError()"
+				[field]="joinForm.joinCode"
+			>
+				<input
+					appFormInput
+					id="join-code"
+					autocomplete="off"
+					placeholder="7NZJN3"
+					[formField]="joinForm.joinCode"
+				/>
+			</app-form-field>
+			<app-button
+				type="submit"
+				variant="brass"
+				className="mt-6"
+				[loading]="pending()"
+			>
+				Join
+			</app-button>
+		</form>
+
+		@if (justJoined(); as studentClass) {
+			<div
+				class="flex items-center gap-2 rounded-md border-2 border-correct/40 bg-correct/10 p-3 text-sm"
+			>
+				<ng-icon
+					name="lucideCheck"
+					size="1rem"
+					aria-hidden="true"
+					class="shrink-0 text-correct"
+				/>
+				<span>
+					Joined <span class="font-medium">{{ studentClass.name }}</span> —
+					{{ studentClass.teacherName }}
+				</span>
+			</div>
+		}
+
+		<div>
+			<h3 class="mb-2 text-sm font-medium text-muted-foreground">
+				Your classes
+			</h3>
+			@if (classes.status() === "loading") {
+				<div class="space-y-2">
+					<div appSkeleton class="h-9 w-full"></div>
+					<div appSkeleton class="h-9 w-full"></div>
+				</div>
+			} @else if (classes.error()) {
+				<p class="text-sm text-destructive">Failed to load your classes.</p>
+			} @else if (classes.value().length > 0) {
+				<ul class="space-y-1">
+					@for (studentClass of classes.value(); track studentClass.id) {
+						<li
+							class="flex items-center justify-between rounded-lg p-2 transition-colors hover:bg-accent/50"
+						>
+							<span class="truncate text-sm font-medium">{{
+								studentClass.name
+							}}</span>
+							<span class="shrink-0 text-xs text-muted-foreground">{{
+								studentClass.teacherName
+							}}</span>
+						</li>
+					}
+				</ul>
+			} @else {
+				<p class="text-sm text-muted-foreground">
+					You haven't joined any classes yet.
+				</p>
+			}
+		</div>
+	</div>
+</div>

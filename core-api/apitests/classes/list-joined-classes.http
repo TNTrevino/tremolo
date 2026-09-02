@@ -1,0 +1,106 @@
+# Listing the classes a student has joined.
+#
+# Run:  kulala run --tests --env local classes/list-joined-classes.http
+
+@teacher_email = kula_joined_teacher_{{$timestamp}}@qa.test
+@student_email = kula_joined_student_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### ListJoinedClassesEmpty
+# ListJoinedClassesEmpty has the student list their joined classes
+# before joining anything and expects an empty array, not an error.
+GET {{baseUrl}}/api/classes/joined
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a student who joined nothing gets an empty list", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 0, "expected an empty array, got " + response.body.length + " classes");
+	});
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for the student to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinClass
+# JoinClass has the student join the class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### ListJoinedClasses
+# ListJoinedClasses has the student list their joined classes again and
+# expects the newly joined class to appear.
+GET {{baseUrl}}/api/classes/joined
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("student sees the class they joined", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var names = response.body.map(function (c) { return c.name; });
+		client.assert(names.indexOf("Symphonic Band") !== -1, "the joined class is in the list");
+	});
+%}

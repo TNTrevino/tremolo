@@ -1,0 +1,157 @@
+# Joining a class by its 6-character code.
+#
+# Run:  kulala run --tests --env local classes/join-class.http
+
+@teacher_email = kula_join_teacher_{{$timestamp}}@qa.test
+@student_email = kula_join_student_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class with a join code to test
+# against.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+	// lower-cased + padded, to prove the join code is normalized on entry
+	client.global.set("join_code_messy", "  " + response.body.join_code.toLowerCase() + "  ");
+%}
+
+### JoinMessyCode
+# JoinMessyCode has the student join with a lower-cased, padded code and
+# expects 200 -- the code is trimmed and upper-cased before lookup.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code_messy}}" }
+
+> {%
+	client.test("student joins with a lower-cased, padded code", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.name === "Symphonic Band", "joined the right class");
+	});
+%}
+
+### JoinAgainIsIdempotent
+# JoinAgainIsIdempotent has the student join the same class a second
+# time. The insert is ON CONFLICT DO NOTHING, so a repeat join is not an
+# error -- it still returns 200 with the same class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("joining a class already joined is a no-op, not an error", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.id === client.global.get("class_id"), "still the same class");
+	});
+%}
+
+### JoinUnknownCode
+# JoinUnknownCode uses a code that was never issued and expects 404 with
+# a specific message (this is checked directly in the controller, not
+# through the shared respondClassError mapping).
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "ZZZZZZ" }
+
+> {%
+	client.test("an unknown join code is a 404", function () {
+		client.assert(response.status === 404, "expected 404, got " + response.status);
+		client.assert(
+			response.body.error === "No class with that join code",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}
+
+### TeacherCannotJoin
+# TeacherCannotJoin has the owning teacher attempt to join their own
+# class and expects 403 -- only students join classes.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("a teacher cannot join a class", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### JoinEmptyCode
+# JoinEmptyCode sends a blank join_code and expects 400 with the exact
+# validation message.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "" }
+
+> {%
+	client.test("an empty join code is rejected before lookup", function () {
+		client.assert(response.status === 400, "expected 400, got " + response.status);
+		client.assert(
+			response.body.error === "JoinCode: is required",
+			"unexpected error string: " + response.body.error
+		);
+	});
+%}

@@ -1,0 +1,111 @@
+# Listing the assignments a teacher has set on one of their classes.
+# Same ownership gate as the roster and archive routes.
+#
+# Run:  kulala run --tests --env local classes/list-class-assignments.http
+
+@teacher_email       = kula_list_assign_teacher_{{$timestamp}}@qa.test
+@other_teacher_email = kula_list_assign_other_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the owning teacher and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the owning teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterOtherTeacher
+# RegisterOtherTeacher registers an unrelated teacher who does not own
+# the class under test.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{other_teacher_email}}", "password": "{{password}}", "first_name": "Other", "last_name": "Teacher", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("other_teacher_login_email", response.body.user.email);
+%}
+
+### LoginOtherTeacher
+# LoginOtherTeacher logs the other teacher in and stashes the access
+# token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{other_teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("other_teacher_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the owning teacher a class to assign work to.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+%}
+
+### CreateAssignment
+# CreateAssignment gives the class one assignment to list back.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" }
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### ListClassAssignments
+# ListClassAssignments has the owning teacher list the class's
+# assignments and expects 200 with the one just created.
+GET {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("teacher sees the class's assignment", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var ids = response.body.map(function (a) { return a.id; });
+		client.assert(ids.indexOf(client.global.get("assignment_id")) !== -1, "the created assignment is in the list");
+	});
+%}
+
+### ListClassAssignmentsNotOwner
+# ListClassAssignmentsNotOwner has an unrelated teacher try to list
+# assignments on a class they don't own and expects 403.
+GET {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{other_teacher_token}}
+
+> {%
+	client.test("a non-owning teacher cannot list the class's assignments", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}

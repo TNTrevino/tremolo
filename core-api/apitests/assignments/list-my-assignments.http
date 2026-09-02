@@ -1,0 +1,154 @@
+# A student's own assignment list, with progress rolled up from their
+# score entries.
+#
+# Run:  kulala run --tests --env local assignments/list-my-assignments.http
+
+@teacher_email = kula_my_assignments_teacher_{{$timestamp}}@qa.test
+@student_email = kula_my_assignments_student_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent
+# RegisterStudent registers the student actor and expects 201.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_id", response.body.user.id);
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for the student to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("join_code", response.body.join_code);
+	client.global.set("class_id", response.body.id);
+%}
+
+### JoinClass
+# JoinClass enrolls the student in the class.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### CreateAssignment
+# CreateAssignment gives the class one assignment for the student to
+# attempt.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" },
+	"target_accuracy": 80
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### ListMyAssignmentsBeforeAttempt
+# ListMyAssignmentsBeforeAttempt has the student list their assignments
+# before submitting anything and expects the assignment to appear with
+# zero attempts.
+GET {{baseUrl}}/api/assignments
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an unattempted assignment appears with zero attempts", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var a = response.body.find(function (x) { return x.id === client.global.get("assignment_id"); });
+		client.assert(!!a, "the assignment is in the student's list");
+		client.assert(a.attempt_count === 0, "no attempts yet, got " + a.attempt_count);
+	});
+%}
+
+### SubmitAttempt
+# SubmitAttempt tags a score entry with the assignment: 15/20 = 75%.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student_id}},
+	"time_length": "00:01:00",
+	"total_questions": 20,
+	"correct_questions": 15,
+	"notes_per_minute": 15,
+	"game_type": "note",
+	"assignment_id": {{assignment_id}}
+}
+
+> {%
+	client.test("student submits a tagged attempt", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### ListMyAssignmentsAfterAttempt
+# ListMyAssignmentsAfterAttempt has the student list their assignments
+# again and expects the new attempt reflected in the progress rollup.
+GET {{baseUrl}}/api/assignments
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("student sees their assignment with progress", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var a = response.body.find(function (x) { return x.id === client.global.get("assignment_id"); });
+		client.assert(!!a, "the assignment is in the student's list");
+		client.assert(a.attempt_count === 1, "one attempt recorded, got " + a.attempt_count);
+		client.assert(a.best_accuracy === 75, "best accuracy is 75%, got " + a.best_accuracy);
+	});
+%}

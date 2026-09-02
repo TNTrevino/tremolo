@@ -1,0 +1,153 @@
+/*
+ * Global styles. Ported from frontend-react/src/index.css verbatim.
+ *
+ * The two @fontsource-variable loads below were `import` statements in the
+ * React app's main.tsx; Angular bootstraps from a .ts file that cannot
+ * import CSS, so they move here, into the app's single global stylesheet.
+ * They are `@use`, not `@import`: Sass deprecated `@import` (removed in Dart
+ * Sass 3), and the builder warns on it. Sass resolves both to each package's
+ * index.css and inlines the @font-face rules; the builder rebases the
+ * url()s and emits the woff2 files. `@use` must stay above @tailwind.
+ */
+@use "@fontsource-variable/inter" as *;
+@use "@fontsource-variable/bricolage-grotesque" as *;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	/* "Ink, paper & brass" — see DESIGN.md. Ink navy does the everyday
+	   work; brass is the one scarce accent; --accent is a quiet hover
+	   wash (its shadcn meaning), never an emphasis color. */
+	:root {
+		--background: 40 20% 98%;
+		--foreground: 222 39% 16%;
+		--card: 0 0% 100%;
+		--card-foreground: 222 39% 16%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 222 39% 16%;
+		--primary: 222 39% 20%;
+		--primary-foreground: 40 20% 98%;
+		--secondary: 222 15% 93%;
+		--secondary-foreground: 222 39% 16%;
+		--muted: 40 12% 93%;
+		--muted-foreground: 222 12% 42%;
+		--accent: 222 18% 92%;
+		--accent-foreground: 222 39% 16%;
+		--brass: 36 68% 46%;
+		--brass-foreground: 40 20% 98%;
+		--correct: 152 55% 32%;
+		--correct-foreground: 40 20% 98%;
+		--destructive: 0 72% 45%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 222 15% 86%;
+		--input: 222 15% 86%;
+		--ring: 36 68% 42%;
+		--radius: 0.5rem;
+	}
+
+	/* Charcoal, not purple-tinted: primary flips to a light fill so
+	   selected states read like musictheory.net's keyboard highlight. */
+	.dark {
+		--background: 220 8% 10%;
+		--foreground: 40 15% 92%;
+		--card: 220 8% 14%;
+		--card-foreground: 40 15% 92%;
+		--popover: 220 8% 14%;
+		--popover-foreground: 40 15% 92%;
+		--primary: 40 15% 92%;
+		--primary-foreground: 220 8% 12%;
+		--secondary: 220 6% 18%;
+		--secondary-foreground: 40 15% 92%;
+		--muted: 220 6% 18%;
+		--muted-foreground: 220 5% 64%;
+		--accent: 220 6% 20%;
+		--accent-foreground: 40 15% 92%;
+		--brass: 36 70% 55%;
+		--brass-foreground: 220 8% 10%;
+		--correct: 152 45% 45%;
+		--correct-foreground: 220 8% 10%;
+		--destructive: 0 60% 50%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 220 6% 22%;
+		--input: 220 6% 22%;
+		--ring: 36 70% 55%;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+		font-feature-settings:
+			"rlig" 1,
+			"calt" 1;
+	}
+}
+
+@layer base {
+	/*
+	 * `<ng-icon>` is a custom element, so Tailwind's preflight -- which sets
+	 * `display: block; vertical-align: middle` on every `<svg>` -- never
+	 * reaches it. React's lucide icons *were* `<svg>`, so they were block and
+	 * middle-aligned; an `<ng-icon>` left inline-block on the text baseline
+	 * adds a descender's worth of line-box height (6px on the converter
+	 * page's empty state) and rides ~3px high in the nav bar. This is
+	 * preflight's rule, extended to the element that replaced the svg.
+	 *
+	 * `:root` rather than a bare `ng-icon` for specificity: `@ng-icons` sets
+	 * `display` on its own host from a component style Angular injects after
+	 * this sheet, and `[_nghost-…]` (0,1,0) outranks a type selector. Being
+	 * in `@layer base` keeps it *below* the utilities, so a display utility
+	 * written on an `<ng-icon>` still wins.
+	 *
+	 * Phase 3.1 shipped the same fix as an unlayered `ng-icon[role="img"]`
+	 * rule below `@tailwind utilities`. Removed at Phase 4's integration:
+	 * same specificity, but sitting after the utilities it beat a `display`
+	 * utility written on the element, which is the cascade bug the pair of
+	 * fixes exists to undo. This is the one rule; do not re-add the other.
+	 */
+	:root ng-icon {
+		display: block;
+		vertical-align: middle;
+	}
+}
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
+}
+
+/*
+ * Custom scrollbar.
+ *
+ * `scrollbar-width` is the standard property and wins over the
+ * `::-webkit-scrollbar*` pseudo-elements wherever both are supported
+ * (Chromium 121+, Firefox), so the theme colours are stated twice: once in
+ * `scrollbar-color` for those browsers and once in the pseudo-elements for
+ * Safari and older Chromium, which have no `scrollbar-width`.
+ */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+}
+
+::-webkit-scrollbar-track {
+	@apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+	@apply bg-muted rounded-lg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	@apply bg-muted-foreground/50;
+}

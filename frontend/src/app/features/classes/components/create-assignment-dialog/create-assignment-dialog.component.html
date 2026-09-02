@@ -1,0 +1,136 @@
+<app-dialog [(open)]="open">
+	<div appDialogContent class="max-h-[90vh] overflow-y-auto">
+		<form (submit)="submit($event)">
+			<div appDialogHeader>
+				<h2 appDialogTitle class="font-display">New assignment</h2>
+			</div>
+
+			<div class="p-6 space-y-4">
+				<app-form-field
+					label="Title"
+					htmlFor="assignment-title"
+					[required]="true"
+					[field]="assignmentForm.title"
+				>
+					<input
+						appFormInput
+						id="assignment-title"
+						placeholder="Week 1: Treble Notes"
+						[formField]="assignmentForm.title"
+					/>
+				</app-form-field>
+
+				<app-form-field label="Game" htmlFor="assignment-game-type">
+					<app-select
+						selectId="assignment-game-type"
+						[value]="gameType()"
+						(valueChange)="changeGameType($event)"
+					>
+						@for (option of gameTypeOptions; track option.value) {
+							<option [value]="option.value">{{ option.label }}</option>
+						}
+					</app-select>
+				</app-form-field>
+
+				<div class="rounded-lg border-2 border-border p-4 space-y-4">
+					<div class="flex items-start justify-between gap-2">
+						<div class="space-y-1">
+							<h3 class="font-medium">{{ gameLabel() }} settings</h3>
+							<p class="text-xs text-muted-foreground">
+								Frozen when you create the assignment. Changing your own
+								settings later will not change it.
+							</p>
+						</div>
+						<app-button variant="ghost" size="sm" (click)="resetSettings()">
+							Reset to defaults
+						</app-button>
+					</div>
+
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<app-game-mode-limit-controls
+							[settings]="baseSettings()"
+							[unit]="isNoteGame() ? 'notes' : 'questions'"
+							(changed)="applySettings($event)"
+						/>
+						@if (settingsSchema(); as schema) {
+							<app-settings-controls
+								[schema]="schema"
+								[settings]="gameSettings()"
+								(changed)="applySettings($event)"
+							/>
+						} @else {
+							<div class="space-y-1">
+								<label for="assignment-scale" class="text-xs font-medium">
+									Scale
+								</label>
+								<app-select
+									selectId="assignment-scale"
+									[value]="noteSettings().scale"
+									(valueChange)="applySettings({ scale: $event })"
+								>
+									@for (scale of scales; track scale) {
+										<option [value]="scale">{{ scale }}</option>
+									}
+								</app-select>
+							</div>
+							<div class="sm:col-span-2">
+								<app-note-range-setting
+									[clef]="noteSettings().clef"
+									[lowNote]="noteSettings().lowNote"
+									[highNote]="noteSettings().highNote"
+									(settingsChange)="applySettings($event)"
+								/>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					<app-form-field label="Due date" htmlFor="assignment-due">
+						<input
+							appFormInput
+							id="assignment-due"
+							type="datetime-local"
+							[formField]="assignmentForm.dueAt"
+						/>
+					</app-form-field>
+					<app-form-field
+						label="Target questions"
+						htmlFor="assignment-target-q"
+						[field]="assignmentForm.targetQuestions"
+					>
+						<input
+							appFormInput
+							id="assignment-target-q"
+							type="number"
+							placeholder="Optional"
+							[formField]="assignmentForm.targetQuestions"
+						/>
+					</app-form-field>
+					<app-form-field
+						label="Target accuracy %"
+						htmlFor="assignment-target-a"
+						[field]="assignmentForm.targetAccuracy"
+					>
+						<input
+							appFormInput
+							id="assignment-target-a"
+							type="number"
+							placeholder="Optional"
+							[formField]="assignmentForm.targetAccuracy"
+						/>
+					</app-form-field>
+				</div>
+			</div>
+
+			<div appDialogFooter>
+				<app-button variant="outline" [disabled]="pending()" (click)="close()">
+					Cancel
+				</app-button>
+				<app-button type="submit" variant="brass" [loading]="pending()">
+					Create assignment
+				</app-button>
+			</div>
+		</form>
+	</div>
+</app-dialog>

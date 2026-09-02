@@ -1,0 +1,85 @@
+# Listing the caller's own friends. JWT only -- no query or body.
+#
+# Run:  kulala run --tests --env local friends/list-friends.http
+
+@student1_email = kula_list_friends_student1_{{$timestamp}}@qa.test
+@student2_email = kula_list_friends_student2_{{$timestamp}}@qa.test
+
+### RegisterStudent1
+# RegisterStudent1 registers the caller whose friend list is read and
+# expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers a second student to become a friend.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_id", response.body.user.id);
+%}
+
+### ListFriendsEmpty
+# ListFriendsEmpty has a brand new account list their friends before
+# adding anyone and expects an empty array, not an error.
+GET {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+
+> {%
+	client.test("a fresh account has no friends yet", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 0, "expected an empty array, got " + response.body.length);
+	});
+%}
+
+### AddFriend
+# AddFriend gives student1 one friend to list back.
+POST {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "friend_id": {{student2_id}} }
+
+> {%
+	client.test("student1 adds student2 as a friend", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### ListFriends
+# ListFriends has student1 list their friends again and expects student2
+# to appear with the FriendDTO shape.
+GET {{baseUrl}}/api/friends
+Authorization: Bearer {{student1_token}}
+
+> {%
+	client.test("student1 sees student2 in their friend list", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 1, "one friend, got " + response.body.length);
+		client.assert(response.body[0].id === client.global.get("student2_id"), "the friend is student2");
+		client.assert(response.body[0].first_name === "Sky", "first_name is carried in the FriendDTO");
+	});
+%}

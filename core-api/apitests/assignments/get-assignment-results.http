@@ -1,0 +1,206 @@
+# The teacher's results grid for one assignment: every enrolled student
+# appears, whether or not they have attempted it yet.
+#
+# Run:  kulala run --tests --env local assignments/get-assignment-results.http
+
+@teacher_email  = kula_results_teacher_{{$timestamp}}@qa.test
+@student1_email = kula_results_student1_{{$timestamp}}@qa.test
+@student2_email = kula_results_student2_{{$timestamp}}@qa.test
+
+### RegisterTeacher
+# RegisterTeacher registers the teacher actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{teacher_email}}", "password": "{{password}}", "first_name": "Terry", "last_name": "Director", "role": "TEACHER", "invite_code": "{{teacherInviteCode}}" }
+
+> {%
+	client.global.set("teacher_login_email", response.body.user.email);
+%}
+
+### LoginTeacher
+# LoginTeacher logs the teacher in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{teacher_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("teacher_token", response.body.access_token);
+%}
+
+### RegisterStudent1
+# RegisterStudent1 registers the student who will attempt the
+# assignment.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student1_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student1_id", response.body.user.id);
+	client.global.set("student1_login_email", response.body.user.email);
+%}
+
+### LoginStudent1
+# LoginStudent1 logs student1 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student1_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student1_token", response.body.access_token);
+%}
+
+### RegisterStudent2
+# RegisterStudent2 registers a second student who stays idle -- never
+# attempts the assignment.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student2_email}}", "password": "{{password}}", "first_name": "Sky", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student2_id", response.body.user.id);
+	client.global.set("student2_login_email", response.body.user.email);
+%}
+
+### LoginStudent2
+# LoginStudent2 logs student2 in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student2_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student2_token", response.body.access_token);
+%}
+
+### CreateClass
+# CreateClass gives the teacher a class for both students to join.
+POST {{baseUrl}}/api/classes
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{ "name": "Symphonic Band" }
+
+> {%
+	client.global.set("class_id", response.body.id);
+	client.global.set("join_code", response.body.join_code);
+%}
+
+### JoinStudent1
+# JoinStudent1 enrolls student1.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student1 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### JoinStudent2
+# JoinStudent2 enrolls student2.
+POST {{baseUrl}}/api/classes/join
+Authorization: Bearer {{student2_token}}
+Content-Type: application/json
+
+{ "join_code": "{{join_code}}" }
+
+> {%
+	client.test("student2 joins", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+	});
+%}
+
+### CreateAssignment
+# CreateAssignment gives the class an assignment for student1 to
+# attempt.
+POST {{baseUrl}}/api/classes/{{class_id}}/assignments
+Authorization: Bearer {{teacher_token}}
+Content-Type: application/json
+
+{
+	"title": "Week 1: Treble Notes",
+	"game_type": "note",
+	"config": { "scale": "C", "clef": "treble" },
+	"target_accuracy": 80
+}
+
+> {%
+	client.global.set("assignment_id", response.body.id);
+%}
+
+### SubmitAttemptStudent1
+# SubmitAttemptStudent1 has student1 submit a tagged attempt: 15/20 = 75%.
+POST {{baseUrl}}/api/note-game/entry
+Authorization: Bearer {{student1_token}}
+Content-Type: application/json
+
+{
+	"user_id": {{student1_id}},
+	"time_length": "00:01:00",
+	"total_questions": 20,
+	"correct_questions": 15,
+	"notes_per_minute": 15,
+	"game_type": "note",
+	"assignment_id": {{assignment_id}}
+}
+
+> {%
+	client.test("student1 submits a tagged attempt", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### ResultsGrid
+# ResultsGrid has the owning teacher read the results grid and expects
+# both enrolled students to appear, one with progress and one idle.
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/results
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("teacher grid shows every enrolled student", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 2, "both students appear, got " + response.body.length);
+		var attempted = response.body.find(function (r) { return r.student_id === client.global.get("student1_id"); });
+		var idle = response.body.find(function (r) { return r.student_id === client.global.get("student2_id"); });
+		client.assert(attempted.best_accuracy === 75, "student1 shows 75%");
+		client.assert(idle.attempt_count === 0, "student2 shows 0 attempts but still appears");
+	});
+%}
+
+### ResultsGridNotOwner
+# ResultsGridNotOwner has an enrolled student try to read the results
+# grid and expects 403.
+GET {{baseUrl}}/api/assignments/{{assignment_id}}/results
+Authorization: Bearer {{student1_token}}
+
+> {%
+	client.test("a student cannot read the results grid", function () {
+		client.assert(response.status === 403, "expected 403, got " + response.status);
+		client.assert(response.body.error === "Forbidden", "unexpected error string: " + response.body.error);
+	});
+%}
+
+### ResultsGridUnknownAssignment
+# ResultsGridUnknownAssignment targets an id nothing was ever created
+# with. The unknown-assignment check runs before the ownership check,
+# so this is 404, not 403.
+GET {{baseUrl}}/api/assignments/999999999/results
+Authorization: Bearer {{teacher_token}}
+
+> {%
+	client.test("an unknown assignment is a 404", function () {
+		client.assert(response.status === 404, "expected 404, got " + response.status);
+		client.assert(response.body.error === "Not found", "unexpected error string: " + response.body.error);
+	});
+%}

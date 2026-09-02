@@ -1,0 +1,15 @@
+Your email address is changing
+
+Hi {{.FirstName}},
+
+Someone asked to move this {{.AppName}} account to {{.NewEmail}}. If that
+was you, there is nothing else to do — the new address takes over once it
+is confirmed.
+
+If that was NOT you, change your password now:
+
+{{.AppURL}}/forgot-password
+
+--
+This message was sent by {{.AppName}}. Please do not reply to it.
+{{.AppURL}}

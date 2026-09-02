@@ -1,0 +1,87 @@
+# Searching other users by name, to add as friends. An empty query
+# short-circuits to an empty list before the service is even called --
+# it is not treated as "no filter, return everyone".
+#
+# Run:  kulala run --tests --env local friends/search-friends.http
+
+@student_email = kula_search_student_{{$timestamp}}@qa.test
+@target_email  = kula_search_target_{{$timestamp}}@qa.test
+
+### RegisterStudent
+# RegisterStudent registers the searching actor and expects 201.
+< {%
+	client.global.clear();
+%}
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{student_email}}", "password": "{{password}}", "first_name": "Sam", "last_name": "Student", "role": "STUDENT" }
+
+> {%
+	client.global.set("student_login_email", response.body.user.email);
+%}
+
+### LoginStudent
+# LoginStudent logs the student in and stashes the access token.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{student_login_email}}", "password": "{{password}}" }
+
+> {%
+	client.global.set("student_token", response.body.access_token);
+%}
+
+### RegisterTarget
+# RegisterTarget registers a findable user with a distinctive last name
+# to search for.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "{{target_email}}", "password": "{{password}}", "first_name": "Zelda", "last_name": "Xylophonist", "role": "STUDENT" }
+
+> {%
+	client.test("target registered", function () {
+		client.assert(response.status === 201, "expected 201, got " + response.status);
+	});
+%}
+
+### SearchEmptyQuery
+# SearchEmptyQuery omits q entirely and expects 200 with an empty array
+# -- not everyone in the system, and not an error.
+GET {{baseUrl}}/api/friends/search
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("an empty query returns an empty list, not everyone", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 0, "expected an empty array, got " + response.body.length);
+	});
+%}
+
+### SearchByName
+# SearchByName searches for the target's distinctive last name and
+# expects them in the results.
+GET {{baseUrl}}/api/friends/search?q=Xylophonist
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("searching by name finds the target user", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		var names = response.body.map(function (u) { return u.last_name; });
+		client.assert(names.indexOf("Xylophonist") !== -1, "the target user is in the results");
+	});
+%}
+
+### SearchNoMatches
+# SearchNoMatches searches for a name nobody has and expects an empty
+# array, not an error.
+GET {{baseUrl}}/api/friends/search?q=NoSuchPersonExists
+Authorization: Bearer {{student_token}}
+
+> {%
+	client.test("a query with no matches returns an empty list", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.length === 0, "expected an empty array, got " + response.body.length);
+	});
+%}

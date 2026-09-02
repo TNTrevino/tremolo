@@ -1,0 +1,16 @@
+# Health check for the music-generation service.
+#
+# Run:  kulala run --tests --env local music/get-health.http
+
+### GetHealth
+# GetHealth checks that the service and music21 itself are both up and
+# expects 200 with a "healthy" status.
+GET {{baseUrl}}/music/health
+
+> {%
+	client.test("get health reports the service healthy", function () {
+		client.assert(response.status === 200, "expected 200, got " + response.status);
+		client.assert(response.body.status === "healthy", "status is healthy, got " + response.body.status);
+		client.assert(response.body.checks.music21 === "operational", "music21 check passed");
+	});
+%}

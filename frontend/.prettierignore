@@ -11,3 +11,11 @@ coverage
 .next
 .nuxt
 .vite
+.angular
+playwright-report
+test-results
+
+# The migration control directory. These are the plan of record and the
+# packets agents read verbatim -- reflowing their fenced code samples
+# changes what a later phase is told to build.
+.migration

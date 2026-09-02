@@ -1,0 +1,2506 @@
+basePath: /
+definitions:
+  controllers.addFriendRequest:
+    properties:
+      friend_id:
+        type: integer
+    type: object
+  controllers.refreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  dtos.AssignmentAttempt:
+    properties:
+      accuracy:
+        type: integer
+      attempted_date:
+        type: string
+      correct_questions:
+        type: integer
+      notes_per_minute:
+        type: integer
+      total_questions:
+        type: integer
+    type: object
+  dtos.AssignmentResponse:
+    properties:
+      class_id:
+        type: integer
+      config:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: string
+      due_at:
+        type: string
+      game_type:
+        type: string
+      id:
+        type: integer
+      target_accuracy:
+        type: integer
+      target_questions:
+        type: integer
+      title:
+        type: string
+    type: object
+  dtos.AssignmentResultRow:
+    properties:
+      attempt_count:
+        type: integer
+      best_accuracy:
+        type: integer
+      best_correct:
+        type: integer
+      first_name:
+        type: string
+      last_attempt_date:
+        description: Empty until the student has at least one attempt ("2006-01-02").
+        type: string
+      last_name:
+        type: string
+      most_questions:
+        type: integer
+      student_id:
+        type: integer
+    type: object
+  dtos.ChangeEmailRequest:
+    properties:
+      current_password:
+        type: string
+      new_email:
+        type: string
+    type: object
+  dtos.ChangeEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    type: object
+  dtos.ChangePasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.ChartDataPoint:
+    properties:
+      x:
+        type: string
+      "y":
+        type: number
+    type: object
+  dtos.ClassResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      join_code:
+        type: string
+      name:
+        type: string
+      student_count:
+        type: integer
+    type: object
+  dtos.ConfirmEmailChangeRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.ConfirmEmailChangeResponse:
+    properties:
+      email:
+        type: string
+      message:
+        type: string
+    type: object
+  dtos.CreateAssignmentRequest:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      due_at:
+        type: string
+      game_type:
+        type: string
+      target_accuracy:
+        type: integer
+      target_questions:
+        description: Optional targets; nil means the teacher set none.
+        type: integer
+      title:
+        type: string
+    type: object
+  dtos.CreateClassRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  dtos.CreateTeacherInviteRequest:
+    properties:
+      expires_in_days:
+        type: integer
+      max_uses:
+        type: integer
+      note:
+        type: string
+    type: object
+  dtos.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      role:
+        $ref: '#/definitions/dtos.Role'
+      school_id:
+        type: integer
+    type: object
+  dtos.DailyActivityCount:
+    properties:
+      date:
+        type: string
+      game_count:
+        type: integer
+    type: object
+  dtos.DeleteAccountRequest:
+    properties:
+      email_confirmation:
+        type: string
+      password:
+        type: string
+    type: object
+  dtos.Entry:
+    properties:
+      assignment_id:
+        description: 'Optional: tags this entry as an attempt at a class assignment.'
+        type: integer
+      correct_questions:
+        type: integer
+      createdDate:
+        $ref: '#/definitions/sql.NullString'
+      createdTime:
+        $ref: '#/definitions/sql.NullString'
+      game_type:
+        type: string
+      id:
+        type: integer
+      notes_per_minute:
+        type: number
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  dtos.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dtos.ExportAttempt:
+    properties:
+      assignment_id:
+        type: integer
+      assignment_title:
+        type: string
+      class_name:
+        type: string
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      entry_id:
+        type: integer
+      game_type:
+        type: string
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportClasses:
+    properties:
+      joined:
+        items:
+          $ref: '#/definitions/dtos.ExportJoinedClass'
+        type: array
+      owned:
+        items:
+          $ref: '#/definitions/dtos.ExportOwnedClass'
+        type: array
+    type: object
+  dtos.ExportFriend:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportGameSettings:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      game_type:
+        type: string
+    type: object
+  dtos.ExportJoinedClass:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      teacher_name:
+        type: string
+    type: object
+  dtos.ExportOwnedClass:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      join_code:
+        type: string
+      name:
+        type: string
+      student_count:
+        type: integer
+    type: object
+  dtos.ExportProfile:
+    properties:
+      created_date:
+        type: string
+      created_time:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      has_google:
+        type: boolean
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.ExportScoreEntry:
+    properties:
+      assignment_id:
+        description: Nil when the entry was not an attempt at a class assignment.
+        type: integer
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      created_time:
+        type: string
+      game_type:
+        type: string
+      id:
+        type: integer
+      notes_per_minute:
+        type: integer
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+    type: object
+  dtos.ExportSettings:
+    properties:
+      games:
+        items:
+          $ref: '#/definitions/dtos.ExportGameSettings'
+        type: array
+      note_game:
+        allOf:
+        - $ref: '#/definitions/dtos.NoteGameSettingsResponse'
+        description: |-
+          The existing note-game settings response shape, reused as-is: nil
+          when the user never saved any (same absence rule as
+          KeyboardBindings above).
+    type: object
+  dtos.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  dtos.ForgotPasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.FriendDTO:
+    properties:
+      avatar_url:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      instrument:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      school:
+        type: string
+    type: object
+  dtos.GameSettingsRequest:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      game_type:
+        type: string
+    type: object
+  dtos.GameSettingsResponse:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      game_type:
+        type: string
+      id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  dtos.GeneralUserInfoDTO:
+    properties:
+      created_date:
+        description: 'Format: "Joined 12 Mar 2024"'
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      total_duration:
+        description: 'Format: "HH:MM:SS" or human-readable'
+        type: string
+      total_entries:
+        type: integer
+    type: object
+  dtos.GoogleCallbackRequest:
+    properties:
+      code:
+        type: string
+      redirect_uri:
+        type: string
+    type: object
+  dtos.JoinClassRequest:
+    properties:
+      join_code:
+        type: string
+    type: object
+  dtos.KeyBindings:
+    properties:
+      key_a:
+        type: string
+      key_a_flat:
+        type: string
+      key_a_sharp:
+        type: string
+      key_b:
+        type: string
+      key_b_flat:
+        type: string
+      key_b_sharp:
+        type: string
+      key_c:
+        type: string
+      key_c_flat:
+        type: string
+      key_c_sharp:
+        type: string
+      key_d:
+        type: string
+      key_d_flat:
+        type: string
+      key_d_sharp:
+        type: string
+      key_e:
+        type: string
+      key_e_flat:
+        type: string
+      key_e_sharp:
+        type: string
+      key_f:
+        type: string
+      key_f_flat:
+        type: string
+      key_f_sharp:
+        type: string
+      key_g:
+        type: string
+      key_g_flat:
+        type: string
+      key_g_sharp:
+        type: string
+    type: object
+  dtos.KeyboardBindingsRequest:
+    properties:
+      key_bindings:
+        $ref: '#/definitions/dtos.KeyBindings'
+      overlap_accidentals:
+        type: boolean
+    type: object
+  dtos.KeyboardBindingsResponse:
+    properties:
+      id:
+        type: integer
+      key_bindings:
+        $ref: '#/definitions/dtos.KeyBindings'
+      overlap_accidentals:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
+  dtos.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  dtos.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      account_linked:
+        type: boolean
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/dtos.UserResponse'
+    type: object
+  dtos.MultiMetricChartData:
+    properties:
+      accuracy:
+        items:
+          $ref: '#/definitions/dtos.ChartDataPoint'
+        type: array
+      npm:
+        items:
+          $ref: '#/definitions/dtos.ChartDataPoint'
+        type: array
+      sessionCount:
+        items:
+          $ref: '#/definitions/dtos.ChartDataPoint'
+        type: array
+      totalQuestions:
+        items:
+          $ref: '#/definitions/dtos.ChartDataPoint'
+        type: array
+    type: object
+  dtos.NoteGameEntryResponse:
+    properties:
+      correct_questions:
+        type: integer
+      created_date:
+        type: string
+      id:
+        type: integer
+      notes_per_minute:
+        type: number
+      time_length:
+        type: string
+      total_questions:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  dtos.NoteGameSettingsRequest:
+    properties:
+      clef:
+        type: string
+      game_mode:
+        type: string
+      high_note:
+        type: string
+      low_note:
+        type: string
+      note_limit:
+        type: integer
+      octave:
+        type: integer
+      scale:
+        type: string
+      time_limit:
+        type: integer
+    type: object
+  dtos.NoteGameSettingsResponse:
+    properties:
+      clef:
+        type: string
+      game_mode:
+        type: string
+      high_note:
+        type: string
+      id:
+        type: integer
+      low_note:
+        type: string
+      note_limit:
+        type: integer
+      octave:
+        type: integer
+      scale:
+        type: string
+      time_limit:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  dtos.RegisterRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      grade_level:
+        description: |-
+          GradeLevel is an optional age-band signal a student may supply (#244):
+          "6".."12" or "other". A grade, not a birth date -- see
+          docs/legal/student-privacy-posture.md. Optional on purpose: it gates
+          nothing, every pre-#244 account has none, and an API client that never
+          sends it stays valid.
+        type: string
+      invite_code:
+        description: |-
+          InviteCode is required for, and only read by, a TEACHER signup:
+          self-service cannot claim that role without one (#250). Whether the
+          code is real is a database question services.Register answers.
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  dtos.RegisterResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/dtos.UserResponse'
+    type: object
+  dtos.ResetPasswordRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  dtos.ResetPasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dtos.Role:
+    enum:
+    - ADMIN
+    - TEACHER
+    - PARENT
+    - STUDENT
+    type: string
+    x-enum-varnames:
+    - Admin
+    - Teacher
+    - Parent
+    - Student
+  dtos.RosterEntryResponse:
+    properties:
+      first_name:
+        type: string
+      joined_at:
+        type: string
+      last_name:
+        type: string
+      student_id:
+        type: integer
+    type: object
+  dtos.StudentAssignmentResponse:
+    properties:
+      attempt_count:
+        type: integer
+      best_accuracy:
+        type: integer
+      best_correct:
+        type: integer
+      class_id:
+        type: integer
+      class_name:
+        type: string
+      config:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: string
+      due_at:
+        type: string
+      game_type:
+        type: string
+      id:
+        type: integer
+      target_accuracy:
+        type: integer
+      target_questions:
+        type: integer
+      title:
+        type: string
+    type: object
+  dtos.StudentClassResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      teacher_name:
+        type: string
+    type: object
+  dtos.TeacherInviteResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      max_uses:
+        type: integer
+      note:
+        type: string
+      use_count:
+        type: integer
+    type: object
+  dtos.User:
+    properties:
+      created_date:
+        $ref: '#/definitions/sql.NullString'
+      created_time:
+        $ref: '#/definitions/sql.NullString'
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      role:
+        $ref: '#/definitions/dtos.Role'
+      school_id:
+        type: integer
+    type: object
+  dtos.UserExport:
+    properties:
+      assignment_attempts:
+        items:
+          $ref: '#/definitions/dtos.ExportAttempt'
+        type: array
+      classes:
+        $ref: '#/definitions/dtos.ExportClasses'
+      exported_at:
+        type: string
+      friends:
+        description: |-
+          Friend connections are not on the ticket's list of sections, but
+          they are included anyway: the privacy policy enumerates friend
+          connections as data this service holds about a user, and an export
+          that silently dropped a category the policy promises would make
+          the policy false.
+        items:
+          $ref: '#/definitions/dtos.ExportFriend'
+        type: array
+      keyboard_bindings:
+        allOf:
+        - $ref: '#/definitions/dtos.KeyboardBindingsResponse'
+        description: |-
+          The existing keyboard-bindings response shape, reused as-is: nil
+          (not an empty struct) when the user never saved bindings of their
+          own, the same "absence, not failure" rule GetKeyboardBindings
+          already applies everywhere else it's called.
+      profile:
+        $ref: '#/definitions/dtos.ExportProfile'
+      score_entries:
+        items:
+          $ref: '#/definitions/dtos.ExportScoreEntry'
+        type: array
+      settings:
+        $ref: '#/definitions/dtos.ExportSettings'
+    type: object
+  dtos.UserResponse:
+    properties:
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      first_name:
+        type: string
+      has_google:
+        type: boolean
+      id:
+        type: integer
+      last_name:
+        type: string
+      role:
+        type: string
+    type: object
+  dtos.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.VerifyEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  sql.NullString:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: Core API for Tremolo (auth, users/teachers/friends, game settings,
+    score entries, classes/assignments, dashboard charts).
+  title: Tremolo Core API
+  version: "1.0"
+paths:
+  /api/admin/teacher-invites:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.TeacherInviteResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List teacher invite codes
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Invite code options
+        in: body
+        name: invite
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateTeacherInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.TeacherInviteResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mint a teacher invite code
+      tags:
+      - admin
+  /api/assignments:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.StudentAssignmentResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my assignments
+      tags:
+      - assignments
+  /api/assignments/{id}:
+    delete:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an assignment
+      tags:
+      - assignments
+  /api/assignments/{id}/attempts/{studentId}:
+    get:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student user ID
+        in: path
+        name: studentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.AssignmentAttempt'
+            type: array
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a student's attempt history on an assignment
+      tags:
+      - assignments
+  /api/assignments/{id}/results:
+    get:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.AssignmentResultRow'
+            type: array
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an assignment's results grid
+      tags:
+      - assignments
+  /api/auth/confirm-email-change:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Confirmation token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ConfirmEmailChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ConfirmEmailChangeResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Confirm an email address change
+      tags:
+      - account
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ForgotPasswordResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Request a password reset
+      tags:
+      - auth
+  /api/auth/google/callback:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Authorization code and redirect URI
+        in: body
+        name: callback
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.GoogleCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.LoginResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Invalid authorization code or Google token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Google email is not verified
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: Email already linked to a different Google account
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Complete Google OAuth sign-in
+      tags:
+      - auth
+  /api/auth/google/link:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Authorization code and redirect URI
+        in: body
+        name: callback
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.GoogleCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Invalid authorization code, Google token, or unauthenticated
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Email mismatch or unverified Google email
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: Google account already linked elsewhere
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Link a Google account
+      tags:
+      - auth
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email and password
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.LoginResponse'
+        "400":
+          description: Invalid request body or credentials
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Invalid credentials or locked account
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Log in
+      tags:
+      - auth
+  /api/auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the current user
+      tags:
+      - auth
+  /api/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.refreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Refresh token is required
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Refresh an access token
+      tags:
+      - auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New account details
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.RegisterResponse'
+        "400":
+          description: Invalid request body or email already registered
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Register a new account
+      tags:
+      - auth
+  /api/auth/resend-verification:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resend the email verification link
+      tags:
+      - auth
+  /api/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ResetPasswordResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Reset a password with a token
+      tags:
+      - auth
+  /api/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Verification token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.VerifyEmailResponse'
+        "400":
+          description: Invalid request body or token
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      summary: Verify an email address
+      tags:
+      - auth
+  /api/charts/teacher/class-metrics:
+    get:
+      parameters:
+      - description: day, week, month, or year
+        in: query
+        name: interval
+        type: string
+      - description: Lookback window in days (default 30)
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.MultiMetricChartData'
+        "400":
+          description: Invalid interval or days
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Only teachers can access class metrics
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get aggregated class chart metrics
+      tags:
+      - charts
+  /api/charts/user/{userId}/metrics:
+    get:
+      parameters:
+      - description: User ID (self, or a student in a class you own)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: day, week, month, or year
+        in: query
+        name: interval
+        type: string
+      - description: Lookback window in days (default 30)
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.MultiMetricChartData'
+        "400":
+          description: Invalid user ID, interval, or days
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get personal chart metrics
+      tags:
+      - charts
+  /api/classes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.ClassResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List owned classes
+      tags:
+      - classes
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Class to create
+        in: body
+        name: class
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateClassRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.ClassResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a class
+      tags:
+      - classes
+  /api/classes/{id}:
+    delete:
+      parameters:
+      - description: Class ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Archive a class
+      tags:
+      - classes
+  /api/classes/{id}/assignments:
+    get:
+      parameters:
+      - description: Class ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.AssignmentResponse'
+            type: array
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List a class's assignments
+      tags:
+      - assignments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Class ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Assignment to create
+        in: body
+        name: assignment
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateAssignmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.AssignmentResponse'
+        "400":
+          description: Invalid id or request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an assignment
+      tags:
+      - assignments
+  /api/classes/{id}/roster:
+    get:
+      parameters:
+      - description: Class ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.RosterEntryResponse'
+            type: array
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a class roster
+      tags:
+      - classes
+  /api/classes/{id}/students/{studentId}:
+    delete:
+      parameters:
+      - description: Class ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Student user ID
+        in: path
+        name: studentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a student from a class, or leave it
+      tags:
+      - classes
+  /api/classes/join:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Join code
+        in: body
+        name: join
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.JoinClassRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.StudentClassResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: No class with that join code
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Join a class
+      tags:
+      - classes
+  /api/classes/joined:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.StudentClassResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List joined classes
+      tags:
+      - classes
+  /api/friends:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.FriendDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List friends
+      tags:
+      - friends
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID of the user to add
+        in: body
+        name: friend
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.addFriendRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid or missing friend_id, or failed to add
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a friend
+      tags:
+      - friends
+  /api/friends/search:
+    get:
+      parameters:
+      - description: Search text; an empty query returns an empty list
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.FriendDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search users to add as friends
+      tags:
+      - friends
+  /api/game-settings:
+    get:
+      parameters:
+      - description: Game type identifier
+        in: query
+        name: game_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: settings is null if none saved yet
+          schema:
+            $ref: '#/definitions/dtos.GameSettingsResponse'
+        "400":
+          description: Invalid game_type
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the settings for a game type
+      tags:
+      - game-settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Settings to save
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.GameSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.GameSettingsResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update the settings for a game type
+      tags:
+      - game-settings
+  /api/note-game/activity:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.DailyActivityCount'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get daily activity counts
+      tags:
+      - note-game
+  /api/note-game/entry:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Entry to record
+        in: body
+        name: entry
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.Entry'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: message, id
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body or failed to save
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Not authorized to record this entry
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Save a note game entry
+      tags:
+      - note-game
+  /api/note-game/keyboard-bindings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.KeyboardBindingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: No keyboard bindings found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the keyboard bindings
+      tags:
+      - keyboard-bindings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bindings to save
+        in: body
+        name: bindings
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.KeyboardBindingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.KeyboardBindingsResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update the keyboard bindings
+      tags:
+      - keyboard-bindings
+  /api/note-game/recent:
+    get:
+      parameters:
+      - description: Filter by game type (defaults to all)
+        in: query
+        name: game_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.NoteGameEntryResponse'
+            type: array
+        "400":
+          description: Invalid game_type
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List recent note game entries
+      tags:
+      - note-game
+  /api/note-game/settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: settings is null if none saved yet
+          schema:
+            $ref: '#/definitions/dtos.NoteGameSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the note game settings
+      tags:
+      - note-game-settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Settings to save
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.NoteGameSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.NoteGameSettingsResponse'
+        "400":
+          description: Invalid request body or failed to update
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update the note game settings
+      tags:
+      - note-game-settings
+  /api/users/{userId}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Email confirmation, and the current password if the account has
+          one
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body, mismatched email confirmation, or a missing
+            password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied, or an incorrect password
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete the caller's own account
+      tags:
+      - account
+  /api/users/{userId}/email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current password and the new address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangeEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangeEmailResponse'
+        "400":
+          description: Invalid request body, wrong current password, no password set,
+            or a Google-managed address
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "409":
+          description: That email address is already in use
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request an email address change
+      tags:
+      - account
+  /api/users/{userId}/export:
+    get:
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UserExport'
+        "400":
+          description: Invalid user ID parameter
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export the caller's own data
+      tags:
+      - account
+  /api/users/{userId}/general-info:
+    get:
+      parameters:
+      - description: User ID (self, or a student in a class you own)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.GeneralUserInfoDTO'
+        "400":
+          description: Invalid user ID parameter
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get general user info
+      tags:
+      - user-info
+  /api/users/{userId}/password:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID (must match the authenticated user)
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Current and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.ChangePasswordResponse'
+        "400":
+          description: Invalid request body, wrong current password, or no password
+            set
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change the caller's password
+      tags:
+      - account
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Service health check
+      tags:
+      - health
+  /student/{id}:
+    get:
+      parameters:
+      - description: Student user ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.User'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "422":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a student
+      tags:
+      - admin
+  /students:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.User'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List students
+      tags:
+      - admin
+  /teacher/{id}:
+    get:
+      parameters:
+      - description: Teacher user ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.User'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "422":
+          description: Invalid id
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a teacher
+      tags:
+      - admin
+  /teachers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.User'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List teachers
+      tags:
+      - admin
+  /user:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User to create
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: body, status
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid role
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "403":
+          description: Creating ADMIN users is not allowed
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "422":
+          description: Invalid request body or field validation failed
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dtos.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a user
+      tags:
+      - admin
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT access token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
