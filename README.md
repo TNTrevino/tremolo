@@ -69,7 +69,9 @@ service — Prettier / Black / goimports+gofumpt):
 make hooks
 ```
 
-If you run tmux, check out the `./tremolo-mux.sh` script. Starts everything for you.
+If you run [herdr](https://herdr.dev), check out the `./tremolo-mux.sh` script. It
+starts everything for you: editor, claude, go, python, and frontend, each in its
+own tab. It needs a herdr server already running, plus `jq`.
 
 ### Database
 
@@ -197,7 +199,7 @@ chmod +x ./scripts/install-deps.sh
 ./scripts/install-deps.sh
 ```
 
-TODO: add tmux script we made
+TODO: document `./tremolo-mux.sh` (the herdr startup script) here
 
 ## Technologies Used
 
