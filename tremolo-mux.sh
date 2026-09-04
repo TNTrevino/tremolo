@@ -1,24 +1,41 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-SESSION="tremolo"
+if [ "${HERDR_ENV:-}" != "1" ]; then
+	echo "This script must run inside a Herdr session." >&2
+	exit 1
+fi
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+LABEL="tremolo"
 
-tmux has-session -t "$SESSION" 2>/dev/null && tmux kill-session -t "$SESSION"
+existing_id="$(herdr workspace list | jq -r --arg label "$LABEL" '.result.workspaces[]? | select(.label == $label) | .workspace_id' | head -n1)"
+if [ -n "$existing_id" ]; then
+	herdr workspace close "$existing_id"
+fi
 
-tmux new-session -d -s "$SESSION" -n "editor" -c "$ROOT"
-tmux send-keys -t "$SESSION:editor" "nvim" Enter
+ws="$(herdr workspace create --cwd "$ROOT" --label "$LABEL" --no-focus)"
+workspace_id="$(jq -r '.result.workspace.workspace_id' <<<"$ws")"
+editor_tab_id="$(jq -r '.result.tab.tab_id' <<<"$ws")"
+editor_pane_id="$(jq -r '.result.root_pane.pane_id' <<<"$ws")"
+herdr tab rename "$editor_tab_id" "editor"
+herdr pane run "$editor_pane_id" "nvim"
 
-tmux new-window -t "$SESSION" -n "claude" -c "$ROOT"
-tmux send-keys -t "$SESSION:claude" "claude" Enter
+claude_tab="$(herdr tab create --workspace "$workspace_id" --cwd "$ROOT" --label "claude" --no-focus)"
+claude_pane_id="$(jq -r '.result.root_pane.pane_id' <<<"$claude_tab")"
+herdr pane run "$claude_pane_id" "claude"
 
-tmux new-window -t "$SESSION" -n "go" -c "$ROOT/core-api"
-tmux send-keys -t "$SESSION:go" "source $ROOT/tremolo.sh && trem air main.go" Enter
+go_tab="$(herdr tab create --workspace "$workspace_id" --cwd "$ROOT/core-api" --label "go" --no-focus)"
+go_pane_id="$(jq -r '.result.root_pane.pane_id' <<<"$go_tab")"
+herdr pane run "$go_pane_id" "source $ROOT/tremolo.sh && trem air main.go"
 
-tmux new-window -t "$SESSION" -n "python" -c "$ROOT/music-api"
-tmux send-keys -t "$SESSION:python" "source $ROOT/tremolo.sh && { [ -d env ] || { python -m venv env && env/bin/pip install -q -r requirements.txt; }; } && source env/bin/activate && trem fastapi dev main.py" Enter
+python_tab="$(herdr tab create --workspace "$workspace_id" --cwd "$ROOT/music-api" --label "python" --no-focus)"
+python_pane_id="$(jq -r '.result.root_pane.pane_id' <<<"$python_tab")"
+herdr pane run "$python_pane_id" "source $ROOT/tremolo.sh && { [ -d env ] || { python -m venv env && env/bin/pip install -q -r requirements.txt; }; } && source env/bin/activate && trem fastapi dev main.py"
 
-tmux new-window -t "$SESSION" -n "frontend" -c "$ROOT/frontend"
-tmux send-keys -t "$SESSION:frontend" "source $ROOT/tremolo.sh && trem npm run dev" Enter
+frontend_tab="$(herdr tab create --workspace "$workspace_id" --cwd "$ROOT/frontend" --label "frontend" --no-focus)"
+frontend_pane_id="$(jq -r '.result.root_pane.pane_id' <<<"$frontend_tab")"
+herdr pane run "$frontend_pane_id" "source $ROOT/tremolo.sh && trem npm run dev"
 
-tmux select-window -t "$SESSION:editor"
-tmux attach -t "$SESSION"
+herdr tab focus "$editor_tab_id"
+herdr workspace focus "$workspace_id"
