@@ -261,6 +261,30 @@ describe("SignupPageComponent", () => {
 		backend.expectNone(REGISTER_URL);
 	});
 
+	/**
+	 * The other half of #303. Signal Forms marks a field touched on blur, so
+	 * gating on `touched()` alone meant tabbing from First Name to Password
+	 * without typing a character lit the whole form up in red.
+	 */
+	it("says nothing while an empty form is tabbed through", async () => {
+		for (const id of ["firstName", "lastName", "email", "password"]) {
+			control(id).dispatchEvent(new Event("blur"));
+		}
+		await fixture.whenStable();
+
+		expect(el().querySelector("p.text-destructive")).toBeNull();
+	});
+
+	/** A box the visitor did fill in is fair game the moment they leave it. */
+	it("flags a field the visitor typed in and left", async () => {
+		await type("email", "not-an-email");
+		control("email").dispatchEvent(new Event("blur"));
+		await fixture.whenStable();
+
+		expect(el().textContent).toContain("Invalid email format");
+		expect(el().textContent).not.toContain("First name is required");
+	});
+
 	it("registers with snake_case keys and does not sign the account in", async () => {
 		await fillValid();
 		await submit();

@@ -84,6 +84,14 @@ describe("ForgotPasswordPageComponent", () => {
 		backend.expectNone(FORGOT_PASSWORD_URL);
 	});
 
+	/** #303: the button reveals the message; a plain tab-out does not. */
+	it("says nothing when the empty field is tabbed through", async () => {
+		input("email").dispatchEvent(new Event("blur"));
+		await fixture.whenStable();
+
+		expect(el().textContent).not.toContain("Email is required");
+	});
+
 	it("posts the email and swaps the form for the confirmation", async () => {
 		await type("email", "student@tremolo.test");
 		await submit();

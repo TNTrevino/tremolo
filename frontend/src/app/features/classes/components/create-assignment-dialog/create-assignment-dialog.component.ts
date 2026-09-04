@@ -32,6 +32,7 @@ import {
 } from "@features/note-game/models/note-game.models";
 
 import { NotificationService } from "../../../../core/services/notification.service";
+import { revealErrors } from "../../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
@@ -214,7 +215,7 @@ export class CreateAssignmentDialogComponent {
 		event.preventDefault();
 		if (this.pending()) return;
 
-		this.assignmentForm().markAsTouched();
+		revealErrors(this.assignmentForm);
 		if (this.assignmentForm().invalid()) return;
 
 		const values = this.formModel();

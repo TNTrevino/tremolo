@@ -269,6 +269,8 @@ describe("AccountPageComponent", () => {
 		expect(input("newPassword").value).toBe("");
 		expect(input("confirmPassword").value).toBe("");
 		// Cleared, not just emptied: no message may be left showing.
+		// `reset()` drops touched and dirty together, which is what the form
+		// kit reads (#303).
 		expect(el().textContent).not.toContain("Current password is required");
 		expect(el().textContent).not.toContain("Password is required");
 	});

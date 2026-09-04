@@ -185,6 +185,23 @@ describe("LoginPageComponent", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * #303: Signal Forms marks a field touched on blur, so gating messages
+	 * on `touched()` alone scolded anyone who tabbed through the form
+	 * without typing. Nothing is revealed until Sign In is pressed.
+	 */
+	it("stays quiet while an empty form is tabbed through", async () => {
+		await render();
+
+		for (const id of ["email", "password"]) {
+			input(id).dispatchEvent(new Event("blur"));
+		}
+		await fixture.whenStable();
+
+		expect(el().textContent).not.toContain("Email is required");
+		expect(el().textContent).not.toContain("Password is required");
+	});
+
 	it("signs in and lands on the dashboard", async () => {
 		await render();
 		await fillValidCredentials();

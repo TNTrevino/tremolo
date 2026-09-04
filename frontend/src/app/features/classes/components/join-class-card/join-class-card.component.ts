@@ -16,6 +16,7 @@ import {
 import { NgIcon } from "@ng-icons/core";
 import { z } from "zod";
 
+import { revealErrors } from "../../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
@@ -120,7 +121,7 @@ export class JoinClassCardComponent {
 		// Retire the banner first: it is what suspends the required rule, so
 		// it has to be gone before the form's validity is read.
 		this.justJoined.set(null);
-		this.joinForm().markAsTouched();
+		revealErrors(this.joinForm);
 		if (this.joinForm().invalid()) return;
 
 		this.serverError.set(null);
