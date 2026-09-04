@@ -2,3 +2,8 @@
 *.stl
 *.png
 *.3mf
+
+# ...except the two previews README.md embeds. `make build-hardware`
+# rewrites them in place, so refresh them when the model changes.
+!preview-use.png
+!preview-blacks.png

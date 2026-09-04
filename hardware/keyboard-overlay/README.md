@@ -1,5 +1,8 @@
 # Tremolo keyboard overlay — piano prototype
 
+![The overlay as the player sees it: seven white keys labelled C to B, with
+C#, D#, F#, G# and A# standing proud between them](preview-use.png)
+
 A 3D-printed piano-key overlay for the note stream game. Seven white-key
 levers rest over the home row (`a s d f g h j` = C D E F G A B, the
 Tremolo default keymap). With `accidentals = true` (the default), five
@@ -27,7 +30,15 @@ openscad -o coupon.stl  -D 'mode="coupon"' overlay.scad   # 2-key test print
 openscad -o overlay.stl -D 'mode="full"'   overlay.scad   # all 7 keys
 ```
 
-`make build-hardware` at the repo root renders both STLs plus the two
+Those are the one-filament prints. For two filaments, render the same
+solid split in two — see [Two-filament print](#two-filament-print):
+
+```bash
+openscad -o overlay-rest.stl   -D 'part="rest"'   overlay.scad  # rail + whites
+openscad -o overlay-blacks.stl -D 'part="blacks"' overlay.scad  # the 5 blacks
+```
+
+`make build-hardware` at the repo root renders all six STLs plus the
 preview PNGs in one go. The Hardware CI workflow runs the same target on
 every change under `hardware/` and uploads the results as workflow
 artifacts, so a printable STL is always one download away.
@@ -83,6 +94,34 @@ rail without covering the touchpad.
   does the nub land on the key center, does a press register without
   touching neighbors, and does the flexure force feel right.
 
+## Two-filament print
+
+Printing the black keys in a second filament used to snap them off at
+the rail. The cause is geometry, not the slicer. A black key hangs on
+its flexure alone, about 7.7 mm² of material, and the part prints face
+down, so the two filaments meet on a **vertical** wall. The printer lays
+them side by side inside one layer, and a side seam between dissimilar
+filaments carries almost no load.
+
+`part="blacks"` therefore grows a T-shaped tenon on each black key that
+reaches back into the rail, behind the flexure. `part="rest"` cuts the
+matching pocket out of the rail. A pull on the key now presses the head
+against rail material in compression instead of peeling the seam apart.
+
+![The five black keys rendered on their own, each ending in a T-shaped
+tenon that locks into the rail](preview-blacks.png)
+
+The tenon sits in the layers the black keys already occupy, so it costs
+no extra filament swap, and it stays behind the rail face, so the
+flexure keeps its full bend and the key feel does not change.
+
+The two halves are complementary and share absolute coordinates. In the
+slicer, load `overlay-rest.stl`, then right-click it and **add
+`overlay-blacks.stl` as a part of that same object** — not as a second
+object. Assign a filament to each part. Do not move either one.
+
+`overlay.stl` still holds both halves fused, for a one-filament print.
+
 ## Tune
 
 - Press too stiff → lower `flexure_thickness` toward 0.8.
@@ -106,6 +145,11 @@ rail without covering the touchpad.
   `orient="use"` render shows the part exactly as the player sees it.
 - The white keys end 10 mm past the nub, the v1 length. The long
   press zone of v3 added reach but no leverage, so it went away.
+- `black_anchor()` is written once and used twice: `black_lever()` adds
+  it, `rail()` subtracts it. That is what keeps the two halves exactly
+  complementary. The check is arithmetic — the mesh volume of `rest`
+  plus the mesh volume of `blacks` equals the volume of `all`, and `all`
+  matches the model from before the anchors existed.
 - The design record for the game is
   `docs/superpowers/specs/2026-08-30-note-stream-game-design.md`.
 - Framework publishes chassis CAD at
