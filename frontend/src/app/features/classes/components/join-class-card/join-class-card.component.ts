@@ -7,6 +7,7 @@ import {
 } from "@angular/core";
 import { rxResource } from "@angular/core/rxjs-interop";
 import {
+	applyWhen,
 	form,
 	FormField,
 	maxLength,
@@ -72,8 +73,25 @@ export class JoinClassCardComponent {
 
 	private readonly formModel = signal<JoinClassFormData>({ joinCode: "" });
 
+	/** The class just joined, and the reason the success banner is up. */
+	readonly justJoined = signal<StudentClass | null>(null);
+
 	readonly joinForm = form(this.formModel, (path) => {
-		validateStandardSchema(path, joinClassSchema);
+		// The required rule is suspended while the success banner is up.
+		// A join empties the field; the card stays on screen, so the next
+		// blur marks the now-empty field touched and Signal Forms would
+		// render "Enter a class code" above "Joined ..." -- and the
+		// placeholder is itself a plausible six-character code, so the box
+		// looks full while it scolds (#298). `submit()` retires the banner
+		// before it reads `invalid()`, so pressing Join on an empty field
+		// still gets the message.
+		applyWhen(
+			path,
+			() => this.justJoined() === null,
+			(joined) => {
+				validateStandardSchema(joined, joinClassSchema);
+			},
+		);
 		// React wrote `maxLength={6}` on the input. Signal Forms owns the
 		// validation attributes on a `[formField]` element (NG8022 refuses a
 		// hand-written one), so the cap is declared here and the directive
@@ -88,7 +106,6 @@ export class JoinClassCardComponent {
 
 	readonly pending = signal(false);
 	readonly serverError = signal<string | null>(null);
-	readonly justJoined = signal<StudentClass | null>(null);
 
 	// The template binds both `[error]="serverError()"` and
 	// `[field]="joinForm.joinCode"` on the field. `app-form-field` gives
@@ -100,10 +117,12 @@ export class JoinClassCardComponent {
 		event.preventDefault();
 		if (this.pending()) return;
 
+		// Retire the banner first: it is what suspends the required rule, so
+		// it has to be gone before the form's validity is read.
+		this.justJoined.set(null);
 		this.joinForm().markAsTouched();
 		if (this.joinForm().invalid()) return;
 
-		this.justJoined.set(null);
 		this.serverError.set(null);
 		this.pending.set(true);
 
