@@ -18,6 +18,7 @@ import { SheetMusicComponent } from "../../features/sheet-music/components/sheet
 import { ConfirmDialogComponent } from "../../core/components/confirm-dialog/confirm-dialog.component";
 import { SpinnerComponent } from "../../core/components/spinner/spinner.component";
 import { NotificationService } from "../../core/services/notification.service";
+import { revealErrors } from "../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../shared/components/forms/form-field.component";
 import { FormErrorComponent } from "../../shared/components/forms/form-error.component";
 import { FormInputDirective } from "../../shared/components/forms/form-input.directive";
@@ -171,7 +172,7 @@ export class KitPageComponent {
 	}
 
 	protected validateSignup(): void {
-		this.signupForm().markAsTouched();
+		revealErrors(this.signupForm);
 	}
 
 	protected resetSignup(): void {

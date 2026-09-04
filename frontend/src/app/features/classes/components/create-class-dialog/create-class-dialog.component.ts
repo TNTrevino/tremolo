@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 
 import { NotificationService } from "../../../../core/services/notification.service";
+import { revealErrors } from "../../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
@@ -93,7 +94,7 @@ export class CreateClassDialogComponent {
 		event.preventDefault();
 		if (this.pending()) return;
 
-		this.createForm().markAsTouched();
+		revealErrors(this.createForm);
 		if (this.createForm().invalid()) return;
 
 		this.pending.set(true);

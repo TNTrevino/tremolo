@@ -231,8 +231,9 @@ describe("AccountPageComponent", () => {
 		await render();
 		await submitForm(0);
 
+		// #303: empty is "required", not "At least 8 characters".
 		expect(el().textContent).toContain("Current password is required");
-		expect(el().textContent).toContain("At least 8 characters");
+		expect(el().textContent).toContain("Password is required");
 		expect(notifications.toasts()).toEqual([]);
 	});
 
@@ -268,7 +269,10 @@ describe("AccountPageComponent", () => {
 		expect(input("newPassword").value).toBe("");
 		expect(input("confirmPassword").value).toBe("");
 		// Cleared, not just emptied: no message may be left showing.
-		expect(el().textContent).not.toContain("At least 8 characters");
+		// `reset()` drops touched and dirty together, which is what the form
+		// kit reads (#303).
+		expect(el().textContent).not.toContain("Current password is required");
+		expect(el().textContent).not.toContain("Password is required");
 	});
 
 	it("surfaces a wrong current password without clearing", async () => {
@@ -298,7 +302,8 @@ describe("AccountPageComponent", () => {
 		await submitForm(1);
 
 		expect(el().textContent).toContain("Current password is required");
-		expect(el().textContent).toContain("Invalid email format");
+		expect(el().textContent).toContain("Email is required");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(() => true);
 	});
 

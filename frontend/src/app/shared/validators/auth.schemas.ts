@@ -19,8 +19,21 @@ import { z } from "zod";
  * with `{"error": "..."}`), so these are a courtesy to the user, not the
  * gate.
  */
+
+/**
+ * Every email box in the app. The `.min(1)` in front of the format check
+ * is what stops an empty field reading "Invalid email format" -- nonsense
+ * for a box nobody has typed in (#303). zod reports issues in the order
+ * the checks are declared and the form kit shows the first one, so an
+ * empty field says "required" and a half-typed one says "invalid".
+ */
+const emailAddress = z
+	.string()
+	.min(1, "Email is required")
+	.email("Invalid email format");
+
 export const loginSchema = z.object({
-	email: z.string().email("Invalid email format"),
+	email: emailAddress,
 	password: z.string().min(1, "Password is required"),
 });
 
@@ -32,9 +45,13 @@ export const loginSchema = z.object({
  * with bcrypt in `HashPassword`): a password this schema accepted but
  * bcrypt couldn't fully consume would be a schema quietly lying to the
  * user about what actually distinguishes their password.
+ *
+ * `.min(1)` leads for the same reason it leads on `emailAddress`: an
+ * empty box is missing, not too short (#303).
  */
 export const passwordComplexity = z
 	.string()
+	.min(1, "Password is required")
 	.min(8, "At least 8 characters")
 	.max(72, "At most 72 characters")
 	.regex(/[A-Z]/, "Contains uppercase letter")
@@ -59,13 +76,15 @@ export const signupSchema = z
 	.object({
 		firstName: z
 			.string()
+			.min(1, "First name is required")
 			.min(2, "At least 2 characters")
 			.regex(/^[a-zA-Z]+$/, "Only letters"),
 		lastName: z
 			.string()
+			.min(1, "Last name is required")
 			.min(2, "At least 2 characters")
 			.regex(/^[a-zA-Z]+$/, "Only letters"),
-		email: z.email("Invalid email format"),
+		email: emailAddress,
 		password: passwordComplexity,
 		confirmPassword: z.string(),
 		role: z.enum(["STUDENT", "TEACHER"]),
@@ -124,12 +143,12 @@ export const deleteAccountSchema = z.object({
  */
 export const emailChangeSchema = z.object({
 	currentPassword: z.string().min(1, "Current password is required"),
-	newEmail: z.email("Invalid email format"),
+	newEmail: emailAddress,
 });
 
 /** #248: request a password reset link. */
 export const forgotPasswordSchema = z.object({
-	email: z.email("Invalid email format"),
+	email: emailAddress,
 });
 
 /**

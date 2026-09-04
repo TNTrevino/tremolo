@@ -29,6 +29,11 @@ import { FormLabelComponent } from "./form-label.component";
  *
  * `error` wins when both are set, so a submit failure can override what
  * the schema is saying.
+ *
+ * A bound `field` shows nothing until the user has typed in it and moved
+ * on, or until the submit handler calls `revealErrors(form)`. See
+ * `field-error.ts` for why (#303). An `error` string is not gated: it is
+ * the server talking, and the server only talks after a submit.
  */
 @Component({
 	selector: "app-form-field",

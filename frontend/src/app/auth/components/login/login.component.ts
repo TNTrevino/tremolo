@@ -14,6 +14,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
+import { revealErrors } from "../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
 import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
@@ -104,9 +105,10 @@ export class LoginPageComponent {
 		if (this.pending()) return;
 
 		// Reveals every message at once, the way React Hook Form's default
-		// `mode: "onSubmit"` did -- errors stay hidden until a field is
-		// touched, and this touches them all.
-		this.loginForm().markAsTouched();
+		// `mode: "onSubmit"` did. Until this runs a field shows nothing
+		// unless the visitor typed in it and moved on (#303), so the
+		// button is what surfaces an empty box.
+		revealErrors(this.loginForm);
 		if (this.loginForm().invalid()) return;
 
 		this.pending.set(true);

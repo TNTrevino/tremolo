@@ -176,10 +176,30 @@ describe("LoginPageComponent", () => {
 		await render();
 		await submit();
 
-		expect(el().textContent).toContain("Invalid email format");
+		// #303: both boxes are empty, so both say so. "Invalid email
+		// format" belongs to a half-typed address, not a blank one.
+		expect(el().textContent).toContain("Email is required");
 		expect(el().textContent).toContain("Password is required");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(LOGIN_URL);
 		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * #303: Signal Forms marks a field touched on blur, so gating messages
+	 * on `touched()` alone scolded anyone who tabbed through the form
+	 * without typing. Nothing is revealed until Sign In is pressed.
+	 */
+	it("stays quiet while an empty form is tabbed through", async () => {
+		await render();
+
+		for (const id of ["email", "password"]) {
+			input(id).dispatchEvent(new Event("blur"));
+		}
+		await fixture.whenStable();
+
+		expect(el().textContent).not.toContain("Email is required");
+		expect(el().textContent).not.toContain("Password is required");
 	});
 
 	it("signs in and lands on the dashboard", async () => {

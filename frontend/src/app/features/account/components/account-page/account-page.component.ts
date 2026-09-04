@@ -16,6 +16,7 @@ import { NgIcon } from "@ng-icons/core";
 import { AuthService } from "../../../../auth/services/auth.service";
 import { AuthStore } from "../../../../auth/services/auth.store";
 import { NotificationService } from "../../../../core/services/notification.service";
+import { revealErrors } from "../../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../../shared/components/forms/form-input.directive";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
@@ -139,7 +140,7 @@ export class AccountPageComponent {
 	submitPasswordChange(event: Event): void {
 		event.preventDefault();
 
-		this.passwordForm().markAsTouched();
+		revealErrors(this.passwordForm);
 		if (this.passwordForm().invalid()) return;
 
 		const userId = this.user()?.id;
@@ -172,7 +173,7 @@ export class AccountPageComponent {
 	submitEmailChange(event: Event): void {
 		event.preventDefault();
 
-		this.emailForm().markAsTouched();
+		revealErrors(this.emailForm);
 		if (this.emailForm().invalid()) return;
 
 		const userId = this.user()?.id;
@@ -258,7 +259,7 @@ export class AccountPageComponent {
 	submitDelete(event: Event): void {
 		event.preventDefault();
 
-		this.deleteForm().markAsTouched();
+		revealErrors(this.deleteForm);
 		if (this.deleteForm().invalid()) return;
 
 		const userId = this.user()?.id;

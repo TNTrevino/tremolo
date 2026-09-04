@@ -244,13 +244,45 @@ describe("SignupPageComponent", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * #303 is the screenshot on that issue: four red lines under four empty
+	 * boxes, and each one told the visitor the wrong thing. An empty box is
+	 * missing, not too short and not malformed.
+	 */
 	it("shows every schema message on an empty submit and sends no request", async () => {
 		await submit();
 
-		expect(el().textContent).toContain("At least 2 characters");
-		expect(el().textContent).toContain("Invalid email format");
-		expect(el().textContent).toContain("At least 8 characters");
+		expect(el().textContent).toContain("First name is required");
+		expect(el().textContent).toContain("Last name is required");
+		expect(el().textContent).toContain("Email is required");
+		expect(el().textContent).toContain("Password is required");
+		expect(el().textContent).not.toContain("At least 2 characters");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(REGISTER_URL);
+	});
+
+	/**
+	 * The other half of #303. Signal Forms marks a field touched on blur, so
+	 * gating on `touched()` alone meant tabbing from First Name to Password
+	 * without typing a character lit the whole form up in red.
+	 */
+	it("says nothing while an empty form is tabbed through", async () => {
+		for (const id of ["firstName", "lastName", "email", "password"]) {
+			control(id).dispatchEvent(new Event("blur"));
+		}
+		await fixture.whenStable();
+
+		expect(el().querySelector("p.text-destructive")).toBeNull();
+	});
+
+	/** A box the visitor did fill in is fair game the moment they leave it. */
+	it("flags a field the visitor typed in and left", async () => {
+		await type("email", "not-an-email");
+		control("email").dispatchEvent(new Event("blur"));
+		await fixture.whenStable();
+
+		expect(el().textContent).toContain("Invalid email format");
+		expect(el().textContent).not.toContain("First name is required");
 	});
 
 	it("registers with snake_case keys and does not sign the account in", async () => {

@@ -15,6 +15,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
+import { revealErrors } from "../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
 import { TooltipDirective } from "../../../shared/components/ui/tooltip.directive";
@@ -94,7 +95,7 @@ export class ResetPasswordPageComponent {
 		event.preventDefault();
 		if (this.pending() || !this.token()) return;
 
-		this.resetPasswordForm().markAsTouched();
+		revealErrors(this.resetPasswordForm);
 		if (this.resetPasswordForm().invalid()) return;
 
 		this.pending.set(true);

@@ -17,6 +17,7 @@ import { NgIcon } from "@ng-icons/core";
 
 import { CARD_DIRECTIVES } from "../../../shared/components/ui/card.directive";
 import { ButtonComponent } from "../../../shared/components/ui/button.component";
+import { revealErrors } from "../../../shared/components/forms/field-error";
 import { FormFieldComponent } from "../../../shared/components/forms/form-field.component";
 import { FormInputDirective } from "../../../shared/components/forms/form-input.directive";
 import { FormSelectDirective } from "../../../shared/components/forms/form-select.directive";
@@ -252,7 +253,7 @@ export class SignupPageComponent {
 		event.preventDefault();
 		if (this.pending()) return;
 
-		this.signupForm().markAsTouched();
+		revealErrors(this.signupForm);
 		if (this.signupForm().invalid()) return;
 
 		this.pending.set(true);
