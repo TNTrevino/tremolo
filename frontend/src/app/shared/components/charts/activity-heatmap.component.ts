@@ -134,9 +134,10 @@ interface Grid {
  * Walks day by day from the Sunday that starts the grid to today.
  *
  * The rightmost column is the current, possibly partial, week; weeks start
- * on Sunday (GitHub's convention). A month label is emitted when the month
- * changes at the very start of a week, so it sits above its first full
- * column rather than mid-column.
+ * on Sunday (GitHub's convention). Every month change emits exactly one
+ * label, over the column the month visually begins in: its own column when
+ * it starts on Sunday or Monday and therefore owns most of it, the next
+ * column otherwise.
  */
 function buildGrid(data: readonly DailyActivity[]): Grid {
 	const countMap = new Map<string, number>();
@@ -161,15 +162,25 @@ function buildGrid(data: readonly DailyActivity[]): Grid {
 		const dateStr = formatDateStr(cursor);
 		const month = cursor.getMonth();
 
-		if (month !== lastMonth && dayOfWeek <= 1) {
-			monthLabels.push({
+		if (month !== lastMonth) {
+			// A month starting on Sunday or Monday owns most of the column it
+			// lands in, so it is labelled there. One starting Tuesday through
+			// Saturday only really begins at the next column.
+			const labelWeek = dayOfWeek <= 1 ? weekIndex : weekIndex + 1;
+			const label = {
 				label: cursor.toLocaleDateString("en-US", { month: "short" }),
-				weekIndex,
-			});
-			lastMonth = month;
-		} else if (month !== lastMonth) {
-			// Changed mid-week: remember it so the next week does not
-			// re-announce the same month one column late.
+				weekIndex: labelWeek,
+			};
+			// Consecutive months are at least 28 days apart, so the only label
+			// that can land on an already-claimed column is the grid's leading
+			// partial month -- and then it contributes a single day to that
+			// column while the new month owns the other six. The new one wins.
+			const previous = monthLabels[monthLabels.length - 1];
+			if (previous?.weekIndex === labelWeek) {
+				monthLabels[monthLabels.length - 1] = label;
+			} else {
+				monthLabels.push(label);
+			}
 			lastMonth = month;
 		}
 
@@ -184,7 +195,14 @@ function buildGrid(data: readonly DailyActivity[]): Grid {
 		if (cursor.getDay() === 0 && cursor <= today) weekIndex++;
 	}
 
-	return { cells, monthLabels, totalWeeks: weekIndex + 1 };
+	const totalWeeks = weekIndex + 1;
+	return {
+		cells,
+		// A month first appearing in the final partial week is pushed one
+		// column past the end of the grid, where the viewBox would clip it.
+		monthLabels: monthLabels.filter((m) => m.weekIndex < totalWeeks),
+		totalWeeks,
+	};
 }
 
 @Component({

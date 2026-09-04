@@ -13,12 +13,33 @@ function dateOffset(daysAgo: number): string {
 	return `${d.getFullYear()}-${m}-${day}`;
 }
 
+/** The `x` a month label sits at, given its column. Mirrors the component. */
+function columnX(weekIndex: number): number {
+	const LEFT_LABEL_WIDTH = 32;
+	const CELL_SIZE = 12;
+	const CELL_GAP = 3;
+	return LEFT_LABEL_WIDTH + weekIndex * (CELL_SIZE + CELL_GAP);
+}
+
 describe("ActivityHeatmapComponent", () => {
 	let fixture: ComponentFixture<ActivityHeatmapComponent>;
 
 	beforeEach(() => {
 		TestBed.configureTestingModule({});
 	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	/**
+	 * Pins the clock so the grid's shape is fixed. Only `Date` is faked --
+	 * faking the timers too would stall `whenStable()`.
+	 */
+	function freezeAt(year: number, month: number, day: number): void {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date(year, month, day));
+	}
 
 	async function render(data: DailyActivity[] = []): Promise<void> {
 		fixture = TestBed.createComponent(ActivityHeatmapComponent);
@@ -32,6 +53,19 @@ describe("ActivityHeatmapComponent", () => {
 
 	function cells(): SVGRectElement[] {
 		return [...el().querySelectorAll<SVGRectElement>("rect[data-date]")];
+	}
+
+	/**
+	 * The month labels, left to right. Day-of-week labels are the other
+	 * `<text>`s in the SVG and are the only ones drawn at `x = 0`.
+	 */
+	function monthLabels(): { label: string; x: number }[] {
+		return [...el().querySelectorAll("text")]
+			.map((t) => ({
+				label: t.textContent?.trim() ?? "",
+				x: Number(t.getAttribute("x")),
+			}))
+			.filter((t) => t.x !== 0);
 	}
 
 	it("draws a year of days ending on today", async () => {
@@ -105,13 +139,77 @@ describe("ActivityHeatmapComponent", () => {
 			t.textContent?.trim(),
 		);
 		expect(texts).toEqual(expect.arrayContaining(["Mon", "Wed", "Fri"]));
-		// React emits a month label only when the month turns on a Sunday or
-		// Monday, so roughly half the months are unlabelled. Ported as is;
-		// the count is asserted loosely because which months qualify depends
-		// on what day of the week today is.
-		const months = texts.filter((t) => t && !["Mon", "Wed", "Fri"].includes(t));
-		expect(months.length).toBeGreaterThanOrEqual(4);
-		expect(months.length).toBeLessThanOrEqual(13);
+		// The grid spans a year, so every month in it is announced. Only the
+		// two partial months at the ends can go unlabelled, which is why this
+		// is 12 or 13 rather than exactly one per calendar month.
+		expect(monthLabels().length).toBeGreaterThanOrEqual(12);
+	});
+
+	it("labels a month that starts mid-week over the column it begins in", async () => {
+		// Thu 15 Jan 2026 opens the grid on Sun 12 Jan 2025. 1 Feb 2025 is a
+		// Saturday, the last day of column 2, so February is announced over
+		// column 3 -- the first column that is actually February.
+		freezeAt(2026, 0, 15);
+		await render();
+
+		expect(monthLabels().map((m) => m.label)).toEqual([
+			"Jan",
+			"Feb",
+			"Mar",
+			"Apr",
+			"May",
+			"Jun",
+			"Jul",
+			"Aug",
+			"Sep",
+			"Oct",
+			"Nov",
+			"Dec",
+			"Jan",
+		]);
+		expect(monthLabels()[1]).toEqual({ label: "Feb", x: columnX(3) });
+		// March 2025 starts on a Saturday too, and April on a Tuesday.
+		expect(monthLabels()[2]).toEqual({ label: "Mar", x: columnX(7) });
+		expect(monthLabels()[3]).toEqual({ label: "Apr", x: columnX(12) });
+	});
+
+	it("never stacks two month labels in one column", async () => {
+		// Fri 4 Sep 2026 opens the grid on Sun 31 Aug 2025, and September
+		// starts the very next day, a Monday: both months want column 0.
+		// September owns six of that column's seven days, so it takes it.
+		freezeAt(2026, 8, 4);
+		await render();
+
+		const xs = monthLabels().map((m) => m.x);
+		expect(new Set(xs).size).toBe(xs.length);
+		expect(xs).toEqual([...xs].sort((a, b) => a - b));
+		expect(monthLabels()[0]).toEqual({ label: "Sep", x: columnX(0) });
+		expect(monthLabels().map((m) => m.label)).toEqual([
+			"Sep",
+			"Oct",
+			"Nov",
+			"Dec",
+			"Jan",
+			"Feb",
+			"Mar",
+			"Apr",
+			"May",
+			"Jun",
+			"Jul",
+			"Aug",
+		]);
+	});
+
+	it("keeps every month label inside the drawn grid", async () => {
+		// Sep 2026 first appears on Tue 1 Sep, in the final partial column,
+		// so its label would land one column past the right edge. Dropped
+		// rather than drawn where the viewBox clips it.
+		freezeAt(2026, 8, 4);
+		await render();
+
+		const svg = el().querySelector("svg");
+		const width = Number(svg?.getAttribute("viewBox")?.split(" ")[2]);
+		for (const month of monthLabels()) expect(month.x).toBeLessThan(width);
 	});
 
 	it("carries a Less/More ramp with one swatch per level", async () => {
