@@ -244,12 +244,20 @@ describe("SignupPageComponent", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 
+	/**
+	 * #303 is the screenshot on that issue: four red lines under four empty
+	 * boxes, and each one told the visitor the wrong thing. An empty box is
+	 * missing, not too short and not malformed.
+	 */
 	it("shows every schema message on an empty submit and sends no request", async () => {
 		await submit();
 
-		expect(el().textContent).toContain("At least 2 characters");
-		expect(el().textContent).toContain("Invalid email format");
-		expect(el().textContent).toContain("At least 8 characters");
+		expect(el().textContent).toContain("First name is required");
+		expect(el().textContent).toContain("Last name is required");
+		expect(el().textContent).toContain("Email is required");
+		expect(el().textContent).toContain("Password is required");
+		expect(el().textContent).not.toContain("At least 2 characters");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(REGISTER_URL);
 	});
 

@@ -116,6 +116,8 @@ describe("FormFieldComponent with a zod schema", () => {
 
 		expect(host.loginForm.email().touched()).toBe(true);
 		expect(host.loginForm.password().touched()).toBe(true);
-		expect(errorText()).toBe("Invalid email format");
+		// #303: the box is empty, so it reads as missing rather than as a
+		// malformed address.
+		expect(errorText()).toBe("Email is required");
 	});
 });

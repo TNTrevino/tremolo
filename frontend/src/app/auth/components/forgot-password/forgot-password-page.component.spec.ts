@@ -78,7 +78,9 @@ describe("ForgotPasswordPageComponent", () => {
 	it("shows the schema message on submit and sends no request", async () => {
 		await submit();
 
-		expect(el().textContent).toContain("Invalid email format");
+		// #303: an empty box is missing, not malformed.
+		expect(el().textContent).toContain("Email is required");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(FORGOT_PASSWORD_URL);
 	});
 

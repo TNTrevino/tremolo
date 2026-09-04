@@ -176,8 +176,11 @@ describe("LoginPageComponent", () => {
 		await render();
 		await submit();
 
-		expect(el().textContent).toContain("Invalid email format");
+		// #303: both boxes are empty, so both say so. "Invalid email
+		// format" belongs to a half-typed address, not a blank one.
+		expect(el().textContent).toContain("Email is required");
 		expect(el().textContent).toContain("Password is required");
+		expect(el().textContent).not.toContain("Invalid email format");
 		backend.expectNone(LOGIN_URL);
 		expect(navigate).not.toHaveBeenCalled();
 	});
