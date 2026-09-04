@@ -59,10 +59,19 @@ describe("JoinClassCardComponent", () => {
 		await fixture.whenStable();
 	}
 
+	function codeInput(): HTMLInputElement {
+		return el().querySelector("#join-code") as HTMLInputElement;
+	}
+
 	async function typeCode(value: string): Promise<void> {
-		const input = el().querySelector("#join-code") as HTMLInputElement;
+		const input = codeInput();
 		input.value = value;
 		input.dispatchEvent(new Event("input"));
+		await fixture.whenStable();
+	}
+
+	async function blurCode(): Promise<void> {
+		codeInput().dispatchEvent(new Event("blur"));
 		await fixture.whenStable();
 	}
 
@@ -133,6 +142,56 @@ describe("JoinClassCardComponent", () => {
 			{ id: 1, name: "Symphonic Band", teacher_name: "Terry Director" },
 		]);
 		expect(el().querySelectorAll("li").length).toBe(1);
+	});
+
+	it("clears the code field on success, so a blur cannot raise 'required'", async () => {
+		await loadClasses([]);
+		await typeCode("7NZJN3");
+
+		await submit();
+		backend.expectOne(JOIN_URL).flush({
+			id: 1,
+			name: "Symphonic Band",
+			teacher_name: "Terry Director",
+		});
+		fixture.detectChanges();
+		await loadClasses([
+			{ id: 1, name: "Symphonic Band", teacher_name: "Terry Director" },
+		]);
+
+		// #298: tabbing out of the field after a join used to mark the (now
+		// empty) model touched and show "Enter a class code" underneath an
+		// input that still read "7NZJN3", right above the success banner.
+		await blurCode();
+
+		expect(codeInput().value).toBe("");
+		expect(el().textContent).toContain("Joined");
+		expect(el().textContent).not.toContain("Enter a class code");
+	});
+
+	it("still refuses an empty code once the banner is up", async () => {
+		await loadClasses([]);
+		await typeCode("7NZJN3");
+
+		await submit();
+		backend.expectOne(JOIN_URL).flush({
+			id: 1,
+			name: "Symphonic Band",
+			teacher_name: "Terry Director",
+		});
+		fixture.detectChanges();
+		await loadClasses([
+			{ id: 1, name: "Symphonic Band", teacher_name: "Terry Director" },
+		]);
+
+		await submit();
+
+		// The banner is what suspends the required rule, so pressing Join has
+		// to retire it before reading the form's validity -- otherwise this
+		// empty submit would sail through to the backend.
+		backend.expectNone(JOIN_URL);
+		expect(el().textContent).toContain("Enter a class code");
+		expect(el().textContent).not.toContain("Joined");
 	});
 
 	it("shows the backend's 404 message inline, not as a toast", async () => {
