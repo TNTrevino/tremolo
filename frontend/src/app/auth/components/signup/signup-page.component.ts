@@ -103,7 +103,17 @@ const STRENGTH_BY_MET_COUNT: readonly PasswordStrength[] = [
 	},
 ];
 
-/** The grades `<select>` offers a student (#244) -- "6".."12" plus "other". */
+/**
+ * The grades `<select>` offers a student (#244) -- "6".."12" plus "other".
+ *
+ * The last entry is the opt-out. It reads "Prefer not to say" rather than
+ * "Other" because students read "Other" as a category to belong to and
+ * answer it honestly-but-wrongly instead of skipping the question (#300).
+ * Its **value stays `"other"`**: `gradeLevels` in
+ * `core-api/DTOs/auth_dtos.go` validates the submitted grade against that
+ * exact set, and `docs/legal/student-privacy-posture.md` documents it.
+ * Relabel freely; never rename the value.
+ */
 const GRADE_OPTIONS: readonly { value: string; label: string }[] = [
 	{ value: "6", label: "6th grade" },
 	{ value: "7", label: "7th grade" },
@@ -112,7 +122,7 @@ const GRADE_OPTIONS: readonly { value: string; label: string }[] = [
 	{ value: "10", label: "10th grade" },
 	{ value: "11", label: "11th grade" },
 	{ value: "12", label: "12th grade" },
-	{ value: "other", label: "Other" },
+	{ value: "other", label: "Prefer not to say" },
 ];
 
 /**
