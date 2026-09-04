@@ -166,6 +166,18 @@ preferences.
   swallowed-gap defect was app-wide rather than dialog-local. Use
   `flex flex-col gap-*` around kit components.
 
+- **A form field reveals its error on `touched() && dirty()`, never on
+  `touched()` alone.** Signal Forms marks a field touched on **blur**, so
+  gating on it meant tabbing through `/signup` without typing a character
+  lit four empty boxes up in red (#303). `shared/components/forms/field-error.ts`
+  owns that rule for the whole app. The consequence for a submit handler is
+  that `form().markAsTouched()` no longer reveals anything on its own — call
+  `revealErrors(this.xForm)` from the same file instead, which marks the
+  tree touched _and_ dirty. Every one of the eleven submit handlers does.
+  Schemas pair with it: a required field's **first** zod check is a
+  `.min(1, "… is required")`, so an empty box reads "Email is required"
+  rather than "Invalid email format".
+
 ## Conventions
 
 - Feature-folder layout under `src/app/features/<feature>/{components,models,services}`;
