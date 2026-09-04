@@ -448,6 +448,45 @@ describe("SignupPageComponent", () => {
 		expect(control("gradeLevel")).toBeNull();
 	});
 
+	/**
+	 * The opt-out's label is copy and may change (#300 renamed it away from
+	 * "Other", which students read as a category to belong to rather than as
+	 * a way to skip the question). Its **value is a wire contract**:
+	 * `gradeLevels` in `core-api/DTOs/auth_dtos.go` rejects any grade outside
+	 * "6".."12" and "other", and `docs/legal/student-privacy-posture.md`
+	 * documents that set. This pins the values so a future relabel cannot
+	 * quietly drag the value along with it.
+	 */
+	it("offers 6-12 plus an opt-out whose value stays other", () => {
+		const grade = control("gradeLevel") as HTMLSelectElement;
+
+		expect([...grade.options].map((option) => option.value)).toEqual([
+			"",
+			"6",
+			"7",
+			"8",
+			"9",
+			"10",
+			"11",
+			"12",
+			"other",
+		]);
+		expect(
+			[...grade.options]
+				.find((option) => option.value === "other")
+				?.textContent?.trim(),
+		).toBe("Prefer not to say");
+	});
+
+	it("sends grade_level other when a student opts out", async () => {
+		await fillValid();
+		await choose("gradeLevel", "other");
+		await submit();
+
+		const request = backend.expectOne(REGISTER_URL);
+		expect(request.request.body).toMatchObject({ grade_level: "other" });
+	});
+
 	it("requires a grade for a student signup", async () => {
 		await type("firstName", "Newton");
 		await type("lastName", "Signup");
