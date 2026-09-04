@@ -30,6 +30,13 @@
  *
  *   openscad -o coupon.stl  -D 'mode="coupon"' overlay.scad
  *   openscad -o overlay.stl -D 'mode="full"'   overlay.scad
+ *
+ * For a two-filament print, render the two halves and load them as two
+ * parts of ONE object in the slicer. They share exact faces and
+ * absolute coordinates, so they need no alignment:
+ *
+ *   openscad -o overlay-rest.stl   -D 'part="rest"'   overlay.scad
+ *   openscad -o overlay-blacks.stl -D 'part="blacks"' overlay.scad
  */
 
 /* ---------------------------------------------------------------- mode */
@@ -37,6 +44,20 @@
 mode = "full"; // "coupon" = C + D + C# test print, "full" = everything
 accidentals = true; // false renders a naturals-only shape
 orient = "print"; // "use" previews the part as it sits on the laptop
+
+// Which filament's half to render. "rest" is the rail and the white
+// keys, with the black-key anchor pockets hollowed out of the rail;
+// "blacks" is the five black keys with those anchors on them. The two
+// halves are complementary, so "rest" + "blacks" == "all".
+part = "all"; // "all" | "rest" | "blacks"
+
+// A typo here would silently export the wrong half, and the two halves
+// look alike enough in a slicer to get printed before anyone notices.
+assert(
+  part == "all" || part == "rest" || part == "blacks",
+  "part must be \"all\", \"rest\" or \"blacks\""
+);
+
 key_count = (mode == "coupon") ? 2 : 7;
 
 /* --------------------------------------------- laptop measurements */
@@ -160,6 +181,46 @@ rail_height = lever_lift + top_z;
 rail_margin = 6; // extra rail beyond the outer keys
 rail_width = key_count * key_pitch + 2 * rail_margin;
 
+/* ----------------------------------------------- black key anchors */
+
+/*
+ * A black key hangs on its flexure alone: 7.7 mm wide by
+ * flexure_thickness tall, about 7.7 mm² of material. That is thin in
+ * one filament. Printed as a second filament it is the first thing to
+ * break, because the two halves meet on a VERTICAL wall — the printer
+ * lays them side by side inside one layer, and a dissimilar-filament
+ * side seam carries almost no load.
+ *
+ * So each black key grows a T-shaped tenon that reaches BACK into the
+ * rail, behind the flexure. The rail carries the matching pocket. A
+ * pull on the key now presses the head against rail material in
+ * compression instead of peeling the seam apart. The black filament
+ * locks in by shape, not by adhesion.
+ *
+ * The tenon sits at z 0..key_thickness — the band the black key bodies
+ * already occupy — so it adds no new filament swap and no extra purge.
+ * It also stays entirely behind the rail face, so the flexure keeps its
+ * full flexure_length bend and the key feel does not change.
+ */
+anchor_head_depth = 5; // y; the crossbar that blocks the pull
+anchor_back_gap = 2; // rail left behind the head
+anchor_stem_depth = rail_depth - anchor_head_depth - anchor_back_gap;
+// The stem matches the neck it continues, so the two line up in x.
+anchor_stem_width = black_width * flexure_width_ratio;
+anchor_head_width = 14; // leaves key_pitch - 14 of rail between neighbors
+// Overlap into the neck. It lies inside the neck's own volume, so it
+// changes no shape; it only keeps the union off a zero-thickness face.
+anchor_tie = 0.5;
+
+assert(
+  anchor_stem_depth > 0,
+  "rail_depth is too shallow for the black key anchors"
+);
+assert(
+  anchor_head_width < key_pitch,
+  "anchor_head_width would merge neighboring black key anchors"
+);
+
 /* ------------------------------------------------------------ labels */
 
 emboss_labels = true;
@@ -260,6 +321,37 @@ module white_lever(label, cut_left, cut_right, nub_notch) {
 }
 
 /*
+ * The T-shaped tenon that locks one black key into the rail, in
+ * ABSOLUTE x. Two callers share these exact numbers: black_lever()
+ * ADDS it, rail() SUBTRACTS it. So the black half and the rest half
+ * meet on matching faces, with no gap and no overlap — what a
+ * multi-filament slicer needs from two parts of one object.
+ *
+ * Three boxes, each overlapping the next, so no join rests on a
+ * zero-thickness face contact:
+ *   stem — runs the full anchor depth, the width of the neck
+ *   head — the crossbar at the back, wider than the stem
+ *   tie  — the neck's own cross section, reaching anchor_tie past the
+ *          rail face into the neck
+ */
+module black_anchor(body_x) {
+  back = -flexure_length - anchor_stem_depth - anchor_head_depth;
+  depth = anchor_stem_depth + anchor_head_depth;
+  translate([body_x - anchor_stem_width / 2, back, 0])
+    cube([anchor_stem_width, depth, key_thickness]);
+  translate([body_x - anchor_head_width / 2, back, 0])
+    cube([anchor_head_width, anchor_head_depth, key_thickness]);
+  translate(
+    [
+      body_x - anchor_stem_width / 2,
+      back,
+      key_thickness - flexure_thickness,
+    ]
+  )
+    cube([anchor_stem_width, depth + anchor_tie, flexure_thickness]);
+}
+
+/*
  * One black key, in ABSOLUTE x. The body straddles its white boundary
  * dead center; the nub hangs offset inside it so the ball still lands
  * on the top-row key. The nub's first printed layer overhangs the body
@@ -303,13 +395,21 @@ module black_lever(label, body_x, nub_x) {
   }
   translate([nub_x, rail_to_top_row, 0])
     mirror([0, 0, 1]) nub();
+  black_anchor(body_x);
 }
 
 module rail() {
   // Rests on the deck strip near the screen; the levers spring from
-  // its player-facing face.
-  translate([-rail_margin, -flexure_length - rail_depth, -lever_lift])
-    cube([rail_width, rail_depth, rail_height]);
+  // its player-facing face. The black key anchors are hollowed out of
+  // it, so a black half printed in a second filament drops into
+  // pockets that match it face for face.
+  difference() {
+    translate([-rail_margin, -flexure_length - rail_depth, -lever_lift])
+      cube([rail_width, rail_depth, rail_height]);
+    if (accidentals)
+      for (n = black_after)
+        if (has_black_for_note(n)) black_anchor(black_body_x(n));
+  }
 }
 
 /* Cut widths where a black key notches into the authored column i. */
@@ -355,14 +455,16 @@ function nub_notch_for(i) =
 nub_notch_half = nub_diameter / 2 + 3;
 
 module overlay() {
-  rail();
-  for (i = [0:key_count - 1])
-    translate([white_x0(i), 0, 0])
-      white_lever(
-        labels[note_at(i)], cut_left_for(i), cut_right_for(i),
-        nub_notch_for(i)
-      );
-  if (accidentals)
+  if (part != "blacks") {
+    rail();
+    for (i = [0:key_count - 1])
+      translate([white_x0(i), 0, 0])
+        white_lever(
+          labels[note_at(i)], cut_left_for(i), cut_right_for(i),
+          nub_notch_for(i)
+        );
+  }
+  if (accidentals && part != "rest")
     for (b = [0:len(black_after) - 1])
       if (has_black_for_note(black_after[b]))
         black_lever(
