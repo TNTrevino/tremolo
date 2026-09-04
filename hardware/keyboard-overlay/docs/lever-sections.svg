@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 1020 740" width="1020" role="img"
+     aria-label="Two side sections through the same part. Section A cuts through a white key: the rail stands on the deck, a one millimetre flexure joins it to a four millimetre lever, and a nub hangs over a home row keycap. Section B cuts through a black key: the same rail and flexure, a shorter lever, a block standing five millimetres proud, and a nub over a top row keycap.">
+  <title>Lever sections — white key and black key</title>
+  <!--
+    Hand-authored documentation, not build output. Fonts are generic
+    families on purpose: a README SVG cannot load a webfont. Colours are
+    fixed rather than currentColor, because an SVG embedded as an image
+    has no page to inherit from.
+  -->
+  <style>
+    .d-line  { fill: none; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-thin  { fill: none; stroke: #E9EAE1; stroke-width: .9; opacity: .55; }
+    .d-rest  { fill: #2E2712; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-solid { fill: #F0C646; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-nuet  { fill: #292D24; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-dim   { fill: none; stroke: #E9EAE1; stroke-width: .9; opacity: .75; }
+    .d-dash  { fill: none; stroke: #E9EAE1; stroke-width: 1.1; stroke-dasharray: 5 4; opacity: .6; }
+    .d-hatch { stroke: #E9EAE1; stroke-width: .9; opacity: .5; }
+    text     { fill: #E9EAE1; font-family: ui-monospace, "IBM Plex Mono", Menlo, Consolas, monospace; font-size: 12px; }
+    .lbl     { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .65; }
+    .dim     { font-size: 11px; opacity: .8; }
+    .gold    { fill: #E0B336; font-weight: 600; }
+    .red     { fill: #E28A7C; font-weight: 600; }
+    .big     { font-family: "Archivo", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+    .on-gold { fill: #17180F; }
+  </style>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#E9EAE1"/>
+    </marker>
+  </defs>
+
+  <rect x="-20" y="-20" width="1020" height="740" fill="#181A15"/>
+
+  <!-- ==================================== SECTION A — WHITE KEY -->
+  <text class="lbl" x="40" y="16">section A · white key · presses a s d f g h j</text>
+
+  <line class="d-line" x1="40" y1="250" x2="940" y2="250"/>
+  <g class="d-hatch">
+    <line x1="44" y1="250" x2="36" y2="262"/><line x1="80" y1="250" x2="72" y2="262"/>
+    <line x1="116" y1="250" x2="108" y2="262"/><line x1="152" y1="250" x2="144" y2="262"/>
+    <line x1="188" y1="250" x2="180" y2="262"/><line x1="224" y1="250" x2="216" y2="262"/>
+    <line x1="260" y1="250" x2="252" y2="262"/><line x1="296" y1="250" x2="288" y2="262"/>
+    <line x1="332" y1="250" x2="324" y2="262"/><line x1="368" y1="250" x2="360" y2="262"/>
+    <line x1="404" y1="250" x2="396" y2="262"/><line x1="440" y1="250" x2="432" y2="262"/>
+    <line x1="476" y1="250" x2="468" y2="262"/><line x1="512" y1="250" x2="504" y2="262"/>
+    <line x1="548" y1="250" x2="540" y2="262"/><line x1="584" y1="250" x2="576" y2="262"/>
+    <line x1="620" y1="250" x2="612" y2="262"/><line x1="656" y1="250" x2="648" y2="262"/>
+    <line x1="692" y1="250" x2="684" y2="262"/><line x1="728" y1="250" x2="720" y2="262"/>
+    <line x1="764" y1="250" x2="756" y2="262"/><line x1="800" y1="250" x2="792" y2="262"/>
+    <line x1="836" y1="250" x2="828" y2="262"/><line x1="872" y1="250" x2="864" y2="262"/>
+    <line x1="908" y1="250" x2="900" y2="262"/><line x1="940" y1="250" x2="932" y2="262"/>
+  </g>
+  <text class="lbl" x="40" y="242">deck</text>
+
+  <rect class="d-nuet" x="632" y="234" width="144" height="16"/>
+  <text class="lbl" x="624" y="246" text-anchor="end">keycap · g</text>
+
+  <rect class="d-rest" x="80" y="26" width="112" height="224"/>
+  <text class="big" x="136" y="146" text-anchor="middle">RAIL</text>
+
+  <rect class="d-rest" x="248" y="106" width="536" height="64"/>
+  <text class="big" x="440" y="144" text-anchor="middle">WHITE LEVER</text>
+
+  <rect class="d-solid" x="192" y="106" width="57" height="16"/>
+
+  <path class="d-solid" d="M676,170 A28,59 0 0,0 732,170 Z"/>
+  <text class="lbl on-gold" x="704" y="202" text-anchor="middle">nub</text>
+
+  <path class="d-dim" d="M228,110 L300,66" marker-start="url(#ar)"/>
+  <text class="gold" x="306" y="62">neck()</text>
+  <text class="dim" x="306" y="78">flexure_thickness = 1.0, flexure_length = 7</text>
+
+  <path class="d-dim" d="M720,232 L770,290" marker-start="url(#ar)"/>
+  <text class="red" x="776" y="288">nub_rest_gap = 0.3</text>
+  <text class="dim" x="776" y="304">never held half-pressed</text>
+
+  <line class="d-thin" x1="784" y1="106" x2="816" y2="106"/>
+  <line class="d-thin" x1="784" y1="170" x2="816" y2="170"/>
+  <line class="d-dim" x1="812" y1="106" x2="812" y2="170" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="820" y="142">key_thickness = 4</text>
+  <line class="d-dim" x1="812" y1="170" x2="812" y2="250" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="820" y="214">lever_lift = 5</text>
+
+  <line class="d-thin" x1="80" y1="250" x2="80" y2="284"/>
+  <line class="d-thin" x1="192" y1="250" x2="192" y2="284"/>
+  <line class="d-thin" x1="248" y1="170" x2="248" y2="312"/>
+  <line class="d-thin" x1="704" y1="234" x2="704" y2="312"/>
+  <line class="d-dim" x1="80" y1="278" x2="192" y2="278" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="136" y="272" text-anchor="middle">rail_depth = 14</text>
+  <line class="d-dim" x1="248" y1="306" x2="704" y2="306" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="476" y="300" text-anchor="middle">rail_to_home_row = 57.05</text>
+
+  <!-- ==================================== SECTION B — BLACK KEY -->
+  <line class="d-thin" x1="40" y1="338" x2="940" y2="338"/>
+  <text class="lbl" x="40" y="376">section B · black key · presses w e t y u</text>
+
+  <line class="d-line" x1="40" y1="610" x2="940" y2="610"/>
+  <g class="d-hatch">
+    <line x1="44" y1="610" x2="36" y2="622"/><line x1="80" y1="610" x2="72" y2="622"/>
+    <line x1="116" y1="610" x2="108" y2="622"/><line x1="152" y1="610" x2="144" y2="622"/>
+    <line x1="188" y1="610" x2="180" y2="622"/><line x1="224" y1="610" x2="216" y2="622"/>
+    <line x1="260" y1="610" x2="252" y2="622"/><line x1="296" y1="610" x2="288" y2="622"/>
+    <line x1="332" y1="610" x2="324" y2="622"/><line x1="368" y1="610" x2="360" y2="622"/>
+    <line x1="404" y1="610" x2="396" y2="622"/><line x1="440" y1="610" x2="432" y2="622"/>
+    <line x1="476" y1="610" x2="468" y2="622"/><line x1="512" y1="610" x2="504" y2="622"/>
+    <line x1="548" y1="610" x2="540" y2="622"/><line x1="584" y1="610" x2="576" y2="622"/>
+    <line x1="620" y1="610" x2="612" y2="622"/><line x1="656" y1="610" x2="648" y2="622"/>
+    <line x1="692" y1="610" x2="684" y2="622"/><line x1="728" y1="610" x2="720" y2="622"/>
+    <line x1="764" y1="610" x2="756" y2="622"/><line x1="800" y1="610" x2="792" y2="622"/>
+    <line x1="836" y1="610" x2="828" y2="622"/><line x1="872" y1="610" x2="864" y2="622"/>
+    <line x1="908" y1="610" x2="900" y2="622"/><line x1="940" y1="610" x2="932" y2="622"/>
+  </g>
+  <text class="lbl" x="40" y="602">deck</text>
+
+  <rect class="d-nuet" x="480" y="594" width="144" height="16"/>
+  <text class="lbl" x="472" y="606" text-anchor="end">keycap · t</text>
+
+  <rect class="d-rest" x="80" y="386" width="112" height="224"/>
+  <text class="big" x="136" y="506" text-anchor="middle">RAIL</text>
+
+  <rect class="d-rest" x="248" y="466" width="352" height="64"/>
+  <path class="d-solid" d="M264,466 L600,466 L600,426 L580,386 L264,386 Z"/>
+  <text class="big on-gold" x="424" y="424" text-anchor="middle">RAISED BLOCK</text>
+  <text class="lbl" x="424" y="506" text-anchor="middle">black key body</text>
+
+  <rect class="d-solid" x="192" y="466" width="57" height="16"/>
+  <path class="d-dim" d="M206,462 L186,436" marker-start="url(#ar)"/>
+  <text class="dim" x="182" y="430" text-anchor="end">same neck()</text>
+
+  <path class="d-solid" d="M524,530 A28,59 0 0,0 580,530 Z"/>
+  <text class="lbl on-gold" x="552" y="562" text-anchor="middle">nub</text>
+
+  <path class="d-dim" d="M592,400 L660,378" marker-start="url(#ar)"/>
+  <text class="dim" x="666" y="376">black_chamfer = 2.5</text>
+
+  <path class="d-dim" d="M262,452 L262,552" marker-end="url(#ar)"/>
+  <text class="dim" x="196" y="566">black_raise_setback = 2</text>
+
+  <line class="d-thin" x1="600" y1="386" x2="816" y2="386"/>
+  <line class="d-thin" x1="600" y1="466" x2="816" y2="466"/>
+  <line class="d-thin" x1="600" y1="530" x2="816" y2="530"/>
+  <line class="d-dim" x1="812" y1="386" x2="812" y2="466" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="820" y="430">black_raise = 5</text>
+  <line class="d-dim" x1="812" y1="466" x2="812" y2="530" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="820" y="502">key_thickness = 4</text>
+
+  <line class="d-thin" x1="248" y1="530" x2="248" y2="686"/>
+  <line class="d-thin" x1="552" y1="594" x2="552" y2="660"/>
+  <line class="d-thin" x1="600" y1="530" x2="600" y2="686"/>
+  <line class="d-dim" x1="248" y1="654" x2="552" y2="654" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="400" y="648" text-anchor="middle">rail_to_top_row = 38</text>
+  <line class="d-dim" x1="248" y1="680" x2="600" y2="680" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="424" y="674" text-anchor="middle">black_length = 44</text>
+
+  <line class="d-dash" x1="784" y1="530" x2="784" y2="600"/>
+  <text class="dim" x="776" y="580" text-anchor="end">the white key reaches to here</text>
+</svg>
