@@ -163,6 +163,12 @@ openapi-go:
 # The STL exports are pure geometry; the PNG previews need a GL context,
 # so the hardware workflow wraps this target in xvfb-run on the headless
 # runner. Locally, plain `make build-hardware` works.
+#
+# Each shape renders three ways. The plain STL is the one-filament print.
+# The -rest / -blacks pair is the same solid split along the black-key
+# anchors, for a two-filament print: load -rest, then add -blacks as a
+# PART of that same object. They share absolute coordinates and matching
+# faces, so they need no alignment and leave no gap.
 OPENSCAD ?= openscad
 HW_DIR = hardware/keyboard-overlay
 HW_IMG = --imgsize=1400,900 --autocenter --viewall
@@ -171,8 +177,13 @@ build-hardware:
 	@$(call banner,Rendering keyboard overlay (openscad)...)
 	cd $(HW_DIR) && $(OPENSCAD) -o coupon.stl  -D 'mode="coupon"' overlay.scad
 	cd $(HW_DIR) && $(OPENSCAD) -o overlay.stl -D 'mode="full"'   overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o coupon-rest.stl    -D 'mode="coupon"' -D 'part="rest"'   overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o coupon-blacks.stl  -D 'mode="coupon"' -D 'part="blacks"' overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o overlay-rest.stl   -D 'mode="full"'   -D 'part="rest"'   overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o overlay-blacks.stl -D 'mode="full"'   -D 'part="blacks"' overlay.scad
 	cd $(HW_DIR) && $(OPENSCAD) -o preview-use.png   $(HW_IMG) -D 'mode="full"' -D 'orient="use"' overlay.scad
 	cd $(HW_DIR) && $(OPENSCAD) -o preview-print.png $(HW_IMG) -D 'mode="full"' overlay.scad
+	cd $(HW_DIR) && $(OPENSCAD) -o preview-blacks.png $(HW_IMG) -D 'mode="full"' -D 'part="blacks"' -D 'orient="use"' overlay.scad
 
 # ---- API smoke tests (kulala) ----
 # End-to-end HTTP tests against a RUNNING service (default :5001). Unlike
