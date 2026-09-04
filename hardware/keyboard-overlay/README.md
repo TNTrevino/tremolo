@@ -23,6 +23,23 @@ A PLA-S support interface keeps the white faces clean.
 laptop measurement is a variable at the top of the file. The prototype
 targets a Framework 13; other laptops are a parameter change.
 
+## How a key works
+
+Every key is the same machine. A stiff beam, a thin bending neck at the
+rail, and a rounded nub underneath that touches one keycap. The laptop
+key's own spring pushes it back up. A black key is the same machine with
+a shorter beam, a block standing `black_raise` proud, and a nub that
+reaches the row nearer the screen.
+
+![Two side sections through the part. Section A cuts a white key: the
+rail on the deck, the 1 mm flexure, the 4 mm lever and the nub over a
+home-row keycap. Section B cuts a black key: the same rail and neck, a
+shorter body, the raised block with its chamfer, and a nub over a
+top-row keycap](docs/lever-sections.svg)
+
+Every `z` dimension in `overlay.scad` is in that drawing. Only the five
+values marked `VERIFY` are guesses; the rest derive from them.
+
 ## Render
 
 ```bash
@@ -108,12 +125,17 @@ reaches back into the rail, behind the flexure. `part="rest"` cuts the
 matching pocket out of the rail. A pull on the key now presses the head
 against rail material in compression instead of peeling the seam apart.
 
-![The five black keys rendered on their own, each ending in a T-shaped
-tenon that locks into the rail](preview-blacks.png)
+![Plan view of the rail with the tenon inside it. The 14 mm head sits
+deep in the rail behind a 2 mm back gap, the 7.7 mm stem reaches out to
+the rail face, and the two shoulders block a pull on the key. The
+neighbouring anchors leave a 5.05 mm rail wall](docs/tenon-plan.svg)
 
 The tenon sits in the layers the black keys already occupy, so it costs
 no extra filament swap, and it stays behind the rail face, so the
 flexure keeps its full bend and the key feel does not change.
+
+![The five black keys rendered on their own, each ending in a T-shaped
+tenon that locks into the rail](preview-blacks.png)
 
 The two halves are complementary and share absolute coordinates. In the
 slicer, load `overlay-rest.stl`, then right-click it and **add

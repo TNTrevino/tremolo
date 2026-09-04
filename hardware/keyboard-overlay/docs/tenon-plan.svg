@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 1040 560" width="1040" role="img"
+     aria-label="Plan view of the rail with the T-shaped tenon inside it. The wide head sits deep in the rail, the narrow stem reaches out to the rail face, and the neck continues to the key body. A pull on the key presses the head's two shoulders against rail material. Faint outlines show the neighbouring anchors 19.05 millimetres away, leaving a 5.05 millimetre rail wall.">
+  <title>The black key tenon, in plan</title>
+  <!--
+    Hand-authored documentation, not build output. Fonts are generic
+    families on purpose: a README SVG cannot load a webfont. Colours are
+    fixed rather than currentColor, because an SVG embedded as an image
+    has no page to inherit from.
+  -->
+  <style>
+    .d-line  { fill: none; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-thin  { fill: none; stroke: #E9EAE1; stroke-width: .9; opacity: .55; }
+    .d-rest  { fill: #2E2712; stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-dim   { fill: none; stroke: #E9EAE1; stroke-width: .9; opacity: .75; }
+    .d-dash  { fill: none; stroke: #E9EAE1; stroke-width: 1.1; stroke-dasharray: 5 4; opacity: .6; }
+    .d-blk   { fill: url(#hatch); stroke: #E9EAE1; stroke-width: 1.8; }
+    .d-blk2  { fill: url(#hatch); stroke: #E9EAE1; stroke-width: 1.4; }
+    .d-cutln { fill: none; stroke: #E28A7C; stroke-width: 2.4; }
+    .d-pull  { fill: none; stroke: #E28A7C; stroke-width: 2.2; }
+    text     { fill: #E9EAE1; font-family: ui-monospace, "IBM Plex Mono", Menlo, Consolas, monospace; font-size: 12px; }
+    .lbl     { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .65; }
+    .dim     { font-size: 11px; opacity: .8; }
+    .gold    { fill: #E0B336; font-weight: 600; }
+    .red     { fill: #E28A7C; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#E9EAE1"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#E28A7C"/>
+    </marker>
+    <pattern id="hatch" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#E9EAE1" stroke-width="1.6" opacity=".38"/>
+    </pattern>
+  </defs>
+
+  <rect x="-20" y="-20" width="1040" height="560" fill="#181A15"/>
+
+  <!-- rail band -->
+  <rect class="d-rest" x="270" y="60" width="690" height="168"/>
+  <text class="lbl" x="270" y="50">rail · the rest half</text>
+
+  <!-- neighbouring anchors, faint -->
+  <path class="d-dash" d="M302,84 L470,84 L470,144 L432,144 L432,228 L340,228 L340,144 L302,144 Z"/>
+  <path class="d-dash" d="M760,84 L928,84 L928,144 L890,144 L890,228 L798,228 L798,144 L760,144 Z"/>
+  <text class="dim" x="386" y="200" text-anchor="middle">neighbour</text>
+  <text class="dim" x="844" y="200" text-anchor="middle">neighbour</text>
+
+  <!-- the anchor: head and stem, as one outline -->
+  <path class="d-blk" d="M531,84 L699,84 L699,144 L661,144 L661,228 L569,228 L569,144 L531,144 Z"/>
+
+  <!-- neck, outside the rail -->
+  <rect class="d-blk2" x="569" y="228" width="92" height="84"/>
+  <!-- key body, broken off -->
+  <rect class="d-blk2" x="549" y="312" width="132" height="128"/>
+  <path class="d-line" d="M549,440 L573,452 L597,428 L621,452 L645,428 L669,452 L681,440"/>
+
+  <!-- rail face -->
+  <line class="d-dash" x1="270" y1="228" x2="960" y2="228"/>
+  <text class="dim" x="960" y="248" text-anchor="end">rail face, y = −7</text>
+
+  <!-- the blocking shoulders -->
+  <line class="d-cutln" x1="531" y1="144" x2="569" y2="144"/>
+  <line class="d-cutln" x1="661" y1="144" x2="699" y2="144"/>
+  <path class="d-dim" d="M665,144 L772,48" marker-start="url(#ar)"/>
+  <text class="red" x="764" y="34">the two shoulders block it</text>
+  <text class="dim" x="764" y="50">25 mm² into rail material</text>
+
+  <!-- pull -->
+  <path class="d-pull" d="M615,504 L615,456" marker-end="url(#arr)"/>
+  <text class="red" x="628" y="498">pull on the key</text>
+
+  <!-- labels -->
+  <text class="gold" x="615" y="118" text-anchor="middle">head</text>
+  <text class="gold" x="615" y="180" text-anchor="middle">stem</text>
+  <text class="dim" x="615" y="304" text-anchor="middle">neck</text>
+  <text class="dim" x="615" y="384" text-anchor="middle">black key</text>
+
+  <!-- dimensions: vertical, in the left margin -->
+  <line class="d-thin" x1="240" y1="60" x2="274" y2="60"/>
+  <line class="d-thin" x1="240" y1="84" x2="298" y2="84"/>
+  <line class="d-thin" x1="240" y1="144" x2="298" y2="144"/>
+  <line class="d-thin" x1="240" y1="228" x2="274" y2="228"/>
+  <line class="d-dim" x1="250" y1="60" x2="250" y2="84" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <line class="d-dim" x1="250" y1="84" x2="250" y2="144" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <line class="d-dim" x1="250" y1="144" x2="250" y2="228" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="232" y="76" text-anchor="end">anchor_back_gap = 2</text>
+  <text class="dim" x="232" y="118" text-anchor="end">anchor_head_depth = 5</text>
+  <text class="dim" x="232" y="190" text-anchor="end">anchor_stem_depth = 7</text>
+
+  <!-- dimensions: horizontal -->
+  <line class="d-dim" x1="531" y1="46" x2="699" y2="46" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="615" y="38" text-anchor="middle">anchor_head_width = 14</text>
+  <line class="d-dim" x1="699" y1="106" x2="760" y2="106" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="729" y="126" text-anchor="middle">5.05</text>
+  <text class="dim" x="729" y="150" text-anchor="middle">rail wall</text>
+  <line class="d-dim" x1="569" y1="270" x2="661" y2="270" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="dim" x="555" y="274" text-anchor="end">anchor_stem_width = 7.7</text>
+</svg>
