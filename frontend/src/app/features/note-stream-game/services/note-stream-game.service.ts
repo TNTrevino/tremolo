@@ -46,8 +46,17 @@ import { StreamTransportService } from "./stream-transport.service";
  * Provided per page, with the four services it wires together.
  */
 
-/** Beats a judged note keeps drawing (its hit or miss animation) before it is dropped. */
-const PRUNE_AFTER_BEATS = 2;
+/**
+ * Beats a judged note keeps drawing (its hit or miss animation) before it is
+ * dropped.
+ *
+ * Half a beat is 70px at `PIXELS_PER_BEAT`, which lands a note just past the
+ * staff's fade-out. Two beats -- what this was -- carried a judged note 280px
+ * left of the hit line, to x = -140, straight across the clef. The note was
+ * invisible by then only because the fade exists; keeping it in the list any
+ * longer just costs a layout per frame.
+ */
+const PRUNE_AFTER_BEATS = 0.5;
 
 @Injectable()
 export class NoteStreamGameService {

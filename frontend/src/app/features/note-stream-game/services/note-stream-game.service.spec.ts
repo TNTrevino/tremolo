@@ -231,14 +231,18 @@ describe("NoteStreamGameService", () => {
 		expect(() => frame()).not.toThrow();
 	});
 
-	it("drops judged notes a couple of beats after their moment", () => {
+	it("drops judged notes half a beat after their moment", () => {
 		startPlaying();
 		const first = game.notes()[0];
 
-		advance(1000);
+		// 0.3 beats: the note missed at +180ms and is still being drawn, part
+		// way through the staff's fade.
+		advance(300);
 		expect(game.notes().some((note) => note.id === first?.id)).toBe(true);
 
-		advance(3000);
+		// Past PRUNE_AFTER_BEATS, which is set so the note leaves the list once
+		// the fade has finished rather than while it crosses the clef.
+		advance(1000);
 		expect(game.notes().some((note) => note.id === first?.id)).toBe(false);
 	});
 

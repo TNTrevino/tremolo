@@ -1,6 +1,10 @@
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
 
 import type { RangeClef } from "../../../../shared/models/music.models";
+import {
+	CLEF_PATHS,
+	CLEF_UNITS_PER_SPACE,
+} from "../../../../shared/utils/clef-paths";
 import { noteToIndex } from "../../../note-game/models/range.utils";
 import {
 	PIXELS_PER_BEAT,
@@ -24,6 +28,8 @@ import { HIT_LINE_X, StreamStaffComponent } from "./stream-staff.component";
 const BOTTOM_LINE_Y = 140;
 /** One staff position; two of them is one line-to-line step. */
 const STEP = 8;
+const LINE_SPACING = 2 * STEP;
+const TOP_LINE_Y = BOTTOM_LINE_Y - 4 * LINE_SPACING;
 
 function note(
 	partial: Partial<StreamNote> & { name: string; diatonicIndex: number },
@@ -107,13 +113,52 @@ describe("StreamStaffComponent", () => {
 		expect(hitLine?.getAttribute("x1")).toBe(String(HIT_LINE_X));
 		expect(hitLine?.getAttribute("x1")).toBe(hitLine?.getAttribute("x2"));
 
-		// The treble glyph, from the shared CLEF_UNICODE table.
-		expect(el().querySelector("svg > text")?.textContent?.trim()).toBe(
-			"\u{1D11E}",
-		);
+		// The clef is a drawn path, not a character: see shared/utils/clef-paths.
+		const clef = el().querySelector<SVGPathElement>("svg > path");
+		expect(clef?.getAttribute("d")).toBe(CLEF_PATHS.treble.d);
 		expect(el().querySelector("svg")?.getAttribute("aria-label")).toBe(
 			"Scrolling staff, Treble Clef",
 		);
+	});
+
+	it("anchors each clef to the line it names", async () => {
+		// Treble's origin is the G line, three line-spacings below the top
+		// line; bass's is the F line, one below. Both scale by the same
+		// font-units-per-space, so only the translate differs.
+		const scale = LINE_SPACING / CLEF_UNITS_PER_SPACE;
+
+		await render("treble", []);
+		expect(el().querySelector("svg > path")?.getAttribute("transform")).toBe(
+			`translate(24 ${TOP_LINE_Y + 3 * LINE_SPACING}) scale(${scale})`,
+		);
+
+		await render("bass", []);
+		expect(el().querySelector("svg > path")?.getAttribute("d")).toBe(
+			CLEF_PATHS.bass.d,
+		);
+		expect(el().querySelector("svg > path")?.getAttribute("transform")).toBe(
+			`translate(24 ${TOP_LINE_Y + LINE_SPACING}) scale(${scale})`,
+		);
+	});
+
+	it("fades the notes out before they reach the clef", async () => {
+		await render("treble", []);
+
+		// The gradient runs black-to-white from the fade end to the hit line,
+		// so a note is invisible left of x=76 and solid right of the hit line.
+		// userSpaceOnUse pads outside that span, which is what makes one
+		// gradient cover the whole staff.
+		const gradient = el().querySelector("linearGradient");
+		expect(gradient?.getAttribute("gradientUnits")).toBe("userSpaceOnUse");
+		expect(gradient?.getAttribute("x1")).toBe("76");
+		expect(gradient?.getAttribute("x2")).toBe(String(HIT_LINE_X));
+
+		// The mask hangs on a wrapper, never on the scrolling group itself --
+		// a transform there would move the mask with the notes.
+		const masked = el().querySelector<SVGGElement>("g[mask]");
+		expect(masked?.getAttribute("mask")).toBe("url(#stream-staff-fade)");
+		expect(masked?.getAttribute("transform")).toBeNull();
+		expect(masked?.querySelector("g")).toBeTruthy();
 	});
 
 	it("puts treble E4 on the bottom staff line", async () => {
