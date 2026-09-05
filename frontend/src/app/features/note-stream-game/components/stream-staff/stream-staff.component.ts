@@ -13,9 +13,10 @@ import {
 // `opensheetmusicdisplay` through `GameStaffComponent`, and this renderer
 // exists precisely so that engraver is not on this page.
 // `frontend/CLAUDE.md`, "Barrel vs data entry point".
-import { CLEF_LABELS, CLEF_UNICODE } from "@features/identification-game/data";
+import { CLEF_LABELS } from "@features/identification-game/data";
 
 import type { RangeClef } from "../../../../shared/models/music.models";
+import { CLEF_PATHS, clefTransform } from "../../../../shared/utils/clef-paths";
 import { ledgerSteps, staffSteps } from "../../../note-game/models/range.utils";
 import {
 	PIXELS_PER_BEAT,
@@ -51,15 +52,34 @@ const STAFF_HEIGHT = 216;
 export const HIT_LINE_X = 140;
 
 const CLEF_X = 24;
-/** Glyph metrics carried over from `<app-staff-range-picker>`, which tuned
- * them against the system font at `LINE_SPACING = 14`; both scale with the
- * line spacing, so the ratios transfer unchanged. `dy` is measured down from
- * the top staff line. */
-const CLEF_FONT_SIZE = 3.4 * LINE_SPACING;
-const CLEF_GLYPHS: Record<RangeClef, { glyph: string; dy: number }> = {
-	treble: { glyph: CLEF_UNICODE.treble, dy: 3.1 * LINE_SPACING },
-	bass: { glyph: CLEF_UNICODE.bass, dy: 1.05 * LINE_SPACING },
-};
+
+/**
+ * A judged note is gone by this x, which leaves the clef's space clear.
+ * Engraved music never puts a note head on the clef, and a note that has been
+ * played has no business still being on the staff.
+ *
+ * **The fade is a distance, not a duration.** The clef sits at a fixed x, so
+ * the note has to clear the same ground at 30 BPM and at 200. A time-based
+ * fade would strand notes on the clef at slow tempos.
+ */
+const FADE_END_X = 76;
+/** Notes are at full strength from the hit line rightward. */
+const FADE_START_X = HIT_LINE_X;
+
+/**
+ * How long a judged note stays visible, in beats.
+ *
+ * The fade is a span of the staff, so how long it lasts falls out of the
+ * tempo rather than being set alongside it. `NoteStreamGameService` prunes
+ * on this number, which is what keeps "stop drawing the note" tied to "the
+ * note has finished fading" when the clef, the hit line or the fade span
+ * moves.
+ */
+export const FADE_OUT_BEATS = (FADE_START_X - FADE_END_X) / PIXELS_PER_BEAT;
+
+/** Ties the gradient and the mask together without colliding with anything. */
+const FADE_MASK_ID = "stream-staff-fade";
+const FADE_GRADIENT_ID = `${FADE_MASK_ID}-gradient`;
 
 const HEAD_RX = 9.5;
 const HEAD_RY = 6.5;
@@ -199,14 +219,48 @@ interface RenderedNote {
 				/>
 			}
 
-			<text
-				[attr.x]="clefX"
-				[attr.y]="clefGlyph().y"
-				[attr.font-size]="clefFontSize"
+			<!--
+				The fade the spent notes scroll into. One gradient over the whole
+				staff does every note at once, so the scroll stays a single
+				transform write per frame rather than an opacity write per note.
+				The mask hangs on a wrapper with no transform of its own, which
+				keeps its coordinates in the staff's user space.
+			-->
+			<defs>
+				<linearGradient
+					[attr.id]="fadeGradientId"
+					gradientUnits="userSpaceOnUse"
+					[attr.x1]="fadeEndX"
+					y1="0"
+					[attr.x2]="fadeStartX"
+					y2="0"
+				>
+					<stop offset="0" stop-color="#000" />
+					<stop offset="1" stop-color="#fff" />
+				</linearGradient>
+				<mask
+					[attr.id]="fadeMaskId"
+					maskUnits="userSpaceOnUse"
+					x="0"
+					y="0"
+					width="100%"
+					[attr.height]="staffHeight"
+				>
+					<rect
+						x="0"
+						y="0"
+						width="100%"
+						[attr.height]="staffHeight"
+						[attr.fill]="fadeGradientRef"
+					/>
+				</mask>
+			</defs>
+
+			<path
+				[attr.d]="clefPath()"
+				[attr.transform]="clefTransform()"
 				fill="currentColor"
-			>
-				{{ clefGlyph().glyph }}
-			</text>
+			/>
 
 			<!-- The interaction point, and the one brass thing on the staff. -->
 			<line
@@ -220,50 +274,52 @@ interface RenderedNote {
 				stroke-linecap="round"
 			/>
 
-			<g #scroller>
-				@for (note of renderedNotes(); track note.id) {
-					@let judgment = judgmentFor()(note.id);
-					<g [attr.data-note-id]="note.id" [class]="noteClass(judgment)">
-						@for (ledgerY of note.ledgerYs; track ledgerY) {
+			<g [attr.mask]="fadeMaskRef">
+				<g #scroller>
+					@for (note of renderedNotes(); track note.id) {
+						@let judgment = judgmentFor()(note.id);
+						<g [attr.data-note-id]="note.id" [class]="noteClass(judgment)">
+							@for (ledgerY of note.ledgerYs; track ledgerY) {
+								<line
+									[attr.x1]="note.ledgerX1"
+									[attr.x2]="note.ledgerX2"
+									[attr.y1]="ledgerY"
+									[attr.y2]="ledgerY"
+									stroke="currentColor"
+									stroke-width="1.6"
+								/>
+							}
+							@if (note.accidental) {
+								<text
+									[attr.x]="note.accidentalX"
+									[attr.y]="note.accidentalY"
+									[attr.font-size]="accidentalFontSize"
+									text-anchor="middle"
+									fill="currentColor"
+								>
+									{{ note.accidental }}
+								</text>
+							}
 							<line
-								[attr.x1]="note.ledgerX1"
-								[attr.x2]="note.ledgerX2"
-								[attr.y1]="ledgerY"
-								[attr.y2]="ledgerY"
+								[attr.x1]="note.stemX"
+								[attr.x2]="note.stemX"
+								[attr.y1]="note.stemY1"
+								[attr.y2]="note.stemY2"
 								stroke="currentColor"
-								stroke-width="1.6"
+								stroke-width="2"
+								stroke-linecap="round"
 							/>
-						}
-						@if (note.accidental) {
-							<text
-								[attr.x]="note.accidentalX"
-								[attr.y]="note.accidentalY"
-								[attr.font-size]="accidentalFontSize"
-								text-anchor="middle"
+							<ellipse
+								[attr.cx]="note.x"
+								[attr.cy]="note.y"
+								[attr.rx]="headRx"
+								[attr.ry]="headRy"
+								[attr.transform]="note.headRotate"
 								fill="currentColor"
-							>
-								{{ note.accidental }}
-							</text>
-						}
-						<line
-							[attr.x1]="note.stemX"
-							[attr.x2]="note.stemX"
-							[attr.y1]="note.stemY1"
-							[attr.y2]="note.stemY2"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-						/>
-						<ellipse
-							[attr.cx]="note.x"
-							[attr.cy]="note.y"
-							[attr.rx]="headRx"
-							[attr.ry]="headRy"
-							[attr.transform]="note.headRotate"
-							fill="currentColor"
-						/>
-					</g>
-				}
+							/>
+						</g>
+					}
+				</g>
 			</g>
 		</svg>
 	`,
@@ -291,8 +347,12 @@ export class StreamStaffComponent {
 	protected readonly staffLineYs = [0, 1, 2, 3, 4].map(
 		(line) => TOP_LINE_Y + line * LINE_SPACING,
 	);
-	protected readonly clefX = CLEF_X;
-	protected readonly clefFontSize = CLEF_FONT_SIZE;
+	protected readonly fadeStartX = FADE_START_X;
+	protected readonly fadeEndX = FADE_END_X;
+	protected readonly fadeMaskId = FADE_MASK_ID;
+	protected readonly fadeGradientId = FADE_GRADIENT_ID;
+	protected readonly fadeMaskRef = `url(#${FADE_MASK_ID})`;
+	protected readonly fadeGradientRef = `url(#${FADE_GRADIENT_ID})`;
 	protected readonly hitLineX = HIT_LINE_X;
 	protected readonly hitLineY1 = TOP_LINE_Y - LINE_SPACING;
 	protected readonly hitLineY2 = BOTTOM_LINE_Y + LINE_SPACING;
@@ -300,10 +360,10 @@ export class StreamStaffComponent {
 	protected readonly headRy = HEAD_RY;
 	protected readonly accidentalFontSize = ACCIDENTAL_FONT_SIZE;
 
-	protected readonly clefGlyph = computed(() => {
-		const { glyph, dy } = CLEF_GLYPHS[this.clef()];
-		return { glyph, y: TOP_LINE_Y + dy };
-	});
+	protected readonly clefPath = computed(() => CLEF_PATHS[this.clef()].d);
+	protected readonly clefTransform = computed(() =>
+		clefTransform(this.clef(), CLEF_X, TOP_LINE_Y, LINE_SPACING),
+	);
 
 	protected readonly ariaLabel = computed(
 		() => `Scrolling staff, ${CLEF_LABELS[this.clef()]}`,

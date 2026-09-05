@@ -12,7 +12,7 @@ import { NgIcon } from "@ng-icons/core";
 import { ButtonComponent } from "../../../../shared/components/ui/button.component";
 import { TooltipDirective } from "../../../../shared/components/ui/tooltip.directive";
 import type { RangeClef } from "../../../../shared/models/music.models";
-import { CLEF_UNICODE } from "@features/identification-game/data";
+import { CLEF_PATHS, clefTransform } from "../../../../shared/utils/clef-paths";
 import {
 	BOTTOM_LINE_INDEX,
 	indexToNote,
@@ -48,12 +48,6 @@ const HEIGHT = 168;
 const WIDTH = STAFF_LEFT + STAFF_WIDTH + 8;
 const LOW_X = STAFF_LEFT + 46;
 const HIGH_X = STAFF_LEFT + 122;
-
-/** Codepoints shared with the clef glyph; `dy` positions them at this scale. */
-const CLEF_GLYPHS: Record<RangeClef, { glyph: string; dy: number }> = {
-	treble: { glyph: CLEF_UNICODE.treble, dy: 3.1 * LINE_SPACING },
-	bass: { glyph: CLEF_UNICODE.bass, dy: 1.05 * LINE_SPACING },
-};
 
 /** y coordinate of a staff-position step (0 = bottom line). */
 function stepToY(steps: number): number {
@@ -126,14 +120,11 @@ interface WholeNoteGeometry {
 						stroke-width="1.2"
 					/>
 				}
-				<text
-					[attr.x]="staffLeft - 28"
-					[attr.y]="staffTop + clefGlyph().dy"
-					[attr.font-size]="lineSpacing * 3.4"
+				<path
+					[attr.d]="clefPath()"
+					[attr.transform]="clefTransform()"
 					fill="currentColor"
-				>
-					{{ clefGlyph().glyph }}
-				</text>
+				/>
 
 				@for (endpoint of endpoints; track endpoint) {
 					@let note = geometry()[endpoint];
@@ -228,7 +219,10 @@ export class StaffRangePickerComponent {
 
 	protected readonly lowIndex = computed(() => noteToIndex(this.low()));
 	protected readonly highIndex = computed(() => noteToIndex(this.high()));
-	protected readonly clefGlyph = computed(() => CLEF_GLYPHS[this.clef()]);
+	protected readonly clefPath = computed(() => CLEF_PATHS[this.clef()].d);
+	protected readonly clefTransform = computed(() =>
+		clefTransform(this.clef(), STAFF_LEFT - 28, STAFF_TOP, LINE_SPACING),
+	);
 
 	protected readonly geometry = computed<Record<Endpoint, WholeNoteGeometry>>(
 		() => ({
