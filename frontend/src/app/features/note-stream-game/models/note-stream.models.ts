@@ -115,6 +115,20 @@ export const COUNT_IN_BEATS = 4;
  */
 export const BEATS_PER_BAR = 4;
 
+/**
+ * Which beat of the bar a beat number falls on, 0-based.
+ *
+ * **The floor comes before the wrap.** The count-in runs at *negative*
+ * beats, and a plain `%` would reflect the walk there and count the bar
+ * backwards. Both the transport's accent and the staff's lit dot go through
+ * this, which is what makes "the loud click and the brass dot are one event"
+ * a property of the code rather than of two numbers agreeing.
+ */
+export function barPosition(beat: number): number {
+	const index = Math.floor(beat);
+	return ((index % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR;
+}
+
 /** The spawner keeps the buffer filled this many beats ahead of now. */
 export const SPAWN_AHEAD_BEATS = 10;
 

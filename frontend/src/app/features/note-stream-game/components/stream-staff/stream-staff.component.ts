@@ -20,6 +20,7 @@ import type { RangeClef } from "../../../../shared/models/music.models";
 import { CLEF_PATHS, clefTransform } from "../../../../shared/utils/clef-paths";
 import { ledgerSteps, staffSteps } from "../../../note-game/models/range.utils";
 import {
+	barPosition,
 	BEATS_PER_BAR,
 	PIXELS_PER_BEAT,
 	type StreamAccidental,
@@ -42,12 +43,20 @@ const BOTTOM_LINE_Y = 164;
 /** y of the top staff line. */
 const TOP_LINE_Y = BOTTOM_LINE_Y - 4 * LINE_SPACING;
 /**
- * Total height. Leaves 76px clear above the top line and below the bottom
- * line -- 3 ledger lines (48px) plus a note head and margin either way -- and
- * a further 24px at the top for the beat dots, which sit above the ledger
- * area rather than inside it.
+ * The band above the staff that the beat dots and their numerals occupy.
+ *
+ * `STAFF_HEIGHT` is derived from it rather than describing it in prose, so
+ * the two cannot disagree: raise the numeral font or move the dots down and
+ * the staff grows to match instead of quietly eating into the ledger-line
+ * clearance below.
  */
-const STAFF_HEIGHT = 240;
+const DOT_BAND_HEIGHT = 48;
+/**
+ * Total height. Leaves 76px clear above the top line and below the bottom
+ * line -- 3 ledger lines (48px) plus a note head and margin either way --
+ * plus the dot band above that.
+ */
+const STAFF_HEIGHT = 192 + DOT_BAND_HEIGHT;
 
 /**
  * x of the fixed hit line, just right of the clef. A note is judged as it
@@ -74,10 +83,14 @@ const CLEF_X = 24;
  */
 const DOT_R = 6;
 const DOT_GAP = 24;
-const DOT_Y = 20;
-/** Numeral baseline, far enough below the dot to clear its stroke. */
-const DOT_NUMERAL_Y = DOT_Y + 22;
 const DOT_NUMERAL_FONT_SIZE = 11;
+/** Dot centre, one radius plus a hair below the top of the band. */
+const DOT_Y = DOT_R + 14;
+/**
+ * Numeral baseline. The glyph hangs below it, so the band has to hold the
+ * dot, the gap and the font size; this is what `DOT_BAND_HEIGHT` budgets.
+ */
+const DOT_NUMERAL_Y = DOT_BAND_HEIGHT - DOT_NUMERAL_FONT_SIZE + 5;
 /** Leftmost dot centre, so the row of four is centred on the hit line. */
 const FIRST_DOT_X = HIT_LINE_X - ((BEATS_PER_BAR - 1) * DOT_GAP) / 2;
 
@@ -303,29 +316,27 @@ interface RenderedNote {
 				beat, so at 120 BPM that is two renders a second rather than
 				sixty. The rAF loop sets the signal and Angular does the rest.
 			-->
-			<g>
-				@for (dot of beatDotXs; track dot.beat) {
-					<circle
-						[attr.data-beat]="dot.beat"
-						[attr.cx]="dot.x"
-						[attr.cy]="dotY"
-						[attr.r]="dotR"
-						[class]="dotClass(dot.beat)"
-						stroke-width="2"
-					/>
-					@if (countingIn()) {
-						<text
-							[attr.x]="dot.x"
-							[attr.y]="dotNumeralY"
-							[attr.font-size]="dotNumeralFontSize"
-							text-anchor="middle"
-							class="fill-muted-foreground font-semibold"
-						>
-							{{ dot.beat + 1 }}
-						</text>
-					}
+			@for (dot of beatDotXs; track dot.beat) {
+				<circle
+					[attr.data-beat]="dot.beat"
+					[attr.cx]="dot.x"
+					[attr.cy]="dotY"
+					[attr.r]="dotR"
+					[class]="dotClass(dot.beat)"
+					stroke-width="2"
+				/>
+				@if (countingIn()) {
+					<text
+						[attr.x]="dot.x"
+						[attr.y]="dotNumeralY"
+						[attr.font-size]="dotNumeralFontSize"
+						text-anchor="middle"
+						class="fill-muted-foreground font-semibold"
+					>
+						{{ dot.beat + 1 }}
+					</text>
 				}
-			</g>
+			}
 
 			<!-- The interaction point, and the one brass thing on the staff. -->
 			<line
@@ -502,18 +513,6 @@ export class StreamStaffComponent {
 /** The one write per frame: the whole stream moves as a single group. */
 function scrollTo(group: SVGGElement, beat: number): void {
 	group.setAttribute("transform", `translate(${-beat * PIXELS_PER_BEAT} 0)`);
-}
-
-/**
- * Which beat of the bar a beat number falls on, 0-based.
- *
- * The count-in runs at *negative* beats, so the floor comes before the wrap:
- * a plain `%` would reflect the walk and count the bar backwards through the
- * count-in instead of left to right.
- */
-function barPosition(beat: number): number {
-	const index = Math.floor(beat);
-	return ((index % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR;
 }
 
 function layout(note: StreamNote, clef: RangeClef): RenderedNote {

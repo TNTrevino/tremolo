@@ -3,7 +3,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { type ComponentFixture, TestBed } from "@angular/core/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COUNT_IN_BEATS } from "../../models/note-stream.models";
+import { BEATS_PER_BAR, COUNT_IN_BEATS } from "../../models/note-stream.models";
 import { NoteStreamGameService } from "../../services/note-stream-game.service";
 import { NoteStreamGamePageComponent } from "./note-stream-game-page.component";
 
@@ -84,8 +84,11 @@ describe("NoteStreamGamePageComponent", () => {
 		expect(game.phase()).toBe("countIn");
 		// The count-in is the staff's numbered beat dots. The live region says
 		// the same thing for a screen reader, which cannot watch them.
-		expect(el().textContent).toContain("Counting in 4 beats");
-		expect(el().querySelectorAll("svg text")).toHaveLength(COUNT_IN_BEATS);
+		expect(el().textContent).toContain(`Counting in ${COUNT_IN_BEATS} beats`);
+		// One numeral per beat of the *bar*, not per beat of the count-in.
+		// They are the same 4 today; asserting the right one keeps a failure
+		// pointing at whichever actually changed.
+		expect(el().querySelectorAll("svg text")).toHaveLength(BEATS_PER_BAR);
 
 		advance(COUNT_IN_MS);
 		fixture.detectChanges();

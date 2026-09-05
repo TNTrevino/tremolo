@@ -1,7 +1,7 @@
 import { Injectable, signal, type OnDestroy } from "@angular/core";
 
 import {
-	BEATS_PER_BAR,
+	barPosition,
 	COUNT_IN_BEATS,
 	DEFAULT_NOTE_STREAM_SETTINGS,
 } from "../models/note-stream.models";
@@ -232,7 +232,7 @@ export class StreamTransportService implements OnDestroy {
 		while (this.beatToTimeMs(this.nextClickBeat) < horizonMs) {
 			this.scheduleClick(
 				this.beatToTimeMs(this.nextClickBeat),
-				this.nextClickBeat % BEATS_PER_BAR === 0,
+				barPosition(this.nextClickBeat) === 0,
 			);
 			this.nextClickBeat += 1;
 		}

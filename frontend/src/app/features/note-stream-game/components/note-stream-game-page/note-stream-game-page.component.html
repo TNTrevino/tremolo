@@ -156,11 +156,9 @@
 				</div>
 
 				<!--
-					The count-in used to be the words "Get ready…", which said
-					nothing about *when*. The staff's beat dots count it out
-					instead, numbered for that bar only. A screen reader cannot
-					watch dots, so the live region says the length once; the beats
-					themselves are audible.
+					The staff's numbered beat dots are the count-in. A screen
+					reader cannot watch dots, so this says the length once; the
+					beats themselves are audible.
 				-->
 				@if (isCountingIn()) {
 					<p class="sr-only" aria-live="assertive">
