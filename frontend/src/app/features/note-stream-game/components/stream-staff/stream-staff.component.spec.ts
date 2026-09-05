@@ -25,7 +25,7 @@ import { HIT_LINE_X, StreamStaffComponent } from "./stream-staff.component";
  */
 
 /** y of the bottom staff line — the component's own anchor, restated here. */
-const BOTTOM_LINE_Y = 140;
+const BOTTOM_LINE_Y = 164;
 /** One staff position; two of them is one line-to-line step. */
 const STEP = 8;
 const LINE_SPACING = 2 * STEP;
@@ -51,11 +51,13 @@ describe("StreamStaffComponent", () => {
 		options: {
 			currentBeat?: number;
 			judgments?: Record<number, StreamJudgment>;
+			countingIn?: boolean;
 		} = {},
 	): Promise<void> {
 		fixture = TestBed.createComponent(StreamStaffComponent);
 		fixture.componentRef.setInput("clef", clef);
 		fixture.componentRef.setInput("notes", notes);
+		fixture.componentRef.setInput("countingIn", options.countingIn ?? false);
 		fixture.componentRef.setInput(
 			"getCurrentBeat",
 			() => options.currentBeat ?? 0,
@@ -139,6 +141,53 @@ describe("StreamStaffComponent", () => {
 		expect(el().querySelector("svg > path")?.getAttribute("transform")).toBe(
 			`translate(24 ${TOP_LINE_Y + LINE_SPACING}) scale(${scale})`,
 		);
+	});
+
+	describe("the beat dots", () => {
+		function dotClasses(): string[] {
+			return [...el().querySelectorAll("circle")].map(
+				(dot) => dot.getAttribute("class") ?? "",
+			);
+		}
+
+		it("lights one dot per beat, brass on the downbeat", async () => {
+			await render("treble", [], { currentBeat: 0 });
+			// Beat 1 of the bar: brass, and nothing else lit.
+			expect(dotClasses()).toEqual([
+				"fill-brass stroke-brass",
+				"fill-none stroke-border",
+				"fill-none stroke-border",
+				"fill-none stroke-border",
+			]);
+
+			// Beat 3 of the same bar: ink, because only the downbeat is brass.
+			await render("treble", [], { currentBeat: 2.4 });
+			expect(dotClasses()[2]).toBe("fill-foreground stroke-foreground");
+			expect(dotClasses()[0]).toBe("fill-none stroke-border");
+		});
+
+		it("keeps walking left to right through the count-in", async () => {
+			// The count-in runs at negative beats. A plain % would reflect the
+			// walk; the floor-then-wrap keeps beat -4 on the first dot, which is
+			// what makes the count-in read as "1, 2, 3, 4".
+			await render("treble", [], { currentBeat: -4 });
+			expect(dotClasses()[0]).toBe("fill-brass stroke-brass");
+
+			await render("treble", [], { currentBeat: -1.5 });
+			expect(dotClasses()[2]).toBe("fill-foreground stroke-foreground");
+		});
+
+		it("numbers the dots during the count-in only", async () => {
+			await render("treble", [], { currentBeat: -2, countingIn: true });
+			expect(
+				[...el().querySelectorAll("svg text")].map((t) =>
+					t.textContent?.trim(),
+				),
+			).toEqual(["1", "2", "3", "4"]);
+
+			await render("treble", [], { currentBeat: 2 });
+			expect(el().querySelectorAll("svg text")).toHaveLength(0);
+		});
 	});
 
 	it("fades the notes out before they reach the clef", async () => {

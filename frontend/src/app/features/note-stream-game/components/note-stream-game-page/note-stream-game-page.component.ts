@@ -16,6 +16,7 @@ import { ButtonComponent } from "../../../../shared/components/ui/button.compone
 import { CardDirective } from "../../../../shared/components/ui/card.directive";
 import { UserService } from "../../../../shared/services/user.service";
 import {
+	COUNT_IN_BEATS,
 	SESSION_LENGTHS,
 	TEMPO_CHOICES,
 	type NoteStreamSettings,
@@ -102,6 +103,14 @@ export class NoteStreamGamePageComponent {
 		const phase = this.game.phase();
 		return phase === "countIn" || phase === "playing";
 	});
+
+	/** Numbers the beat dots, for the count-in bar only. */
+	protected readonly isCountingIn = computed(
+		() => this.game.phase() === "countIn",
+	);
+
+	/** Beats the count-in lasts, said once when it starts. */
+	protected readonly countInBeats = COUNT_IN_BEATS;
 
 	/**
 	 * Handed to `<app-stream-staff>` as a stable function, service-free.

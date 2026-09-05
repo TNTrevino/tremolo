@@ -5,6 +5,7 @@ import {
 	effect,
 	ElementRef,
 	input,
+	signal,
 	untracked,
 	viewChild,
 } from "@angular/core";
@@ -19,6 +20,8 @@ import type { RangeClef } from "../../../../shared/models/music.models";
 import { CLEF_PATHS, clefTransform } from "../../../../shared/utils/clef-paths";
 import { ledgerSteps, staffSteps } from "../../../note-game/models/range.utils";
 import {
+	barPosition,
+	BEATS_PER_BAR,
 	PIXELS_PER_BEAT,
 	type StreamAccidental,
 	type StreamJudgment,
@@ -36,14 +39,24 @@ const LINE_SPACING = 16;
 /** One staff position (line -> adjacent space) is half the line spacing. */
 const STEP = LINE_SPACING / 2;
 /** y of the bottom staff line. */
-const BOTTOM_LINE_Y = 140;
+const BOTTOM_LINE_Y = 164;
 /** y of the top staff line. */
 const TOP_LINE_Y = BOTTOM_LINE_Y - 4 * LINE_SPACING;
 /**
- * Total height. Leaves 76px clear above the top line and below the bottom
- * line -- 3 ledger lines (48px) plus a note head and margin either way.
+ * The band above the staff that the beat dots and their numerals occupy.
+ *
+ * `STAFF_HEIGHT` is derived from it rather than describing it in prose, so
+ * the two cannot disagree: raise the numeral font or move the dots down and
+ * the staff grows to match instead of quietly eating into the ledger-line
+ * clearance below.
  */
-const STAFF_HEIGHT = 216;
+const DOT_BAND_HEIGHT = 48;
+/**
+ * Total height. Leaves 76px clear above the top line and below the bottom
+ * line -- 3 ledger lines (48px) plus a note head and margin either way --
+ * plus the dot band above that.
+ */
+const STAFF_HEIGHT = 192 + DOT_BAND_HEIGHT;
 
 /**
  * x of the fixed hit line, just right of the clef. A note is judged as it
@@ -52,6 +65,41 @@ const STAFF_HEIGHT = 216;
 export const HIT_LINE_X = 140;
 
 const CLEF_X = 24;
+
+/**
+ * The visual metronome: one dot per beat of the bar, centred over the hit
+ * line.
+ *
+ * Exactly one dot is filled at a time and it walks left to right, so the
+ * student reads *where in the bar* they are rather than only that a beat
+ * happened. Beat 1 fills brass, which is the beat
+ * `StreamTransportService` already accents, so the loud click and the brass
+ * dot are one event.
+ *
+ * The dots also run the count-in -- `COUNT_IN_BEATS` and `BEATS_PER_BAR` are
+ * both 4, so a count-in is one bar -- and the numerals under them appear for
+ * that bar only. During play they would be clutter; during the count-in they
+ * are the countdown.
+ */
+const DOT_R = 6;
+const DOT_GAP = 24;
+const DOT_NUMERAL_FONT_SIZE = 11;
+/** Dot centre, one radius plus a hair below the top of the band. */
+const DOT_Y = DOT_R + 14;
+/**
+ * Numeral baseline. The glyph hangs below it, so the band has to hold the
+ * dot, the gap and the font size; this is what `DOT_BAND_HEIGHT` budgets.
+ */
+const DOT_NUMERAL_Y = DOT_BAND_HEIGHT - DOT_NUMERAL_FONT_SIZE + 5;
+/** Leftmost dot centre, so the row of four is centred on the hit line. */
+const FIRST_DOT_X = HIT_LINE_X - ((BEATS_PER_BAR - 1) * DOT_GAP) / 2;
+
+/** Dot fills, by role. Tailwind utilities so the tokens stay the one source. */
+const DOT_CLASS = {
+	unlit: "fill-none stroke-border",
+	lit: "fill-foreground stroke-foreground",
+	downbeat: "fill-brass stroke-brass",
+} as const;
 
 /**
  * A judged note is gone by this x, which leaves the clef's space clear.
@@ -262,6 +310,34 @@ interface RenderedNote {
 				fill="currentColor"
 			/>
 
+			<!--
+				The visual metronome. Unlike the scroll, these go through a
+				signal: the scroll moves every frame, but a dot changes once a
+				beat, so at 120 BPM that is two renders a second rather than
+				sixty. The rAF loop sets the signal and Angular does the rest.
+			-->
+			@for (dot of beatDotXs; track dot.beat) {
+				<circle
+					[attr.data-beat]="dot.beat"
+					[attr.cx]="dot.x"
+					[attr.cy]="dotY"
+					[attr.r]="dotR"
+					[class]="dotClass(dot.beat)"
+					stroke-width="2"
+				/>
+				@if (countingIn()) {
+					<text
+						[attr.x]="dot.x"
+						[attr.y]="dotNumeralY"
+						[attr.font-size]="dotNumeralFontSize"
+						text-anchor="middle"
+						class="fill-muted-foreground font-semibold"
+					>
+						{{ dot.beat + 1 }}
+					</text>
+				}
+			}
+
 			<!-- The interaction point, and the one brass thing on the staff. -->
 			<line
 				class="text-brass"
@@ -340,8 +416,13 @@ export class StreamStaffComponent {
 	readonly getCurrentBeat = input<() => number>(() => 0);
 	/** Whether the rAF loop runs. Paused and finished states leave it off. */
 	readonly running = input(false);
+	/** Shows the numerals under the beat dots, for the count-in bar only. */
+	readonly countingIn = input(false);
 
 	private readonly scroller = viewChild<ElementRef<SVGGElement>>("scroller");
+
+	/** Bar position of the beat now playing, 0-based. Set by the rAF loop. */
+	private readonly litBeat = signal(0);
 
 	protected readonly staffHeight = STAFF_HEIGHT;
 	protected readonly staffLineYs = [0, 1, 2, 3, 4].map(
@@ -358,6 +439,14 @@ export class StreamStaffComponent {
 	protected readonly hitLineY2 = BOTTOM_LINE_Y + LINE_SPACING;
 	protected readonly headRx = HEAD_RX;
 	protected readonly headRy = HEAD_RY;
+	protected readonly dotY = DOT_Y;
+	protected readonly dotR = DOT_R;
+	protected readonly dotNumeralY = DOT_NUMERAL_Y;
+	protected readonly dotNumeralFontSize = DOT_NUMERAL_FONT_SIZE;
+	protected readonly beatDotXs = Array.from(
+		{ length: BEATS_PER_BAR },
+		(_, beat) => ({ beat, x: FIRST_DOT_X + beat * DOT_GAP }),
+	);
 	protected readonly accidentalFontSize = ACCIDENTAL_FONT_SIZE;
 
 	protected readonly clefPath = computed(() => CLEF_PATHS[this.clef()].d);
@@ -381,20 +470,33 @@ export class StreamStaffComponent {
 
 			const beatOf = this.getCurrentBeat();
 			const running = this.running();
+			const paint = (): void => {
+				const beat = beatOf();
+				scrollTo(group, beat);
+				// Setting the same value again notifies nothing, so the render
+				// happens once per beat rather than once per frame.
+				this.litBeat.set(barPosition(beat));
+			};
 
 			// Paint once even when stopped, so a ready/paused staff sits where
 			// the clock says rather than at beat 0.
-			untracked(() => scrollTo(group, beatOf()));
+			untracked(paint);
 			if (!running) return;
 
 			let frame = 0;
 			const step = (): void => {
-				scrollTo(group, beatOf());
+				paint();
 				frame = requestAnimationFrame(step);
 			};
 			frame = requestAnimationFrame(step);
 			onCleanup(() => cancelAnimationFrame(frame));
 		});
+	}
+
+	/** Exactly one dot is lit, and beat 1 of the bar is the brass one. */
+	protected dotClass(beat: number): string {
+		if (beat !== this.litBeat()) return DOT_CLASS.unlit;
+		return beat === 0 ? DOT_CLASS.downbeat : DOT_CLASS.lit;
 	}
 
 	/**

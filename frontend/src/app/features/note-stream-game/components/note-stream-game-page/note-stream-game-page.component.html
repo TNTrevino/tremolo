@@ -155,12 +155,14 @@
 					</div>
 				</div>
 
-				@if (game.phase() === "countIn") {
-					<p
-						class="text-center text-sm font-medium text-muted-foreground"
-						aria-live="polite"
-					>
-						Get ready…
+				<!--
+					The staff's numbered beat dots are the count-in. A screen
+					reader cannot watch dots, so this says the length once; the
+					beats themselves are audible.
+				-->
+				@if (isCountingIn()) {
+					<p class="sr-only" aria-live="assertive">
+						Counting in {{ countInBeats }} beats
 					</p>
 				}
 
@@ -170,6 +172,7 @@
 					[judgmentFor]="judgmentFor"
 					[getCurrentBeat]="getCurrentBeat"
 					[running]="isRunning()"
+					[countingIn]="isCountingIn()"
 				/>
 
 				@if (game.phase() === "paused") {

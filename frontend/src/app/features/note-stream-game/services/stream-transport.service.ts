@@ -1,6 +1,7 @@
 import { Injectable, signal, type OnDestroy } from "@angular/core";
 
 import {
+	barPosition,
 	COUNT_IN_BEATS,
 	DEFAULT_NOTE_STREAM_SETTINGS,
 } from "../models/note-stream.models";
@@ -52,9 +53,6 @@ const SCHEDULE_AHEAD_MS = 120;
 
 /** Length of one metronome blip. */
 const CLICK_SECONDS = 0.006;
-
-/** Beats per bar, i.e. how often the metronome accents. */
-const BEATS_PER_BAR = 4;
 
 const CLICK_HZ = { accent: 1600, plain: 1000 };
 const CLICK_GAIN = { accent: 0.35, plain: 0.2 };
@@ -234,7 +232,7 @@ export class StreamTransportService implements OnDestroy {
 		while (this.beatToTimeMs(this.nextClickBeat) < horizonMs) {
 			this.scheduleClick(
 				this.beatToTimeMs(this.nextClickBeat),
-				this.nextClickBeat % BEATS_PER_BAR === 0,
+				barPosition(this.nextClickBeat) === 0,
 			);
 			this.nextClickBeat += 1;
 		}
