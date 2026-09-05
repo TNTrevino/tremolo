@@ -219,7 +219,7 @@ export class NoteStreamGameService {
 		);
 	}
 
-	/** Judged notes stop drawing a couple of beats after their moment. */
+	/** Judged notes leave the list once the staff has faded them out. */
 	private pruneFinished(beat: number): void {
 		const done = this.spawner
 			.notes()

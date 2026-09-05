@@ -334,7 +334,6 @@ export class StreamStaffComponent {
 	protected readonly staffLineYs = [0, 1, 2, 3, 4].map(
 		(line) => TOP_LINE_Y + line * LINE_SPACING,
 	);
-	protected readonly clefX = CLEF_X;
 	protected readonly fadeStartX = FADE_START_X;
 	protected readonly fadeEndX = FADE_END_X;
 	protected readonly fadeMaskId = FADE_MASK_ID;
