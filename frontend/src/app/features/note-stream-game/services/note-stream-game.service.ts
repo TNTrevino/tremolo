@@ -14,6 +14,7 @@ import {
 	type NoteStreamSettings,
 	type StreamPhase,
 } from "../models/note-stream.models";
+import { FADE_OUT_BEATS } from "../components/stream-staff/stream-staff.component";
 import { NoteSpawnerService } from "./note-spawner.service";
 import { StreamScoreService } from "./stream-score.service";
 import { StreamTransportService } from "./stream-transport.service";
@@ -45,18 +46,6 @@ import { StreamTransportService } from "./stream-transport.service";
  *
  * Provided per page, with the four services it wires together.
  */
-
-/**
- * Beats a judged note keeps drawing (its hit or miss animation) before it is
- * dropped.
- *
- * Half a beat is 70px at `PIXELS_PER_BEAT`, which lands a note just past the
- * staff's fade-out. Two beats -- what this was -- carried a judged note 280px
- * left of the hit line, to x = -140, straight across the clef. The note was
- * invisible by then only because the fade exists; keeping it in the list any
- * longer just costs a layout per frame.
- */
-const PRUNE_AFTER_BEATS = 0.5;
 
 @Injectable()
 export class NoteStreamGameService {
@@ -219,13 +208,24 @@ export class NoteStreamGameService {
 		);
 	}
 
-	/** Judged notes leave the list once the staff has faded them out. */
+	/**
+	 * Judged notes leave the list the moment the staff has finished fading
+	 * them out, and not a frame later.
+	 *
+	 * The window is `FADE_OUT_BEATS`, imported rather than restated, because
+	 * it is the staff's geometry that decides it: the fade runs from the hit
+	 * line to just short of the clef, and how long that takes falls out of
+	 * the tempo. A hand-tuned number here would silently stop matching the
+	 * moment the clef, the hit line or the fade span moved -- which is how
+	 * the old value of 2 came to carry a judged note 280px past the hit
+	 * line, to x = -140, straight across the clef.
+	 */
 	private pruneFinished(beat: number): void {
 		const done = this.spawner
 			.notes()
 			.filter(
 				(note) =>
-					beat - note.beat > PRUNE_AFTER_BEATS &&
+					beat - note.beat > FADE_OUT_BEATS &&
 					this.score.judgmentFor(note.id) !== undefined,
 			)
 			.map((note) => note.id);

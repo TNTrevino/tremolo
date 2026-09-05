@@ -65,8 +65,21 @@ const CLEF_X = 24;
 const FADE_END_X = 76;
 /** Notes are at full strength from the hit line rightward. */
 const FADE_START_X = HIT_LINE_X;
+
+/**
+ * How long a judged note stays visible, in beats.
+ *
+ * The fade is a span of the staff, so how long it lasts falls out of the
+ * tempo rather than being set alongside it. `NoteStreamGameService` prunes
+ * on this number, which is what keeps "stop drawing the note" tied to "the
+ * note has finished fading" when the clef, the hit line or the fade span
+ * moves.
+ */
+export const FADE_OUT_BEATS = (FADE_START_X - FADE_END_X) / PIXELS_PER_BEAT;
+
 /** Ties the gradient and the mask together without colliding with anything. */
 const FADE_MASK_ID = "stream-staff-fade";
+const FADE_GRADIENT_ID = `${FADE_MASK_ID}-gradient`;
 
 const HEAD_RX = 9.5;
 const HEAD_RY = 6.5;
@@ -337,9 +350,9 @@ export class StreamStaffComponent {
 	protected readonly fadeStartX = FADE_START_X;
 	protected readonly fadeEndX = FADE_END_X;
 	protected readonly fadeMaskId = FADE_MASK_ID;
-	protected readonly fadeGradientId = `${FADE_MASK_ID}-gradient`;
+	protected readonly fadeGradientId = FADE_GRADIENT_ID;
 	protected readonly fadeMaskRef = `url(#${FADE_MASK_ID})`;
-	protected readonly fadeGradientRef = `url(#${FADE_MASK_ID}-gradient)`;
+	protected readonly fadeGradientRef = `url(#${FADE_GRADIENT_ID})`;
 	protected readonly hitLineX = HIT_LINE_X;
 	protected readonly hitLineY1 = TOP_LINE_Y - LINE_SPACING;
 	protected readonly hitLineY2 = BOTTOM_LINE_Y + LINE_SPACING;

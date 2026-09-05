@@ -50,43 +50,47 @@ describe("StaffRangePickerComponent", () => {
 		TestBed.resetTestingModule();
 	});
 
-	it("draws the treble clef anchored to the G line", () => {
+	// Each clef anchors its origin to the line it names: treble to the G
+	// line, three line-spacings below the top; bass to the F line, one below,
+	// which is the line its two dots straddle.
+	const ANCHORS = [
+		["treble", "C4", "C6", 3],
+		["bass", "E2", "E4", 1],
+	] as const;
+
+	for (const [clef, low, high, lineFromTop] of ANCHORS) {
+		it(`anchors the ${clef} clef to the line it names`, () => {
+			render(clef, low, high);
+
+			const scale = LINE_SPACING / CLEF_UNITS_PER_SPACE;
+			expect(clefEl().getAttribute("d")).toBe(CLEF_PATHS[clef].d);
+			expect(clefEl().getAttribute("transform")).toBe(
+				`translate(${CLEF_X} ${STAFF_TOP + lineFromTop * LINE_SPACING}) scale(${scale})`,
+			);
+		});
+	}
+
+	it("draws the clef on the staff, not beside it", () => {
 		render("treble", "C4", "C6");
 
-		// The G line is the second line up, three line-spacings below the top.
-		const scale = LINE_SPACING / CLEF_UNITS_PER_SPACE;
-		expect(clefEl().getAttribute("d")).toBe(CLEF_PATHS.treble.d);
-		expect(clefEl().getAttribute("transform")).toBe(
-			`translate(${CLEF_X} ${STAFF_TOP + 3 * LINE_SPACING}) scale(${scale})`,
-		);
-	});
-
-	it("draws the bass clef anchored to the F line", () => {
-		render("bass", "E2", "E4");
-
-		// The F line is the second line down, one line-spacing below the top,
-		// and is the line the clef's two dots straddle.
-		const scale = LINE_SPACING / CLEF_UNITS_PER_SPACE;
-		expect(clefEl().getAttribute("d")).toBe(CLEF_PATHS.bass.d);
-		expect(clefEl().getAttribute("transform")).toBe(
-			`translate(${CLEF_X} ${STAFF_TOP + LINE_SPACING}) scale(${scale})`,
-		);
-	});
-
-	it("keeps the clef inside the staff lines", () => {
-		render("treble", "C4", "C6");
-
-		// The lines start 30px left of staffLeft and the clef 28px left, so the
-		// glyph sits on the staff rather than beside it. This is the whole
-		// difference the screenshots show.
+		// The lines start 30px left of staffLeft; the glyph's own translate has
+		// to land to the right of that, or the clef floats off the staff. This
+		// is the whole difference the before/after screenshots show, so it is
+		// read off the rendered transform rather than off the constants.
 		const firstLine = el().querySelector<SVGLineElement>("svg > line");
-		expect(Number(firstLine?.getAttribute("x1"))).toBe(STAFF_LEFT - 30);
-		expect(CLEF_X).toBeGreaterThan(STAFF_LEFT - 30);
+		const lineStart = Number(firstLine?.getAttribute("x1"));
+		const translateX = Number(
+			/translate\((-?[\d.]+)/.exec(
+				clefEl().getAttribute("transform") ?? "",
+			)?.[1],
+		);
+
+		expect(lineStart).toBe(STAFF_LEFT - 30);
+		expect(translateX).toBeGreaterThan(lineStart);
 	});
 
 	it("swaps the glyph when the clef changes", () => {
 		render("treble", "C4", "C6");
-		expect(clefEl().getAttribute("d")).toBe(CLEF_PATHS.treble.d);
 
 		fixture.componentRef.setInput("clef", "bass");
 		fixture.detectChanges();
