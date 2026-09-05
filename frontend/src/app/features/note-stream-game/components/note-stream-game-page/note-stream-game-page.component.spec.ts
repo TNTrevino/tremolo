@@ -82,13 +82,18 @@ describe("NoteStreamGamePageComponent", () => {
 		fixture.detectChanges();
 
 		expect(game.phase()).toBe("countIn");
-		expect(el().textContent).toContain("Get ready");
+		// The count-in is the staff's numbered beat dots. The live region says
+		// the same thing for a screen reader, which cannot watch them.
+		expect(el().textContent).toContain("Counting in 4 beats");
+		expect(el().querySelectorAll("svg text")).toHaveLength(COUNT_IN_BEATS);
 
 		advance(COUNT_IN_MS);
 		fixture.detectChanges();
 
 		expect(game.phase()).toBe("playing");
-		expect(el().textContent).not.toContain("Get ready");
+		expect(el().textContent).not.toContain("Counting in");
+		// Numerals are count-in only; during play the dots carry the beat alone.
+		expect(el().querySelectorAll("svg text")).toHaveLength(0);
 	});
 
 	it("pauses on Escape while playing, and shows the paused overlay", () => {

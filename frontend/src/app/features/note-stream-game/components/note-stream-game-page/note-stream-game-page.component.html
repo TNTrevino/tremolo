@@ -155,12 +155,16 @@
 					</div>
 				</div>
 
-				@if (game.phase() === "countIn") {
-					<p
-						class="text-center text-sm font-medium text-muted-foreground"
-						aria-live="polite"
-					>
-						Get ready…
+				<!--
+					The count-in used to be the words "Get ready…", which said
+					nothing about *when*. The staff's beat dots count it out
+					instead, numbered for that bar only. A screen reader cannot
+					watch dots, so the live region says the length once; the beats
+					themselves are audible.
+				-->
+				@if (isCountingIn()) {
+					<p class="sr-only" aria-live="assertive">
+						Counting in {{ countInBeats }} beats
 					</p>
 				}
 
@@ -170,6 +174,7 @@
 					[judgmentFor]="judgmentFor"
 					[getCurrentBeat]="getCurrentBeat"
 					[running]="isRunning()"
+					[countingIn]="isCountingIn()"
 				/>
 
 				@if (game.phase() === "paused") {

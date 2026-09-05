@@ -108,6 +108,13 @@ export const MAX_MULTIPLIER = 4;
 /** Beats of metronome count-in before the first note (also on resume). */
 export const COUNT_IN_BEATS = 4;
 
+/**
+ * Beats in a bar. The metronome accents beat 1 and the staff's beat dots
+ * count the same bar, so the accented click and the brass dot are one event
+ * rather than two things that happen to agree.
+ */
+export const BEATS_PER_BAR = 4;
+
 /** The spawner keeps the buffer filled this many beats ahead of now. */
 export const SPAWN_AHEAD_BEATS = 10;
 
